@@ -46,7 +46,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative bg-gradient-subtle min-h-screen flex items-center overflow-hidden">
+    <section className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-orange/5" />
       <div className="absolute top-20 right-20 w-32 h-32 bg-orange/10 rounded-full blur-3xl" />
@@ -99,30 +99,23 @@ const HeroSection = () => {
               
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-red-accent/10 rounded-lg flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-red-accent" />
+                  <Wifi className="w-6 h-6 text-red-accent" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Suporte 24/7</p>
-                  <p className="text-sm text-muted-foreground">Atendimento humano</p>
+                  <p className="font-semibold text-foreground">Wi-Fi 6</p>
+                  <p className="text-sm text-muted-foreground">Sinal em toda a casa</p>
                 </div>
               </div>
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex justify-center sm:justify-start">
               <Button
                 onClick={handleWhatsApp}
                 size="lg"
                 className="cta-gradient text-lg px-8 py-6"
               >
                 Contratar Agora no WhatsApp
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground text-lg px-8 py-6"
-              >
-                Ver Planos
               </Button>
             </div>
           </div>

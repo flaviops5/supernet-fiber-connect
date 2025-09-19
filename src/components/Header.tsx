@@ -32,9 +32,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">S</span>
-            </div>
+            <img 
+              src="/assets/logo-supernet.png" 
+              alt="Supernet Fibra" 
+              className="w-10 h-10 object-contain"
+            />
             <span className="font-arlon font-bold text-xl text-primary">Supernet Fibra</span>
           </div>
 
@@ -108,8 +110,15 @@ const Header = () => {
             </a>
           </nav>
 
-          {/* CTA Button */}
+          {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => window.open('http://central.supernetfibra.com.br', '_blank')}
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              Central do Cliente
+            </Button>
             <Button
               onClick={handleWhatsApp}
               className="cta-gradient"
@@ -172,6 +181,14 @@ const Header = () => {
               <a href="/contato" className="block text-foreground hover:text-primary transition-colors">
                 Contato
               </a>
+              
+              <Button
+                variant="outline"
+                onClick={() => window.open('http://central.supernetfibra.com.br', '_blank')}
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full mb-4"
+              >
+                Central do Cliente
+              </Button>
               
               <Button
                 onClick={handleWhatsApp}
