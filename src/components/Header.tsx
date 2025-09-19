@@ -35,7 +35,7 @@ const Header = () => {
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-lg">S</span>
             </div>
-            <span className="font-bold text-xl text-primary">Supernet Fibra</span>
+            <span className="font-arlon font-bold text-xl text-primary">Supernet Fibra</span>
           </div>
 
           {/* Desktop Navigation */}

@@ -71,6 +71,7 @@ export default {
       },
       fontFamily: {
         'poppins': ['Poppins', 'sans-serif'],
+        'arlon': ['Arlon-Regular', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
