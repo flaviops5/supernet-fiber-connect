@@ -19,7 +19,7 @@ const Footer = () => {
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">S</span>
               </div>
-              <span className="font-arlon font-bold text-xl text-orange">SUPERNET FIBRA</span>
+              <span className="font-bold text-xl text-orange">SUPERNET FIBRA</span>
             </div>
             
             <p className="text-white/80 leading-relaxed">

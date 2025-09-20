@@ -56,7 +56,7 @@ const HeroSection = () => {
                 que transforma sua vida digital.
               </h1>
               
-              <p className="text-xl text-muted-foreground leading-relaxed">Experimente a velocidade e estabilidade da fibra óptica da SUPERNET. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo.</p>
+              <p className="text-xl text-muted-foreground leading-relaxed">Experimente a velocidade e estabilidade da fibra óptica da SUPERNET FIBRA. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo.</p>
             </div>
 
             {/* Benefits */}

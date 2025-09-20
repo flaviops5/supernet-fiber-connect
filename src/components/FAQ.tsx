@@ -7,6 +7,7 @@ import {
 import { Phone, MessageCircle, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import faqSupport from '@/assets/faq-support.jpg';
+import personPointing from '@/assets/person-pointing-faq.jpg';
 
 const FAQ = () => {
   const faqs = [
@@ -16,18 +17,26 @@ const FAQ = () => {
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
+      question: "O que é fibra óptica? O que é FTTH? Como a fibra chega em minha residência?",
+      answer: "Fibra óptica é um filamento extremamente fino e flexível, feito de vidro ultrapuro, plástico ou outro isolante térmico (material de com alta resistência ao fluxo de corrente elétrica). Possui uma estrutura simples, composta por capa protetora, interface e núcleo.\n\nFFTH (Fiber To The Home, ou, Fibra para Casa), é a entrega da serviços de internet sobre fibra óptica. FFTH é o método mais rápido, confiável e seguro de conectar sua casa à internet. Transporta informações a velocidade da luz.\n\nA rede é lançada nos postes de energia espalhados em sua região. A partir do poste mais perto de sua casa, a fibra desce e entra na tubulação já existente e vai até o ponto escolhido para a instalação do modem óptico.\n\nEm caso de prédios, a fibra chega até o Distribuidor Geral (DG) e de lá sobre até cada shaft de cada andar. Em cada andar é colocado um Distribuidor Interno Óptico de parede (DIO), a partir deste DIO, a fibra entra em seu apartamento pela tubulação já existente."
+    },
+    {
       question: "Como funciona a instalação? Tem custo adicional?",
       answer: "A instalação é 100% gratuita! Nossa equipe técnica especializada agenda um horário conveniente, realiza toda a instalação em até 2 horas e deixa tudo funcionando perfeitamente. Também oferecemos orientação completa sobre o uso dos equipamentos.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
-      question: "Que equipamentos são fornecidos?",
-      answer: "Fornecemos roteador Wi-Fi 6 de última geração, cabo de rede, e todos os adaptadores necessários. Os equipamentos são em regime de comodato (empréstimo gratuito) durante toda sua permanência como cliente. Se precisar de equipamentos adicionais, temos opções disponíveis."
+      question: "Quais equipamentos serão instalados em minha casa e o que preciso ter em minha residência?",
+      answer: "Será instalado um equipamento chamado ONU (Unidades óptica) ela é responsável em converter o sinal de luz em sinal digital. Dependendo do plano escolhido, além da ONU, será também instalado roteadores que são responsáveis pelo sinal wi-fi e também pela rede cabeada caso opte em usar este tipo de conexão.\n\nÉ necessário duas tomadas de energia no ponto principal onde será instalado a ONU e o primeiro roteador. Caso o plano escolhido seja com dois ou mais roteadores, cada equipamento também precisará de tomada com energia."
     },
     {
       question: "E se eu tiver problemas técnicos? Como é o suporte?",
       answer: "Nosso suporte técnico funciona 24/7 com atendimento 100% humano. Você pode nos contatar via WhatsApp, telefone ou chat online. A maioria dos problemas são resolvidos remotamente em minutos. Para casos que precisem visita técnica, não cobramos taxa de deslocamento.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      question: "Como é o pagamento da mensalidade?",
+      answer: "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias."
     },
     {
       question: "Posso testar a internet antes de contratar?",
@@ -109,7 +118,7 @@ const FAQ = () => {
                   </AccordionTrigger>
                   <AccordionContent className="pb-6">
                     <div className="space-y-4">
-                      <p className="text-muted-foreground leading-relaxed">
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                         {faq.answer}
                       </p>
                       {faq.videoUrl && (
