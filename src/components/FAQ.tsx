@@ -11,7 +11,7 @@ import faqSupport from '@/assets/faq-support.jpg';
 const FAQ = () => {
   const faqs = [
     {
-      question: "Qual é a velocidade real da internet fibra da Supernet?",
+      question: "Qual é a velocidade real da internet fibra da SUPERNET FIBRA?",
       answer: "Nossa internet fibra entrega exatamente a velocidade contratada. Com tecnologia 100% fibra óptica, você tem velocidade simétrica (upload = download) e latência ultra baixa. Realizamos testes regulares para garantir que você receba sempre o que contratou.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
@@ -38,7 +38,7 @@ const FAQ = () => {
       answer: "Trabalhamos com contratos flexíveis. Nosso plano básico não tem fidelidade. Para planos premium, oferecemos opções com 12 meses de fidelidade em troca de descontos especiais e benefícios extras. Você escolhe o que faz mais sentido para você."
     },
     {
-      question: "A Supernet atende na minha região?",
+      question: "A SUPERNET FIBRA atende na minha região?",
       answer: "Estamos em constante expansão! Atendemos as principais cidades de São Paulo, Rio de Janeiro, Minas Gerais e Bahia, com novos bairros sendo conectados mensalmente. Entre em contato via WhatsApp informando seu CEP que verificamos a disponibilidade imediatamente."
     },
     {
@@ -48,7 +48,7 @@ const FAQ = () => {
   ];
 
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Tenho algumas dúvidas sobre os serviços da Supernet Fibra.', '_blank');
+    window.open('https://wa.me/5511999999999?text=Olá! Tenho algumas dúvidas sobre os serviços da SUPERNET FIBRA.', '_blank');
   };
 
   const handlePhone = () => {
@@ -77,7 +77,7 @@ const FAQ = () => {
             <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant">
               <img
                 src={faqSupport}
-                alt="Suporte especializado da Supernet Fibra"
+                alt="Suporte especializado da SUPERNET FIBRA"
                 className="w-full h-96 lg:h-[500px] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />

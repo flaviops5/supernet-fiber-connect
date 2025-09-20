@@ -9,14 +9,14 @@ const Testimonials = () => {
       name: "Marina Silva",
       location: "São Paulo, SP",
       rating: 5,
-      text: "Mudei para a Supernet há 6 meses e foi a melhor decisão! A internet nunca falha, mesmo com toda a família online ao mesmo tempo. O suporte é incrível, sempre resolvem tudo rapidinho.",
+      text: "Mudei para a SUPERNET FIBRA há 6 meses e foi a melhor decisão! A internet nunca falha, mesmo com toda a família online ao mesmo tempo. O suporte é incrível, sempre resolvem tudo rapidinho.",
       service: "Plano 500MB"
     },
     {
       name: "Carlos Eduardo",
       location: "Rio de Janeiro, RJ",
       rating: 5,
-      text: "Trabalho com design e preciso de uma internet confiável. Com a Supernet, nunca mais tive problemas de lentidão para fazer upload dos meus projetos. Recomendo para todos!",
+      text: "Trabalho com design e preciso de uma internet confiável. Com a SUPERNET FIBRA, nunca mais tive problemas de lentidão para fazer upload dos meus projetos. Recomendo para todos!",
       service: "Plano 1GB"
     },
     {
@@ -37,7 +37,7 @@ const Testimonials = () => {
       name: "Juliana Costa",
       location: "Brasília, DF",
       rating: 5,
-      text: "Depois de muitas experiências ruins com outras operadoras, finalmente encontrei uma empresa séria. A Supernet entrega exatamente o que promete. Muito satisfeita!",
+      text: "Depois de muitas experiências ruins com outras operadoras, finalmente encontrei uma empresa séria. A SUPERNET FIBRA entrega exatamente o que promete. Muito satisfeita!",
       service: "Plano 400MB"
     }
   ];
@@ -71,7 +71,7 @@ const Testimonials = () => {
             <span className="gradient-text">clientes dizem</span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Mais de 10.000 famílias já escolheram a Supernet Fibra. 
+            Mais de 10.000 famílias já escolheram a SUPERNET FIBRA. 
             Veja os depoimentos de quem vive a experiência todos os dias.
           </p>
         </div>

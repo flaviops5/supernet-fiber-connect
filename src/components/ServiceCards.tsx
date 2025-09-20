@@ -11,20 +11,26 @@ const ServiceCards = () => {
     },
     {
       icon: Users,
-      title: "Suporte Humano 24/7",
-      description: "Atendimento especializado com pessoas reais, sempre prontas para ajudar. Sem robôs, sem complicação.",
-      features: ["Atendimento 24 horas", "Técnicos especializados", "Suporte via WhatsApp", "Instalação gratuita"]
+      title: "Instalação em até 24 horas",
+      description: "Instalação rápida e profissional em sua residência. Nossa equipe técnica altamente qualificada garante o melhor serviço.",
+      features: ["Agendamento flexível", "Técnicos certificados", "Instalação gratuita", "Teste de velocidade incluso"]
     },
     {
       icon: Settings,
-      title: "Tecnologia de Ponta",
-      description: "Equipamentos de última geração e infraestrutura moderna para garantir a melhor experiência de internet.",
-      features: ["Roteadores Wi-Fi 6", "Cabeamento estruturado", "Backup automático", "Monitoramento em tempo real"]
+      title: "Wi-Fi 6 Tecnologia",
+      description: "Roteadores de última geração com tecnologia Wi-Fi 6 para máxima velocidade e cobertura em toda sua casa.",
+      features: ["Wi-Fi 6 incluso", "Cobertura total", "Múltiplos dispositivos", "Velocidade otimizada"]
+    },
+    {
+      icon: Phone,
+      title: "Suporte Ultra-rápido",
+      description: "Atendimento especializado com resposta em tempo recorde. Suporte técnico humanizado 24/7 via WhatsApp.",
+      features: ["Resposta imediata", "Suporte via WhatsApp", "Técnicos especializados", "Atendimento 24/7"]
     }
   ];
 
   const handleWhatsApp = (serviceName: string) => {
-    const message = `Olá! Gostaria de saber mais sobre ${serviceName} da Supernet Fibra.`;
+    const message = `Olá! Gostaria de saber mais sobre ${serviceName} da SUPERNET FIBRA.`;
     window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -35,7 +41,7 @@ const ServiceCards = () => {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Por que escolher a{' '}
-            <span className="gradient-text">Supernet Fibra</span>?
+            <span className="gradient-text font-arlon">SUPERNET FIBRA</span>?
           </h2>
           <p className="text-xl text-muted-foreground">
             Mais do que internet rápida, oferecemos uma experiência completa 
@@ -44,7 +50,7 @@ const ServiceCards = () => {
         </div>
 
         {/* Service Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {services.map((service, index) => (
             <div
               key={index}
@@ -98,7 +104,7 @@ const ServiceCards = () => {
               Pronto para ter a melhor internet da sua vida?
             </h3>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Milhares de famílias já confiam na Supernet Fibra. 
+              Milhares de famílias já confiam na SUPERNET FIBRA. 
               Seja você também parte dessa revolução digital.
             </p>
             <Button

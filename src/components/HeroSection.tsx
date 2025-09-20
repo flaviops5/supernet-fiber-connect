@@ -32,7 +32,7 @@ const HeroSection = () => {
     setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length);
   };
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Quero conhecer os planos de internet fibra da Supernet.', '_blank');
+    window.open('https://wa.me/5511999999999?text=Olá! Quero conhecer os planos de internet fibra da SUPERNET FIBRA.', '_blank');
   };
   return <section className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
       {/* Background decoration */}

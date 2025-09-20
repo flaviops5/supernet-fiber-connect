@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 const Footer = () => {
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Gostaria de mais informações sobre os serviços da Supernet Fibra.', '_blank');
+    window.open('https://wa.me/5511999999999?text=Olá! Gostaria de mais informações sobre os serviços da SUPERNET FIBRA.', '_blank');
   };
 
   const currentYear = new Date().getFullYear();
@@ -19,7 +19,7 @@ const Footer = () => {
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">S</span>
               </div>
-              <span className="font-bold text-xl text-orange">Supernet Fibra</span>
+              <span className="font-arlon font-bold text-xl text-orange">SUPERNET FIBRA</span>
             </div>
             
             <p className="text-white/80 leading-relaxed">
@@ -146,7 +146,7 @@ const Footer = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-white/60 text-sm">
-              © {currentYear} Supernet Fibra. Todos os direitos reservados.
+              © {currentYear} SUPERNET FIBRA. Todos os direitos reservados.
             </div>
             
             <nav className="flex space-x-6 text-sm">

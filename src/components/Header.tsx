@@ -37,14 +37,14 @@ const Header = () => {
     href: '/produtos/firestick'
   }];
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Gostaria de contratar os serviços da Supernet Fibra.', '_blank');
+    window.open('https://wa.me/5511999999999?text=Olá! Gostaria de contratar os serviços da SUPERNET FIBRA.', '_blank');
   };
   return <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <img src="/assets/logo-supernet.png" alt="Supernet Fibra" className="w-10 h-10 object-contain" />
+            <img src="/assets/logo-supernet.png" alt="SUPERNET FIBRA" className="w-10 h-10 object-contain" />
             <span className="font-arlon text-primary font-extrabold text-xl">SUPERNET FIBRA</span>
           </div>
 

@@ -1,27 +1,28 @@
-import { Check, Wifi } from 'lucide-react';
+import { Check, Zap, Star, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const ResidentialPlans = () => {
   const plans = [
     {
-      name: "Fibra Básico",
-      speed: "200 MB",
-      price: "79,90",
-      originalPrice: "99,90",
+      name: "Plano Plus",
+      speed: "400 MB",
+      price: "99,00",
+      originalPrice: "109,90",
       features: [
-        "200 MB simétrico",
+        "400 MB simétrico",
         "Wi-Fi 6 incluso",
         "Instalação gratuita",
         "Suporte 24/7",
         "Sem fidelidade"
       ],
-      popular: false
+      popular: false,
+      icon: Zap
     },
     {
-      name: "Fibra Premium",
+      name: "Plano Premium",
       speed: "500 MB",
-      price: "129,90",
-      originalPrice: "159,90",
+      price: "119,00",
+      originalPrice: "129,90",
       features: [
         "500 MB simétrico",
         "Wi-Fi 6 Pro incluso",
@@ -30,15 +31,16 @@ const ResidentialPlans = () => {
         "Netflix incluso 6 meses",
         "Desconto em automação"
       ],
-      popular: true
+      popular: true,
+      icon: Star
     },
     {
-      name: "Fibra Ultra",
-      speed: "1 GB",
-      price: "199,90",
-      originalPrice: "249,90",
+      name: "Plano Ultra",
+      speed: "600 MB",
+      price: "129,90",
+      originalPrice: "149,90",
       features: [
-        "1 GB simétrico",
+        "600 MB simétrico",
         "Wi-Fi 6E mesh incluso",
         "Instalação gratuita",
         "Suporte VIP 24/7",
@@ -46,12 +48,13 @@ const ResidentialPlans = () => {
         "Automação básica inclusa",
         "Câmeras IP gratuitas"
       ],
-      popular: false
+      popular: false,
+      icon: Rocket
     }
   ];
 
   const handleWhatsApp = (planName: string, price: string) => {
-    const message = `Olá! Tenho interesse no plano ${planName} por R$ ${price}/mês da Supernet Fibra. Gostaria de mais informações!`;
+    const message = `Olá! Tenho interesse no plano ${planName} por R$ ${price}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
     window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -61,8 +64,8 @@ const ResidentialPlans = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            Planos{' '}
-            <span className="gradient-text">Residenciais</span>
+            <span className="font-arlon">Planos</span>{' '}
+            <span className="gradient-text font-arlon">Residenciais</span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Escolha o plano ideal para sua família. Fibra óptica pura, 
@@ -76,7 +79,7 @@ const ResidentialPlans = () => {
             <div
               key={index}
               className={`relative bg-card border rounded-2xl p-8 shadow-sm hover:shadow-card transition-all duration-300 ${
-                plan.popular ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-border'
+                plan.popular ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-glow' : 'border-border'
               }`}
             >
               {/* Popular Badge */}
@@ -89,7 +92,7 @@ const ResidentialPlans = () => {
               {/* Plan Header */}
               <div className="text-center mb-8">
                 <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Wifi className="w-8 h-8 text-primary-foreground" />
+                  <plan.icon className="w-8 h-8 text-primary-foreground" />
                 </div>
                 
                 <h3 className="text-2xl font-bold text-foreground mb-2">{plan.name}</h3>

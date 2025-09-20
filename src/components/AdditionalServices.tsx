@@ -34,7 +34,7 @@ const AdditionalServices = () => {
   ];
 
   const handleWhatsApp = (serviceName: string) => {
-    const message = `Olá! Tenho interesse no serviço de ${serviceName} da Supernet. Gostaria de mais informações!`;
+    const message = `Olá! Tenho interesse no serviço de ${serviceName} da SUPERNET FIBRA. Gostaria de mais informações!`;
     window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
 
