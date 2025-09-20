@@ -1,8 +1,13 @@
 import { Check, Zap, Star, Rocket, Wifi, Camera, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay";
+import { useRef } from "react";
 
 const ResidentialPlans = () => {
+  const plugin = useRef(
+    Autoplay({ delay: 3000, stopOnInteraction: true })
+  );
   const plans = [
     {
       name: "Plano Plus",
@@ -124,7 +129,16 @@ const ResidentialPlans = () => {
 
         {/* Plans Carousel */}
         <div className="max-w-7xl mx-auto">
-          <Carousel className="w-full">
+          <Carousel
+            plugins={[plugin.current]}
+            className="w-full"
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+          >
             <CarouselContent className="-ml-2 md:-ml-4">
               {plans.map((plan, index) => (
                 <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
