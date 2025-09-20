@@ -4,49 +4,37 @@ import { Button } from '@/components/ui/button';
 import heroFamily from '@/assets/hero-family-internet.jpg';
 import heroWork from '@/assets/hero-work-from-home.jpg';
 import heroEntertainment from '@/assets/hero-entertainment.jpg';
-
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const slides = [
-    {
-      image: heroFamily,
-      title: "Internet para toda a família",
-      description: "Conexão estável para todos os dispositivos da sua casa"
-    },
-    {
-      image: heroWork,
-      title: "Trabalhe de casa sem limites",
-      description: "Velocidade e estabilidade para suas videoconferências"
-    },
-    {
-      image: heroEntertainment,
-      title: "Entretenimento em alta definição",
-      description: "Streaming 4K sem travamentos, jogos online sem lag"
-    }
-  ];
-
+  const slides = [{
+    image: heroFamily,
+    title: "Internet para toda a família",
+    description: "Conexão estável para todos os dispositivos da sua casa"
+  }, {
+    image: heroWork,
+    title: "Trabalhe de casa sem limites",
+    description: "Velocidade e estabilidade para suas videoconferências"
+  }, {
+    image: heroEntertainment,
+    title: "Entretenimento em alta definição",
+    description: "Streaming 4K sem travamentos, jogos online sem lag"
+  }];
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
+      setCurrentSlide(prev => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
   }, []);
-
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setCurrentSlide(prev => (prev + 1) % slides.length);
   };
-
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length);
   };
-
   const handleWhatsApp = () => {
     window.open('https://wa.me/5511999999999?text=Olá! Quero conhecer os planos de internet fibra da Supernet.', '_blank');
   };
-
-  return (
-    <section className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
+  return <section className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-orange/5" />
       <div className="absolute top-20 right-20 w-32 h-32 bg-orange/10 rounded-full blur-3xl" />
@@ -59,7 +47,7 @@ const HeroSection = () => {
             <div className="space-y-6">
               <div className="inline-flex items-center space-x-2 bg-orange/10 text-orange px-4 py-2 rounded-full text-sm font-medium">
                 <Zap className="w-4 h-4" />
-                <span>Fibra Óptica 100% pura</span>
+                <span>100% Fibra Óptica</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
@@ -68,11 +56,7 @@ const HeroSection = () => {
                 que transforma sua vida digital.
               </h1>
               
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Experimente a velocidade e estabilidade da fibra óptica da Supernet. 
-                Ideal para trabalho, estudos, entretenimento e toda a família conectada 
-                ao mesmo tempo.
-              </p>
+              <p className="text-xl text-muted-foreground leading-relaxed">Experimente a velocidade e estabilidade da fibra óptica da SUPERNET. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo.</p>
             </div>
 
             {/* Benefits */}
@@ -110,11 +94,7 @@ const HeroSection = () => {
 
             {/* CTAs */}
             <div className="flex justify-center sm:justify-start">
-              <Button
-                onClick={handleWhatsApp}
-                size="lg"
-                className="cta-gradient text-lg px-8 py-6"
-              >
+              <Button onClick={handleWhatsApp} size="lg" className="cta-gradient text-lg px-8 py-6">
                 Contratar Agora no WhatsApp
               </Button>
             </div>
@@ -124,59 +104,32 @@ const HeroSection = () => {
           <div className="relative">
             <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant float-animation">
               <div className="relative h-96 md:h-[500px]">
-                {slides.map((slide, index) => (
-                  <div
-                    key={index}
-                    className={`absolute inset-0 transition-opacity duration-500 ${
-                      index === currentSlide ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  >
-                    <img
-                      src={slide.image}
-                      alt={slide.title}
-                      className="w-full h-full object-cover"
-                    />
+                {slides.map((slide, index) => <div key={index} className={`absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
+                    <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
                     <div className="absolute bottom-6 left-6 right-6 text-white">
                       <h3 className="text-xl font-bold mb-2">{slide.title}</h3>
                       <p className="text-white/90">{slide.description}</p>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
 
                 {/* Navigation buttons */}
-                <button
-                  onClick={prevSlide}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
+                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={nextSlide}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                >
+                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
                   <ChevronRight className="w-5 h-5" />
                 </button>
 
                 {/* Dots indicator */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {slides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentSlide(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentSlide ? 'bg-white' : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
+                  {slides.map((_, index) => <button key={index} onClick={() => setCurrentSlide(index)} className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide ? 'bg-white' : 'bg-white/50'}`} />)}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
