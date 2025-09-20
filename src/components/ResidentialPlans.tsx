@@ -1,5 +1,6 @@
-import { Check, Zap, Star, Rocket } from 'lucide-react';
+import { Check, Zap, Star, Rocket, Wifi, Camera, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 const ResidentialPlans = () => {
   const plans = [
@@ -50,6 +51,54 @@ const ResidentialPlans = () => {
       ],
       popular: false,
       icon: Rocket
+    },
+    {
+      name: "Plano Focus",
+      speed: "600 MB",
+      price: "169,00",
+      originalPrice: "189,90",
+      features: [
+        "600 MB simétrico",
+        "Wi-Fi 6 incluso",
+        "1 câmera Wi-Fi inclusa",
+        "Instalação gratuita",
+        "Suporte 24/7",
+        "Monitoramento móvel"
+      ],
+      popular: false,
+      icon: Camera
+    },
+    {
+      name: "Plano Automação",
+      speed: "600 MB",
+      price: "169,00",
+      originalPrice: "189,90",
+      features: [
+        "600 MB simétrico",
+        "Wi-Fi 6 Pro incluso",
+        "Automação 1 cômodo",
+        "Instalação gratuita",
+        "Suporte especializado",
+        "Controle por app"
+      ],
+      popular: false,
+      icon: Home
+    },
+    {
+      name: "Plano Super Mesh",
+      speed: "600 MB",
+      price: "179,00",
+      originalPrice: "199,90",
+      features: [
+        "600 MB simétrico",
+        "2 roteadores Wi-Fi 6",
+        "Rede mesh inteligente",
+        "Cobertura total da casa",
+        "Instalação gratuita",
+        "Suporte prioritário"
+      ],
+      popular: false,
+      icon: Wifi
     }
   ];
 
@@ -59,10 +108,10 @@ const ResidentialPlans = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-subtle">
+    <section className="py-12 bg-gradient-subtle">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Planos{' '}
             <span className="gradient-text">Residenciais</span>
@@ -73,75 +122,76 @@ const ResidentialPlans = () => {
           </p>
         </div>
 
-        {/* Plans Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`relative bg-card border rounded-2xl p-8 shadow-sm hover:shadow-card transition-all duration-300 ${
-                plan.popular ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-glow' : 'border-border'
-              }`}
-            >
-              {/* Popular Badge */}
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold">
-                  Mais Popular
-                </div>
-              )}
+        {/* Plans Carousel */}
+        <div className="max-w-7xl mx-auto">
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {plans.map((plan, index) => (
+                <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div
+                    className={`relative bg-card border rounded-2xl p-6 shadow-sm hover:shadow-card transition-all duration-300 h-full ${
+                      plan.popular ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-glow' : 'border-border'
+                    }`}
+                  >
+                    {/* Popular Badge */}
+                    {plan.popular && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold">
+                        Mais Popular
+                      </div>
+                    )}
 
-              {/* Plan Header */}
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <plan.icon className="w-8 h-8 text-primary-foreground" />
-                </div>
-                
-                <h3 className="text-2xl font-bold text-foreground mb-2">{plan.name}</h3>
-                <div className="text-4xl font-bold gradient-text mb-1">{plan.speed}</div>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center justify-center space-x-2">
-                    <span className="text-3xl font-bold text-foreground">R$ {plan.price}</span>
-                    <span className="text-muted-foreground">/mês</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground line-through">
-                    De R$ {plan.originalPrice}
-                  </div>
-                </div>
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center space-x-3">
-                    <div className="w-5 h-5 bg-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Check className="w-3 h-3 text-orange" />
+                    {/* Plan Header */}
+                    <div className="text-center mb-6">
+                      <div className="w-14 h-14 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <plan.icon className="w-7 h-7 text-primary-foreground" />
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-foreground mb-2">{plan.name}</h3>
+                      <div className="text-3xl font-bold gradient-text mb-3">{plan.speed}</div>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center space-x-2">
+                          <span className="text-2xl font-bold text-foreground">R$ {plan.price}</span>
+                          <span className="text-muted-foreground text-sm">/mês</span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
 
-              {/* CTA */}
-              <Button
-                onClick={() => handleWhatsApp(plan.name, plan.price)}
-                className={`w-full text-lg py-6 ${
-                  plan.popular 
-                    ? 'cta-gradient' 
-                    : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
-                }`}
-                variant={plan.popular ? 'default' : 'outline'}
-              >
-                Contratar Agora
-              </Button>
-            </div>
-          ))}
+                    {/* Features */}
+                    <ul className="space-y-2 mb-6">
+                      {plan.features.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-center space-x-3">
+                          <div className="w-4 h-4 bg-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Check className="w-2.5 h-2.5 text-orange" />
+                          </div>
+                          <span className="text-foreground text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* CTA */}
+                    <Button
+                      onClick={() => handleWhatsApp(plan.name, plan.price)}
+                      className={`w-full text-base py-4 ${
+                        plan.popular 
+                          ? 'cta-gradient' 
+                          : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                      }`}
+                      variant={plan.popular ? 'default' : 'outline'}
+                    >
+                      Contratar Agora
+                    </Button>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex" />
+            <CarouselNext className="hidden md:flex" />
+          </Carousel>
         </div>
 
         {/* Bottom Note */}
-        <div className="text-center mt-12">
-          <p className="text-muted-foreground mb-4">
-            🎯 Instalação gratuita • 🔧 Suporte 24/7 • 📶 Velocidade garantida
-          </p>
+        <div className="text-center mt-8">
           <p className="text-sm text-muted-foreground">
             * Valores promocionais válidos para novos clientes. Consulte condições.
           </p>

@@ -50,11 +50,11 @@ const HeroSection = () => {
                 <span>100% Fibra Óptica</span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Internet{' '}
-                <span className="gradient-text">ultra-rápida</span>{' '}
-                que transforma sua vida digital.
-              </h1>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+                  Internet{' '}
+                  <span className="gradient-text">ultra-rápida</span>{' '}
+                  que transforma sua vida digital.
+                </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed">Experimente a velocidade e estabilidade da fibra óptica da SUPERNET FIBRA. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo.</p>
             </div>

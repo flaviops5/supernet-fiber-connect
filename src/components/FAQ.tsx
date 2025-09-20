@@ -65,17 +65,17 @@ const FAQ = () => {
   };
 
   return (
-    <section className="py-20 bg-background">
+    <section className="py-12 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Perguntas{' '}
             <span className="gradient-text">Frequentes</span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Tire suas dúvidas sobre nossos serviços. Se não encontrar sua resposta aqui, 
-            nossa equipe está pronta para ajudar via WhatsApp ou telefone.
+            Tire suas dúvidas sobre nossos serviços, planos e tecnologia. 
+            Se não encontrar a resposta que procura, entre em contato conosco!
           </p>
         </div>
 
@@ -85,14 +85,14 @@ const FAQ = () => {
           <div className="lg:sticky lg:top-8 lg:self-start">
             <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant">
               <img
-                src={faqSupport}
-                alt="Suporte especializado da SUPERNET FIBRA"
+                src={personPointing}
+                alt="Pessoa apontando para perguntas frequentes"
                 className="w-full h-96 lg:h-[500px] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">Suporte Especializado</h3>
-                <p className="text-white/90">Nossa equipe está sempre pronta para ajudar você 24 horas por dia, 7 dias por semana</p>
+                <h3 className="text-2xl font-bold mb-2">Tire suas dúvidas</h3>
+                <p className="text-white/90">Encontre respostas rápidas para as principais questões sobre nossos serviços</p>
               </div>
             </div>
           </div>

@@ -1,9 +1,10 @@
 import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Map from './Map';
 
 const Footer = () => {
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Gostaria de mais informações sobre os serviços da SUPERNET FIBRA.', '_blank');
+    window.open('https://wa.me/556199475886?text=Olá! Gostaria de mais informações sobre os serviços da SUPERNET FIBRA.', '_blank');
   };
 
   const currentYear = new Date().getFullYear();
@@ -15,11 +16,15 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
-              </div>
-              <span className="font-bold text-xl text-orange">SUPERNET FIBRA</span>
+            <div className="flex items-center space-x-3">
+              <img
+                src="/assets/logo-supernet.png"
+                alt="Supernet Fibra"
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-bold text-orange font-arlon">
+                SUPERNET FIBRA
+              </span>
             </div>
             
             <p className="text-white/80 leading-relaxed">
@@ -98,36 +103,46 @@ const Footer = () => {
             <h4 className="text-lg font-semibold text-orange">Contato</h4>
             
             <div className="space-y-4">
+              {/* Address */}
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-orange mt-1 flex-shrink-0" />
                 <div className="text-white/80 text-sm">
-                  <p>Rua das Telecomunicações, 123</p>
-                  <p>Vila Digital - São Paulo, SP</p>
-                  <p>CEP: 01234-567</p>
+                  <p>Setor de Industria Gráfica (SIG), 25</p>
+                  <p>Edificio Barão de Mauá salas 125/127</p>
+                  <p>Brasília, DF - CEP: 70.440-610</p>
                 </div>
               </div>
 
+              {/* Phone */}
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-orange flex-shrink-0" />
                 <div className="text-white/80">
-                  <p className="text-sm">(11) 4004-1234</p>
+                  <p className="text-sm">(61) 3547-5886</p>
+                  <p className="text-sm">(61) 99947-5996</p>
                 </div>
               </div>
 
+              {/* Email */}
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-orange flex-shrink-0" />
                 <div className="text-white/80">
-                  <p className="text-sm">contato@supernetfibra.com.br</p>
+                  <p className="text-sm">atendimento@supernetfibra.com.br</p>
                 </div>
               </div>
 
+              {/* Business Hours */}
               <div className="flex items-start space-x-3">
                 <Clock className="w-5 h-5 text-orange mt-1 flex-shrink-0" />
                 <div className="text-white/80 text-sm">
-                  <p>Atendimento: 24/7</p>
-                  <p>Suporte técnico: 24 horas</p>
+                  <p>Atendimento 24/7 pelo WhatsApp</p>
+                  <p>(61) 99947-5886</p>
                 </div>
               </div>
+            </div>
+
+            {/* Map */}
+            <div className="mt-6">
+              <Map />
             </div>
 
             <Button

@@ -45,7 +45,7 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <img src="/assets/logo-supernet.png" alt="SUPERNET FIBRA" className="w-10 h-10 object-contain" />
-            <span className="text-primary font-extrabold text-xl">SUPERNET FIBRA</span>
+            <span className="text-primary font-extrabold text-xl font-arlon">SUPERNET FIBRA</span>
           </div>
 
           {/* Desktop Navigation */}

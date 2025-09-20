@@ -62,7 +62,7 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-subtle">
+    <section className="py-12 bg-gradient-subtle">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
@@ -71,7 +71,7 @@ const Testimonials = () => {
             <span className="gradient-text">clientes dizem</span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Mais de 10.000 famílias já escolheram a SUPERNET FIBRA. 
+            Mais de 2.500 famílias já escolheram a SUPERNET FIBRA. 
             Veja os depoimentos de quem vive a experiência todos os dias.
           </p>
         </div>
@@ -168,10 +168,10 @@ const Testimonials = () => {
         </div>
 
         {/* Trust Indicators */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 text-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 text-center">
           <div>
             <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              10.000+
+              2.500+
             </div>
             <div className="text-sm text-muted-foreground">
               Clientes Satisfeitos
@@ -179,7 +179,7 @@ const Testimonials = () => {
           </div>
           <div>
             <div className="text-2xl md:text-3xl font-bold text-orange mb-2">
-              99.9%
+              99.4%
             </div>
             <div className="text-sm text-muted-foreground">
               Disponibilidade
@@ -191,14 +191,6 @@ const Testimonials = () => {
             </div>
             <div className="text-sm text-muted-foreground">
               Avaliação Média
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              24/7
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Suporte Disponível
             </div>
           </div>
         </div>

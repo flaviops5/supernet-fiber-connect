@@ -32,22 +32,18 @@ const ServiceCards = () => {
   };
 
   return (
-    <section className="py-20 bg-background">
+    <section className="py-12 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
             Por que escolher a{' '}
             <span className="gradient-text">SUPERNET FIBRA</span>?
           </h2>
-          <p className="text-xl text-muted-foreground">
-            Mais do que internet rápida, oferecemos uma experiência completa 
-            com tecnologia avançada e atendimento humanizado.
-          </p>
         </div>
 
         {/* Service Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {services.map((service, index) => (
             <div
               key={index}
@@ -58,28 +54,21 @@ const ServiceCards = () => {
                 <service.icon className="w-6 h-6 text-primary-foreground" />
               </div>
 
-              {/* Content */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                  {service.title}
-                </h3>
-
-                {/* Features List */}
-                <ul className="space-y-1">
-                  {service.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center space-x-2">
-                      <div className="w-1.5 h-1.5 bg-orange rounded-full" />
-                      <span className="text-xs text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Features List */}
+              <ul className="space-y-2">
+                {service.features.map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-orange rounded-full" />
+                    <span className="text-sm text-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
 
         {/* Bottom CTA with Image */}
-        <div className="text-center mt-16">
+        <div className="text-center">
           <div className="bg-gradient-subtle rounded-2xl p-8 md:p-12 relative overflow-hidden">
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               <div className="text-left">
@@ -95,7 +84,6 @@ const ServiceCards = () => {
                   size="lg"
                   className="cta-gradient text-lg px-10 py-6"
                 >
-                  <Headphones className="w-5 h-5 mr-2" />
                   Fale Conosco Agora
                 </Button>
               </div>
