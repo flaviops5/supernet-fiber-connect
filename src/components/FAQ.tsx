@@ -85,8 +85,8 @@ const FAQ = () => {
           <div className="lg:sticky lg:top-8 lg:self-start">
             <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant">
               <img
-                src={personPointing}
-                alt="Pessoa apontando para perguntas frequentes"
+                src={faqSupport}
+                alt="Equipe de suporte ajudando clientes com dúvidas"
                 className="w-full h-96 lg:h-[500px] object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />

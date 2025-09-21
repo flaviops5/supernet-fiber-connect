@@ -144,13 +144,13 @@ const ResidentialPlans = () => {
                 <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                   <div
                     className={`relative bg-card border rounded-2xl p-6 shadow-sm hover:shadow-card transition-all duration-300 h-full ${
-                      plan.popular ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-glow' : 'border-border'
+                      plan.popular ? 'border-primary ring-2 ring-primary/20 shadow-glow' : 'border-border'
                     }`}
                   >
                     {/* Popular Badge */}
                     {plan.popular && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold">
-                        Mais Popular
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-gradient-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold uppercase">
+                        Plano Mais Popular
                       </div>
                     )}
 
@@ -171,17 +171,6 @@ const ResidentialPlans = () => {
                       </div>
                     </div>
 
-                    {/* Features */}
-                    <ul className="space-y-2 mb-6">
-                      {plan.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-center space-x-3">
-                          <div className="w-4 h-4 bg-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Check className="w-2.5 h-2.5 text-orange" />
-                          </div>
-                          <span className="text-foreground text-sm">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
 
                     {/* CTA */}
                     <Button

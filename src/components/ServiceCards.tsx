@@ -1,6 +1,6 @@
 import { Zap, Clock, Wifi, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import confidentWoman from '@/assets/confident-woman-decision.jpg';
+import heroWork from '@/assets/hero-work-from-home.jpg';
 
 const ServiceCards = () => {
   const services = [
@@ -40,6 +40,10 @@ const ServiceCards = () => {
             Por que escolher a{' '}
             <span className="gradient-text">SUPERNET FIBRA</span>?
           </h2>
+          <p className="text-xl text-muted-foreground">
+            Internet 100% fibra, instalação rápida e suporte humano de verdade.
+            Conheça os diferenciais que fazem a SUPERNET FIBRA ser a sua melhor escolha.
+          </p>
         </div>
 
         {/* Service Cards Grid */}
@@ -89,8 +93,8 @@ const ServiceCards = () => {
               </div>
               <div className="relative">
                 <img
-                  src={confidentWoman}
-                  alt="Mulher confiante tomando decisão sobre internet fibra"
+                  src={heroWork}
+                  alt="Pessoa trabalhando em casa usando internet fibra"
                   className="w-full h-80 object-cover rounded-2xl shadow-elegant"
                 />
               </div>
