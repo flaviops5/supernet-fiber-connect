@@ -1,11 +1,11 @@
-import { Zap, Clock, Wifi, Headphones } from 'lucide-react';
+import { Gauge, Clock, Router, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import heroWork from '@/assets/hero-work-from-home.jpg';
+import confidentWoman from '@/assets/confident-woman-decision.jpg';
 
 const ServiceCards = () => {
   const services = [
     {
-      icon: Zap,
+      icon: Gauge,
       title: "Velocidade & Estabilidade",
       features: ["Velocidade até 1GB", "Latência ultra baixa", "Upload = Download"]
     },
@@ -15,7 +15,7 @@ const ServiceCards = () => {
       features: ["Agendamento flexível", "Técnicos certificados", "Instalação gratuita"]
     },
     {
-      icon: Wifi,
+      icon: Router,
       title: "Wi-Fi 6 Tecnologia",
       features: ["Wi-Fi 6 incluso", "Cobertura total", "Múltiplos dispositivos"]
     },
@@ -58,6 +58,9 @@ const ServiceCards = () => {
                 <service.icon className="w-6 h-6 text-primary-foreground" />
               </div>
 
+              {/* Title */}
+              <h3 className="text-lg font-bold text-foreground mb-4">{service.title}</h3>
+
               {/* Features List */}
               <ul className="space-y-2">
                 {service.features.map((feature, featureIndex) => (
@@ -93,8 +96,8 @@ const ServiceCards = () => {
               </div>
               <div className="relative">
                 <img
-                  src={heroWork}
-                  alt="Pessoa trabalhando em casa usando internet fibra"
+                  src={confidentWoman}
+                  alt="Mulher confiante tomando decisão sobre internet fibra"
                   className="w-full h-80 object-cover rounded-2xl shadow-elegant"
                 />
               </div>

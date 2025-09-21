@@ -1,4 +1,4 @@
-import { Check, Zap, Star, Rocket, Wifi, Camera, Home } from 'lucide-react';
+import { Check, Crown, Gauge, Router, Focus, Cog, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
@@ -22,7 +22,7 @@ const ResidentialPlans = () => {
         "Sem fidelidade"
       ],
       popular: false,
-      icon: Zap
+      icon: Gauge
     },
     {
       name: "Plano Premium",
@@ -38,7 +38,7 @@ const ResidentialPlans = () => {
         "Desconto em automação"
       ],
       popular: true,
-      icon: Star
+      icon: Crown
     },
     {
       name: "Plano Ultra",
@@ -55,7 +55,7 @@ const ResidentialPlans = () => {
         "Câmeras IP gratuitas"
       ],
       popular: false,
-      icon: Rocket
+      icon: Router
     },
     {
       name: "Plano Focus",
@@ -71,7 +71,7 @@ const ResidentialPlans = () => {
         "Monitoramento móvel"
       ],
       popular: false,
-      icon: Camera
+      icon: Focus
     },
     {
       name: "Plano Automação",
@@ -87,7 +87,7 @@ const ResidentialPlans = () => {
         "Controle por app"
       ],
       popular: false,
-      icon: Home
+      icon: Cog
     },
     {
       name: "Plano Super Mesh",
@@ -149,8 +149,8 @@ const ResidentialPlans = () => {
                   >
                     {/* Popular Badge */}
                     {plan.popular && (
-                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-gradient-primary text-primary-foreground px-6 py-2 rounded-full text-sm font-bold uppercase">
-                        Plano Mais Popular
+                      <div className="absolute -top-3 -left-3 z-10 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-bold uppercase shadow-lg">
+                        Mais Popular
                       </div>
                     )}
 
@@ -168,9 +168,25 @@ const ResidentialPlans = () => {
                           <span className="text-2xl font-bold text-foreground">R$ {plan.price}</span>
                           <span className="text-muted-foreground text-sm">/mês</span>
                         </div>
+                        <div className="text-sm text-muted-foreground line-through">
+                          De R$ {plan.originalPrice}
+                        </div>
                       </div>
                     </div>
 
+                    {/* Features List */}
+                    <div className="mb-8">
+                      <ul className="space-y-3">
+                        {plan.features.map((feature, featureIndex) => (
+                          <li key={featureIndex} className="flex items-center space-x-3">
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                            <span className="text-sm text-foreground">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     {/* CTA */}
                     <Button

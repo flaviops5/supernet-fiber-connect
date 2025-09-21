@@ -1,6 +1,6 @@
 import { MapPin, Phone, Mail, Clock, MessageCircle, Facebook, Instagram, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Map from './Map';
+import GoogleMap from './GoogleMap';
 
 const Footer = () => {
   const handleWhatsApp = () => {
@@ -142,7 +142,7 @@ const Footer = () => {
 
             {/* Map */}
             <div className="mt-6">
-              <Map />
+              <GoogleMap />
             </div>
 
             <Button
