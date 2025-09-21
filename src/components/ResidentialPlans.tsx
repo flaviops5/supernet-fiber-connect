@@ -11,15 +11,16 @@ const ResidentialPlans = () => {
   const plans = [
     {
       name: "Plano Plus",
-      speed: "400 MB",
+      speed: "400 mega",
       price: "99,00",
       originalPrice: "109,90",
       features: [
-        "400 MB simétrico",
-        "Wi-Fi 6 incluso",
+        "400 mega de download garantido",
+        "1 Roteador Wi-Fi AC 1200",
         "Instalação gratuita",
-        "Suporte 24/7",
-        "Sem fidelidade"
+        "Sem limite de uso",
+        "Clube de vantagens",
+        "Veja condição e locais da oferta"
       ],
       popular: false,
       icon: Gauge
@@ -30,12 +31,13 @@ const ResidentialPlans = () => {
       price: "119,00",
       originalPrice: "129,90",
       features: [
-        "500 MB simétrico",
-        "Wi-Fi 6 Pro incluso",
+        "500 mega de download garantido",
+        "1 roteador Wi-Fi 6 Pró",
         "Instalação gratuita",
-        "Suporte 24/7 prioritário",
-        "Netflix incluso 6 meses",
-        "Desconto em automação"
+        "Sem limite de uso",
+        "25 Canais Streaming",
+        "Clube de vantagens",
+        "Veja condição e locais da oferta"
       ],
       popular: true,
       icon: Crown
@@ -46,13 +48,13 @@ const ResidentialPlans = () => {
       price: "129,90",
       originalPrice: "149,90",
       features: [
-        "600 MB simétrico",
-        "Wi-Fi 6E mesh incluso",
+        "600 mega de download garantido",
+        "1 roteador Wi-Fi 6 Pró",
         "Instalação gratuita",
-        "Suporte VIP 24/7",
-        "Netflix + Prime incluso",
-        "Automação básica inclusa",
-        "Câmeras IP gratuitas"
+        "Sem limite de uso",
+        "25 Canais Streaming",
+        "Clube de vantagens",
+        "Veja condição e locais da oferta"
       ],
       popular: false,
       icon: Router
@@ -63,12 +65,11 @@ const ResidentialPlans = () => {
       price: "169,00",
       originalPrice: "189,90",
       features: [
-        "600 MB simétrico",
-        "Wi-Fi 6 incluso",
+        "600 mega de download garantido",
+        "1 roteador Wi-Fi 6 Pró",
         "1 câmera Wi-Fi inclusa",
-        "Instalação gratuita",
-        "Suporte 24/7",
-        "Monitoramento móvel"
+        "Instalação gratuita da câmera",
+        "Clique aqui e saiba mais sobre esse plano"
       ],
       popular: false,
       icon: Focus
@@ -79,12 +80,10 @@ const ResidentialPlans = () => {
       price: "169,00",
       originalPrice: "189,90",
       features: [
-        "600 MB simétrico",
-        "Wi-Fi 6 Pro incluso",
+        "600 mega de download garantido",
         "Automação 1 cômodo",
-        "Instalação gratuita",
-        "Suporte especializado",
-        "Controle por app"
+        "Instalação gratuita da automação",
+        "Clique aqui e saiba mais sobre esse plano"
       ],
       popular: false,
       icon: Cog
@@ -95,7 +94,7 @@ const ResidentialPlans = () => {
       price: "179,00",
       originalPrice: "199,90",
       features: [
-        "600 MB simétrico",
+        "600 mega de download garantido",
         "2 roteadores Wi-Fi 6",
         "Rede mesh inteligente",
         "Cobertura total da casa",
