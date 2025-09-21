@@ -5,24 +5,20 @@ import confidentWoman from '@/assets/confident-woman-decision.jpg';
 const ServiceCards = () => {
   const services = [
     {
-      icon: Gauge,
       title: "Velocidade & Estabilidade",
-      features: ["Velocidade até 1GB", "Latência ultra baixa", "Upload = Download"]
+      description: "Nossa rede 100% fibra óptica garante velocidades de até 1GB com latência ultra baixa. Oferecemos velocidade simétrica, ou seja, você tem a mesma velocidade para download e upload, ideal para trabalho remoto, streaming e games online."
     },
     {
-      icon: Clock,
       title: "Instalação em até 24h",
-      features: ["Agendamento flexível", "Técnicos certificados", "Instalação gratuita"]
+      description: "Nossos técnicos certificados realizam a instalação completa em até 24 horas após a confirmação do pedido. O agendamento é flexível para se adequar à sua disponibilidade, e toda instalação é gratuita, sem custos adicionais."
     },
     {
-      icon: Router,
       title: "Wi-Fi 6 Tecnologia",
-      features: ["Wi-Fi 6 incluso", "Cobertura total", "Múltiplos dispositivos"]
+      description: "Incluímos roteadores com tecnologia Wi-Fi 6 que oferecem cobertura total da sua casa e suportam múltiplos dispositivos simultaneamente sem perda de velocidade. Tecnologia de ponta para uma experiência sem limites."
     },
     {
-      icon: Headphones,
       title: "Suporte Ultra-rápido",
-      features: ["Resposta imediata", "Suporte via WhatsApp", "Atendimento 24/7"]
+      description: "Nosso atendimento é humanizado e disponível 24/7 via WhatsApp. Garantimos resposta imediata para suas dúvidas e problemas, com uma equipe técnica especializada sempre pronta para ajudar você."
     }
   ];
 
@@ -47,29 +43,17 @@ const ServiceCards = () => {
         </div>
 
         {/* Service Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
           {services.map((service, index) => (
             <div
               key={index}
-              className="service-card bg-card border border-border rounded-2xl p-6 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.3)] group transition-all duration-300"
+              className="service-card bg-card border border-border rounded-2xl p-8 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.3)] transition-all duration-300"
             >
-              {/* Icon */}
-              <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <service.icon className="w-6 h-6 text-primary-foreground" />
-              </div>
-
               {/* Title */}
-              <h3 className="text-lg font-bold text-foreground mb-4">{service.title}</h3>
+              <h3 className="text-xl font-bold text-foreground mb-4">{service.title}</h3>
 
-              {/* Features List */}
-              <ul className="space-y-2">
-                {service.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center space-x-2">
-                    <div className="w-1.5 h-1.5 bg-orange rounded-full" />
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* Description */}
+              <p className="text-muted-foreground leading-relaxed">{service.description}</p>
             </div>
           ))}
         </div>

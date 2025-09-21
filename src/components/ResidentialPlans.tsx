@@ -1,4 +1,4 @@
-import { Check, Crown, Gauge, Router, Focus, Cog, Wifi, Download, Globe, Users, Shield, Gift, MapPin, Camera, Settings, Zap } from 'lucide-react';
+import { Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
@@ -10,7 +10,6 @@ const ResidentialPlans = () => {
   );
   const plans = [
     {
-      name: "Plano Plus",
       speed: "400 Mega",
       price: "99,00",
       originalPrice: "109,90",
@@ -18,16 +17,15 @@ const ResidentialPlans = () => {
       features: [
         { text: "400 mega de download garantido", icon: Download },
         { text: "1 Roteador Wi-Fi AC 1200", icon: Wifi },
-        { text: "Instalação gratuita", icon: Settings },
+        { text: "Instalação gratuita", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
         { text: "Sem limite de uso", icon: Globe },
         { text: "Clube de vantagens", icon: Gift },
         { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
-      popular: false,
-      icon: Gauge
+      popular: false
     },
     {
-      name: "Plano Premium",
       speed: "500 Mega",
       price: "119,00",
       originalPrice: "129,90",
@@ -35,17 +33,16 @@ const ResidentialPlans = () => {
       features: [
         { text: "500 mega de download garantido", icon: Download },
         { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
-        { text: "Instalação gratuita", icon: Settings },
+        { text: "Instalação gratuita", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
         { text: "Sem limite de uso", icon: Globe },
-        { text: "25 Canais Streaming", icon: Zap },
+        { text: "Clique aqui para conhecer os canais", icon: Tv, isLink: true, href: "/canais-streaming" },
         { text: "Clube de vantagens", icon: Gift },
         { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
-      popular: true,
-      icon: Crown
+      popular: true
     },
     {
-      name: "Plano Ultra",
       speed: "600 Mega",
       price: "129,90",
       originalPrice: "149,90",
@@ -53,17 +50,16 @@ const ResidentialPlans = () => {
       features: [
         { text: "600 mega de download garantido", icon: Download },
         { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
-        { text: "Instalação gratuita", icon: Settings },
+        { text: "Instalação gratuita", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
         { text: "Sem limite de uso", icon: Globe },
-        { text: "25 Canais Streaming", icon: Zap },
+        { text: "Clique aqui para conhecer os canais", icon: Tv, isLink: true, href: "/canais-streaming" },
         { text: "Clube de vantagens", icon: Gift },
         { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
-      popular: false,
-      icon: Router
+      popular: false
     },
     {
-      name: "Plano Focus",
       speed: "600 Mega",
       price: "169,00",
       originalPrice: "189,90",
@@ -72,29 +68,27 @@ const ResidentialPlans = () => {
         { text: "600 mega de download garantido", icon: Download },
         { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
         { text: "1 câmera Wi-Fi inclusa", icon: Camera },
-        { text: "Instalação gratuita da câmera", icon: Settings },
-        { text: "Clique aqui e saiba mais sobre esse plano", icon: Focus, isLink: true, href: "/plano-focus" }
+        { text: "Instalação gratuita da câmera", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
+        { text: "Clique aqui e saiba mais sobre esse plano", icon: Shield, isLink: true, href: "/plano-focus" }
       ],
-      popular: false,
-      icon: Focus
+      popular: false
     },
     {
-      name: "Plano Automação",
       speed: "600 Mega",
       price: "169,00",
       originalPrice: "189,90",
       description: "O futuro chegou à sua casa!",
       features: [
         { text: "600 mega de download garantido", icon: Download },
-        { text: "Automação 1 cômodo", icon: Cog },
-        { text: "Instalação gratuita da automação", icon: Settings },
-        { text: "Clique aqui e saiba mais sobre esse plano", icon: Cog, isLink: true, href: "/plano-automacao" }
+        { text: "Automação 1 cômodo", icon: Settings },
+        { text: "Instalação gratuita da automação", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
+        { text: "Clique aqui e saiba mais sobre esse plano", icon: Settings, isLink: true, href: "/plano-automacao" }
       ],
-      popular: false,
-      icon: Cog
+      popular: false
     },
     {
-      name: "Plano Super Mesh",
       speed: "600 Mega",
       price: "179,00",
       originalPrice: "199,90",
@@ -104,16 +98,16 @@ const ResidentialPlans = () => {
         { text: "2 roteadores Wi-Fi 6", icon: Router },
         { text: "Rede mesh inteligente", icon: Wifi },
         { text: "Cobertura total da casa", icon: Globe },
-        { text: "Instalação gratuita", icon: Settings },
+        { text: "Instalação gratuita", icon: DollarSign },
+        { text: "Instalação em até 24 horas", icon: Clock },
         { text: "Suporte prioritário", icon: Shield }
       ],
-      popular: false,
-      icon: Wifi
+      popular: false
     }
   ];
 
-  const handleWhatsApp = (planName: string, price: string) => {
-    const message = `Olá! Tenho interesse no plano ${planName} por R$ ${price}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
+  const handleWhatsApp = (speed: string, price: string) => {
+    const message = `Olá! Tenho interesse no plano ${speed} por R$ ${price}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
     window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -148,7 +142,7 @@ const ResidentialPlans = () => {
               {plans.map((plan, index) => (
                 <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                   <div
-                    className={`relative bg-card border rounded-2xl p-6 shadow-sm hover:shadow-card transition-all duration-300 h-full ${
+                    className={`relative bg-card border rounded-2xl p-6 shadow-sm hover:shadow-card transition-all duration-300 h-full flex flex-col ${
                       plan.popular ? 'border-primary ring-2 ring-primary/20 shadow-glow' : 'border-border'
                     }`}
                   >
@@ -161,38 +155,29 @@ const ResidentialPlans = () => {
 
                     {/* Plan Header */}
                     <div className="text-center mb-6">
-                      <div className="flex items-center justify-center space-x-3 mb-4">
-                        <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
-                          <plan.icon className="w-6 h-6 text-primary-foreground" />
-                        </div>
-                        <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
-                      </div>
+                      <div className="text-5xl md:text-6xl font-black gradient-text mb-3">{plan.speed}</div>
+                      <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
                       
-                      <div className="text-4xl md:text-5xl font-black gradient-text mb-2">{plan.speed}</div>
-                      <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                      
-                      <div className="space-y-1">
+                      <div className="flex items-center justify-center space-x-4">
                         <div className="flex items-center justify-center space-x-2">
-                          <span className="text-sm text-muted-foreground line-through">
-                            De R$ {plan.originalPrice}
-                          </span>
-                          <span className="text-xs text-muted-foreground">por</span>
-                        </div>
-                        <div className="flex items-center justify-center space-x-2">
-                          <span className="text-3xl font-black text-primary">R$ {plan.price}</span>
+                          <span className="text-3xl md:text-4xl font-black text-primary">R$ {plan.price}</span>
                           <span className="text-muted-foreground text-sm">/mês</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs text-muted-foreground">De</span>
+                          <span className="text-sm text-muted-foreground line-through">
+                            R$ {plan.originalPrice}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Features List */}
-                    <div className="mb-8">
+                    <div className="mb-8 flex-1">
                       <ul className="space-y-3">
                         {plan.features.map((feature, featureIndex) => (
                           <li key={featureIndex} className="flex items-center space-x-3">
-                            <div className="w-6 h-6 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <feature.icon className="w-4 h-4 text-primary" />
-                            </div>
+                            <feature.icon className="w-4 h-4 text-primary flex-shrink-0" />
                             {feature.isLink ? (
                               <a 
                                 href={feature.href} 
@@ -210,8 +195,8 @@ const ResidentialPlans = () => {
 
                     {/* CTA */}
                     <Button
-                      onClick={() => handleWhatsApp(plan.name, plan.price)}
-                      className={`w-full text-base py-4 ${
+                      onClick={() => handleWhatsApp(plan.speed, plan.price)}
+                      className={`w-full text-base py-4 mt-auto ${
                         plan.popular 
                           ? 'cta-gradient' 
                           : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
