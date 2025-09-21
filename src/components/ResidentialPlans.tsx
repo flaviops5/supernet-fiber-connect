@@ -149,7 +149,7 @@ const ResidentialPlans = () => {
                   >
                     {/* Popular Badge */}
                     {plan.popular && (
-                      <div className="absolute -top-3 -left-3 z-10 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-bold uppercase shadow-lg">
+                      <div className="absolute -top-2 -left-3 z-10 bg-gradient-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-bold uppercase shadow-lg">
                         Mais Popular
                       </div>
                     )}
