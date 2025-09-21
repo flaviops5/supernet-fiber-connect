@@ -14,6 +14,7 @@ const ResidentialPlans = () => {
       speed: "400 mega",
       price: "99,00",
       originalPrice: "109,90",
+      Conexão que acompanha seu ritmo sem pesar no bolso!
       features: [
         "400 mega de download garantido",
         "1 Roteador Wi-Fi AC 1200",
@@ -27,7 +28,7 @@ const ResidentialPlans = () => {
     },
     {
       name: "Plano Premium",
-      speed: "500 MB",
+      speed: "500 mega",
       price: "119,00",
       originalPrice: "129,90",
       features: [
@@ -44,7 +45,7 @@ const ResidentialPlans = () => {
     },
     {
       name: "Plano Ultra",
-      speed: "600 MB",
+      speed: "600 mega",
       price: "129,90",
       originalPrice: "149,90",
       features: [
@@ -61,7 +62,7 @@ const ResidentialPlans = () => {
     },
     {
       name: "Plano Focus",
-      speed: "600 MB",
+      speed: "600 mega",
       price: "169,00",
       originalPrice: "189,90",
       features: [
@@ -76,7 +77,7 @@ const ResidentialPlans = () => {
     },
     {
       name: "Plano Automação",
-      speed: "600 MB",
+      speed: "600 mega",
       price: "169,00",
       originalPrice: "189,90",
       features: [
@@ -90,7 +91,7 @@ const ResidentialPlans = () => {
     },
     {
       name: "Plano Super Mesh",
-      speed: "600 MB",
+      speed: "600 mega",
       price: "179,00",
       originalPrice: "199,90",
       features: [
