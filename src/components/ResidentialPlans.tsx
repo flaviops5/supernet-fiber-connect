@@ -1,4 +1,4 @@
-import { Check, Crown, Gauge, Router, Focus, Cog, Wifi } from 'lucide-react';
+import { Check, Crown, Gauge, Router, Focus, Cog, Wifi, Download, Globe, Users, Shield, Gift, MapPin, Camera, Settings, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
@@ -11,96 +11,101 @@ const ResidentialPlans = () => {
   const plans = [
     {
       name: "Plano Plus",
-      speed: "400 mega",
+      speed: "400 Mega",
       price: "99,00",
       originalPrice: "109,90",
-      Conexão que acompanha seu ritmo sem pesar no bolso!
+      description: "Conexão que acompanha seu ritmo sem pesar no bolso!",
       features: [
-        "400 mega de download garantido",
-        "1 Roteador Wi-Fi AC 1200",
-        "Instalação gratuita",
-        "Sem limite de uso",
-        "Clube de vantagens",
-        "Veja condição e locais da oferta"
+        { text: "400 mega de download garantido", icon: Download },
+        { text: "1 Roteador Wi-Fi AC 1200", icon: Wifi },
+        { text: "Instalação gratuita", icon: Settings },
+        { text: "Sem limite de uso", icon: Globe },
+        { text: "Clube de vantagens", icon: Gift },
+        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
       popular: false,
       icon: Gauge
     },
     {
       name: "Plano Premium",
-      speed: "500 mega",
+      speed: "500 Mega",
       price: "119,00",
       originalPrice: "129,90",
+      description: "A escolha perfeita para famílias conectadas!",
       features: [
-        "500 mega de download garantido",
-        "1 roteador Wi-Fi 6 Pró",
-        "Instalação gratuita",
-        "Sem limite de uso",
-        "25 Canais Streaming",
-        "Clube de vantagens",
-        "Veja condição e locais da oferta"
+        { text: "500 mega de download garantido", icon: Download },
+        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
+        { text: "Instalação gratuita", icon: Settings },
+        { text: "Sem limite de uso", icon: Globe },
+        { text: "25 Canais Streaming", icon: Zap },
+        { text: "Clube de vantagens", icon: Gift },
+        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
       popular: true,
       icon: Crown
     },
     {
       name: "Plano Ultra",
-      speed: "600 mega",
+      speed: "600 Mega",
       price: "129,90",
       originalPrice: "149,90",
+      description: "Potência máxima para quem não abre mão da velocidade!",
       features: [
-        "600 mega de download garantido",
-        "1 roteador Wi-Fi 6 Pró",
-        "Instalação gratuita",
-        "Sem limite de uso",
-        "25 Canais Streaming",
-        "Clube de vantagens",
-        "Veja condição e locais da oferta"
+        { text: "600 mega de download garantido", icon: Download },
+        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
+        { text: "Instalação gratuita", icon: Settings },
+        { text: "Sem limite de uso", icon: Globe },
+        { text: "25 Canais Streaming", icon: Zap },
+        { text: "Clube de vantagens", icon: Gift },
+        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
       ],
       popular: false,
       icon: Router
     },
     {
       name: "Plano Focus",
-      speed: "600 mega",
+      speed: "600 Mega",
       price: "169,00",
       originalPrice: "189,90",
+      description: "Segurança e conectividade em um só plano!",
       features: [
-        "600 mega de download garantido",
-        "1 roteador Wi-Fi 6 Pró",
-        "1 câmera Wi-Fi inclusa",
-        "Instalação gratuita da câmera",
-        "Clique aqui e saiba mais sobre esse plano"
+        { text: "600 mega de download garantido", icon: Download },
+        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
+        { text: "1 câmera Wi-Fi inclusa", icon: Camera },
+        { text: "Instalação gratuita da câmera", icon: Settings },
+        { text: "Clique aqui e saiba mais sobre esse plano", icon: Focus, isLink: true, href: "/plano-focus" }
       ],
       popular: false,
       icon: Focus
     },
     {
       name: "Plano Automação",
-      speed: "600 mega",
+      speed: "600 Mega",
       price: "169,00",
       originalPrice: "189,90",
+      description: "O futuro chegou à sua casa!",
       features: [
-        "600 mega de download garantido",
-        "Automação 1 cômodo",
-        "Instalação gratuita da automação",
-        "Clique aqui e saiba mais sobre esse plano"
+        { text: "600 mega de download garantido", icon: Download },
+        { text: "Automação 1 cômodo", icon: Cog },
+        { text: "Instalação gratuita da automação", icon: Settings },
+        { text: "Clique aqui e saiba mais sobre esse plano", icon: Cog, isLink: true, href: "/plano-automacao" }
       ],
       popular: false,
       icon: Cog
     },
     {
       name: "Plano Super Mesh",
-      speed: "600 mega",
+      speed: "600 Mega",
       price: "179,00",
       originalPrice: "199,90",
+      description: "Cobertura total sem pontos cegos!",
       features: [
-        "600 mega de download garantido",
-        "2 roteadores Wi-Fi 6",
-        "Rede mesh inteligente",
-        "Cobertura total da casa",
-        "Instalação gratuita",
-        "Suporte prioritário"
+        { text: "600 mega de download garantido", icon: Download },
+        { text: "2 roteadores Wi-Fi 6", icon: Router },
+        { text: "Rede mesh inteligente", icon: Wifi },
+        { text: "Cobertura total da casa", icon: Globe },
+        { text: "Instalação gratuita", icon: Settings },
+        { text: "Suporte prioritário", icon: Shield }
       ],
       popular: false,
       icon: Wifi
@@ -156,20 +161,26 @@ const ResidentialPlans = () => {
 
                     {/* Plan Header */}
                     <div className="text-center mb-6">
-                      <div className="w-14 h-14 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                        <plan.icon className="w-7 h-7 text-primary-foreground" />
+                      <div className="flex items-center justify-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
+                          <plan.icon className="w-6 h-6 text-primary-foreground" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
                       </div>
                       
-                      <h3 className="text-xl font-bold text-foreground mb-2">{plan.name}</h3>
-                      <div className="text-3xl font-bold gradient-text mb-3">{plan.speed}</div>
+                      <div className="text-4xl md:text-5xl font-black gradient-text mb-2">{plan.speed}</div>
+                      <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                       
                       <div className="space-y-1">
                         <div className="flex items-center justify-center space-x-2">
-                          <span className="text-2xl font-bold text-foreground">R$ {plan.price}</span>
-                          <span className="text-muted-foreground text-sm">/mês</span>
+                          <span className="text-sm text-muted-foreground line-through">
+                            De R$ {plan.originalPrice}
+                          </span>
+                          <span className="text-xs text-muted-foreground">por</span>
                         </div>
-                        <div className="text-sm text-muted-foreground line-through">
-                          De R$ {plan.originalPrice}
+                        <div className="flex items-center justify-center space-x-2">
+                          <span className="text-3xl font-black text-primary">R$ {plan.price}</span>
+                          <span className="text-muted-foreground text-sm">/mês</span>
                         </div>
                       </div>
                     </div>
@@ -179,10 +190,19 @@ const ResidentialPlans = () => {
                       <ul className="space-y-3">
                         {plan.features.map((feature, featureIndex) => (
                           <li key={featureIndex} className="flex items-center space-x-3">
-                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white" />
+                            <div className="w-6 h-6 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <feature.icon className="w-4 h-4 text-primary" />
                             </div>
-                            <span className="text-sm text-foreground">{feature}</span>
+                            {feature.isLink ? (
+                              <a 
+                                href={feature.href} 
+                                className="text-sm text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                              >
+                                {feature.text}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-foreground">{feature.text}</span>
+                            )}
                           </li>
                         ))}
                       </ul>

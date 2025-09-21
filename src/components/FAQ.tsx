@@ -161,13 +161,13 @@ const FAQ = () => {
                 Falar no WhatsApp
               </Button>
               <Button
-                onClick={handlePhone}
+                onClick={() => window.open('tel:+556135475886', '_self')}
                 variant="outline"
                 size="lg"
-                className="border-white text-white hover:bg-white hover:text-primary text-lg px-8 py-6"
+                className="border-white text-blue-400 hover:bg-white hover:text-blue-600 text-lg px-8 py-6"
               >
                 <Phone className="w-5 h-5 mr-2" />
-                (11) 4004-1234
+                61 3547-5886 / 99947-5886
               </Button>
             </div>
           </div>
