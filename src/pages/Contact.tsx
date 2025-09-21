@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, MessageCircle, Upload, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GoogleMap from '@/components/GoogleMap';
+import contactHero from '@/assets/contact-hero.jpg';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -18,11 +19,36 @@ const Contact = () => {
     message: ''
   });
 
+  const [jobFormData, setJobFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    position: '',
+    message: '',
+    resume: null as File | null
+  });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleJobInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setJobFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setJobFormData(prev => ({
+      ...prev,
+      resume: file
     }));
   };
 
@@ -42,6 +68,36 @@ const Contact = () => {
     });
   };
 
+  const handleJobSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jobFormData.resume) {
+      toast({
+        title: "Erro",
+        description: "Por favor, anexe seu currículo.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Aqui você integraria com um serviço para enviar o email com anexo
+    // Para demonstração, vamos simular o envio
+    toast({
+      title: "Currículo enviado!",
+      description: "Recebemos sua candidatura e entraremos em contato em breve.",
+    });
+    setJobFormData({
+      name: '',
+      email: '',
+      phone: '',
+      position: '',
+      message: '',
+      resume: null
+    });
+    // Reset file input
+    const fileInput = document.getElementById('resume') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
   const handleWhatsApp = () => {
     const message = `Olá! Gostaria de mais informações sobre os planos da Supernet Fibra.`;
     const phoneNumber = '5561999475886';
@@ -51,21 +107,146 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary/10 to-primary/5 py-16">
-        <div className="container mx-auto px-4">
+      <section 
+        className="relative py-24 bg-gradient-to-r from-primary/20 to-primary/10 overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url(${contactHero})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Entre em Contato
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+              Fale Conosco
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-white/90 mb-8">
               Estamos aqui para ajudar você a encontrar o melhor plano de internet fibra óptica
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                <Phone className="h-5 w-5 mr-2" />
+                (61) 3547-5886
+              </Button>
+              <Button 
+                size="lg" 
+                onClick={handleWhatsApp}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
+              >
+                <MessageCircle className="h-5 w-5 mr-2" />
+                WhatsApp
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
       <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Trabalhe Conosco */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Briefcase className="h-6 w-6 text-primary" />
+                Trabalhe Conosco
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleJobSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="job-name">Nome Completo</Label>
+                  <Input
+                    id="job-name"
+                    name="name"
+                    value={jobFormData.name}
+                    onChange={handleJobInputChange}
+                    required
+                    className="mt-2"
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="job-email">E-mail</Label>
+                  <Input
+                    id="job-email"
+                    name="email"
+                    type="email"
+                    value={jobFormData.email}
+                    onChange={handleJobInputChange}
+                    required
+                    className="mt-2"
+                    placeholder="seu@email.com"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="job-phone">Telefone</Label>
+                  <Input
+                    id="job-phone"
+                    name="phone"
+                    value={jobFormData.phone}
+                    onChange={handleJobInputChange}
+                    className="mt-2"
+                    placeholder="(61) 99999-9999"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="position">Cargo de Interesse</Label>
+                  <Input
+                    id="position"
+                    name="position"
+                    value={jobFormData.position}
+                    onChange={handleJobInputChange}
+                    required
+                    className="mt-2"
+                    placeholder="Ex: Técnico em Telecomunicações"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="resume">Currículo (PDF, DOC, DOCX)</Label>
+                  <Input
+                    id="resume"
+                    name="resume"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    required
+                    className="mt-2"
+                  />
+                  {jobFormData.resume && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Arquivo selecionado: {jobFormData.resume.name}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="job-message">Mensagem (opcional)</Label>
+                  <Textarea
+                    id="job-message"
+                    name="message"
+                    value={jobFormData.message}
+                    onChange={handleJobInputChange}
+                    className="mt-2 min-h-[80px]"
+                    placeholder="Conte um pouco sobre você..."
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" size="lg">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Candidatura
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Currículos serão enviados para: atendimento@supernetfibra.com.br
+              </p>
+            </CardContent>
+          </Card>
+
+          <div className="lg:col-span-2 grid md:grid-cols-2 gap-8">
           {/* Formulário de Contato */}
           <Card>
             <CardHeader>
@@ -195,7 +376,11 @@ const Contact = () => {
                   </div>
                 </div>
 
-                <Button onClick={handleWhatsApp} className="w-full" variant="outline" size="lg">
+                <Button 
+                  onClick={handleWhatsApp} 
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg border-0" 
+                  size="lg"
+                >
                   <MessageCircle className="h-5 w-5 mr-2" />
                   Falar no WhatsApp
                 </Button>
@@ -213,6 +398,7 @@ const Contact = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
           </div>
         </div>
       </div>
