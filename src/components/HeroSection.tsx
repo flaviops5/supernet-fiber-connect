@@ -34,7 +34,7 @@ const HeroSection = () => {
   const handleWhatsApp = () => {
     window.open('https://wa.me/5511999999999?text=Olá! Quero conhecer os planos de internet fibra da SUPERNET FIBRA.', '_blank');
   };
-  return <section className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
+  return <section id="inicio" className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-orange/5" />
       <div className="absolute top-20 right-20 w-32 h-32 bg-orange/10 rounded-full blur-3xl" />

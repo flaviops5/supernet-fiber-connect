@@ -113,7 +113,7 @@ const ResidentialPlans = () => {
   };
 
   return (
-    <section className="py-12 bg-gradient-subtle">
+    <section id="planos-residenciais" className="py-12 bg-gradient-subtle">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">

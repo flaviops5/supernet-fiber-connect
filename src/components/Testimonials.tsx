@@ -62,7 +62,7 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="py-12 bg-gradient-subtle">
+    <section id="depoimentos" className="py-12 bg-gradient-subtle">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
