@@ -94,12 +94,12 @@ const FAQ = () => {
         {/* FAQ Two Column Layout */}
         <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
           {/* Left Column - Image */}
-          <div className="lg:sticky lg:top-8 lg:self-start">
-            <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant">
+          <div className="lg:self-stretch">
+            <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant h-full">
               <img
                 src={faqSupport}
                 alt="Equipe de suporte ajudando clientes com dúvidas"
-                className="w-full h-96 lg:h-[500px] object-cover"
+                className="w-full h-full min-h-96 object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
