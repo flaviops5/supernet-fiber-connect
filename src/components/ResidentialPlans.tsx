@@ -112,9 +112,8 @@ const ResidentialPlans = () => {
   };
 
   return (
-    <section id="planos-residenciais" className="py-12 bg-gradient-to-br from-primary/5 via-orange/5 to-red-accent/5 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-orange/10 opacity-50"></div>
-      <div className="container mx-auto px-4 relative z-10">
+    <section id="planos-residenciais" className="py-12 bg-gradient-subtle">
+      <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
@@ -143,8 +142,8 @@ const ResidentialPlans = () => {
               {plans.map((plan, index) => (
                 <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                   <div
-                    className={`relative glassmorphism rounded-2xl p-6 transition-all duration-500 h-full flex flex-col group ${
-                      plan.popular ? 'neon-border-popular' : 'neon-border'
+                    className={`relative bg-card border rounded-2xl p-6 shadow-sm hover:shadow-card transition-all duration-300 h-full flex flex-col ${
+                      plan.popular ? 'border-primary ring-2 ring-primary/20 shadow-glow' : 'border-border'
                     }`}
                   >
                     {/* Popular Badge */}
