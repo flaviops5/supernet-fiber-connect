@@ -72,6 +72,7 @@ export default {
       fontFamily: {
         'poppins': ['Poppins', 'sans-serif'],
         'arlon': ['Arlon-Regular', 'sans-serif'],
+        'varela': ['Varela Round', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
