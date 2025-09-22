@@ -107,10 +107,11 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-br from-primary via-primary/90 to-orange/80 shadow-2xl border-t-4 border-white/30 z-40 animate-fade-in backdrop-blur-md">
-      {/* Multi-layer glow effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/15 to-pink-500/10 blur-2xl"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-white/5 via-transparent to-white/10"></div>
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-br from-primary via-orange/90 to-blue-500/70 shadow-2xl border-t-4 border-gradient-to-r from-orange/50 to-primary/60 z-40 animate-fade-in backdrop-blur-md">
+      {/* Multi-layer glow effects with vibrant colors */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/15 via-purple-500/20 to-pink-500/15 blur-2xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-orange/10 via-primary/15 to-cyan-500/10 blur-xl"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-yellow-400/5 via-transparent to-white/10"></div>
       
       {/* Animated background pattern */}
       <div className="absolute inset-0 opacity-10">
@@ -125,39 +126,46 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
           <div className="flex items-center gap-4 animate-scale-in">
             <div className="relative group">
               {/* Robot container with enhanced design */}
-              <div className="w-16 h-16 bg-gradient-to-br from-white/25 to-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/40 shadow-2xl hover-scale relative overflow-hidden">
-                {/* Robot face with more realistic features */}
+              <div className="w-16 h-16 bg-gradient-to-br from-white/25 via-orange/15 to-primary/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-gradient-to-r from-orange/60 to-primary/60 shadow-2xl hover-scale relative overflow-hidden">
+                {/* Robot face with more realistic features and vibrant colors */}
                 <div className="relative w-10 h-10">
                   {/* Head */}
-                  <div className="w-10 h-8 bg-gradient-to-b from-white/90 to-white/70 rounded-lg relative shadow-inner">
+                  <div className="w-10 h-8 bg-gradient-to-b from-orange/90 via-orange/80 to-primary/70 rounded-lg relative shadow-inner border border-white/30">
                     {/* Eyes */}
-                    <div className="absolute top-2 left-2 w-2 h-2 bg-primary rounded-full shadow-md">
-                      <div className="w-1 h-1 bg-white rounded-full absolute top-0.5 left-0.5 animate-pulse"></div>
+                    <div className="absolute top-2 left-2 w-2 h-2 bg-gradient-to-br from-blue-400 to-primary rounded-full shadow-md border border-white/40">
+                      <div className="w-1 h-1 bg-white rounded-full absolute top-0.5 left-0.5 animate-pulse shadow-inner"></div>
                     </div>
-                    <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full shadow-md">
-                      <div className="w-1 h-1 bg-white rounded-full absolute top-0.5 left-0.5 animate-pulse"></div>
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-gradient-to-br from-blue-400 to-primary rounded-full shadow-md border border-white/40">
+                      <div className="w-1 h-1 bg-white rounded-full absolute top-0.5 left-0.5 animate-pulse shadow-inner"></div>
                     </div>
                     {/* Mouth */}
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-primary/60 rounded-full"></div>
+                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-4 h-1 bg-gradient-to-r from-primary to-orange rounded-full border border-white/20"></div>
                     {/* Antenna */}
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0.5 h-2 bg-white/80"></div>
-                    <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange rounded-full animate-pulse"></div>
+                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0.5 h-2 bg-gradient-to-t from-orange to-yellow-400"></div>
+                    <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-gradient-to-br from-yellow-400 to-orange rounded-full animate-pulse shadow-glow border border-white/50"></div>
                   </div>
                   {/* Body */}
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-3 bg-gradient-to-b from-white/80 to-white/60 rounded-md shadow-inner">
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-3 bg-gradient-to-b from-primary/90 via-orange/70 to-primary/60 rounded-md shadow-inner border border-white/20">
                     {/* Control panel */}
                     <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-                      <div className="w-0.5 h-0.5 bg-green-400 rounded-full animate-ping animation-delay-100"></div>
-                      <div className="w-0.5 h-0.5 bg-orange rounded-full animate-pulse animation-delay-200"></div>
-                      <div className="w-0.5 h-0.5 bg-blue-400 rounded-full animate-ping animation-delay-300"></div>
+                      <div className="w-0.5 h-0.5 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full animate-ping animation-delay-100 shadow-glow"></div>
+                      <div className="w-0.5 h-0.5 bg-gradient-to-br from-orange to-red-400 rounded-full animate-pulse animation-delay-200 shadow-glow"></div>
+                      <div className="w-0.5 h-0.5 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full animate-ping animation-delay-300 shadow-glow"></div>
                     </div>
+                    {/* Extra details */}
+                    <div className="absolute bottom-0 left-1 w-1 h-0.5 bg-gradient-to-r from-orange/60 to-primary/60 rounded-full"></div>
+                    <div className="absolute bottom-0 right-1 w-1 h-0.5 bg-gradient-to-r from-primary/60 to-orange/60 rounded-full"></div>
                   </div>
                 </div>
+                
+                {/* Robot glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-orange/20 via-primary/20 to-blue-400/20 rounded-2xl blur-sm opacity-60"></div>
               </div>
               
               {/* Enhanced pulse rings */}
-              <div className="absolute inset-0 w-16 h-16 bg-white/10 rounded-2xl animate-ping animation-delay-100"></div>
-              <div className="absolute inset-1 w-14 h-14 bg-gradient-to-r from-primary/20 to-orange/20 rounded-xl animate-pulse animation-delay-300"></div>
+              <div className="absolute inset-0 w-16 h-16 bg-gradient-to-r from-orange/20 to-primary/20 rounded-2xl animate-ping animation-delay-100"></div>
+              <div className="absolute inset-1 w-14 h-14 bg-gradient-to-br from-primary/30 via-orange/25 to-blue-400/20 rounded-xl animate-pulse animation-delay-300"></div>
+              <div className="absolute inset-2 w-12 h-12 bg-gradient-to-tl from-yellow-400/10 to-orange/15 rounded-lg animate-ping animation-delay-500"></div>
             </div>
             
             <div>
@@ -207,10 +215,12 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
           </div>
         </div>
         
-        {/* Enhanced decorative elements */}
-        <div className="absolute top-0 left-1/4 w-40 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-        <div className="absolute top-0 right-1/4 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange/50 to-primary/50"></div>
+        {/* Enhanced decorative elements with vibrant colors */}
+        <div className="absolute top-0 left-1/4 w-40 h-1 bg-gradient-to-r from-transparent via-orange/70 to-transparent"></div>
+        <div className="absolute top-0 right-1/4 w-32 h-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-yellow-400/60 via-orange/70 to-primary/60"></div>
+        <div className="absolute top-0 left-1/6 w-16 h-1 bg-gradient-to-r from-primary/40 to-cyan-400/40"></div>
+        <div className="absolute top-0 right-1/6 w-24 h-1 bg-gradient-to-r from-pink-400/30 to-purple-400/40"></div>
       </div>
       
       {/* Enhanced bottom accent */}
