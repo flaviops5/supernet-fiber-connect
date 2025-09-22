@@ -1,6 +1,6 @@
 import { Gauge, Clock, Router, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import confidentWoman from '@/assets/confident-woman-decision.jpg';
+import confidentWoman from '@/assets/family-internet-devices.jpg';
 
 const ServiceCards = () => {
   const services = [
@@ -81,7 +81,7 @@ const ServiceCards = () => {
               <div className="relative">
                 <img
                   src={confidentWoman}
-                  alt="Mulher confiante tomando decisão sobre internet fibra"
+                  alt="Família aproveitando internet de alta velocidade em diversos dispositivos"
                   className="w-full h-80 object-cover rounded-2xl shadow-elegant"
                 />
               </div>
