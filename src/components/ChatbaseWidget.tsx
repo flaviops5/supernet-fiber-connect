@@ -125,7 +125,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
             <div>
               <h3 className="font-bold text-lg text-white drop-shadow-md">Supernet Fibra</h3>
               <p className="text-white/90 font-semibold text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">
-                ⚡ Contrate agora sua internet!
+                ⚡ Tire suas dúvidas!
               </p>
             </div>
           </div>
@@ -138,7 +138,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="💬 Digite sua dúvida ou inicie o contrato..."
+                placeholder="CONTRATE AGORA SUA INTERNET"
                 className="w-full px-6 py-4 border-2 border-white/30 rounded-2xl bg-white/95 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-white/50 focus:border-white shadow-xl text-lg font-medium transition-all duration-300 hover:shadow-2xl hover:bg-white"
               />
               {/* Input glow effect */}
