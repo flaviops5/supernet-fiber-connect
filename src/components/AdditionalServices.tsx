@@ -3,8 +3,6 @@ import { Tv, Camera, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import alexaLogo from '@/assets/alexa-logo.png';
 import googleAssistantLogo from '@/assets/google-assistant-logo.png';
-import watchBrasilLogo from '@/assets/watch-brasil-logo.png';
-import smartHomeBackground from '@/assets/smart-home-background.png';
 
 const AdditionalServices = () => {
   const services = [
@@ -68,17 +66,8 @@ const AdditionalServices = () => {
             <div
               key={index}
               className={`bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full relative overflow-hidden ${
-                service.title === 'Automação Residencial' ? 'bg-cover bg-center bg-no-repeat' : ''
+                service.title === 'Automação Residencial' ? 'smart-home-pattern' : ''
               }`}
-              style={
-                service.title === 'Automação Residencial'
-                  ? {
-                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${smartHomeBackground})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }
-                  : undefined
-              }
             >
               {/* Header */}
               <div className="flex items-start space-x-4 mb-6">
