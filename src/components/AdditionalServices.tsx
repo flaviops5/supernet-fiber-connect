@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tv, Camera, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import SmartHomeIcon from '@/components/icons/SmartHomeIcon';
 import alexaLogo from '@/assets/alexa-logo.png';
 import googleAssistantLogo from '@/assets/google-assistant-logo.png';
 import watchBrasilLogo from '@/assets/watch-brasil-logo.png';
@@ -9,12 +10,7 @@ import smartHomeBackground from '@/assets/smart-home-background.png';
 const AdditionalServices = () => {
   const services = [
     {
-      icon: () => (
-        <div className="flex items-center justify-center space-x-1">
-          <img src={alexaLogo} alt="Alexa" className="w-4 h-4 object-contain" />
-          <img src={googleAssistantLogo} alt="Google Assistant" className="w-4 h-4 object-contain" />
-        </div>
-      ),
+      icon: SmartHomeIcon,
       title: "Automação Residencial",
       description: "Transforme sua casa em um lar inteligente com controle total pelo celular e comandos de voz!",
       features: ["Controle de iluminação", "Fechaduras inteligentes", "Climatização automática", "Cortinas e persianas", "Integração com Alexa/Google"],
@@ -83,14 +79,7 @@ const AdditionalServices = () => {
               {/* Header */}
               <div className="flex items-start space-x-4 mb-6">
                 <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  {service.title === 'Automação Residencial' ? (
-                    <div className="flex items-center justify-center space-x-1">
-                      <img src={alexaLogo} alt="Alexa" className="w-4 h-4 object-contain" />
-                      <img src={googleAssistantLogo} alt="Google Assistant" className="w-4 h-4 object-contain" />
-                    </div>
-                  ) : (
-                    React.createElement(service.icon as React.ElementType, { className: "w-8 h-8 text-primary-foreground" })
-                  )}
+                  {React.createElement(service.icon as React.ElementType, { className: "w-8 h-8 text-primary-foreground" })}
                 </div>
                 <div className="flex-1">
                   <h3 className={`text-2xl font-bold font-varela uppercase group-hover:text-primary transition-colors mb-2 ${
