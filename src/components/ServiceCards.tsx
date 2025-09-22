@@ -1,6 +1,6 @@
 import { Gauge, Clock, Router, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import confidentWoman from '@/assets/family-internet-hq.jpg';
+import confidentWoman from '@/assets/family-internet-v3.jpg';
 
 const ServiceCards = () => {
   const services = [
