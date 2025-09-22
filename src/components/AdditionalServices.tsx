@@ -3,6 +3,7 @@ import { Tv, Camera, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import alexaLogo from '@/assets/alexa-logo.png';
 import googleAssistantLogo from '@/assets/google-assistant-logo.png';
+import watchBrasilLogo from '@/assets/watch-brasil-logo.png';
 
 const AdditionalServices = () => {
   const services = [
@@ -14,15 +15,17 @@ const AdditionalServices = () => {
         </div>
       ),
       title: "Automação Residencial",
-      description: "Transforme sua casa em um lar inteligente com controle total pelo celular",
-      features: ["Controle de iluminação", "Fechaduras inteligentes", "Climatização automática", "Integração com Alexa/Google"],
+      description: "Transforme sua casa em um lar inteligente com controle total pelo celular e comandos de voz!",
+      features: ["Controle de iluminação", "Fechaduras inteligentes", "Climatização automática", "Cortinas e persianas", "Integração com Alexa/Google"],
       highlight: "A partir de R$ 299"
     },
     {
-      icon: Tv,
+      icon: () => (
+        <img src={watchBrasilLogo} alt="Watch Brasil" className="w-8 h-8 object-contain" />
+      ),
       title: "Canais de Streaming",
       description: "Acesso completo aos melhores conteúdos de entretenimento",
-      features: ["Netflix Premium", "Amazon Prime Video", "Disney+ & Star+", "Globoplay & SporTV"],
+      features: ["HBO MAX", "Telecine", "Premiere", "ESPN", "Paramount+"],
       highlight: "Combo por R$ 49,90/mês"
     },
     {
@@ -52,8 +55,7 @@ const AdditionalServices = () => {
         {/* Section Header */}
         <div className="text-center max-w-4xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
-            Serviços{' '}
-            <span className="gradient-text">Complementares</span>
+            <span className="gradient-text">Veja o que mais podemos fazer por você!</span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Além da melhor internet fibra, oferecemos soluções completas para 
@@ -76,6 +78,8 @@ const AdditionalServices = () => {
                       <img src={alexaLogo} alt="Alexa" className="w-4 h-4 object-contain" />
                       <img src={googleAssistantLogo} alt="Google Assistant" className="w-4 h-4 object-contain" />
                     </div>
+                  ) : service.title === 'Canais de Streaming' ? (
+                    <img src={watchBrasilLogo} alt="Watch Brasil" className="w-8 h-8 object-contain" />
                   ) : (
                     React.createElement(service.icon as React.ElementType, { className: "w-8 h-8 text-primary-foreground" })
                   )}
