@@ -368,7 +368,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold font-varela uppercase mb-6">
             Blog{' '}
-            <span className="text-orange">SUPERNET</span>
+            <span className="text-primary">SUPERNET</span>
           </h1>
           <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
             Conteúdo exclusivo sobre tecnologia, internet e inovação. 
