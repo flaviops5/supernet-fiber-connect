@@ -33,7 +33,7 @@ const App = () => (
             </Routes>
           </main>
           <Footer />
-          <ChatbaseWidget />
+          <ChatbaseWidget chatbotId="mMFk_B5d94OhD7fQBxvNU" />
         </div>
       </BrowserRouter>
     </TooltipProvider>
