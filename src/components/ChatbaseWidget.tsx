@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, X, MessageCircle } from 'lucide-react';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -7,6 +7,7 @@ interface ChatbaseWidgetProps {
 
 const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   const [isReady, setIsReady] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!chatbotId) return;
@@ -137,22 +138,76 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   }
 
   return (
-    <button
-      onClick={openChat}
-      className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center group"
-      aria-label="Abrir chat AI"
-      title="Converse com nossa IA"
-    >
-      <Bot className="w-6 h-6" />
-      
-      {/* Pulse animation */}
-      <div className="absolute inset-0 w-14 h-14 bg-blue-600 rounded-full animate-ping opacity-20"></div>
-      
-      {/* Tooltip */}
-      <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-        Chat com IA - Supernet
-      </div>
-    </button>
+    <>
+      {/* Chat Toggle Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center group"
+        aria-label="Abrir chat AI"
+        title="Converse com nossa IA"
+      >
+        {isOpen ? (
+          <X className="w-7 h-7" />
+        ) : (
+          <MessageCircle className="w-7 h-7" />
+        )}
+        
+        {/* Pulse animation when closed */}
+        {!isOpen && (
+          <div className="absolute inset-0 w-16 h-16 bg-primary rounded-full animate-ping opacity-20"></div>
+        )}
+      </button>
+
+      {/* Large Chat Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          ></div>
+          
+          {/* Chat Container */}
+          <div className="relative w-full max-w-4xl h-[80vh] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            
+            {/* Header */}
+            <div className="bg-primary text-white p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold">Supernet Fibra</h3>
+                  <p className="text-white/80">Contrate agora sua internet!</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex-1 relative">
+              <iframe
+                src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
+                className="w-full h-full border-0"
+                title="Chatbase AI Assistant"
+              />
+            </div>
+
+            {/* CTA Footer */}
+            <div className="bg-gradient-to-r from-primary to-orange p-4 text-white text-center">
+              <p className="text-sm font-medium">
+                Precisa de ajuda? Nossa IA está aqui para você! 🚀
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
