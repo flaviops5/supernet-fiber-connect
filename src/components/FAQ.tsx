@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Phone, MessageCircle, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import faqSupport from '@/assets/faq-support-v2.jpg';
+import faqSupport from '@/assets/faq-support-hq.jpg';
 import personPointing from '@/assets/person-pointing-faq.jpg';
 
 const FAQ = () => {
@@ -99,6 +99,8 @@ const FAQ = () => {
               <img
                 src={faqSupport}
                 alt="Equipe de suporte ajudando clientes com dúvidas"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full min-h-96 object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
