@@ -28,8 +28,9 @@ const ServiceCards = () => {
   };
 
   return (
-    <section id="por-que-escolher" className="py-12 bg-background">
-      <div className="container mx-auto px-4">
+    <section id="por-que-escolher" className="py-12 bg-gradient-to-br from-primary/5 via-orange/5 to-red-accent/5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-orange/10 opacity-50"></div>
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
@@ -47,7 +48,7 @@ const ServiceCards = () => {
           {services.map((service, index) => (
             <div
               key={index}
-              className="service-card bg-card border border-orange rounded-2xl p-8 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.4)] shadow-[0_0_15px_hsl(var(--orange)/0.2)] transition-all duration-300"
+              className="glassmorphism neon-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-500 group"
             >
               {/* Title */}
               <h3 className="text-xl font-bold text-orange mb-4">{service.title}</h3>
@@ -60,8 +61,9 @@ const ServiceCards = () => {
 
         {/* Bottom CTA with Image */}
         <div className="text-center">
-          <div className="bg-gradient-subtle rounded-2xl p-8 md:p-12 relative overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="glassmorphism neon-border rounded-2xl p-8 md:p-12 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-orange/10 to-red-accent/10 opacity-30"></div>
+            <div className="grid lg:grid-cols-2 gap-8 items-center relative z-10">
               <div className="text-left">
                 <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
                   Pronto para ter a melhor internet da sua vida?

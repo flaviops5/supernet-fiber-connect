@@ -77,8 +77,9 @@ const FAQ = () => {
   };
 
   return (
-    <section id="perguntas-frequentes" className="py-12 bg-background">
-      <div className="container mx-auto px-4">
+    <section id="perguntas-frequentes" className="py-12 bg-gradient-to-br from-primary/5 via-orange/5 to-red-accent/5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-orange/10 opacity-50"></div>
+      <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
@@ -95,7 +96,8 @@ const FAQ = () => {
         <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
           {/* Left Column - Image */}
           <div className="lg:sticky lg:top-8 lg:self-start">
-            <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant">
+            <div className="relative glassmorphism neon-border rounded-2xl overflow-hidden shadow-elegant">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-orange/10 opacity-20"></div>
               <img
                 src={faqSupport}
                 alt="Equipe de suporte ajudando clientes com dúvidas"
@@ -116,7 +118,7 @@ const FAQ = () => {
                 <AccordionItem
                   key={index}
                   value={`item-${index}`}
-                  className="bg-card border border-border rounded-xl px-6 py-2 shadow-sm hover:shadow-card transition-shadow"
+                  className="glassmorphism neon-border rounded-xl px-6 py-2 transition-all duration-500 hover:shadow-elegant"
                 >
                   <AccordionTrigger className="text-left text-lg font-semibold text-foreground hover:text-primary py-6">
                     <span>{faq.question}</span>
@@ -147,16 +149,17 @@ const FAQ = () => {
 
         {/* Contact CTA */}
         <div className="text-center mt-16">
-          <div className="bg-gradient-hero rounded-2xl p-8 md:p-12 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
+          <div className="glassmorphism neon-border-popular rounded-2xl p-8 md:p-12 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-hero opacity-80"></div>
+            <h3 className="text-2xl md:text-3xl font-bold mb-4 relative z-10">
               Ainda tem dúvidas?
             </h3>
-            <p className="text-white/90 mb-8 max-w-2xl mx-auto">
+            <p className="text-white/90 mb-8 max-w-2xl mx-auto relative z-10">
               Nossa equipe está disponível 24/7 para esclarecer qualquer questão 
               e ajudar você a escolher o melhor plano para suas necessidades.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
               <Button
                 onClick={handleWhatsApp}
                 size="lg"

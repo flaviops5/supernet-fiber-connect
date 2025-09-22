@@ -61,8 +61,8 @@ const HeroSection = () => {
 
             {/* Benefits */}
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+              <div className="glassmorphism neon-border rounded-lg p-4 flex items-center space-x-3 hover:shadow-elegant transition-all duration-500">
+                <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                   <Wifi className="w-6 h-6 text-primary" />
                 </div>
                 <div>
@@ -71,8 +71,8 @@ const HeroSection = () => {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-orange/10 rounded-lg flex items-center justify-center">
+              <div className="glassmorphism neon-border rounded-lg p-4 flex items-center space-x-3 hover:shadow-elegant transition-all duration-500">
+                <div className="w-12 h-12 bg-orange/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                   <Zap className="w-6 h-6 text-orange" />
                 </div>
                 <div>
@@ -81,8 +81,8 @@ const HeroSection = () => {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-red-accent/10 rounded-lg flex items-center justify-center">
+              <div className="glassmorphism neon-border rounded-lg p-4 flex items-center space-x-3 hover:shadow-elegant transition-all duration-500">
+                <div className="w-12 h-12 bg-red-accent/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                   <Wifi className="w-6 h-6 text-red-accent" />
                 </div>
                 <div>
@@ -102,8 +102,9 @@ const HeroSection = () => {
 
           {/* Right Column - Image Carousel */}
           <div className="relative">
-            <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant float-animation">
-              <div className="relative h-96 md:h-[500px]">
+            <div className="relative glassmorphism neon-border-popular rounded-2xl overflow-hidden shadow-elegant float-animation">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-orange/10 opacity-20"></div>
+              <div className="relative h-96 md:h-[500px] z-10">
                 {slides.map((slide, index) => <div key={index} className={`absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
                     <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
