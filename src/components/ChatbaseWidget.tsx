@@ -5,89 +5,120 @@ interface ChatbaseWidgetProps {
   chatbotId?: string;
 }
 
-// Extend Window interface to include chatbase
-declare global {
-  interface Window {
-    chatbase?: {
-      toggle: () => void;
-    };
-  }
-}
-
 const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!chatbotId) return;
 
-    // Create script element for Chatbase
+    // Create and configure Chatbase script
     const script = document.createElement('script');
     script.src = 'https://www.chatbase.co/embed.min.js';
     script.defer = true;
     script.setAttribute('chatbotId', chatbotId);
     
-    // Add script to document
+    // Add custom configuration
+    script.onload = () => {
+      console.log('Chatbase loaded successfully');
+      setIsReady(true);
+    };
+    
     document.head.appendChild(script);
 
-    // Add custom CSS to hide default bubble and position chat window
+    // Add custom CSS to control Chatbase appearance
     const style = document.createElement('style');
     style.textContent = `
-      /* Hide the default Chatbase bubble */
-      .chatbase-bubble {
+      /* Hide default Chatbase bubble */
+      iframe[src*="chatbase.co"] {
         display: none !important;
       }
       
-      /* Position the chat window properly */
-      .chatbase-chat-window {
+      /* Style the chat window when open */
+      .chatbase-chat-window,
+      iframe[title="chatbase chat bubble"] {
         position: fixed !important;
         bottom: 90px !important;
-        right: 24px !important;
+        right: 20px !important;
         z-index: 9998 !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
         border-radius: 12px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
+        border: none !important;
+        width: 400px !important;
+        height: 600px !important;
       }
       
       @media (max-width: 640px) {
-        .chatbase-chat-window {
-          right: 16px !important;
-          left: 16px !important;
-          bottom: 90px !important;
-          width: calc(100vw - 32px) !important;
+        .chatbase-chat-window,
+        iframe[title="chatbase chat bubble"] {
+          right: 10px !important;
+          left: 10px !important;
+          width: calc(100vw - 20px) !important;
+          height: 500px !important;
         }
       }
     `;
     document.head.appendChild(style);
 
-    // Wait for Chatbase to load
-    const checkChatbase = setInterval(() => {
-      if (window.chatbase) {
-        setIsReady(true);
-        clearInterval(checkChatbase);
-      }
-    }, 100);
-
-    // Cleanup function
+    // Cleanup
     return () => {
-      clearInterval(checkChatbase);
-      
       const existingScript = document.querySelector(`script[src="https://www.chatbase.co/embed.min.js"]`);
       if (existingScript) {
         document.head.removeChild(existingScript);
       }
       
-      const customStyle = document.querySelector('style[data-chatbase="custom"]');
-      if (customStyle) {
-        document.head.removeChild(customStyle);
-      }
-      
-      const chatbaseElements = document.querySelectorAll('[id^="chatbase"]');
+      const chatbaseElements = document.querySelectorAll('iframe[src*="chatbase.co"], [id*="chatbase"]');
       chatbaseElements.forEach(element => element.remove());
     };
   }, [chatbotId]);
 
-  const toggleChat = () => {
-    if (isReady && window.chatbase?.toggle) {
-      window.chatbase.toggle();
+  const openChat = () => {
+    // Method 1: Try to find and click the hidden Chatbase button
+    const chatbaseButton = document.querySelector('iframe[src*="chatbase.co"]') as HTMLElement;
+    
+    if (chatbaseButton) {
+      chatbaseButton.style.display = 'block';
+      chatbaseButton.click();
+    } else {
+      // Method 2: Create a temporary iframe to open the chat
+      const chatIframe = document.createElement('iframe');
+      chatIframe.src = `https://www.chatbase.co/chatbot-iframe/${chatbotId}`;
+      chatIframe.style.cssText = `
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 400px;
+        height: 600px;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        z-index: 9998;
+        background: white;
+      `;
+      
+      // Add close button
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '✕';
+      closeBtn.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #f3f4f6;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        z-index: 9999;
+        font-size: 14px;
+      `;
+      
+      closeBtn.onclick = () => {
+        document.body.removeChild(chatIframe);
+        document.body.removeChild(closeBtn);
+      };
+      
+      document.body.appendChild(chatIframe);
+      document.body.appendChild(closeBtn);
     }
   };
 
@@ -106,25 +137,22 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   }
 
   return (
-    <>
-      {/* Custom Chat Icon Button */}
-      <button
-        onClick={toggleChat}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center group"
-        aria-label="Abrir chat AI"
-        title="Converse com nossa IA"
-      >
-        <MessageCircle className="w-6 h-6" />
-        
-        {/* Pulse animation */}
-        <div className="absolute inset-0 w-14 h-14 bg-blue-600 rounded-full animate-ping opacity-20"></div>
-        
-        {/* Tooltip */}
-        <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-          Chat com IA
-        </div>
-      </button>
-    </>
+    <button
+      onClick={openChat}
+      className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center group"
+      aria-label="Abrir chat AI"
+      title="Converse com nossa IA"
+    >
+      <MessageCircle className="w-6 h-6" />
+      
+      {/* Pulse animation */}
+      <div className="absolute inset-0 w-14 h-14 bg-blue-600 rounded-full animate-ping opacity-20"></div>
+      
+      {/* Tooltip */}
+      <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+        Chat com IA - Supernet
+      </div>
+    </button>
   );
 };
 
