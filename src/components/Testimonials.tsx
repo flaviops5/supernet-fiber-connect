@@ -84,7 +84,7 @@ const Testimonials = () => {
               <Quote className="w-6 h-6 text-primary" />
             </div>
 
-            <div className="relative h-64 md:h-48 mx-16">
+            <div className="relative h-80 md:h-64 mx-16">
               {testimonials.map((testimonial, index) => (
                 <div
                   key={index}
