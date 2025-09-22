@@ -27,7 +27,7 @@ const AdditionalServices = () => {
     {
       icon: Wrench,
       title: "Serviços Domésticos",
-      description: "Pequenos reparos e instalações residenciais",
+      description: "Pequenos reparos e instalações residenciais com técnicos especializados",
       features: ["Instalação de TVs", "Montagem de móveis", "Pequenos reparos elétricos", "Configuração de rede"],
       highlight: "Desconto para clientes"
     }
