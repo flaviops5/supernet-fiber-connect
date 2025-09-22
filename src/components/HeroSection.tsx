@@ -50,7 +50,7 @@ const HeroSection = () => {
                 <span>100% Fibra Óptica</span>
               </div>
               
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-varela text-foreground leading-tight uppercase">
+                <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold font-varela text-foreground leading-tight uppercase">
                   Internet{' '}
                   <span className="gradient-text">ultra-rápida</span>{' '}
                   que transforma sua vida digital.
