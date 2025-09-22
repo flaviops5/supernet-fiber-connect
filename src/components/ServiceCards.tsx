@@ -47,10 +47,10 @@ const ServiceCards = () => {
           {services.map((service, index) => (
             <div
               key={index}
-              className="service-card bg-card border border-border rounded-2xl p-8 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.3)] transition-all duration-300"
+              className="service-card bg-card border border-orange rounded-2xl p-8 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.4)] shadow-[0_0_15px_hsl(var(--orange)/0.2)] transition-all duration-300"
             >
               {/* Title */}
-              <h3 className="text-xl font-bold text-foreground mb-4">{service.title}</h3>
+              <h3 className="text-xl font-bold text-orange mb-4">{service.title}</h3>
 
               {/* Description */}
               <p className="text-muted-foreground leading-relaxed">{service.description}</p>
