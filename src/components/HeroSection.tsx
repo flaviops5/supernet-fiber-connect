@@ -50,7 +50,7 @@ const HeroSection = () => {
                 <span>100% Fibra Óptica</span>
               </div>
               
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-varela text-foreground leading-tight">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-varela text-foreground leading-tight uppercase">
                   Internet{' '}
                   <span className="gradient-text">ultra-rápida</span>{' '}
                   que transforma sua vida digital.
@@ -108,7 +108,7 @@ const HeroSection = () => {
                     <img src={slide.image} alt={slide.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
                     <div className="absolute bottom-6 left-6 right-6 text-white">
-                      <h3 className="text-xl font-bold mb-2">{slide.title}</h3>
+                      <h3 className="text-xl font-bold font-varela uppercase mb-2">{slide.title}</h3>
                       <p className="text-white/90">{slide.description}</p>
                     </div>
                   </div>)}

@@ -47,7 +47,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-orange">Serviços</h4>
+            <h4 className="text-lg font-semibold font-varela uppercase text-orange">Serviços</h4>
             <nav className="space-y-3">
               <a href="/fibra" className="block text-white/80 hover:text-orange transition-colors">
                 Internet Fibra
@@ -75,7 +75,7 @@ const Footer = () => {
 
           {/* Products */}
           <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-orange">Produtos</h4>
+            <h4 className="text-lg font-semibold font-varela uppercase text-orange">Produtos</h4>
             <nav className="space-y-3">
               <a href="/produtos/cameras" className="block text-white/80 hover:text-orange transition-colors">
                 Câmeras de Segurança
@@ -100,7 +100,7 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div className="space-y-6">
-            <h4 className="text-lg font-semibold text-orange">Contato</h4>
+            <h4 className="text-lg font-semibold font-varela uppercase text-orange">Contato</h4>
             
             <div className="space-y-4">
               {/* Address */}

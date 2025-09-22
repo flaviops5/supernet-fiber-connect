@@ -81,7 +81,7 @@ const FAQ = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
             Perguntas{' '}
             <span className="gradient-text">Frequentes</span>
           </h2>
@@ -103,7 +103,7 @@ const FAQ = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">Tire suas dúvidas</h3>
+                <h3 className="text-2xl font-bold font-varela uppercase mb-2">Tire suas dúvidas</h3>
                 <p className="text-white/90">Encontre respostas rápidas para as principais questões sobre nossos serviços</p>
               </div>
             </div>
@@ -148,7 +148,7 @@ const FAQ = () => {
         {/* Contact CTA */}
         <div className="text-center mt-16">
           <div className="bg-gradient-hero rounded-2xl p-8 md:p-12 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
+            <h3 className="text-2xl md:text-3xl font-bold font-varela uppercase mb-4">
               Ainda tem dúvidas?
             </h3>
             <p className="text-white/90 mb-8 max-w-2xl mx-auto">

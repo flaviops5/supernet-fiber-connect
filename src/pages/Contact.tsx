@@ -117,7 +117,7 @@ const Contact = () => {
       >
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold font-varela uppercase text-white mb-6">
               Fale Conosco
             </h1>
             <p className="text-xl text-white/90 mb-8">
@@ -338,7 +338,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <Phone className="h-6 w-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold text-foreground">Telefones</h3>
+                    <h3 className="font-semibold font-varela uppercase text-foreground">Telefones</h3>
                     <p className="text-muted-foreground">(61) 3547-5886</p>
                     <p className="text-muted-foreground">(61) 99947-5886</p>
                   </div>
@@ -347,7 +347,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <Mail className="h-6 w-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold text-foreground">E-mail</h3>
+                    <h3 className="font-semibold font-varela uppercase text-foreground">E-mail</h3>
                     <p className="text-muted-foreground">contato@supernetfibra.com.br</p>
                   </div>
                 </div>
@@ -355,7 +355,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <MapPin className="h-6 w-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold text-foreground">Endereço</h3>
+                    <h3 className="font-semibold font-varela uppercase text-foreground">Endereço</h3>
                     <p className="text-muted-foreground">
                       Rua das Fibras Ópticas, 123<br />
                       Setor Central - Brasília/DF<br />
@@ -367,7 +367,7 @@ const Contact = () => {
                 <div className="flex items-start gap-4">
                   <Clock className="h-6 w-6 text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold text-foreground">Horário de Atendimento</h3>
+                    <h3 className="font-semibold font-varela uppercase text-foreground">Horário de Atendimento</h3>
                     <p className="text-muted-foreground">
                       Segunda a Sexta: 8h às 18h<br />
                       Sábado: 8h às 12h<br />

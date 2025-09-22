@@ -147,7 +147,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
             </div>
             
             <div>
-              <h3 className="font-bold text-xl text-white drop-shadow-lg">Supernet Fibra</h3>
+              <h3 className="font-bold font-varela uppercase text-xl text-white drop-shadow-lg">Supernet Fibra</h3>
               <p className="text-white/95 font-semibold text-sm bg-gradient-to-r from-white/20 to-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/30 shadow-lg">
                 ⚡ Tire suas dúvidas!
               </p>

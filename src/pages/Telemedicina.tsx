@@ -48,10 +48,10 @@ const Telemedicina = () => {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary to-primary/80 text-primary-foreground py-20 px-4">
         <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold font-varela uppercase mb-6">
             Atendimento Médico
           </h1>
-          <h2 className="text-2xl md:text-3xl font-semibold mb-6">
+          <h2 className="text-2xl md:text-3xl font-semibold font-varela uppercase mb-6">
             Emergencial 24 horas
           </h2>
           <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto">
@@ -79,7 +79,7 @@ const Telemedicina = () => {
                   <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
                     <feature.icon className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle className="text-xl font-bold text-primary">
+                  <CardTitle className="text-xl font-bold font-varela uppercase text-primary">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
@@ -97,7 +97,7 @@ const Telemedicina = () => {
       {/* Plans Section */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">
+          <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase mb-2 text-foreground">
             Planos Que Cabem Dentro do Seu Orçamento
           </h2>
           
@@ -108,7 +108,7 @@ const Telemedicina = () => {
                   R$49,90
                   <span className="text-lg font-normal">/Mês</span>
                 </div>
-                <CardTitle className="text-2xl font-bold mb-2">
+                <CardTitle className="text-2xl font-bold font-varela uppercase mb-2">
                   Plano Família para 4 Vidas
                 </CardTitle>
                 <CardDescription className="text-primary-foreground/90 text-base">
@@ -117,7 +117,7 @@ const Telemedicina = () => {
               </CardHeader>
               
               <CardContent className="p-8">
-                <h3 className="text-xl font-semibold mb-6 text-center text-primary">
+                <h3 className="text-xl font-semibold font-varela uppercase mb-6 text-center text-primary">
                   O que inclui?
                 </h3>
                 <ul className="space-y-3 mb-8">
@@ -145,7 +145,7 @@ const Telemedicina = () => {
       {/* CTA Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase mb-4">
             Sua saúde não pode esperar
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">

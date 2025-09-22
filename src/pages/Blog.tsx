@@ -363,7 +363,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
       {/* Hero Section */}
       <section className="py-20 bg-gradient-hero text-white">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold font-varela uppercase mb-6">
             Blog{' '}
             <span className="text-orange">SUPERNET</span>
           </h1>
@@ -407,7 +407,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
         {/* Featured Articles */}
         {featuredArticles.length > 0 && (
           <section className="mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
+            <h2 className="text-3xl font-bold font-varela uppercase text-foreground mb-8 text-center">
               Artigos em{' '}
               <span className="gradient-text">Destaque</span>
             </h2>
@@ -440,7 +440,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
                         <span>{article.readTime}</span>
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold text-foreground mb-3 line-clamp-2">
+                    <h3 className="text-xl font-bold font-varela uppercase text-foreground mb-3 line-clamp-2">
                       {article.title}
                     </h3>
                     <p className="text-muted-foreground mb-4 line-clamp-2">
@@ -464,7 +464,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
 
         {/* All Articles */}
         <section>
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
+          <h2 className="text-3xl font-bold font-varela uppercase text-foreground mb-8 text-center">
             Todos os{' '}
             <span className="gradient-text">Artigos</span>
           </h2>
@@ -503,7 +503,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
                         <span>{article.publishDate}</span>
                       </div>
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2">
+                    <h3 className="text-lg font-bold font-varela uppercase text-foreground mb-2 line-clamp-2">
                       {article.title}
                     </h3>
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
@@ -528,7 +528,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
         {/* Newsletter Signup */}
         <section className="mt-20 py-16 bg-gradient-hero rounded-2xl text-white text-center">
           <div className="max-w-2xl mx-auto px-6">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold font-varela uppercase mb-4">
               Fique por dentro das novidades
             </h2>
             <p className="text-white/90 mb-8">

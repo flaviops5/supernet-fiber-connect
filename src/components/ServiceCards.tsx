@@ -32,7 +32,7 @@ const ServiceCards = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
             Por que escolher a{' '}
             <span className="gradient-text">SUPERNET FIBRA</span>?
           </h2>
@@ -50,7 +50,7 @@ const ServiceCards = () => {
               className="service-card bg-card border border-orange rounded-2xl p-8 hover:shadow-elegant hover:shadow-[0_0_20px_hsl(var(--orange)/0.4)] shadow-[0_0_15px_hsl(var(--orange)/0.2)] transition-all duration-300"
             >
               {/* Title */}
-              <h3 className="text-xl font-bold text-orange mb-4">{service.title}</h3>
+              <h3 className="text-xl font-bold font-varela uppercase text-orange mb-4">{service.title}</h3>
 
               {/* Description */}
               <p className="text-muted-foreground leading-relaxed">{service.description}</p>
@@ -63,7 +63,7 @@ const ServiceCards = () => {
           <div className="bg-gradient-subtle rounded-2xl p-8 md:p-12 relative overflow-hidden">
             <div className="grid lg:grid-cols-2 gap-8 items-center">
               <div className="text-left">
-                <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                <h3 className="text-2xl md:text-3xl font-bold font-varela uppercase text-foreground mb-4">
                   Pronto para ter a melhor internet da sua vida?
                 </h3>
                 <p className="text-muted-foreground mb-8">
