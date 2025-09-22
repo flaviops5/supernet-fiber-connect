@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import alexaLogo from '@/assets/alexa-logo.png';
 import googleAssistantLogo from '@/assets/google-assistant-logo.png';
 import watchBrasilLogo from '@/assets/watch-brasil-logo.png';
+import smartHomeBackground from '@/assets/smart-home-background.png';
 
 const AdditionalServices = () => {
   const services = [
@@ -66,7 +67,18 @@ const AdditionalServices = () => {
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full"
+              className={`bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full relative overflow-hidden ${
+                service.title === 'Automação Residencial' ? 'bg-cover bg-center bg-no-repeat' : ''
+              }`}
+              style={
+                service.title === 'Automação Residencial'
+                  ? {
+                      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${smartHomeBackground})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : undefined
+              }
             >
               {/* Header */}
               <div className="flex items-start space-x-4 mb-6">
@@ -81,7 +93,9 @@ const AdditionalServices = () => {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold font-varela uppercase text-foreground group-hover:text-primary transition-colors mb-2">
+                  <h3 className={`text-2xl font-bold font-varela uppercase group-hover:text-primary transition-colors mb-2 ${
+                    service.title === 'Automação Residencial' ? 'text-white' : 'text-foreground'
+                  }`}>
                     {service.title}
                   </h3>
                   <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-sm font-medium">
@@ -91,7 +105,9 @@ const AdditionalServices = () => {
               </div>
 
               {/* Description */}
-              <p className="text-muted-foreground mb-6">
+              <p className={`mb-6 ${
+                service.title === 'Automação Residencial' ? 'text-white/90' : 'text-muted-foreground'
+              }`}>
                 {service.description}
               </p>
 
@@ -100,7 +116,9 @@ const AdditionalServices = () => {
                 {service.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-orange rounded-full" />
-                    <span className="text-sm text-foreground">{feature}</span>
+                    <span className={`text-sm ${
+                      service.title === 'Automação Residencial' ? 'text-white' : 'text-foreground'
+                    }`}>{feature}</span>
                   </li>
                 ))}
               </ul>
