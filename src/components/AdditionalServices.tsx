@@ -58,7 +58,7 @@ const AdditionalServices = () => {
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group"
+              className="bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full"
             >
               {/* Header */}
               <div className="flex items-start space-x-4 mb-6">
@@ -81,7 +81,7 @@ const AdditionalServices = () => {
               </p>
 
               {/* Features */}
-              <ul className="space-y-2 mb-8">
+              <ul className="space-y-2 mb-8 flex-grow">
                 {service.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-orange rounded-full" />
