@@ -6,39 +6,39 @@ const Testimonials = () => {
 
   const testimonials = [
     {
-      name: "Marina Silva",
-      location: "São Paulo, SP",
-      rating: 5,
-      text: "Mudei para a SUPERNET FIBRA há 6 meses e foi a melhor decisão! A internet nunca falha, mesmo com toda a família online ao mesmo tempo. O suporte é incrível, sempre resolvem tudo rapidinho.",
-      service: "Plano 500MB"
-    },
-    {
-      name: "Carlos Eduardo",
-      location: "Rio de Janeiro, RJ",
-      rating: 5,
-      text: "Trabalho com design e preciso de uma internet confiável. Com a SUPERNET FIBRA, nunca mais tive problemas de lentidão para fazer upload dos meus projetos. Recomendo para todos!",
-      service: "Plano 1GB"
-    },
-    {
-      name: "Ana Paula Santos",
-      location: "Belo Horizonte, MG",
-      rating: 5,
-      text: "Excelente custo-benefício! Pagava mais caro na empresa anterior e tinha muito mais problema. Aqui é só qualidade. As crianças estudam online sem travamento nenhum.",
-      service: "Plano 300MB"
-    },
-    {
-      name: "Roberto Mendes",
-      location: "Salvador, BA",
-      rating: 5,
-      text: "A instalação foi super rápida e profissional. Em menos de 2 horas já estava tudo funcionando perfeitamente. A velocidade é exatamente o que prometem, sem pegadinha.",
-      service: "Plano 200MB"
-    },
-    {
-      name: "Juliana Costa",
+      name: "Lucca Cabrera Trazzi",
       location: "Brasília, DF",
       rating: 5,
-      text: "Depois de muitas experiências ruins com outras operadoras, finalmente encontrei uma empresa séria. A SUPERNET FIBRA entrega exatamente o que promete. Muito satisfeita!",
-      service: "Plano 400MB"
+      text: "Desfruto de uma excelente conexão à internet, que não só oferece velocidade e qualidade excepcionais, mas também é perfeita para jogar videogame e trabalhar em home office. Além disso, recebo um atendimento de primeira dos profissionais responsáveis. Dou nota 10 para esse serviço!",
+      service: "Cliente Verificado"
+    },
+    {
+      name: "Thaís Michele",
+      location: "Brasília, DF",
+      rating: 5,
+      text: "Empresa com qualidade, responde rápido e prestativa no atendimento!",
+      service: "Cliente Verificado"
+    },
+    {
+      name: "Sarah Wero",
+      location: "Sobradinho, DF",
+      rating: 5,
+      text: "Melhor serviço de conexão fibra na região de Sobradinho! Outras empresas nunca se interessaram em instalar fibra onde moro, até chegar a Supernet, com um serviço excelente e muita velocidade. São muito solícitos e sempre respondem e resolvem rapidamente qualquer problema. Sempre indico aos amigos e vizinhos!",
+      service: "Cliente Verificado"
+    },
+    {
+      name: "Eduardo Rodrigues",
+      location: "Brasília, DF",
+      rating: 5,
+      text: "Excelente atendimento, tanto pra instalação, quanto para o suporte técnico ao longo do contrato, já tenho há bastante tempo, a Carol do financeiro é sempre prestativa, bem como o Flávio que dá todo o suporte, independente do horário. Só tenho agradecimentos!",
+      service: "Cliente Verificado"
+    },
+    {
+      name: "Jefferson Maia",
+      location: "Brasília, DF",
+      rating: 5,
+      text: "Sou cliente da Supernet desde 2020. Há semanas tinha um problema de conexão que não conseguia detectar/resolver. O gerente do suporte da empresa foi bastante dedicado e não descansou enquanto não conseguiu entender e encontrar a solução para o mesmo. Só tenho elogios à empresa.",
+      service: "Cliente desde 2020"
     }
   ];
 
