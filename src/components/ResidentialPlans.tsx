@@ -161,16 +161,16 @@ const ResidentialPlans = () => {
                       </div>
                       <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
                       
-                      <div className="flex items-center justify-center space-x-4">
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className="text-center">
+                          <div className="text-sm text-muted-foreground mb-1">
+                            De R$ {plan.originalPrice}
+                          </div>
+                          <div className="text-lg text-primary font-medium">por:</div>
+                        </div>
                         <div className="flex items-center justify-center space-x-2">
                           <span className="text-3xl md:text-4xl font-black text-primary">R$ {plan.price}</span>
                           <span className="text-muted-foreground text-sm">/mês</span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-xs text-muted-foreground">De</span>
-                          <span className="text-sm text-muted-foreground line-through">
-                            R$ {plan.originalPrice}
-                          </span>
                         </div>
                       </div>
                     </div>

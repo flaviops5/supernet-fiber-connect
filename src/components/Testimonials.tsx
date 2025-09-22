@@ -80,11 +80,11 @@ const Testimonials = () => {
         <div className="relative max-w-4xl mx-auto">
           <div className="bg-card rounded-2xl shadow-elegant p-8 md:p-12 relative overflow-hidden">
             {/* Quote decoration */}
-            <div className="absolute top-6 left-6 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="absolute top-6 right-6 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center z-10">
               <Quote className="w-6 h-6 text-primary" />
             </div>
 
-            <div className="relative h-64 md:h-48">
+            <div className="relative h-64 md:h-48 mx-16">
               {testimonials.map((testimonial, index) => (
                 <div
                   key={index}
@@ -100,14 +100,14 @@ const Testimonials = () => {
                     {/* Testimonial Content */}
                     <div className="space-y-6">
                       {/* Stars */}
-                      <div className="flex space-x-1">
+                      <div className="flex space-x-1 relative z-20">
                         {[...Array(testimonial.rating)].map((_, i) => (
                           <Star key={i} className="w-5 h-5 fill-orange text-orange" />
                         ))}
                       </div>
 
                       {/* Testimonial Text */}
-                      <blockquote className="text-lg md:text-xl text-foreground leading-relaxed">
+                      <blockquote className="text-lg md:text-xl text-foreground leading-relaxed relative z-20">
                         "{testimonial.text}"
                       </blockquote>
                     </div>

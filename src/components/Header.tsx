@@ -86,6 +86,9 @@ const Header = () => {
                 </div>}
             </div>
 
+            <a href="/blog" className="text-foreground hover:text-primary transition-colors">
+              Blog
+            </a>
             <a href="/sobre" className="text-foreground hover:text-primary transition-colors">
               Sobre
             </a>
@@ -136,6 +139,9 @@ const Header = () => {
                 </div>
               </div>
 
+              <a href="/blog" className="block text-foreground hover:text-primary transition-colors">
+                Blog
+              </a>
               <a href="/sobre" className="block text-foreground hover:text-primary transition-colors">
                 Sobre
               </a>

@@ -12,13 +12,9 @@ import personPointing from '@/assets/person-pointing-faq.jpg';
 const FAQ = () => {
   const faqs = [
     {
-      question: "Qual é a velocidade real da internet fibra da SUPERNET FIBRA?",
-      answer: "Nossa internet fibra entrega exatamente a velocidade contratada. Com tecnologia 100% fibra óptica, você tem velocidade simétrica (upload = download) e latência ultra baixa. Realizamos testes regulares para garantir que você receba sempre o que contratou.",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-    },
-    {
       question: "O que é fibra óptica? O que é FTTH? Como a fibra chega em minha residência?",
-      answer: "Fibra óptica é um filamento extremamente fino e flexível, feito de vidro ultrapuro, plástico ou outro isolante térmico (material de com alta resistência ao fluxo de corrente elétrica). Possui uma estrutura simples, composta por capa protetora, interface e núcleo.\n\nFFTH (Fiber To The Home, ou, Fibra para Casa), é a entrega da serviços de internet sobre fibra óptica. FFTH é o método mais rápido, confiável e seguro de conectar sua casa à internet. Transporta informações a velocidade da luz.\n\nA rede é lançada nos postes de energia espalhados em sua região. A partir do poste mais perto de sua casa, a fibra desce e entra na tubulação já existente e vai até o ponto escolhido para a instalação do modem óptico.\n\nEm caso de prédios, a fibra chega até o Distribuidor Geral (DG) e de lá sobre até cada shaft de cada andar. Em cada andar é colocado um Distribuidor Interno Óptico de parede (DIO), a partir deste DIO, a fibra entra em seu apartamento pela tubulação já existente."
+      answer: "Fibra óptica é um filamento extremamente fino e flexível, feito de vidro ultrapuro, plástico ou outro isolante térmico (material de com alta resistência ao fluxo de corrente elétrica). Possui uma estrutura simples, composta por capa protetora, interface e núcleo.\n\nFFTH (Fiber To The Home, ou, Fibra para Casa), é a entrega da serviços de internet sobre fibra óptica. FFTH é o método mais rápido, confiável e seguro de conectar sua casa à internet. Transporta informações a velocidade da luz.\n\nA rede é lançada nos postes de energia espalhados em sua região. A partir do poste mais perto de sua casa, a fibra desce e entra na tubulação já existente e vai até o ponto escolhido para a instalação do modem óptico.\n\nEm caso de prédios, a fibra chega até o Distribuidor Geral (DG) e de lá sobre até cada shaft de cada andar. Em cada andar é colocado um Distribuidor Interno Óptico de parede (DIO), a partir deste DIO, a fibra entra em seu apartamento pela tubulação já existente.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
       question: "Como funciona a instalação? Tem custo adicional?",
@@ -27,7 +23,23 @@ const FAQ = () => {
     },
     {
       question: "Quais equipamentos serão instalados em minha casa e o que preciso ter em minha residência?",
-      answer: "Será instalado um equipamento chamado ONU (Unidades óptica) ela é responsável em converter o sinal de luz em sinal digital. Dependendo do plano escolhido, além da ONU, será também instalado roteadores que são responsáveis pelo sinal wi-fi e também pela rede cabeada caso opte em usar este tipo de conexão.\n\nÉ necessário duas tomadas de energia no ponto principal onde será instalado a ONU e o primeiro roteador. Caso o plano escolhido seja com dois ou mais roteadores, cada equipamento também precisará de tomada com energia."
+      answer: "Será instalado um equipamento chamado ONU (Unidades óptica) ela é responsável em converter o sinal de luz em sinal digital. Dependendo do plano escolhido, além da ONU, será também instalado roteadores que são responsáveis pelo sinal wi-fi e também pela rede cabeada caso opte em usar este tipo de conexão.\n\nÉ necessário duas tomadas de energia no ponto principal onde será instalado a ONU e o primeiro roteador. Caso o plano escolhido seja com dois ou mais roteadores, cada equipamento também precisará de tomada com energia.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      question: "Meu plano tem mais de um roteador, como é feita a instalação?",
+      answer: "Para o serviço de internet ser usado em sua plenitude, interligamos os roteadores dos planos Max e Super através de cabos UTP. Isso garantirá que a velocidade contratada chegue nos equipamentos através dos cabos sem nenhuma interferência. Cada roteador instalado será responsável em distribuir o sinal wi-fi 2.4 e 5.8 no ambiente em que está.\n\nNa sua residência, é necessário que os dutos estejam livres para a passagem do cabo UTP. Na instalação, não nos responsabilizamos por obras civis para desobstrução.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      question: "O sinal wi-fi disponibilizado cobre toda minha casa?",
+      answer: "Navegar na internet por rede wi-fi é uma realidade e uma conquista tecnológica, porém essa tecnologia de acesso tem várias limitações de sua própria natureza. Vários fatores podem interferir na propagação do sinal dentro da sua residência: Telefone sem fio, vidros, espelhos, wi-fi dos vizinhos. Obstáculos como paredes e lajes reduzem muito a amplitude do sinal. Além disso, quanto mais distante você estiver do roteador, menores serão as velocidades. Pensando nestes cenários, desenvolvemos os produtos MAX e SUPER. Queremos que nossos clientes usufruam ao máximo as altas velocidades da SUPERNET FIBRA, instalamos roteadores de ótimas marcas com tecnologia AC Gigabits com sinal 2.4 e 5.8 mega-hertz de potência, normalmente, cada roteador em circunstâncias normais, cobre uma área de 50m² a 60m².",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      question: "Qual é a velocidade real da internet fibra da SUPERNET FIBRA?",
+      answer: "Nossa internet fibra entrega exatamente a velocidade contratada. Com tecnologia 100% fibra óptica, você tem velocidade simétrica (upload = download) e latência ultra baixa. Realizamos testes regulares para garantir que você receba sempre o que contratou.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
       question: "E se eu tiver problemas técnicos? Como é o suporte?",
@@ -35,24 +47,24 @@ const FAQ = () => {
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
-      question: "Como é o pagamento da mensalidade?",
-      answer: "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias."
-    },
-    {
-      question: "Posso testar a internet antes de contratar?",
-      answer: "Sim! Oferecemos 7 dias de teste gratuito para novos clientes. Se não ficar satisfeito com a qualidade da conexão neste período, cancelamos sem qualquer cobrança. Estamos confiantes de que você vai adorar nossa internet!"
-    },
-    {
-      question: "Qual é o prazo de fidelidade?",
-      answer: "Trabalhamos com contratos flexíveis. Nosso plano básico não tem fidelidade. Para planos premium, oferecemos opções com 12 meses de fidelidade em troca de descontos especiais e benefícios extras. Você escolhe o que faz mais sentido para você."
+      question: "Como faço para contratar ou migrar minha internet?",
+      answer: "É super simples! Entre em contato pelo WhatsApp, informe seu endereço e necessidades. Nossa equipe comercial prepara uma proposta personalizada. Cuidamos de todo o processo de migração, incluindo o cancelamento da operadora anterior se necessário.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
       question: "A SUPERNET FIBRA atende na minha região?",
-      answer: "Estamos em constante expansão! Atendemos as principais cidades de São Paulo, Rio de Janeiro, Minas Gerais e Bahia, com novos bairros sendo conectados mensalmente. Entre em contato via WhatsApp informando seu CEP que verificamos a disponibilidade imediatamente."
+      answer: "Estamos em constante expansão! Atendemos as principais cidades de São Paulo, Rio de Janeiro, Minas Gerais e Bahia, com novos bairros sendo conectados mensalmente. Entre em contato via WhatsApp informando seu CEP que verificamos a disponibilidade imediatamente.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     },
     {
-      question: "Como faço para contratar ou migrar minha internet?",
-      answer: "É super simples! Entre em contato pelo WhatsApp, informe seu endereço e necessidades. Nossa equipe comercial prepara uma proposta personalizada. Cuidamos de todo o processo de migração, incluindo o cancelamento da operadora anterior se necessário."
+      question: "Como é o pagamento da mensalidade?",
+      answer: "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+    },
+    {
+      question: "O plano tem fidelidade?",
+      answer: "Trabalhamos com contratos flexíveis. Nosso plano básico não tem fidelidade. Para planos premium, oferecemos opções com 12 meses de fidelidade em troca de descontos especiais e benefícios extras. Você escolhe o que faz mais sentido para você.",
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
     }
   ];
 
@@ -107,14 +119,7 @@ const FAQ = () => {
                   className="bg-card border border-border rounded-xl px-6 py-2 shadow-sm hover:shadow-card transition-shadow"
                 >
                   <AccordionTrigger className="text-left text-lg font-semibold text-foreground hover:text-primary py-6">
-                    <div className="flex items-center space-x-3">
-                      <span>{faq.question}</span>
-                      {faq.videoUrl && (
-                        <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Play className="w-4 h-4 text-white fill-white" />
-                        </div>
-                      )}
-                    </div>
+                    <span>{faq.question}</span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-6">
                     <div className="space-y-4">
