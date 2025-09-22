@@ -17,12 +17,54 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
     // Add script to document
     document.head.appendChild(script);
 
+    // Add custom CSS to ensure proper positioning
+    const style = document.createElement('style');
+    style.textContent = `
+      .chatbase-bubble {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        z-index: 9999 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+      }
+      
+      .chatbase-chat-window {
+        position: fixed !important;
+        bottom: 80px !important;
+        right: 20px !important;
+        z-index: 9999 !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2) !important;
+        border-radius: 12px !important;
+      }
+      
+      @media (max-width: 640px) {
+        .chatbase-chat-window {
+          right: 10px !important;
+          left: 10px !important;
+          bottom: 80px !important;
+          width: calc(100vw - 20px) !important;
+        }
+        
+        .chatbase-bubble {
+          right: 15px !important;
+          bottom: 15px !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
     // Cleanup function
     return () => {
       // Remove script when component unmounts
       const existingScript = document.querySelector(`script[src="https://www.chatbase.co/embed.min.js"]`);
       if (existingScript) {
         document.head.removeChild(existingScript);
+      }
+      
+      // Remove custom style
+      const customStyle = document.querySelector('style[data-chatbase="custom"]');
+      if (customStyle) {
+        document.head.removeChild(customStyle);
       }
       
       // Remove chatbase elements
