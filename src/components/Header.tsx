@@ -4,15 +4,28 @@ import { Button } from '@/components/ui/button';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const plans = [{
+    name: 'Planos Residenciais',
+    href: '/'
+  }, {
+    name: 'Planos Empresariais',
+    href: '/planos-empresariais'
+  }, {
+    name: 'Planos com Monitoramento',
+    href: '/planos-monitoramento'
+  }, {
+    name: 'Planos com Streaming',
+    href: '/planos-streaming'
+  }, {
+    name: 'Planos com Telemedicina',
+    href: '/planos-telemedicina'
+  }];
   const services = [{
-    name: 'Internet Fibra',
-    href: '/fibra'
+    name: 'Energia por Assinatura',
+    href: '/energia-assinatura'
   }, {
-    name: 'Telemedicina',
-    href: '/telemedicina'
-  }, {
-    name: 'Energia Solar',
-    href: '/energia-solar'
+    name: 'Automação Residencial',
+    href: '/automacao-residencial'
   }, {
     name: 'Monitoramento Residencial',
     href: '/monitoramento-residencial'
@@ -20,21 +33,23 @@ const Header = () => {
     name: 'Monitoramento Veicular',
     href: '/monitoramento-veicular'
   }, {
-    name: 'Streaming',
-    href: '/streaming'
+    name: 'Super Zé',
+    href: '/super-ze'
   }, {
-    name: 'Automação Residencial',
-    href: '/automacao'
-  }];
-  const products = [{
-    name: 'Câmeras de Segurança',
-    href: '/produtos/cameras'
+    name: 'Telemedicina',
+    href: '/telemedicina'
   }, {
-    name: 'Roteadores',
-    href: '/produtos/roteadores'
+    name: 'SOS Empresarial',
+    href: '/sos-empresarial'
   }, {
-    name: 'Fire TV Stick',
-    href: '/produtos/firestick'
+    name: 'Cabeamento Estruturado',
+    href: '/cabeamento-estruturado'
+  }, {
+    name: 'Redes Wi-Fi',
+    href: '/redes-wifi'
+  }, {
+    name: 'Assessoria Tecnológica',
+    href: '/assessoria-tecnologica'
   }];
   const handleWhatsApp = () => {
     window.open('https://wa.me/5511999999999?text=Olá! Gostaria de contratar os serviços da SUPERNET FIBRA.', '_blank');
@@ -53,10 +68,22 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
-            <a href="/" className="text-foreground hover:text-primary transition-colors">
-              Início
-            </a>
-            
+            {/* Plans Dropdown */}
+            <div className="relative" onMouseEnter={() => setActiveDropdown('plans')} onMouseLeave={() => setActiveDropdown(null)}>
+              <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+                <span>Planos</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              
+              {activeDropdown === 'plans' && <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4">
+                  <div className="space-y-2">
+                    {plans.map(plan => <a key={plan.name} href={plan.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
+                        {plan.name}
+                      </a>)}
+                  </div>
+                </div>}
+            </div>
+
             {/* Services Dropdown */}
             <div className="relative" onMouseEnter={() => setActiveDropdown('services')} onMouseLeave={() => setActiveDropdown(null)}>
               <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
@@ -68,22 +95,6 @@ const Header = () => {
                   <div className="space-y-2">
                     {services.map(service => <a key={service.name} href={service.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
                         {service.name}
-                      </a>)}
-                  </div>
-                </div>}
-            </div>
-
-            {/* Products Dropdown */}
-            <div className="relative" onMouseEnter={() => setActiveDropdown('products')} onMouseLeave={() => setActiveDropdown(null)}>
-              <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-                <span>Produtos</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              
-              {activeDropdown === 'products' && <div className="absolute top-full left-0 mt-2 w-56 bg-card rounded-lg shadow-elegant border border-border p-4">
-                  <div className="space-y-2">
-                    {products.map(product => <a key={product.name} href={product.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
-                        {product.name}
                       </a>)}
                   </div>
                 </div>}
@@ -120,24 +131,20 @@ const Header = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && <div className="lg:hidden py-4 border-t border-border">
             <nav className="space-y-4">
-              <a href="/" className="block text-foreground hover:text-primary transition-colors">
-                Início
-              </a>
-              
               <div>
-                <p className="font-semibold text-primary mb-2">Serviços</p>
+                <p className="font-semibold text-primary mb-2">Planos</p>
                 <div className="pl-4 space-y-2">
-                  {services.map(service => <a key={service.name} href={service.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                      {service.name}
+                  {plans.map(plan => <a key={plan.name} href={plan.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {plan.name}
                     </a>)}
                 </div>
               </div>
 
               <div>
-                <p className="font-semibold text-primary mb-2">Produtos</p>
+                <p className="font-semibold text-primary mb-2">Serviços</p>
                 <div className="pl-4 space-y-2">
-                  {products.map(product => <a key={product.name} href={product.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
-                      {product.name}
+                  {services.map(service => <a key={service.name} href={service.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                      {service.name}
                     </a>)}
                 </div>
               </div>
