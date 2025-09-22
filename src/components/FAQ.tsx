@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Phone, MessageCircle, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import faqSupport from '@/assets/faq-support-hq.jpg';
+import faqSupport from '@/assets/faq-support-ultra.jpg';
 import personPointing from '@/assets/person-pointing-faq.jpg';
 
 const FAQ = () => {
@@ -103,7 +103,7 @@ const FAQ = () => {
                 decoding="async"
                 className="w-full h-full min-h-96 object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/30 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
                 <h3 className="text-2xl font-bold font-varela uppercase mb-2">Tire suas dúvidas</h3>
                 <p className="text-white/90">Encontre respostas rápidas para as principais questões sobre nossos serviços</p>
