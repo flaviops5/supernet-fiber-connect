@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bot, X, MessageCircle } from 'lucide-react';
+import { Bot, Send } from 'lucide-react';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -7,7 +7,8 @@ interface ChatbaseWidgetProps {
 
 const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   const [isReady, setIsReady] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!chatbotId) return;
@@ -18,7 +19,6 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
     script.defer = true;
     script.setAttribute('chatbotId', chatbotId);
     
-    // Add custom configuration
     script.onload = () => {
       console.log('Chatbase loaded successfully');
       setIsReady(true);
@@ -26,188 +26,123 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
     
     document.head.appendChild(script);
 
-    // Add custom CSS to control Chatbase appearance
+    // Hide default Chatbase widget
     const style = document.createElement('style');
     style.textContent = `
-      /* Hide default Chatbase bubble */
       iframe[src*="chatbase.co"] {
         display: none !important;
-      }
-      
-      /* Style the chat window when open */
-      .chatbase-chat-window,
-      iframe[title="chatbase chat bubble"] {
-        position: fixed !important;
-        bottom: 90px !important;
-        right: 20px !important;
-        z-index: 9998 !important;
-        border-radius: 12px !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
-        border: none !important;
-        width: 400px !important;
-        height: 600px !important;
-      }
-      
-      @media (max-width: 640px) {
-        .chatbase-chat-window,
-        iframe[title="chatbase chat bubble"] {
-          right: 10px !important;
-          left: 10px !important;
-          width: calc(100vw - 20px) !important;
-          height: 500px !important;
-        }
       }
     `;
     document.head.appendChild(style);
 
-    // Cleanup
     return () => {
       const existingScript = document.querySelector(`script[src="https://www.chatbase.co/embed.min.js"]`);
       if (existingScript) {
         document.head.removeChild(existingScript);
       }
-      
-      const chatbaseElements = document.querySelectorAll('iframe[src*="chatbase.co"], [id*="chatbase"]');
-      chatbaseElements.forEach(element => element.remove());
     };
   }, [chatbotId]);
 
-  const openChat = () => {
-    // Method 1: Try to find and click the hidden Chatbase button
-    const chatbaseButton = document.querySelector('iframe[src*="chatbase.co"]') as HTMLElement;
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
     
-    if (chatbaseButton) {
-      chatbaseButton.style.display = 'block';
-      chatbaseButton.click();
-    } else {
-      // Method 2: Create a temporary iframe to open the chat
-      const chatIframe = document.createElement('iframe');
-      chatIframe.src = `https://www.chatbase.co/chatbot-iframe/${chatbotId}`;
-      chatIframe.style.cssText = `
-        position: fixed;
-        bottom: 90px;
-        right: 20px;
-        width: 400px;
-        height: 600px;
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-        z-index: 9998;
-        background: white;
-      `;
-      
-      // Add close button
-      const closeBtn = document.createElement('button');
-      closeBtn.innerHTML = '✕';
-      closeBtn.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #f3f4f6;
-        border: none;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        cursor: pointer;
-        z-index: 9999;
-        font-size: 14px;
-      `;
-      
-      closeBtn.onclick = () => {
-        document.body.removeChild(chatIframe);
-        document.body.removeChild(closeBtn);
-      };
-      
-      document.body.appendChild(chatIframe);
-      document.body.appendChild(closeBtn);
+    setIsChatOpen(true);
+    
+    // Open Chatbase chat with the message
+    const chatIframe = document.createElement('iframe');
+    chatIframe.src = `https://www.chatbase.co/chatbot-iframe/${chatbotId}?message=${encodeURIComponent(message)}`;
+    chatIframe.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90vw;
+      max-width: 800px;
+      height: 70vh;
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      background: white;
+    `;
+    
+    // Add backdrop
+    const backdrop = document.createElement('div');
+    backdrop.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9998;
+      backdrop-filter: blur(4px);
+    `;
+    
+    backdrop.onclick = () => {
+      document.body.removeChild(chatIframe);
+      document.body.removeChild(backdrop);
+      setIsChatOpen(false);
+    };
+    
+    document.body.appendChild(backdrop);
+    document.body.appendChild(chatIframe);
+    
+    setMessage('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
     }
   };
 
   if (!chatbotId) {
     return (
-      <div className="fixed bottom-4 right-4 p-4 bg-white border border-gray-300 rounded-lg shadow-lg max-w-sm z-50">
-        <h3 className="font-semibold text-sm mb-2">Configure o Chatbase</h3>
-        <p className="text-xs text-gray-600 mb-2">
-          Para ativar o chat AI, adicione seu Chatbot ID do Chatbase no componente ChatbaseWidget.
-        </p>
-        <p className="text-xs text-gray-500">
-          Visite: chatbase.co para criar seu chatbot
-        </p>
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 shadow-lg z-40">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-sm text-muted-foreground">
+            Configure o Chatbase ID para ativar o chat AI
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      {/* Chat Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 flex items-center justify-center group"
-        aria-label="Abrir chat AI"
-        title="Converse com nossa IA"
-      >
-        {isOpen ? (
-          <X className="w-7 h-7" />
-        ) : (
-          <MessageCircle className="w-7 h-7" />
-        )}
-        
-        {/* Pulse animation when closed */}
-        {!isOpen && (
-          <div className="absolute inset-0 w-16 h-16 bg-primary rounded-full animate-ping opacity-20"></div>
-        )}
-      </button>
-
-      {/* Large Chat Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-          ></div>
-          
-          {/* Chat Container */}
-          <div className="relative w-full max-w-4xl h-[80vh] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            
-            {/* Header */}
-            <div className="bg-primary text-white p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">Supernet Fibra</h3>
-                  <p className="text-white/80">Contrate agora sua internet!</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-40">
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="flex items-center gap-4">
+          {/* AI Assistant Info */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+              <Bot className="w-5 h-5 text-white" />
             </div>
-
-            {/* Chat Content */}
-            <div className="flex-1 relative">
-              <iframe
-                src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
-                className="w-full h-full border-0"
-                title="Chatbase AI Assistant"
-              />
-            </div>
-
-            {/* CTA Footer */}
-            <div className="bg-gradient-to-r from-primary to-orange p-4 text-white text-center">
-              <p className="text-sm font-medium">
-                Precisa de ajuda? Nossa IA está aqui para você! 🚀
-              </p>
+            <div>
+              <h3 className="font-semibold text-sm text-foreground">Supernet Fibra</h3>
+              <p className="text-xs text-primary">Contrate agora sua internet!</p>
             </div>
           </div>
+          
+          {/* Message Input */}
+          <div className="flex-1 flex gap-2">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Digite sua dúvida ou inicie o contrato..."
+              className="flex-1 px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!message.trim()}
+              className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline">Enviar</span>
+            </button>
+          </div>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 
