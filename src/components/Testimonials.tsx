@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, Quote, Users, Wifi, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Quote, Users, Wifi, Award, User } from 'lucide-react';
 
 const Testimonials = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -99,17 +99,27 @@ const Testimonials = () => {
                   <div className="h-full flex flex-col justify-between">
                     {/* Testimonial Content */}
                     <div className="space-y-6">
-                      {/* Stars */}
-                      <div className="flex space-x-1 relative z-20">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 fill-orange text-orange" />
-                        ))}
-                      </div>
+                      {/* Profile and Stars */}
+                      <div className="flex items-start space-x-4">
+                        {/* Profile Avatar */}
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                          <User className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        
+                        <div className="flex-1 space-y-4">
+                          {/* Stars */}
+                          <div className="flex space-x-1">
+                            {[...Array(testimonial.rating)].map((_, i) => (
+                              <Star key={i} className="w-5 h-5 fill-orange text-orange" />
+                            ))}
+                          </div>
 
-                      {/* Testimonial Text */}
-                      <blockquote className="text-lg md:text-xl text-foreground leading-relaxed relative z-20">
-                        "{testimonial.text}"
-                      </blockquote>
+                          {/* Testimonial Text */}
+                          <blockquote className="text-lg md:text-xl text-foreground leading-relaxed">
+                            "{testimonial.text}"
+                          </blockquote>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Customer Info */}
