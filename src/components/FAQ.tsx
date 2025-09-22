@@ -162,7 +162,7 @@ const FAQ = () => {
               <Button
                 onClick={handleWhatsApp}
                 size="lg"
-                className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-6"
+                className="bg-white text-primary hover:bg-white/90 text-base sm:text-lg px-4 sm:px-8 py-6"
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
                 Falar no WhatsApp
@@ -171,10 +171,10 @@ const FAQ = () => {
                 onClick={() => window.open('tel:+556135475886', '_self')}
                 variant="outline"
                 size="lg"
-                className="border-white text-blue-400 hover:bg-white hover:text-blue-600 text-lg px-8 py-6"
+                className="border-white text-blue-400 hover:bg-white hover:text-blue-600 text-sm sm:text-lg px-3 sm:px-8 py-6"
               >
-                <Phone className="w-5 h-5 mr-2" />
-                61 3547-5886 / 99947-5886
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                <span className="break-all sm:break-normal">61 3547-5886 / 99947-5886</span>
               </Button>
             </div>
           </div>
