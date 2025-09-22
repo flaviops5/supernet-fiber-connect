@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Quote, Users, Wifi, Award } from 'lucide-react';
 
 const Testimonials = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -169,7 +169,10 @@ const Testimonials = () => {
 
         {/* Trust Indicators */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 text-center">
-          <div>
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
             <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
               2.500+
             </div>
@@ -177,7 +180,10 @@ const Testimonials = () => {
               Clientes Satisfeitos
             </div>
           </div>
-          <div>
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 bg-orange/10 rounded-full flex items-center justify-center mb-4">
+              <Wifi className="w-6 h-6 text-orange" />
+            </div>
             <div className="text-2xl md:text-3xl font-bold text-orange mb-2">
               99.4%
             </div>
@@ -185,7 +191,10 @@ const Testimonials = () => {
               Disponibilidade
             </div>
           </div>
-          <div>
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 bg-red-accent/10 rounded-full flex items-center justify-center mb-4">
+              <Award className="w-6 h-6 text-red-accent" />
+            </div>
             <div className="text-2xl md:text-3xl font-bold text-red-accent mb-2">
               4.8/5
             </div>
