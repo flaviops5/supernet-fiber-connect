@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle } from 'lucide-react';
 import telemedicinaHero from '@/assets/telemedicina-hero.jpg';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
@@ -44,6 +45,49 @@ const Telemedicina = () => {
     "Prescrição médica",
     "Orientação médica",
     "Encaminhamento médico"
+  ];
+
+  const faqs = [
+    {
+      question: "O que é TELEMEDICINA?",
+      answer: "A telemedicina é o exercício da medicina através de tecnologias de comunicação, permitindo consultas médicas à distância por meio de videoconferência, chat ou telefone. É uma prática regulamentada pelo Conselho Federal de Medicina (CFM) que oferece atendimento médico remoto com a mesma qualidade de uma consulta presencial."
+    },
+    {
+      question: "Como funciona a TELEMEDICINA?",
+      answer: "É muito simples! Após a contratação do serviço, você pode acessar nossos médicos 24 horas por dia através de videochamada pelo seu smartphone, tablet ou computador. Basta entrar em contato conosco pelo WhatsApp e em poucos minutos você será conectado com um médico especialista."
+    },
+    {
+      question: "Quais são os benefícios da TELEMEDICINA?",
+      answer: "Os principais benefícios incluem: atendimento 24h disponível todos os dias da semana, economia de tempo e dinheiro (sem deslocamento), consultas ilimitadas, receitas e atestados digitais com validade legal, atendimento para toda a família (até 4 pessoas), e acesso a médicos especializados em clínica geral e pediatria."
+    },
+    {
+      question: "A TELEMEDICINA é segura?",
+      answer: "Sim, é totalmente segura! Utilizamos plataformas certificadas e criptografadas para garantir a privacidade dos seus dados. Nossos médicos são registrados no CRM e seguem todos os protocolos médicos estabelecidos. Todas as consultas são sigilosas e protegidas pela Lei Geral de Proteção de Dados (LGPD)."
+    },
+    {
+      question: "Posso usar a TELEMEDICINA em emergências?",
+      answer: "A telemedicina é indicada para urgências e casos não emergenciais. Para emergências graves que necessitam intervenção imediata, orientamos procurar o serviço de emergência mais próximo (SAMU 192, Bombeiros 193). Nossos médicos podem avaliar a situação e orientar sobre a necessidade de atendimento presencial."
+    },
+    {
+      question: "Preciso instalar um aplicativo para usar a TELEMEDICINA?",
+      answer: "Não é necessário instalar aplicativos! Nosso serviço funciona diretamente pelo WhatsApp e navegador do seu celular ou computador. Todo o processo é simples e intuitivo, você só precisa ter acesso à internet."
+    },
+    {
+      question: "Como recebo minha receita médica ou atestado, ela tem validade?",
+      answer: "Todas as receitas, atestados e demais documentos médicos são emitidos digitalmente e enviados diretamente para o seu WhatsApp ou email. Estes documentos possuem assinatura digital do médico e são válidos em todo território nacional, conforme regulamentação do CFM."
+    },
+    {
+      question: "Quanto custa o serviço de TELEMEDICINA?",
+      answer: "Nosso plano família custa apenas R$ 49,90 por mês e cobre até 4 pessoas com consultas ilimitadas. Isso representa uma economia de mais de R$ 200 por mês comparado a consultas particulares presenciais. Não há taxas extras ou carências."
+    },
+    {
+      question: "A telemedicina é reconhecida pelos órgãos de saúde?",
+      answer: "Sim! A telemedicina é regulamentada e reconhecida pelo Conselho Federal de Medicina (CFM) através da Resolução CFM nº 2.314/2022. É uma prática médica legal e segura, respaldada pela legislação brasileira."
+    },
+    {
+      question: "O que ganho com o clube de Vantagens?",
+      answer: "Com nosso clube de vantagens você tem acesso a descontos exclusivos em farmácias parceiras, laboratórios de análises clínicas, clínicas de exames de imagem, além de orientação nutricional e suporte psicológico. São benefícios extras que complementam seu cuidado com a saúde."
+    }
   ];
 
   return (
@@ -272,6 +316,62 @@ const Telemedicina = () => {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 px-4 bg-background">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <HelpCircle className="w-4 h-4" />
+              <span>Dúvidas Frequentes</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase mb-4 text-foreground">
+              Mais informações sobre TELEMEDICINA
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Tire todas as suas dúvidas sobre nosso serviço de telemedicina
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              {faqs.map((faq, index) => (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`} 
+                  className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          {/* Contact CTA */}
+          <div className="text-center mt-12">
+            <div className="bg-gradient-to-r from-primary/5 to-orange/5 rounded-2xl p-8 max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold font-varela uppercase mb-4 text-primary">
+                Ainda tem dúvidas?
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Nossa equipe está pronta para esclarecer todas as suas questões sobre telemedicina
+              </p>
+              <Button
+                onClick={handleWhatsApp}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
+              >
+                <Phone className="mr-2 h-5 w-5" />
+                Falar com Especialista
+              </Button>
+            </div>
           </div>
         </div>
       </section>
