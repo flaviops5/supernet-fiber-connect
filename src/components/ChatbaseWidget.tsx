@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -143,7 +143,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
       aria-label="Abrir chat AI"
       title="Converse com nossa IA"
     >
-      <MessageCircle className="w-6 h-6" />
+      <Bot className="w-6 h-6" />
       
       {/* Pulse animation */}
       <div className="absolute inset-0 w-14 h-14 bg-blue-600 rounded-full animate-ping opacity-20"></div>
