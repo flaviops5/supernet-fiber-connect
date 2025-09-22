@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, Minimize2, Maximize2 } from 'lucide-react';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -9,6 +9,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   const [isReady, setIsReady] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (!chatbotId) return;
@@ -96,125 +97,106 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
 
   if (!chatbotId) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 shadow-lg z-40">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm text-muted-foreground">
-            Configure o Chatbase ID para ativar o chat AI
-          </p>
-        </div>
+      <div className="fixed bottom-4 right-4 bg-background border border-border p-4 rounded-lg shadow-lg max-w-sm z-50">
+        <p className="text-sm text-muted-foreground">
+          Configure o Chatbase ID para ativar o chat AI
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-primary via-orange to-primary shadow-2xl border-t-4 border-white/20 z-40 animate-fade-in relative overflow-hidden">
-      {/* Enhanced glow effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-orange/30 to-primary/30 blur-2xl"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/5"></div>
-      
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-1/4 w-2 h-2 bg-white rounded-full animate-ping animation-delay-100"></div>
-        <div className="absolute top-2 right-1/3 w-1 h-1 bg-white/70 rounded-full animate-pulse animation-delay-300"></div>
-        <div className="absolute bottom-2 left-2/3 w-1.5 h-1.5 bg-white/50 rounded-full animate-ping animation-delay-500"></div>
-        <div className="absolute top-1 left-1/2 w-1 h-1 bg-orange/60 rounded-full animate-bounce animation-delay-200"></div>
-      </div>
-      
-      {/* Floating geometric shapes */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-2 left-20 w-3 h-3 border border-white/40 rotate-45 animate-pulse"></div>
-        <div className="absolute bottom-3 right-32 w-2 h-2 bg-white/30 rotate-12 animate-bounce animation-delay-400"></div>
-        <div className="absolute top-3 right-20 w-4 h-1 bg-gradient-to-r from-orange/50 to-transparent rotate-45"></div>
-      </div>
-      
-      <div className="relative max-w-6xl mx-auto p-6">
-        <div className="flex items-center gap-6">
-          {/* AI Assistant Info with simple robot */}
-          <div className="flex items-center gap-4 animate-scale-in">
-            <div className="relative group">
-              {/* Robot container - simple and square */}
-              <div className="w-16 h-16 bg-gradient-to-br from-white/25 to-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/40 shadow-2xl hover-scale relative overflow-hidden">
-                <Bot className="w-8 h-8 text-white drop-shadow-lg" />
-                
-                {/* Container glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-orange/20 to-primary/20 rounded-2xl blur-sm opacity-60"></div>
+    <>
+      {/* Floating Chat Widget */}
+      <div className={`fixed z-50 transition-all duration-500 ease-in-out ${
+        isExpanded 
+          ? 'bottom-4 right-4 left-4 md:left-auto md:right-4 md:w-96 h-[600px]' 
+          : 'bottom-6 right-6 w-20 h-20'
+      }`}>
+        
+        {/* Minimized State - Floating Button */}
+        {!isExpanded && (
+          <div 
+            onClick={() => setIsExpanded(true)}
+            className="w-20 h-20 bg-gradient-to-r from-primary via-orange to-primary rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-all duration-300 flex items-center justify-center relative overflow-hidden group"
+          >
+            {/* Glow effects */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-orange/30 to-primary/30 blur-xl animate-pulse"></div>
+            <div className="absolute inset-0 bg-white/5 rounded-full animate-ping"></div>
+            
+            {/* Robot Icon */}
+            <Bot className="w-10 h-10 text-white drop-shadow-lg relative z-10 group-hover:animate-bounce" />
+            
+            {/* Floating notification badge */}
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+              <span className="text-xs font-bold text-white">!</span>
+            </div>
+          </div>
+        )}
+
+        {/* Expanded State - Full Chat Interface */}
+        {isExpanded && (
+          <div className="w-full h-full bg-gradient-to-br from-primary via-orange/90 to-primary rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm flex flex-col overflow-hidden animate-scale-in">
+            
+            {/* Chat Header */}
+            <div className="p-4 border-b border-white/20 flex items-center justify-between bg-gradient-to-r from-white/10 to-white/5">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="absolute inset-0 w-10 h-10 bg-white/10 rounded-full animate-ping"></div>
+                </div>
+                <div>
+                  <h3 className="font-bold font-varela uppercase text-white text-sm">Supernet Fibra</h3>
+                  <p className="text-white/80 text-xs">⚡ Tire suas dúvidas!</p>
+                </div>
               </div>
               
-              {/* Enhanced pulse rings */}
-              <div className="absolute inset-0 w-16 h-16 bg-white/10 rounded-2xl animate-ping animation-delay-100"></div>
-              <div className="absolute inset-1 w-14 h-14 bg-gradient-to-r from-primary/20 to-orange/20 rounded-xl animate-pulse animation-delay-300"></div>
-              <div className="absolute inset-2 w-12 h-12 bg-white/5 rounded-lg animate-ping animation-delay-500"></div>
+              <button 
+                onClick={() => setIsExpanded(false)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <Minimize2 className="w-5 h-5 text-white" />
+              </button>
             </div>
-            
-            <div>
-              <h3 className="font-bold font-varela uppercase text-xl text-white drop-shadow-lg">Supernet Fibra</h3>
-              <p className="text-white/95 font-semibold text-sm bg-gradient-to-r from-white/20 to-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm border border-white/30 shadow-lg">
-                ⚡ Tire suas dúvidas!
-              </p>
+
+            {/* Chat Content Area */}
+            <div className="flex-1 p-4 flex flex-col justify-end">
+              <div className="mb-4 bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                <p className="text-white text-sm">
+                  Olá! 👋 Sou o assistente da Supernet Fibra. Como posso te ajudar hoje?
+                </p>
+              </div>
             </div>
+
+            {/* Message Input Area */}
+            <div className="p-4 border-t border-white/20 bg-gradient-to-r from-white/5 to-white/10">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="CONTRATE AGORA SUA INTERNET"
+                  className="flex-1 px-4 py-3 border-2 border-white/30 rounded-xl bg-white/95 text-foreground placeholder:text-muted-foreground/80 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-white/60 shadow-lg text-sm font-medium transition-all duration-300"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!message.trim()}
+                  className="px-4 py-3 bg-white hover:bg-white/90 disabled:opacity-50 text-primary rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Decorative bottom accent */}
+            <div className="h-1 bg-gradient-to-r from-white/0 via-white/60 to-white/0"></div>
           </div>
-          
-          {/* Enhanced Message Input */}
-          <div className="flex-1 flex gap-3">
-            <div className="relative flex-1 group">
-              {/* Input with enhanced styling */}
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="CONTRATE AGORA SUA INTERNET"
-                className="w-full px-8 py-5 border-3 border-white/40 rounded-3xl bg-gradient-to-r from-white/95 to-white/90 backdrop-blur-sm text-foreground placeholder:text-muted-foreground/80 placeholder:font-bold focus:outline-none focus:ring-4 focus:ring-white/60 focus:border-white/60 shadow-2xl text-lg font-medium transition-all duration-500 hover:shadow-3xl hover:bg-white group-hover:scale-[1.02] transform"
-              />
-              
-              {/* Enhanced input effects */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-primary/10 via-orange/10 to-primary/10 blur-lg -z-10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-white/20 to-white/10 blur-md -z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              {/* Floating particles effect */}
-              <div className="absolute top-2 right-6 w-2 h-2 bg-gradient-to-r from-primary to-orange rounded-full animate-bounce animation-delay-100 opacity-60"></div>
-              <div className="absolute top-4 right-10 w-1 h-1 bg-white/60 rounded-full animate-pulse animation-delay-300"></div>
-            </div>
-            
-            <button
-              onClick={handleSendMessage}
-              disabled={!message.trim()}
-              className="relative px-10 py-5 bg-gradient-to-r from-white via-white/95 to-white/90 hover:from-white hover:to-white/95 disabled:opacity-50 disabled:cursor-not-allowed text-primary rounded-3xl transition-all duration-500 flex items-center gap-4 font-bold text-lg shadow-2xl hover:shadow-3xl hover-scale group overflow-hidden border-2 border-white/50"
-            >
-              {/* Enhanced button effects */}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/8 via-orange/8 to-primary/8 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-              <div className="absolute inset-0 bg-white/30 rounded-3xl blur-lg group-hover:blur-xl transition-all duration-300 opacity-0 group-hover:opacity-50"></div>
-              
-              <Send className="w-6 h-6 relative z-10 group-hover:animate-pulse drop-shadow-md" />
-              <span className="hidden sm:inline relative z-10 drop-shadow-sm">Enviar</span>
-              
-              {/* Button sparkle effects */}
-              <div className="absolute top-2 right-3 w-1 h-1 bg-orange rounded-full animate-ping animation-delay-200 opacity-70"></div>
-              <div className="absolute bottom-2 left-4 w-1 h-1 bg-primary rounded-full animate-pulse animation-delay-400 opacity-50"></div>
-            </button>
-          </div>
-        </div>
-        
-        {/* Enhanced decorative elements */}
-        <div className="absolute top-0 left-1/4 w-40 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent"></div>
-        <div className="absolute top-0 right-1/4 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange/70 to-primary/70"></div>
-        
-        {/* Side accent lines */}
-        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-transparent via-white/50 to-transparent"></div>
-        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-transparent via-white/50 to-transparent"></div>
+        )}
       </div>
-      
-      {/* Enhanced bottom accent with wave effect */}
-      <div className="h-2 bg-gradient-to-r from-white/0 via-white/70 to-white/0 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-orange/30 to-primary/30 blur-sm"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
-      </div>
-      
-      {/* Corner decorative elements */}
-      <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-lg"></div>
-      <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-lg"></div>
-    </div>
+    </>
   );
 };
 
