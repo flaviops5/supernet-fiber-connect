@@ -172,8 +172,8 @@ const ResidentialPlans = () => {
                           <div className="text-lg text-primary font-medium">por:</div>
                         </div>
                         <div className="flex items-center justify-center space-x-2">
-                          <span className="text-3xl md:text-4xl font-black text-primary">R$ {plan.price}</span>
-                          <span className="text-muted-foreground text-sm">/mês</span>
+                          <span className="text-3xl md:text-4xl font-black font-varela text-primary">R$ {plan.price}</span>
+                          <span className="text-muted-foreground text-sm font-varela">/mês</span>
                         </div>
                       </div>
                     </div>
