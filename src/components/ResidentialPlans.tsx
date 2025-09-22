@@ -158,8 +158,8 @@ const ResidentialPlans = () => {
                       <div className="flex items-center justify-center gap-3 mb-3">
                         <Wifi className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                         <div className="flex items-baseline">
-                          <span className="text-5xl md:text-6xl font-black text-primary">{plan.speed.split(' ')[0]}</span>
-                          <span className="text-2xl md:text-3xl font-black ml-2 text-orange">{plan.speed.split(' ')[1]}</span>
+                          <span className="text-5xl md:text-6xl font-black font-varela text-primary">{plan.speed.split(' ')[0]}</span>
+                          <span className="text-2xl md:text-3xl font-black font-varela ml-2 text-orange">{plan.speed.split(' ')[1]}</span>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
