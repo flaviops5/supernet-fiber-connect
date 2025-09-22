@@ -1,13 +1,30 @@
 import { Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const ResidentialPlans = () => {
   const plugin = useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })
   );
+  
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+  }, [api]);
   const plans = [
     {
       speed: "400 Mega",
@@ -131,6 +148,7 @@ const ResidentialPlans = () => {
           <Carousel
             plugins={[plugin.current]}
             className="w-full"
+            setApi={setApi}
             opts={{
               align: "start",
               loop: true,
@@ -218,6 +236,22 @@ const ResidentialPlans = () => {
             <CarouselPrevious className="hidden md:flex" />
             <CarouselNext className="hidden md:flex" />
           </Carousel>
+        </div>
+
+        {/* Dots Indicators */}
+        <div className="flex justify-center space-x-2 mt-8">
+          {Array.from({ length: count }, (_, index) => (
+            <button
+              key={index}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index + 1 === current
+                  ? 'bg-primary scale-110'
+                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+              }`}
+              onClick={() => api?.scrollTo(index)}
+              aria-label={`Ir para o plano ${index + 1}`}
+            />
+          ))}
         </div>
 
         {/* Bottom Note */}
