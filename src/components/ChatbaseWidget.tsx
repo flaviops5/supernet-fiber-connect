@@ -107,41 +107,67 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border shadow-lg z-40">
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="flex items-center gap-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-primary via-orange to-primary shadow-2xl border-t-4 border-white/20 z-40 animate-fade-in">
+      {/* Glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-orange/20 to-primary/20 blur-xl"></div>
+      
+      <div className="relative max-w-6xl mx-auto p-6">
+        <div className="flex items-center gap-6">
           {/* AI Assistant Info */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-4 animate-scale-in">
+            <div className="relative">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg hover-scale">
+                <Bot className="w-7 h-7 text-white drop-shadow-lg" />
+              </div>
+              {/* Pulse ring */}
+              <div className="absolute inset-0 w-14 h-14 bg-white/20 rounded-full animate-ping"></div>
             </div>
             <div>
-              <h3 className="font-semibold text-sm text-foreground">Supernet Fibra</h3>
-              <p className="text-xs text-primary">Contrate agora sua internet!</p>
+              <h3 className="font-bold text-lg text-white drop-shadow-md">Supernet Fibra</h3>
+              <p className="text-white/90 font-semibold text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">
+                ⚡ Contrate agora sua internet!
+              </p>
             </div>
           </div>
           
           {/* Message Input */}
-          <div className="flex-1 flex gap-2">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua dúvida ou inicie o contrato..."
-              className="flex-1 px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+          <div className="flex-1 flex gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="💬 Digite sua dúvida ou inicie o contrato..."
+                className="w-full px-6 py-4 border-2 border-white/30 rounded-2xl bg-white/95 backdrop-blur-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-4 focus:ring-white/50 focus:border-white shadow-xl text-lg font-medium transition-all duration-300 hover:shadow-2xl hover:bg-white"
+              />
+              {/* Input glow effect */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 to-orange/20 blur-md -z-10 opacity-0 transition-opacity duration-300 peer-focus:opacity-100"></div>
+            </div>
             <button
               onClick={handleSendMessage}
               disabled={!message.trim()}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
+              className="relative px-8 py-4 bg-white hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary rounded-2xl transition-all duration-300 flex items-center gap-3 font-bold text-lg shadow-xl hover:shadow-2xl hover-scale group overflow-hidden"
             >
-              <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Enviar</span>
+              {/* Button background animation */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-orange/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              
+              <Send className="w-5 h-5 relative z-10 group-hover:animate-pulse" />
+              <span className="hidden sm:inline relative z-10">Enviar</span>
+              
+              {/* Button glow */}
+              <div className="absolute inset-0 bg-white/20 rounded-2xl blur group-hover:blur-md transition-all duration-300"></div>
             </button>
           </div>
         </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-1/4 w-32 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+        <div className="absolute top-0 right-1/4 w-24 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
       </div>
+      
+      {/* Bottom accent line */}
+      <div className="h-1 bg-gradient-to-r from-white/0 via-white/60 to-white/0"></div>
     </div>
   );
 };
