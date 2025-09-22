@@ -155,7 +155,10 @@ const ResidentialPlans = () => {
 
                     {/* Plan Header */}
                     <div className="text-center mb-6">
-                      <div className="text-5xl md:text-6xl font-black gradient-text mb-3">{plan.speed}</div>
+                      <div className="gradient-text mb-3">
+                        <span className="text-5xl md:text-6xl font-black">{plan.speed.split(' ')[0]}</span>
+                        <span className="text-2xl md:text-3xl font-black ml-2">{plan.speed.split(' ')[1]}</span>
+                      </div>
                       <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
                       
                       <div className="flex items-center justify-center space-x-4">
