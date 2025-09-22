@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Calendar, User, ArrowRight, Search, Filter, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import heroEntertainment from '@/assets/hero-entertainment.jpg';
+import fiberOpticGlobe from '@/assets/fiber-optic-globe.jpg';
+import fiberOpticTechnology from '@/assets/fiber-optic-technology.jpg';
+import internetNetworkInfrastructure from '@/assets/internet-network-infrastructure.jpg';
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,7 +54,7 @@ A internet transformou completamente nossa sociedade, economia e cultura, conect
       publishDate: "15 de Setembro, 2024",
       category: "Tecnologia",
       readTime: "8 min",
-      image: heroEntertainment,
+      image: fiberOpticGlobe,
       featured: true
     },
     {
@@ -151,7 +153,7 @@ A fibra óptica não é apenas uma escolha técnica superior – é um investime
       publishDate: "12 de Setembro, 2024",
       category: "Educacional",
       readTime: "12 min",
-      image: heroEntertainment,
+      image: fiberOpticTechnology,
       featured: true
     },
     {
@@ -342,7 +344,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
       publishDate: "10 de Setembro, 2024",
       category: "Educacional",
       readTime: "15 min",
-      image: heroEntertainment,
+      image: internetNetworkInfrastructure,
       featured: false
     }
   ];
