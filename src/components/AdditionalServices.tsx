@@ -20,9 +20,7 @@ const AdditionalServices = () => {
       highlight: "A partir de R$ 299"
     },
     {
-      icon: () => (
-        <img src={watchBrasilLogo} alt="Watch Brasil" className="w-8 h-8 object-contain" />
-      ),
+      icon: Tv,
       title: "Canais de Streaming",
       description: "Acesso completo aos melhores conteúdos de entretenimento",
       features: ["HBO MAX", "Telecine", "Premiere", "ESPN", "Paramount+"],
@@ -78,8 +76,6 @@ const AdditionalServices = () => {
                       <img src={alexaLogo} alt="Alexa" className="w-4 h-4 object-contain" />
                       <img src={googleAssistantLogo} alt="Google Assistant" className="w-4 h-4 object-contain" />
                     </div>
-                  ) : service.title === 'Canais de Streaming' ? (
-                    <img src={watchBrasilLogo} alt="Watch Brasil" className="w-8 h-8 object-contain" />
                   ) : (
                     React.createElement(service.icon as React.ElementType, { className: "w-8 h-8 text-primary-foreground" })
                   )}
