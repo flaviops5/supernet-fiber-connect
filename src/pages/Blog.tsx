@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import fiberOpticTechnology from '@/assets/fiber-optic-technology.jpg';
 import internetNetworkInfrastructure from '@/assets/internet-network-infrastructure.jpg';
+import internetFundamentalsTech from '@/assets/internet-fundamentals-tech.jpg';
 import heroEntertainment from '@/assets/hero-entertainment.jpg';
 
 const Blog = () => {
@@ -344,7 +345,7 @@ A internet transformou nossa sociedade e continua evoluindo. Escolher o provedor
       publishDate: "10 de Setembro, 2024",
       category: "Educacional",
       readTime: "15 min",
-      image: internetNetworkInfrastructure,
+      image: internetFundamentalsTech,
       featured: false
     }
   ];
