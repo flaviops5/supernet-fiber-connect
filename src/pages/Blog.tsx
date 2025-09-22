@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Calendar, User, ArrowRight, Search, Filter, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import fiberOpticGlobe from '@/assets/fiber-optic-globe.jpg';
 import fiberOpticTechnology from '@/assets/fiber-optic-technology.jpg';
 import internetNetworkInfrastructure from '@/assets/internet-network-infrastructure.jpg';
+import heroEntertainment from '@/assets/hero-entertainment.jpg';
 
 const Blog = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,7 +54,7 @@ A internet transformou completamente nossa sociedade, economia e cultura, conect
       publishDate: "15 de Setembro, 2024",
       category: "Tecnologia",
       readTime: "8 min",
-      image: fiberOpticGlobe,
+      image: internetNetworkInfrastructure,
       featured: true
     },
     {
