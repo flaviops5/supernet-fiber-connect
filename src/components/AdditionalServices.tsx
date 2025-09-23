@@ -91,13 +91,11 @@ const AdditionalServices = () => {
         <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center shadow-elegant">
-              <img 
-                src="/assets/logo-supernet.png" 
-                alt="SUPERNET FIBRA" 
-                className="w-20 h-20 object-contain"
-              />
-            </div>
+            <img 
+              src="/assets/logo-supernet.png" 
+              alt="SUPERNET FIBRA" 
+              className="w-20 h-20 object-contain"
+            />
           </div>
 
           {/* Service Points */}
