@@ -3,6 +3,16 @@ import { Button } from '@/components/ui/button';
 const AdditionalServices = () => {
   const services = [
     {
+      title: "Monitoramento Veicular",
+      description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
+      highlight: "Desconto anual"
+    },
+    {
+      title: "Monitoramento Residencial",
+      description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
+      highlight: "Sem taxa de adesão"
+    },
+    {
       title: "Telemedicina",
       description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
       highlight: "Primeiro mês grátis"
@@ -18,7 +28,7 @@ const AdditionalServices = () => {
       highlight: "A partir de R$ 29,90"
     },
     {
-      title: "Automação Residencial",
+      title: "Automações",
       description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
       highlight: "A partir de R$ 299"
     },
@@ -28,7 +38,7 @@ const AdditionalServices = () => {
       highlight: "Combo por R$ 49,90/mês"
     },
     {
-      title: "Equipamentos & Segurança",
+      title: "Equipamentos",
       description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
       highlight: "Instalação inclusa"
     },
@@ -36,16 +46,6 @@ const AdditionalServices = () => {
       title: "Reparos Internos",
       description: "Pequenos reparos e instalações residenciais com técnicos especializados em instalação de TVs, montagem de móveis, reparos elétricos e configuração de rede.",
       highlight: "Desconto para clientes"
-    },
-    {
-      title: "Monitoramento Veicular",
-      description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
-      highlight: "Desconto anual"
-    },
-    {
-      title: "Monitoramento Residencial",
-      description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
-      highlight: "Sem taxa de adesão"
     }
   ];
 
@@ -140,8 +140,8 @@ const AdditionalServices = () => {
                     <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
                   </div>
                   
-                  {/* Hover Expanded Card - Highest z-index to be above everything */}
-                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[9999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
+                  {/* Hover Expanded Card - Maximum z-index to be above everything including logo */}
+                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[99999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
                     <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
                       <div className="text-center">
                         <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
