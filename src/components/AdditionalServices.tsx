@@ -128,8 +128,13 @@ const AdditionalServices = () => {
                 
                 {/* Service Point with Title */}
                 <div className="relative z-20">
-                  {/* Always Visible Title - Now in front with better spacing */}
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 min-w-max z-30">
+                  {/* Always Visible Title - Positioned to avoid line overlap */}
+                  <div className={`absolute left-1/2 transform -translate-x-1/2 min-w-max z-30 ${
+                    // Adjust position based on service to avoid line overlap
+                    service.title === "Canais de Streaming" || service.title === "Equipamentos" || service.title === "Reparos Internos" 
+                      ? "top-12" // Move further down for these services
+                      : "top-10"  // Default position for others
+                  }`}>
                     <h3 className="text-xs font-bold font-varela uppercase text-foreground bg-gradient-primary text-transparent bg-clip-text text-center px-2 py-1 bg-card/80 rounded-lg backdrop-blur-sm border border-border/50">
                       {service.title}
                     </h3>
