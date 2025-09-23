@@ -123,7 +123,7 @@ const FAQ = () => {
                             <IconComponent className="w-6 h-6 text-[#4d64ae] stroke-2" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-base font-bold text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
+                            <h3 className="text-base text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
                               {faq.question}
                             </h3>
                           </div>
@@ -181,7 +181,7 @@ const FAQ = () => {
                             <IconComponent className="w-6 h-6 text-[#f48120] stroke-2" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-base font-bold text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
+                            <h3 className="text-base text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
                               {faq.question}
                             </h3>
                           </div>
