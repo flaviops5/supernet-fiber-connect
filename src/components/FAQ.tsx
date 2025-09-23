@@ -106,21 +106,21 @@ const FAQ = () => {
         </div>
 
         {/* FAQ Two Column Layout */}
-<div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
           {/* Left Column - First Half of FAQs */}
           <div className="space-y-6">
             {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => {
               const IconComponent = faq.icon;
               return (
-                   <div key={index} className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in h-auto"
+                   <div className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
                     <AccordionItem value={`item-${index}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 flex justify-center">
-                            <IconComponent className="w-8 h-8 text-[#4d64ae] stroke-2 group-hover:scale-110 transition-transform duration-300" />
+                          <div className="w-12 h-12 bg-[#f8f7f8] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <IconComponent className="w-6 h-6 text-[#4d64ae] stroke-2" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
@@ -170,15 +170,15 @@ const FAQ = () => {
               return (
                 <div
                   key={adjustedIndex}
-                  className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in h-auto"
+                  className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in"
                   style={{ animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
                     <AccordionItem value={`item-${adjustedIndex}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 flex justify-center">
-                            <IconComponent className="w-8 h-8 text-[#f48120] stroke-2 group-hover:scale-110 transition-transform duration-300" />
+                          <div className="w-12 h-12 bg-[#f8f7f8] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <IconComponent className="w-6 h-6 text-[#f48120] stroke-2" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
