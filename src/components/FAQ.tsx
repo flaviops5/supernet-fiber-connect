@@ -106,13 +106,13 @@ const FAQ = () => {
         </div>
 
         {/* FAQ Two Column Layout */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto items-start">
           {/* Left Column - First Half of FAQs */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col">
             {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => {
               const IconComponent = faq.icon;
               return (
-                   <div className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in"
+                   <div key={index} className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in flex-1"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
@@ -163,14 +163,14 @@ const FAQ = () => {
           </div>
 
           {/* Right Column - Second Half of FAQs */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col">
             {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => {
               const IconComponent = faq.icon;
               const adjustedIndex = index + Math.ceil(faqs.length / 2);
               return (
                 <div
                   key={adjustedIndex}
-                  className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in"
+                  className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in flex-1"
                   style={{ animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
