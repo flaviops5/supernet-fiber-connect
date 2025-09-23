@@ -119,9 +119,7 @@ const FAQ = () => {
                     <AccordionItem value={`item-${index}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 h-12 bg-[#f8f7f8] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
-                            <IconComponent className="w-6 h-6 text-[#4d64ae] stroke-2" />
-                          </div>
+                          <IconComponent className="w-8 h-8 text-[#4d64ae] stroke-2 group-hover:scale-110 transition-transform duration-300" />
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
                               {faq.question}
@@ -177,9 +175,7 @@ const FAQ = () => {
                     <AccordionItem value={`item-${adjustedIndex}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 h-12 bg-[#f8f7f8] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
-                            <IconComponent className="w-6 h-6 text-[#f48120] stroke-2" />
-                          </div>
+                          <IconComponent className="w-8 h-8 text-[#f48120] stroke-2 group-hover:scale-110 transition-transform duration-300" />
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
                               {faq.question}
