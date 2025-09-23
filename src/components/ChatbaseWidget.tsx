@@ -11,8 +11,10 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
   const [isExpanded, setIsExpanded] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [sessionCount, setSessionCount] = useState(1);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Listen for messages from iframe
@@ -27,6 +29,65 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  // Auto-reset chat session after 15 seconds of inactivity
+  useEffect(() => {
+    if (isExpanded) {
+      // Start/restart the reset timer
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+      
+      resetTimerRef.current = setTimeout(() => {
+        resetChatSession();
+      }, 15000); // 15 seconds
+    } else {
+      // Clear timer when chat is closed
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, [isExpanded, sessionCount]);
+
+  const resetChatSession = () => {
+    if (iframeRef.current) {
+      // Reset the iframe by updating its src to clear the conversation
+      const newSrc = `https://www.chatbase.co/chatbot-iframe/${chatbotId}?session=${Date.now()}`;
+      iframeRef.current.src = newSrc;
+      
+      // Update session count for tracking
+      setSessionCount(prev => prev + 1);
+      
+      // Clear input message
+      setInputMessage('');
+      
+      // Send reset signal to iframe (if it supports this)
+      setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage({
+          type: 'chatbase-reset',
+          timestamp: Date.now()
+        }, '*');
+      }, 1000);
+    }
+  };
+
+  const restartResetTimer = () => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+    
+    resetTimerRef.current = setTimeout(() => {
+      resetChatSession();
+    }, 15000);
+  };
+
   const handleSendMessage = () => {
     if (!inputMessage.trim() || !iframeRef.current) return;
 
@@ -40,6 +101,9 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
     iframeRef.current.contentWindow?.postMessage(message, '*');
     setInputMessage('');
     textareaRef.current?.focus();
+    
+    // Restart the reset timer since there's activity
+    restartResetTimer();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -53,6 +117,9 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
     setInputMessage(prev => prev + emoji);
     textareaRef.current?.focus();
     setShowEmojiPicker(false);
+    
+    // Restart the reset timer since there's activity
+    restartResetTimer();
   };
 
   const commonEmojis = [
