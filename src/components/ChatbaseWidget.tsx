@@ -133,7 +133,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
             {/* Header */}
             <div 
               onClick={() => setIsExpanded(true)}
-              className="flex items-center justify-between px-6 py-3 cursor-pointer hover:opacity-90 transition-all duration-300"
+              className="flex items-center justify-between px-6 py-4 cursor-pointer hover:opacity-90 transition-all duration-300"
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -149,32 +149,6 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
               <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
                 <MessageCircle className="w-4 h-4" />
                 Fale conosco
-              </div>
-            </div>
-            
-            {/* Always Visible Input Area */}
-            <div className="bg-white p-4 border-t border-white/20">
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Textarea
-                    ref={textareaRef}
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Digite sua mensagem..."
-                    className="min-h-[40px] resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
-                    rows={1}
-                  />
-                </div>
-                
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
-                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-10 w-10"
-                  size="icon"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           </div>
@@ -214,59 +188,6 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                 allow="microphone"
                 title="Chatbot"
               />
-            </div>
-
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div className="absolute bottom-20 left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10">
-                <div className="grid grid-cols-8 gap-1 max-h-24 overflow-y-auto">
-                  {commonEmojis.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => addEmoji(emoji)}
-                      className="text-lg hover:bg-gray-100 rounded-lg p-1 transition-colors"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Input Area */}
-            <div className="p-4 border-t bg-white">
-              <div className="flex items-end gap-3">
-                <Button
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full hover:bg-gray-100 h-10 w-10"
-                  title="Emojis"
-                >
-                  <Smile className="w-4 h-4" />
-                </Button>
-                
-                <div className="flex-1">
-                  <Textarea
-                    ref={textareaRef}
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Digite sua mensagem..."
-                    className="min-h-[40px] max-h-20 resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
-                    rows={1}
-                  />
-                </div>
-                
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim()}
-                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-10 w-10"
-                  size="icon"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
           </div>
         )}
