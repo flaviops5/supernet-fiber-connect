@@ -87,16 +87,16 @@ const AdditionalServices = () => {
           </p>
         </div>
 
-        {/* Interactive Radial Services */}
-        <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
+        {/* Desktop: Interactive Radial Services */}
+        <div className="hidden md:block relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
           {/* Blue circle behind logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
             <div className="w-32 h-32 bg-gradient-primary rounded-full shadow-elegant"></div>
           </div>
           
           {/* Logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
             <img 
               src="/assets/logo-supernet.png" 
               alt="SUPERNET FIBRA" 
@@ -171,10 +171,55 @@ const AdditionalServices = () => {
           })}
 
           {/* Instructions */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center">
             <p className="text-muted-foreground text-sm animate-pulse">
               Passe o mouse sobre os pontos para ver os serviços
             </p>
+          </div>
+        </div>
+
+        {/* Mobile: Grid Layout */}
+        <div className="md:hidden mb-16">
+          {/* Central Logo for Mobile */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-primary rounded-full shadow-elegant mx-auto mb-4">
+              <img 
+                src="/assets/logo-supernet.png" 
+                alt="SUPERNET FIBRA" 
+                className="w-16 h-16 object-contain"
+              />
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Toque nos cartões para mais informações
+            </p>
+          </div>
+
+          {/* Mobile Services Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-2">
+            {services.map((service, index) => (
+              <div
+                key={index}
+                className="bg-card border border-border rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                onClick={() => handleWhatsApp(service.title)}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-3 h-3 bg-primary rounded-full mt-2 flex-shrink-0 group-hover:bg-orange transition-colors duration-300"></div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold font-varela uppercase text-foreground leading-tight">
+                        {service.title}
+                      </h3>
+                    </div>
+                    <div className="inline-flex items-center bg-orange/10 text-orange px-2 py-1 rounded-full text-xs font-medium mb-2">
+                      {service.highlight}
+                    </div>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      {service.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
