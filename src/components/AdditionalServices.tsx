@@ -3,6 +3,21 @@ import { Button } from '@/components/ui/button';
 const AdditionalServices = () => {
   const services = [
     {
+      title: "Telemedicina",
+      description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
+      highlight: "Primeiro mês grátis"
+    },
+    {
+      title: "Redes WiFi",
+      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
+      highlight: "Instalação gratuita"
+    },
+    {
+      title: "Telefonia Fixa",
+      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
+      highlight: "A partir de R$ 29,90"
+    },
+    {
       title: "Automação Residencial",
       description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
       highlight: "A partir de R$ 299"
@@ -23,29 +38,14 @@ const AdditionalServices = () => {
       highlight: "Desconto para clientes"
     },
     {
-      title: "Redes WiFi",
-      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
-      highlight: "Instalação gratuita"
+      title: "Monitoramento Veicular",
+      description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
+      highlight: "Desconto anual"
     },
     {
-      title: "Telefonia Fixa",
-      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
-      highlight: "A partir de R$ 29,90"
-    },
-    {
-      title: "Telemedicina",
-      description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
-      highlight: "Primeiro mês grátis"
-    },
-    {
-      title: "Redes WiFi",
-      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
-      highlight: "Instalação gratuita"
-    },
-    {
-      title: "Telefonia Fixa",
-      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
-      highlight: "A partir de R$ 29,90"
+      title: "Monitoramento Residencial",
+      description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
+      highlight: "Sem taxa de adesão"
     }
   ];
 
