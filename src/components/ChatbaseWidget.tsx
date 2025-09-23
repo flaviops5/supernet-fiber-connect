@@ -110,7 +110,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
       {/* Floating Chat Widget */}
       <div className={`fixed z-50 transition-all duration-500 ease-in-out ${
         isExpanded 
-          ? 'bottom-4 right-4 left-4 md:left-auto md:right-4 md:w-96 h-[600px]' 
+          ? 'inset-0 bg-black/50 backdrop-blur-sm' 
           : 'bottom-6 right-6 w-20 h-20'
       }`}>
         
@@ -134,65 +134,78 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
           </div>
         )}
 
-        {/* Expanded State - Full Chat Interface */}
+        {/* Expanded State - Full Screen Chat Interface */}
         {isExpanded && (
-          <div className="w-full h-full bg-gradient-to-br from-primary via-orange/90 to-primary rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm flex flex-col overflow-hidden animate-scale-in">
-            
-            {/* Chat Header */}
-            <div className="p-4 border-b border-white/20 flex items-center justify-between bg-gradient-to-r from-white/10 to-white/5">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="absolute inset-0 w-10 h-10 bg-white/10 rounded-full animate-ping"></div>
-                </div>
-                <div>
-                  <h3 className="font-bold font-varela uppercase text-white text-sm">Supernet Fibra</h3>
-                  <p className="text-white/80 text-xs">⚡ Tire suas dúvidas!</p>
-                </div>
-              </div>
+          <div className="w-full h-full flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl h-[90vh] bg-gradient-to-br from-primary via-orange/90 to-primary rounded-3xl shadow-2xl border border-white/20 backdrop-blur-sm flex flex-col overflow-hidden animate-scale-in">
               
-              <button 
-                onClick={() => setIsExpanded(false)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <Minimize2 className="w-5 h-5 text-white" />
-              </button>
-            </div>
-
-            {/* Chat Content Area */}
-            <div className="flex-1 p-4 flex flex-col justify-end">
-              <div className="mb-4 bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                <p className="text-white text-sm">
-                  Olá! 👋 Sou o assistente da Supernet Fibra. Como posso te ajudar hoje?
-                </p>
-              </div>
-            </div>
-
-            {/* Message Input Area */}
-            <div className="p-4 border-t border-white/20 bg-gradient-to-r from-white/5 to-white/10">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="CONTRATE AGORA SUA INTERNET"
-                  className="flex-1 px-4 py-3 border-2 border-white/30 rounded-xl bg-white/95 text-foreground placeholder:text-muted-foreground/80 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-white/60 shadow-lg text-sm font-medium transition-all duration-300"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!message.trim()}
-                  className="px-4 py-3 bg-white hover:bg-white/90 disabled:opacity-50 text-primary rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+              {/* Chat Header */}
+              <div className="p-6 border-b border-white/20 flex items-center justify-between bg-gradient-to-r from-white/10 to-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <Bot className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute inset-0 w-12 h-12 bg-white/10 rounded-full animate-ping"></div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold font-varela uppercase text-white text-lg">Supernet Fibra</h3>
+                    <p className="text-white/80 text-sm">⚡ Tire suas dúvidas sobre nossa internet!</p>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setIsExpanded(false)}
+                  className="p-3 hover:bg-white/10 rounded-xl transition-colors group"
                 >
-                  <Send className="w-5 h-5" />
+                  <Minimize2 className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
                 </button>
               </div>
-            </div>
 
-            {/* Decorative bottom accent */}
-            <div className="h-1 bg-gradient-to-r from-white/0 via-white/60 to-white/0"></div>
+              {/* Chat Content Area */}
+              <div className="flex-1 p-6 flex flex-col justify-center items-center">
+                <div className="text-center max-w-md mb-8">
+                  <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                    <Bot className="w-12 h-12 text-white animate-pulse" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-4 font-varela">
+                    Olá! 👋
+                  </h2>
+                  <p className="text-white/90 text-lg leading-relaxed">
+                    Sou o assistente da Supernet Fibra. Estou aqui para te ajudar com informações sobre nossos planos de internet!
+                  </p>
+                </div>
+              </div>
+
+              {/* Message Input Area */}
+              <div className="p-6 border-t border-white/20 bg-gradient-to-r from-white/5 to-white/10">
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Quero contratar a internet"
+                    className="flex-1 px-6 py-4 border-2 border-white/30 rounded-2xl bg-white/95 text-foreground placeholder:text-foreground/70 placeholder:font-bold focus:outline-none focus:ring-2 focus:ring-white/60 shadow-lg text-lg font-bold transition-all duration-300"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim()}
+                    className="px-6 py-4 bg-white hover:bg-white/90 disabled:opacity-50 text-primary rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 group"
+                  >
+                    <Send className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+                
+                {/* Helper text */}
+                <p className="text-white/60 text-sm mt-3 text-center">
+                  Digite sua mensagem e pressione Enter ou clique em enviar
+                </p>
+              </div>
+
+              {/* Decorative bottom accent */}
+              <div className="h-2 bg-gradient-to-r from-white/0 via-white/60 to-white/0"></div>
+            </div>
           </div>
         )}
       </div>
