@@ -28,71 +28,61 @@ const FAQ = () => {
       question: "O que é fibra óptica? O que é FTTH? Como a fibra chega em minha residência?",
       answer: "Fibra óptica é um filamento extremamente fino e flexível, feito de vidro ultrapuro, plástico ou outro isolante térmico (material de com alta resistência ao fluxo de corrente elétrica). Possui uma estrutura simples, composta por capa protetora, interface e núcleo.\n\nFFTH (Fiber To The Home, ou, Fibra para Casa), é a entrega da serviços de internet sobre fibra óptica. FFTH é o método mais rápido, confiável e seguro de conectar sua casa à internet. Transporta informações a velocidade da luz.\n\nA rede é lançada nos postes de energia espalhados em sua região. A partir do poste mais perto de sua casa, a fibra desce e entra na tubulação já existente e vai até o ponto escolhido para a instalação do modem óptico.\n\nEm caso de prédios, a fibra chega até o Distribuidor Geral (DG) e de lá sobre até cada shaft de cada andar. Em cada andar é colocado um Distribuidor Interno Óptico de parede (DIO), a partir deste DIO, a fibra entra em seu apartamento pela tubulação já existente.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Network,
-      bgColor: "#4d64ae"
+      icon: Network
     },
     {
       question: "Como funciona a instalação? Tem custo adicional?",
       answer: "A instalação é 100% gratuita! Nossa equipe técnica especializada agenda um horário conveniente, realiza toda a instalação em até 2 horas e deixa tudo funcionando perfeitamente. Também oferecemos orientação completa sobre o uso dos equipamentos.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Wrench,
-      bgColor: "#f48120"
+      icon: Wrench
     },
     {
       question: "Quais equipamentos serão instalados em minha casa e o que preciso ter em minha residência?",
       answer: "Será instalado um equipamento chamado ONU (Unidades óptica) ela é responsável em converter o sinal de luz em sinal digital. Dependendo do plano escolhido, além da ONU, será também instalado roteadores que são responsáveis pelo sinal wi-fi e também pela rede cabeada caso opte em usar este tipo de conexão.\n\nÉ necessário duas tomadas de energia no ponto principal onde será instalado a ONU e o primeiro roteador. Caso o plano escolhido seja com dois ou mais roteadores, cada equipamento também precisará de tomada com energia.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Router,
-      bgColor: "#4d64ae"
+      icon: Router
     },
     {
       question: "Meu plano tem mais de um roteador, como é feita a instalação?",
       answer: "Para o serviço de internet ser usado em sua plenitude, interligamos os roteadores dos planos Max e Super através de cabos UTP. Isso garantirá que a velocidade contratada chegue nos equipamentos através dos cabos sem nenhuma interferência. Cada roteador instalado será responsável em distribuir o sinal wi-fi 2.4 e 5.8 no ambiente em que está.\n\nNa sua residência, é necessário que os dutos estejam livres para a passagem do cabo UTP. Na instalação, não nos responsabilizamos por obras civis para desobstrução.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Wifi,
-      bgColor: "#f48120"
+      icon: Wifi
     },
     {
       question: "O sinal wi-fi disponibilizado cobre toda minha casa?",
       answer: "Navegar na internet por rede wi-fi é uma realidade e uma conquista tecnológica, porém essa tecnologia de acesso tem várias limitações de sua própria natureza. Vários fatores podem interferir na propagação do sinal dentro da sua residência: Telefone sem fio, vidros, espelhos, wi-fi dos vizinhos. Obstáculos como paredes e lajes reduzem muito a amplitude do sinal. Além disso, quanto mais distante você estiver do roteador, menores serão as velocidades. Pensando nestes cenários, desenvolvemos os produtos MAX e SUPER. Queremos que nossos clientes usufruam ao máximo as altas velocidades da SUPERNET FIBRA, instalamos roteadores de ótimas marcas com tecnologia AC Gigabits com sinal 2.4 e 5.8 mega-hertz de potência, normalmente, cada roteador em circunstâncias normais, cobre uma área de 50m² a 60m².",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Signal,
-      bgColor: "#4d64ae"
+      icon: Signal
     },
     {
       question: "Qual é a velocidade real da internet fibra da SUPERNET FIBRA?",
       answer: "Nossa internet fibra entrega exatamente a velocidade contratada. Com tecnologia 100% fibra óptica, você tem velocidade simétrica (upload = download) e latência ultra baixa. Realizamos testes regulares para garantir que você receba sempre o que contratou.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Zap,
-      bgColor: "#f48120"
+      icon: Zap
     },
     {
       question: "E se eu tiver problemas técnicos? Como é o suporte?",
       answer: "Nosso suporte técnico funciona 24/7 com atendimento 100% humano. Você pode nos contatar via WhatsApp, telefone ou chat online. A maioria dos problemas são resolvidos remotamente em minutos. Para casos que precisem visita técnica, não cobramos taxa de deslocamento.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: Headphones,
-      bgColor: "#4d64ae"
+      icon: Headphones
     },
     {
       question: "Como faço para contratar ou migrar minha internet?",
       answer: "É super simples! Entre em contato pelo WhatsApp, informe seu endereço e necessidades. Nossa equipe comercial prepara uma proposta personalizada. Cuidamos de todo o processo de migração, incluindo o cancelamento da operadora anterior se necessário.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: ShoppingCart,
-      bgColor: "#f48120"
+      icon: ShoppingCart
     },
     {
       question: "A SUPERNET FIBRA atende na minha região?",
       answer: "Estamos em constante expansão! Atendemos as principais cidades de São Paulo, Rio de Janeiro, Minas Gerais e Bahia, com novos bairros sendo conectados mensalmente. Entre em contato via WhatsApp informando seu CEP que verificamos a disponibilidade imediatamente.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: MapPin,
-      bgColor: "#4d64ae"
+      icon: MapPin
     },
     {
       question: "Como é o pagamento da mensalidade?",
       answer: "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
-      icon: CreditCard,
-      bgColor: "#f48120"
+      icon: CreditCard
     }
   ];
 
@@ -122,17 +112,15 @@ const FAQ = () => {
             {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => {
               const IconComponent = faq.icon;
               return (
-                 <div
-                  key={index}
-                  className={`bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
+                   <div className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
                     <AccordionItem value={`item-${index}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300" style={{ backgroundColor: faq.bgColor }}>
-                            <IconComponent className="w-6 h-6 text-white" />
+                          <div className="w-12 h-12 bg-white border-2 border-[#4d64ae] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <IconComponent className="w-6 h-6 text-[#4d64ae]" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
@@ -182,15 +170,15 @@ const FAQ = () => {
               return (
                 <div
                   key={adjustedIndex}
-                  className={`bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
+                  className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#f48120] shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 animate-fade-in"
                   style={{ animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
                     <AccordionItem value={`item-${adjustedIndex}`} className="border-none">
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
-                          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300" style={{ backgroundColor: faq.bgColor }}>
-                            <IconComponent className="w-6 h-6 text-white" />
+                          <div className="w-12 h-12 bg-white border-2 border-[#f48120] rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300">
+                            <IconComponent className="w-6 h-6 text-[#f48120]" />
                           </div>
                           <div className="flex-1">
                             <h3 className="text-base font-bold text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
