@@ -1,12 +1,108 @@
-import React, { useState } from 'react';
-import { Bot, Minimize2, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Bot, X, Send, Paperclip, Mic } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
 }
 
+interface Message {
+  id: string;
+  content: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+  type: 'text' | 'emoji';
+}
+
 const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      content: 'Olá! Sou o assistente virtual da SUPERNET FIBRA. Como posso ajudá-lo hoje?',
+      sender: 'bot',
+      timestamp: new Date(),
+      type: 'text'
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: inputMessage,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    // Simular resposta do bot
+    setTimeout(() => {
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: getBotResponse(inputMessage),
+        sender: 'bot',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      setMessages(prev => [...prev, botResponse]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const getBotResponse = (userInput: string) => {
+    const input = userInput.toLowerCase();
+    
+    if (input.includes('plano') || input.includes('preço')) {
+      return 'Temos planos de 100MB, 300MB e 500MB! Todos com instalação gratuita e suporte 24/7. Gostaria de saber mais detalhes sobre algum plano específico?';
+    }
+    
+    if (input.includes('instalação')) {
+      return 'Nossa instalação é 100% gratuita! Nossa equipe agenda um horário e deixa tudo funcionando em até 2 horas. Que bairro você mora?';
+    }
+    
+    if (input.includes('velocidade')) {
+      return 'Nossa fibra óptica entrega 100% da velocidade contratada! Se contratar 100MB, recebe exatos 100MB. Quer fazer um teste de velocidade?';
+    }
+    
+    if (input.includes('suporte') || input.includes('problema')) {
+      return 'Nosso suporte funciona 24/7! Pode me contar qual problema está enfrentando que vou te ajudar imediatamente.';
+    }
+    
+    return 'Entendi! Posso te ajudar com informações sobre planos, instalação, velocidade ou suporte técnico. O que mais gostaria de saber?';
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const addEmoji = (emoji: string) => {
+    setInputMessage(prev => prev + emoji);
+    textareaRef.current?.focus();
+  };
+
+  const commonEmojis = ['😊', '👍', '❤️', '😂', '🤔', '👋', '🙌', '🔥'];
 
   return (
     <>
@@ -66,23 +162,104 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 h-full overflow-hidden">
-              <iframe
-                src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
-                title="Chatbot SUPERNET"
-                className="w-full h-full border-0"
-                allow="microphone; camera; clipboard-read; clipboard-write"
-                style={{
-                  minHeight: '500px',
-                  filter: 'none',
-                }}
-              />
-              <style>{`
-                iframe[title="Chatbot SUPERNET"] {
-                  border: none !important;
-                  background: transparent !important;
-                }
-              `}</style>
+            <div className="flex flex-col h-full">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                        message.sender === 'user'
+                          ? 'bg-gradient-to-r from-[#4d64ae] to-[#f48120] text-white'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <span className="text-xs opacity-70 mt-1 block">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Emoji Bar */}
+              <div className="px-4 py-2 border-t bg-gray-50">
+                <div className="flex gap-2 justify-center">
+                  {commonEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => addEmoji(emoji)}
+                      className="text-xl hover:scale-125 transition-transform duration-200"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input Area */}
+              <div className="p-4 border-t bg-white">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <Textarea
+                      ref={textareaRef}
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Digite sua mensagem..."
+                      className="min-h-[40px] max-h-[120px] resize-none rounded-2xl border-2 border-gray-200 focus:border-[#4d64ae] focus:ring-[#4d64ae]"
+                      rows={1}
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full hover:bg-gray-100"
+                      title="Anexar arquivo"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full hover:bg-gray-100"
+                      title="Gravar áudio"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!inputMessage.trim()}
+                      className="rounded-full bg-gradient-to-r from-[#4d64ae] to-[#f48120] hover:opacity-90"
+                      size="icon"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
