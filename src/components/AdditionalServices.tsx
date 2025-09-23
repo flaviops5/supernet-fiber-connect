@@ -38,22 +38,22 @@ const AdditionalServices = () => {
       highlight: "Primeiro mês grátis"
     },
     {
-      title: "Monitoramento Residencial",
-      description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
-      highlight: "Sem taxa de adesão"
+      title: "Redes WiFi",
+      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
+      highlight: "Instalação gratuita"
     },
     {
-      title: "Monitoramento de Veículos",
-      description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
-      highlight: "Desconto anual"
+      title: "Telefonia Fixa",
+      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
+      highlight: "A partir de R$ 29,90"
     }
   ];
 
   // Calculate circular positions with varied distances for movement
   const getServicePosition = (index: number, total: number) => {
-    // Vary radius for more dynamic layout (180-260px range)
-    const baseRadius = 200;
-    const radiusVariation = [40, -20, 30, -30, 20, -40, 35, -25, 25]; // Different for each service
+    // Vary radius for more dynamic layout (207-299px range - 15% larger)
+    const baseRadius = 230;
+    const radiusVariation = [46, -23, 35, -35, 23, -46, 40, -29, 29]; // Different for each service
     const radius = baseRadius + (radiusVariation[index] || 0);
     
     const angle = (index * 2 * Math.PI) / total;
@@ -88,7 +88,7 @@ const AdditionalServices = () => {
         </div>
 
         {/* Interactive Radial Services */}
-        <div className="relative h-[600px] max-w-4xl mx-auto mb-16">
+        <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
             <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center shadow-elegant">
@@ -128,8 +128,8 @@ const AdditionalServices = () => {
                 
                 {/* Service Point with Title */}
                 <div className="relative z-20">
-                  {/* Always Visible Title - Now in front */}
-                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 min-w-max z-30">
+                  {/* Always Visible Title - Now in front with better spacing */}
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 min-w-max z-30">
                     <h3 className="text-xs font-bold font-varela uppercase text-foreground bg-gradient-primary text-transparent bg-clip-text text-center px-2 py-1 bg-card/80 rounded-lg backdrop-blur-sm border border-border/50">
                       {service.title}
                     </h3>
@@ -140,8 +140,8 @@ const AdditionalServices = () => {
                     <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
                   </div>
                   
-                  {/* Hover Expanded Card - High z-index to be above logo */}
-                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
+                  {/* Hover Expanded Card - Highest z-index to be above everything */}
+                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[9999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
                     <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
                       <div className="text-center">
                         <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
