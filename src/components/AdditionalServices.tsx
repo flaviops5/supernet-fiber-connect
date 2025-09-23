@@ -13,9 +13,9 @@ const AdditionalServices = () => {
       highlight: "Sem taxa de adesão"
     },
     {
-      title: "Equipamentos",
-      description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
-      highlight: "Instalação inclusa"
+      title: "Telemedicina",
+      description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
+      highlight: "Primeiro mês grátis"
     },
     {
       title: "Redes WiFi",
@@ -38,9 +38,9 @@ const AdditionalServices = () => {
       highlight: "Combo por R$ 49,90/mês"
     },
     {
-      title: "Telemedicina",
-      description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
-      highlight: "Primeiro mês grátis"
+      title: "Equipamentos",
+      description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
+      highlight: "Instalação inclusa"
     },
     {
       title: "Reparos Internos",
@@ -91,12 +91,12 @@ const AdditionalServices = () => {
         <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
           {/* Blue circle behind logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
             <div className="w-32 h-32 bg-gradient-primary rounded-full shadow-elegant"></div>
           </div>
           
           {/* Logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
             <img 
               src="/assets/logo-supernet.png" 
               alt="SUPERNET FIBRA" 
@@ -171,7 +171,7 @@ const AdditionalServices = () => {
           })}
 
           {/* Instructions */}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
             <p className="text-muted-foreground text-sm animate-pulse">
               Passe o mouse sobre os pontos para ver os serviços
             </p>
