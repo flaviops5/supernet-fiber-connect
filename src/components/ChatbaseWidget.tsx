@@ -124,32 +124,37 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
 
   return (
     <>
-      {/* Floating Chat Widget - Bottom Right */}
-      <div className="fixed bottom-6 right-6 z-50 max-w-sm w-80">
+      {/* Horizontal Chat Widget - Bottom Center */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl px-4">
         
-        {/* Collapsed State - Compact Widget */}
+        {/* Collapsed State - Horizontal Bar */}
         {!isExpanded && (
           <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-lg overflow-hidden">
             {/* Header */}
             <div 
               onClick={() => setIsExpanded(true)}
-              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:opacity-90 transition-all duration-300"
+              className="flex items-center justify-between px-6 py-3 cursor-pointer hover:opacity-90 transition-all duration-300"
             >
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <Bot className="w-4 h-4 text-white" />
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                
+                <div className="text-white">
+                  <h3 className="font-medium text-base">Assistente Virtual SUPERNET</h3>
+                  <p className="text-white/90 text-sm">Contrate agora sua internet - resposta em segundos</p>
+                </div>
               </div>
               
-              <div className="text-white flex-1">
-                <h3 className="font-medium text-sm">Assistente SUPERNET</h3>
-                <p className="text-white/90 text-xs">Fale conosco</p>
+              <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
+                <MessageCircle className="w-4 h-4" />
+                Fale conosco
               </div>
-              
-              <MessageCircle className="w-4 h-4 text-white/80" />
             </div>
             
             {/* Always Visible Input Area */}
-            <div className="bg-white p-3 border-t border-white/20">
-              <div className="flex items-center gap-2">
+            <div className="bg-white p-4 border-t border-white/20">
+              <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <Textarea
                     ref={textareaRef}
@@ -157,7 +162,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Digite sua mensagem..."
-                    className="min-h-[32px] text-sm resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
+                    className="min-h-[40px] resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
                     rows={1}
                   />
                 </div>
@@ -165,10 +170,10 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim()}
-                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-8 w-8"
+                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-10 w-10"
                   size="icon"
                 >
-                  <Send className="w-3 h-3" />
+                  <Send className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -177,26 +182,26 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
 
         {/* Expanded State - Full Chat Interface */}
         {isExpanded && (
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-96 flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-[60vh] flex flex-col">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-500 to-orange-500 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot className="w-4 h-4 text-white" />
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-500 to-orange-500 text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Bot className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm">Assistente SUPERNET</h3>
-                  <p className="text-white/80 text-xs">🟢 Online</p>
+                  <h3 className="font-medium text-base">Assistente Virtual SUPERNET</h3>
+                  <p className="text-white/80 text-sm">🟢 Online - Resposta em segundos</p>
                 </div>
               </div>
               
               <button
                 onClick={() => setIsExpanded(false)}
-                className="hover:bg-white/20 p-1.5 rounded-lg transition-colors"
+                className="hover:bg-white/20 p-2 rounded-lg transition-colors"
                 title="Fechar"
               >
-                <X size={14} />
+                <X size={16} />
               </button>
             </div>
 
@@ -213,7 +218,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
 
             {/* Emoji Picker */}
             {showEmojiPicker && (
-              <div className="absolute bottom-16 left-2 right-2 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10">
+              <div className="absolute bottom-20 left-4 right-4 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10">
                 <div className="grid grid-cols-8 gap-1 max-h-24 overflow-y-auto">
                   {commonEmojis.map((emoji) => (
                     <button
@@ -229,16 +234,16 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
             )}
 
             {/* Input Area */}
-            <div className="p-3 border-t bg-white">
-              <div className="flex items-end gap-2">
+            <div className="p-4 border-t bg-white">
+              <div className="flex items-end gap-3">
                 <Button
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   variant="outline"
                   size="icon"
-                  className="rounded-full hover:bg-gray-100 h-8 w-8"
+                  className="rounded-full hover:bg-gray-100 h-10 w-10"
                   title="Emojis"
                 >
-                  <Smile className="w-3 h-3" />
+                  <Smile className="w-4 h-4" />
                 </Button>
                 
                 <div className="flex-1">
@@ -248,7 +253,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Digite sua mensagem..."
-                    className="min-h-[32px] max-h-20 text-sm resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
+                    className="min-h-[40px] max-h-20 resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
                     rows={1}
                   />
                 </div>
@@ -256,10 +261,10 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim()}
-                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-8 w-8"
+                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-10 w-10"
                   size="icon"
                 >
-                  <Send className="w-3 h-3" />
+                  <Send className="w-4 h-4" />
                 </Button>
               </div>
             </div>
