@@ -99,37 +99,33 @@ const Testimonials = () => {
                   <div className="h-full flex flex-col justify-between">
                     {/* Testimonial Content */}
                     <div className="space-y-6">
-                      {/* Profile and Stars */}
-                      <div className="flex items-start space-x-4">
-                        {/* Profile Avatar */}
-                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                          <User className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        
-                        <div className="flex-1 space-y-4">
-                          {/* Stars */}
-                          <div className="flex space-x-1">
-                            {[...Array(testimonial.rating)].map((_, i) => (
-                              <Star key={i} className="w-5 h-5 fill-orange text-orange" />
-                            ))}
-                          </div>
-
-                          {/* Testimonial Text */}
-                          <blockquote className="text-lg md:text-xl text-foreground leading-relaxed">
-                            "{testimonial.text}"
-                          </blockquote>
-                        </div>
+                      {/* Stars */}
+                      <div className="flex space-x-1 mb-4">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="w-5 h-5 fill-orange text-orange" />
+                        ))}
                       </div>
+
+                      {/* Testimonial Text */}
+                      <blockquote className="text-sm md:text-base text-foreground leading-relaxed">
+                        "{testimonial.text}"
+                      </blockquote>
                     </div>
 
                     {/* Customer Info */}
                     <div className="flex items-center justify-between pt-6 border-t border-border">
-                      <div>
-                        <div className="font-semibold text-foreground text-lg">
-                          {testimonial.name}
+                      <div className="flex items-center space-x-3">
+                        {/* Profile Avatar */}
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-5 h-5 text-muted-foreground" />
                         </div>
-                        <div className="text-muted-foreground">
-                          {testimonial.location}
+                        <div>
+                          <div className="font-semibold text-foreground text-lg">
+                            {testimonial.name}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {testimonial.location}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
