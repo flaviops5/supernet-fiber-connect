@@ -92,32 +92,49 @@ const FAQ = () => {
         </div>
 
         {/* FAQ Two Column Layout */}
-        <div className="grid lg:grid-cols-2 gap-12 max-w-7xl mx-auto">
-          {/* Left Column - Image */}
-          <div className="lg:self-stretch">
-            <div className="relative bg-card rounded-2xl overflow-hidden shadow-elegant h-full">
-              <img
-                src={faqSupport}
-                alt="Equipe de suporte ajudando clientes com dúvidas"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full min-h-96 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-gray/30 to-transparent" />
-              <div className="absolute bottom-6 left-6 right-6 text-white">
-                <h3 className="text-2xl font-bold font-varela uppercase mb-2">Tire suas dúvidas</h3>
-                <p className="text-white/90">Encontre respostas rápidas para as principais questões sobre nossos serviços</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - FAQ Accordion */}
+        <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+          {/* Left Column - First Half of FAQs */}
           <div>
             <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
+              {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => (
                 <AccordionItem
                   key={index}
                   value={`item-${index}`}
+                  className="bg-card border border-border rounded-xl px-6 py-2 shadow-sm hover:shadow-card transition-shadow"
+                >
+                  <AccordionTrigger className="text-left text-lg font-semibold text-foreground hover:text-primary py-6">
+                    <span>{faq.question}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-6">
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {faq.answer}
+                      </p>
+                      {faq.videoUrl && (
+                        <div className="relative bg-card rounded-lg overflow-hidden shadow-sm">
+                          <iframe
+                            src={faq.videoUrl}
+                            title={`Vídeo explicativo: ${faq.question}`}
+                            className="w-full h-64 border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          {/* Right Column - Second Half of FAQs */}
+          <div>
+            <Accordion type="single" collapsible className="space-y-4">
+              {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => (
+                <AccordionItem
+                  key={index + Math.ceil(faqs.length / 2)}
+                  value={`item-${index + Math.ceil(faqs.length / 2)}`}
                   className="bg-card border border-border rounded-xl px-6 py-2 shadow-sm hover:shadow-card transition-shadow"
                 >
                   <AccordionTrigger className="text-left text-lg font-semibold text-foreground hover:text-primary py-6">
