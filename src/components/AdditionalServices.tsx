@@ -90,6 +90,12 @@ const AdditionalServices = () => {
         {/* Interactive Radial Services */}
         <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
+          {/* Blue circle behind logo */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[-1]">
+            <div className="w-32 h-32 bg-gradient-primary rounded-full shadow-elegant"></div>
+          </div>
+          
+          {/* Logo */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
             <img 
               src="/assets/logo-supernet.png" 
