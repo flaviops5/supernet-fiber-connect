@@ -53,7 +53,7 @@ const AdditionalServices = () => {
   const getServicePosition = (index: number, total: number) => {
     // Vary radius for more dynamic layout (207-299px range - 15% larger)
     const baseRadius = 230;
-    const radiusVariation = [46, -23, 35, -35, 23, -46, 40, -29, 29]; // Different for each service
+    const radiusVariation = [46, -23, 35, -35, 23, -46, 40, 60, 29]; // Different for each service
     const radius = baseRadius + (radiusVariation[index] || 0);
     
     const angle = (index * 2 * Math.PI) / total;
