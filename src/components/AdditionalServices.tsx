@@ -1,5 +1,6 @@
-import { Home, Tv, Camera, Wrench } from 'lucide-react';
+import { Home, Tv, Camera, Wrench, Wifi, Phone, Heart, Shield, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import repairTechnicianImg from '@/assets/repair-technician.png';
 
 const AdditionalServices = () => {
   const services = [
@@ -14,7 +15,7 @@ const AdditionalServices = () => {
       icon: Tv,
       title: "Canais de Streaming",
       description: "Acesso completo aos melhores conteúdos de entretenimento",
-      features: ["Netflix Premium", "Amazon Prime Video", "Disney+ & Star+", "Globoplay & SporTV"],
+      features: ["Paramount+", "Telecine", "HBO MAX", "ESPN", "Premier", "Dentre outros"],
       highlight: "Combo por R$ 49,90/mês"
     },
     {
@@ -26,10 +27,46 @@ const AdditionalServices = () => {
     },
     {
       icon: Wrench,
-      title: "Serviços Domésticos",
+      title: "Reparos Internos",
       description: "Pequenos reparos e instalações residenciais com técnicos especializados",
       features: ["Instalação de TVs", "Montagem de móveis", "Pequenos reparos elétricos", "Configuração de rede"],
-      highlight: "Desconto para clientes"
+      highlight: "Desconto para clientes",
+      image: repairTechnicianImg
+    },
+    {
+      icon: Wifi,
+      title: "Redes WiFi",
+      description: "Instalação e configuração de redes WiFi profissionais para sua casa ou empresa",
+      features: ["Cobertura total", "Alta velocidade", "Segurança avançada", "Suporte técnico"],
+      highlight: "Instalação gratuita"
+    },
+    {
+      icon: Phone,
+      title: "Telefonia Fixa",
+      description: "Linha telefônica fixa com qualidade superior e tarifas especiais",
+      features: ["Chamadas ilimitadas", "Qualidade HD", "Portabilidade gratuita", "Integração com celular"],
+      highlight: "A partir de R$ 29,90"
+    },
+    {
+      icon: Heart,
+      title: "Telemedicina",
+      description: "Consultas médicas online com profissionais qualificados",
+      features: ["Consultas 24h", "Receitas digitais", "Especialistas", "Plano familiar"],
+      highlight: "Primeiro mês grátis"
+    },
+    {
+      icon: Shield,
+      title: "Monitoramento Residencial",
+      description: "Sistema completo de monitoramento e segurança para sua residência",
+      features: ["Monitoramento 24h", "Central de alarmes", "App mobile", "Resposta rápida"],
+      highlight: "Sem taxa de adesão"
+    },
+    {
+      icon: Car,
+      title: "Monitoramento de Veículos",
+      description: "Rastreamento e monitoramento completo do seu veículo",
+      features: ["GPS em tempo real", "Bloqueio remoto", "Histórico de rotas", "Alertas personalizados"],
+      highlight: "Desconto anual"
     }
   ];
 
@@ -44,62 +81,72 @@ const AdditionalServices = () => {
         {/* Section Header */}
         <div className="text-center max-w-4xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
-            O que mais podemos oferecer{' '}
-            <span className="gradient-text">pra você?</span>
+            Veja o que podemos fazer{' '}
+            <span className="gradient-text">por você</span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Além da melhor internet fibra, oferecemos soluções completas para 
-            tornar sua casa mais inteligente, segura e conectada.
+            tornar sua casa mais inteligente, segura, conectada e também serviços de reparos.
           </p>
         </div>
 
         {/* Services Grid */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl p-8 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full"
+              className="bg-card border border-border rounded-2xl p-6 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full"
             >
               {/* Header */}
-              <div className="flex items-start space-x-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <service.icon className="w-8 h-8 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold font-varela uppercase text-foreground group-hover:text-primary transition-colors mb-2">
-                    {service.title}
-                  </h3>
-                  <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-sm font-medium">
-                    {service.highlight}
+              <div className="flex flex-col items-center text-center mb-6">
+                {service.image ? (
+                  <div className="w-24 h-24 mb-4 rounded-xl overflow-hidden bg-gradient-primary p-2">
+                    <img 
+                      src={service.image} 
+                      alt={service.title}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
+                ) : (
+                  <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-4">
+                    <service.icon className="w-8 h-8 text-primary-foreground" />
+                  </div>
+                )}
+                <h3 className="text-xl font-bold font-varela uppercase text-foreground group-hover:text-primary transition-colors mb-2">
+                  {service.title}
+                </h3>
+                <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-sm font-medium">
+                  {service.highlight}
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-4 text-center text-sm">
                 {service.description}
               </p>
 
               {/* Features */}
-              <ul className="space-y-2 mb-8 flex-grow">
+              <ul className="space-y-2 mb-6 flex-grow">
                 {service.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-orange rounded-full" />
+                    <div className="w-2 h-2 bg-orange rounded-full flex-shrink-0" />
                     <span className="text-sm text-foreground">{feature}</span>
                   </li>
                 ))}
               </ul>
-
-              {/* CTA */}
-              <Button
-                onClick={() => handleWhatsApp(service.title)}
-                variant="outline"
-                className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                Solicitar Orçamento
-              </Button>
             </div>
           ))}
+        </div>
+
+        {/* Single CTA Button */}
+        <div className="text-center mt-12">
+          <Button
+            onClick={() => handleWhatsApp("serviços completos")}
+            size="lg"
+            className="bg-gradient-primary hover:opacity-90 text-white text-lg px-8 py-6"
+          >
+            Solicitar Orçamento Geral
+          </Button>
         </div>
 
         {/* Bottom CTA */}
