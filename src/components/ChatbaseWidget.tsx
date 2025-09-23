@@ -124,126 +124,143 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
 
   return (
     <>
-      {/* Horizontal Chat Bar at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+      {/* Floating Chat Widget - Bottom Right */}
+      <div className="fixed bottom-6 right-6 z-50 max-w-sm w-80">
         
-        {/* Collapsed State - Horizontal Bar */}
+        {/* Collapsed State - Compact Widget */}
         {!isExpanded && (
-          <div className="pointer-events-auto bg-gradient-to-r from-red-500 to-orange-500 shadow-2xl">
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-lg overflow-hidden">
+            {/* Header */}
             <div 
               onClick={() => setIsExpanded(true)}
-              className="flex items-center justify-between px-6 py-4 cursor-pointer hover:opacity-90 transition-all duration-300"
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:opacity-90 transition-all duration-300"
             >
-              <div className="flex items-center gap-4">
-                {/* Robot Icon */}
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot className="w-7 h-7 text-white" />
-                </div>
-                
-                <div className="text-white">
-                  <h3 className="font-bold text-lg">Assistente Virtual SUPERNET</h3>
-                  <p className="text-white/90 text-sm">Contrate agora sua internet - resposta em segundos</p>
-                </div>
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <Bot className="w-4 h-4 text-white" />
               </div>
               
-              <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
-                <MessageCircle className="w-4 h-4" />
-                Fale conosco
+              <div className="text-white flex-1">
+                <h3 className="font-medium text-sm">Assistente SUPERNET</h3>
+                <p className="text-white/90 text-xs">Fale conosco</p>
+              </div>
+              
+              <MessageCircle className="w-4 h-4 text-white/80" />
+            </div>
+            
+            {/* Always Visible Input Area */}
+            <div className="bg-white p-3 border-t border-white/20">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Textarea
+                    ref={textareaRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Digite sua mensagem..."
+                    className="min-h-[32px] text-sm resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
+                    rows={1}
+                  />
+                </div>
+                
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim()}
+                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-8 w-8"
+                  size="icon"
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Expanded State - Chat Interface with Iframe */}
+        {/* Expanded State - Full Chat Interface */}
         {isExpanded && (
-          <div className="pointer-events-auto bg-white/95 backdrop-blur-sm shadow-2xl border-t-2 border-white/20 transition-all duration-500 fixed bottom-0 left-0 right-0 h-[70vh]">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-96 flex flex-col">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-500 to-orange-500 text-white">
-              <div className="flex items-center gap-4">
-                {/* Robot Avatar */}
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot className="w-7 h-7 text-white" />
+            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-500 to-orange-500 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">Assistente Virtual SUPERNET</h3>
-                  <p className="text-white/80 text-sm">🟢 Online - Resposta em segundos</p>
+                  <h3 className="font-medium text-sm">Assistente SUPERNET</h3>
+                  <p className="text-white/80 text-xs">🟢 Online</p>
                 </div>
               </div>
               
               <button
                 onClick={() => setIsExpanded(false)}
-                className="hover:bg-white/20 p-2 rounded-lg transition-colors"
+                className="hover:bg-white/20 p-1.5 rounded-lg transition-colors"
                 title="Fechar"
               >
-                <X size={18} />
+                <X size={14} />
               </button>
             </div>
 
             {/* Chat Content with Iframe */}
-            <div className="flex flex-col h-full">
-              {/* Iframe for Chatbot */}
-              <div className="flex-1 relative">
-                <iframe
-                  ref={iframeRef}
-                  src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
-                  className="w-full h-full border-0"
-                  allow="microphone"
-                  title="Chatbot"
-                />
+            <div className="flex-1 relative">
+              <iframe
+                ref={iframeRef}
+                src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
+                className="w-full h-full border-0"
+                allow="microphone"
+                title="Chatbot"
+              />
+            </div>
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-16 left-2 right-2 bg-white border border-gray-200 rounded-xl shadow-lg p-3 z-10">
+                <div className="grid grid-cols-8 gap-1 max-h-24 overflow-y-auto">
+                  {commonEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => addEmoji(emoji)}
+                      className="text-lg hover:bg-gray-100 rounded-lg p-1 transition-colors"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
+            )}
 
-              {/* Emoji Picker */}
-              {showEmojiPicker && (
-                <div className="absolute bottom-20 left-4 right-4 bg-white border-2 border-gray-200 rounded-2xl shadow-lg p-4 z-10">
-                  <div className="grid grid-cols-8 gap-2 max-h-32 overflow-y-auto">
-                    {commonEmojis.map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => addEmoji(emoji)}
-                        className="text-2xl hover:bg-gray-100 rounded-lg p-2 transition-colors"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+            {/* Input Area */}
+            <div className="p-3 border-t bg-white">
+              <div className="flex items-end gap-2">
+                <Button
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full hover:bg-gray-100 h-8 w-8"
+                  title="Emojis"
+                >
+                  <Smile className="w-3 h-3" />
+                </Button>
+                
+                <div className="flex-1">
+                  <Textarea
+                    ref={textareaRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Digite sua mensagem..."
+                    className="min-h-[32px] max-h-20 text-sm resize-none rounded-xl border border-gray-200 focus:border-red-500 focus:ring-red-500 focus:ring-1"
+                    rows={1}
+                  />
                 </div>
-              )}
-
-              {/* Input Area with Emoji Support */}
-              <div className="p-4 border-t bg-white relative">
-                <div className="flex items-end gap-3">
-                  <Button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full hover:bg-gray-100"
-                    title="Emojis"
-                  >
-                    <Smile className="w-4 h-4" />
-                  </Button>
-                  
-                  <div className="flex-1">
-                    <Textarea
-                      ref={textareaRef}
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Digite sua mensagem..."
-                      className="min-h-[40px] max-h-[120px] resize-none rounded-2xl border-2 border-gray-200 focus:border-red-500 focus:ring-red-500"
-                      rows={1}
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim()}
-                    className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90"
-                    size="icon"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
+                
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim()}
+                  className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90 h-8 w-8"
+                  size="icon"
+                >
+                  <Send className="w-3 h-3" />
+                </Button>
               </div>
             </div>
           </div>
