@@ -44,8 +44,7 @@ const AdditionalServices = () => {
         {/* Section Header */}
         <div className="text-center max-w-4xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
-            Serviços{' '}
-            <span className="gradient-text">Complementares</span>
+            O que mais podemos oferecer pra você?
           </h2>
           <p className="text-xl text-muted-foreground">
             Além da melhor internet fibra, oferecemos soluções completas para 
