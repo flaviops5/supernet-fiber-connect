@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Smile } from 'lucide-react';
+import { Bot, X, Send, Smile, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -142,12 +142,13 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                 
                 <div className="text-white">
                   <h3 className="font-bold text-lg">Assistente Virtual SUPERNET</h3>
-                  <p className="text-white/90 text-sm">Resposta em segundos</p>
+                  <p className="text-white/90 text-sm">Contrate agora sua internet - resposta em segundos</p>
                 </div>
               </div>
               
-              <div className="text-white/80 text-sm font-medium">
-                Contrate agora a sua Internet
+              <div className="flex items-center gap-2 text-white/80 text-sm font-medium">
+                <MessageCircle className="w-4 h-4" />
+                Fale conosco
               </div>
             </div>
           </div>
