@@ -31,10 +31,10 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
         {/* Expanded State - Chat Interface */}
         {isExpanded && (
           <div className={`bg-white rounded-lg shadow-2xl border transition-all duration-300 ${
-            isMinimized ? 'w-80 h-12' : 'w-80 h-96'
+            isMinimized ? 'w-96 h-12' : 'w-96 h-[500px]'
           }`}>
             {/* Header */}
-            <div className="flex items-center justify-between p-3 border-b bg-primary text-white rounded-t-lg">
+            <div className="flex items-center justify-between p-3 border-b bg-gradient-to-r from-red-accent to-orange text-white rounded-t-lg">
               <h3 className="font-semibold text-sm">Chat de Suporte</h3>
               <div className="flex items-center gap-1">
                 <button
@@ -54,13 +54,31 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
 
             {/* Chat Content */}
             {!isMinimized && (
-              <div className="flex-1 h-80">
+              <div className="flex-1 h-[440px]">
                 <iframe
                   src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
                   title="Chatbot"
                   className="w-full h-full border-0 rounded-b-lg"
                   allow="microphone"
+                  style={{
+                    filter: 'none',
+                  }}
                 />
+                <style>{`
+                  iframe[title="Chatbot"] {
+                    border: none !important;
+                  }
+                  iframe[title="Chatbot"]::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 50px;
+                    background: white;
+                    z-index: 10;
+                  }
+                `}</style>
               </div>
             )}
           </div>
