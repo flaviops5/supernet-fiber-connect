@@ -142,12 +142,12 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                 
                 <div className="text-white">
                   <h3 className="font-bold text-lg">Assistente Virtual SUPERNET</h3>
-                  <p className="text-white/90 text-sm">Clique aqui para conversar conosco - Resposta em segundos</p>
+                  <p className="text-white/90 text-sm">Resposta em segundos</p>
                 </div>
               </div>
               
               <div className="text-white/80 text-sm font-medium">
-                💬 Fale Conosco
+                Contrate agora a sua Internet
               </div>
             </div>
           </div>
