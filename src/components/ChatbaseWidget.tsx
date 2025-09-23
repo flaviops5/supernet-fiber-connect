@@ -129,7 +129,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
         
         {/* Collapsed State - Horizontal Bar */}
         {!isExpanded && (
-          <div className="pointer-events-auto bg-gradient-to-r from-[#4d64ae] to-[#f48120] shadow-2xl">
+          <div className="pointer-events-auto bg-gradient-to-r from-red-500 to-orange-500 shadow-2xl">
             <div 
               onClick={() => setIsExpanded(true)}
               className="flex items-center justify-between px-6 py-4 cursor-pointer hover:opacity-90 transition-all duration-300"
@@ -159,7 +159,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
           <div className="pointer-events-auto bg-white/95 backdrop-blur-sm shadow-2xl border-t-2 border-white/20 transition-all duration-500 fixed bottom-0 left-0 right-0 h-[70vh]">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-[#4d64ae] to-[#f48120] text-white">
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-500 to-orange-500 text-white">
               <div className="flex items-center gap-4">
                 {/* Robot Avatar */}
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -230,7 +230,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Digite sua mensagem..."
-                      className="min-h-[40px] max-h-[120px] resize-none rounded-2xl border-2 border-gray-200 focus:border-[#4d64ae] focus:ring-[#4d64ae]"
+                      className="min-h-[40px] max-h-[120px] resize-none rounded-2xl border-2 border-gray-200 focus:border-red-500 focus:ring-red-500"
                       rows={1}
                     />
                   </div>
@@ -238,7 +238,7 @@ const ChatbaseWidget = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: ChatbaseWidgetP
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim()}
-                    className="rounded-full bg-gradient-to-r from-[#4d64ae] to-[#f48120] hover:opacity-90"
+                    className="rounded-full bg-gradient-to-r from-red-500 to-orange-500 hover:opacity-90"
                     size="icon"
                   >
                     <Send className="w-4 h-4" />
