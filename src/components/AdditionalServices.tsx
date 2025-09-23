@@ -90,7 +90,7 @@ const AdditionalServices = () => {
         {/* Interactive Radial Services */}
         <div className="relative h-[690px] max-w-4xl mx-auto mb-16">
           {/* Central Logo */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[-1]">
             <img 
               src="/assets/logo-supernet.png" 
               alt="SUPERNET FIBRA" 
