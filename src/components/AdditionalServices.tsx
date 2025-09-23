@@ -132,9 +132,11 @@ const AdditionalServices = () => {
                   <div className={`absolute min-w-max z-30 ${
                     service.title === "Canais de Streaming" 
                       ? "top-1/2 right-8 transform -translate-y-1/2" // Position to the left of circle
-                      : service.title === "Equipamentos" || service.title === "Reparos Internos" 
-                        ? "top-12 left-1/2 transform -translate-x-1/2" // Move further down for these services
-                        : "top-10 left-1/2 transform -translate-x-1/2"  // Default position for others
+                      : service.title === "Equipamentos" 
+                        ? "top-1/2 left-8 transform -translate-y-1/2" // Position in front of circle
+                        : service.title === "Reparos Internos" 
+                          ? "top-12 left-1/2 transform -translate-x-1/2" // Move further down
+                          : "top-10 left-1/2 transform -translate-x-1/2"  // Default position for others
                   }`}>
                     <h3 className="text-xs font-bold font-varela uppercase text-foreground bg-gradient-primary text-transparent bg-clip-text text-center px-2 py-1 bg-card/80 rounded-lg backdrop-blur-sm border border-border/50">
                       {service.title}
