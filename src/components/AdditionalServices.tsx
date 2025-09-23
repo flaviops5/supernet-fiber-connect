@@ -3,36 +3,6 @@ import { Button } from '@/components/ui/button';
 const AdditionalServices = () => {
   const services = [
     {
-      title: "Automação Residencial",
-      description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
-      highlight: "A partir de R$ 299"
-    },
-    {
-      title: "Canais de Streaming",
-      description: "Acesso completo aos melhores conteúdos de entretenimento com Paramount+, Telecine, HBO MAX, ESPN, Premier e muito mais.",
-      highlight: "Combo por R$ 49,90/mês"
-    },
-    {
-      title: "Equipamentos & Segurança",
-      description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
-      highlight: "Instalação inclusa"
-    },
-    {
-      title: "Reparos Internos",
-      description: "Pequenos reparos e instalações residenciais com técnicos especializados em instalação de TVs, montagem de móveis, reparos elétricos e configuração de rede.",
-      highlight: "Desconto para clientes"
-    },
-    {
-      title: "Redes WiFi",
-      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
-      highlight: "Instalação gratuita"
-    },
-    {
-      title: "Telefonia Fixa",
-      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
-      highlight: "A partir de R$ 29,90"
-    },
-    {
       title: "Telemedicina",
       description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
       highlight: "Primeiro mês grátis"
@@ -46,6 +16,36 @@ const AdditionalServices = () => {
       title: "Telefonia Fixa",
       description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
       highlight: "A partir de R$ 29,90"
+    },
+    {
+      title: "Automações",
+      description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
+      highlight: "A partir de R$ 299"
+    },
+    {
+      title: "Canais de Streaming",
+      description: "Acesso completo aos melhores conteúdos de entretenimento com Paramount+, Telecine, HBO MAX, ESPN, Premier e muito mais.",
+      highlight: "Combo por R$ 49,90/mês"
+    },
+    {
+      title: "Equipamentos",
+      description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
+      highlight: "Instalação inclusa"
+    },
+    {
+      title: "Reparos Internos",
+      description: "Pequenos reparos e instalações residenciais com técnicos especializados em instalação de TVs, montagem de móveis, reparos elétricos e configuração de rede.",
+      highlight: "Desconto para clientes"
+    },
+    {
+      title: "Monitoramento Veicular",
+      description: "Sistema completo de rastreamento e monitoramento para seu veículo com GPS, bloqueio remoto, aplicativo mobile e suporte 24h.",
+      highlight: "A partir de R$ 39,90/mês"
+    },
+    {
+      title: "Monitoramento Residencial",
+      description: "Sistema de segurança residencial com câmeras, sensores, alarmes, monitoramento 24h e resposta rápida em caso de emergência.",
+      highlight: "A partir de R$ 99,90/mês"
     }
   ];
 
@@ -141,8 +141,8 @@ const AdditionalServices = () => {
                   </div>
                   
                   {/* Hover Expanded Card - Highest z-index to be above everything */}
-                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[9999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
-                    <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
+                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 min-w-[280px] pointer-events-none group-hover:pointer-events-auto" style={{ zIndex: 99999 }}>
+                    <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm relative">
                       <div className="text-center">
                         <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
                           {service.highlight}
