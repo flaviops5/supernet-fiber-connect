@@ -5,58 +5,61 @@ const AdditionalServices = () => {
     {
       title: "Automação Residencial",
       description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
-      highlight: "A partir de R$ 299",
-      position: { top: "10%", left: "20%" }
+      highlight: "A partir de R$ 299"
     },
     {
       title: "Canais de Streaming",
       description: "Acesso completo aos melhores conteúdos de entretenimento com Paramount+, Telecine, HBO MAX, ESPN, Premier e muito mais.",
-      highlight: "Combo por R$ 49,90/mês",
-      position: { top: "15%", right: "15%" }
+      highlight: "Combo por R$ 49,90/mês"
     },
     {
       title: "Equipamentos & Segurança",
       description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
-      highlight: "Instalação inclusa",
-      position: { top: "45%", right: "5%" }
+      highlight: "Instalação inclusa"
     },
     {
       title: "Reparos Internos",
       description: "Pequenos reparos e instalações residenciais com técnicos especializados em instalação de TVs, montagem de móveis, reparos elétricos e configuração de rede.",
-      highlight: "Desconto para clientes",
-      position: { bottom: "20%", right: "20%" }
+      highlight: "Desconto para clientes"
     },
     {
       title: "Redes WiFi",
       description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
-      highlight: "Instalação gratuita",
-      position: { bottom: "10%", left: "50%", transform: "translateX(-50%)" }
+      highlight: "Instalação gratuita"
     },
     {
       title: "Telefonia Fixa",
       description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
-      highlight: "A partir de R$ 29,90",
-      position: { bottom: "20%", left: "15%" }
+      highlight: "A partir de R$ 29,90"
     },
     {
       title: "Telemedicina",
       description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
-      highlight: "Primeiro mês grátis",
-      position: { top: "45%", left: "5%" }
+      highlight: "Primeiro mês grátis"
     },
     {
       title: "Monitoramento Residencial",
       description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
-      highlight: "Sem taxa de adesão",
-      position: { top: "15%", left: "50%", transform: "translateX(-50%)" }
+      highlight: "Sem taxa de adesão"
     },
     {
       title: "Monitoramento de Veículos",
       description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
-      highlight: "Desconto anual",
-      position: { top: "75%", right: "25%" }
+      highlight: "Desconto anual"
     }
   ];
+
+  // Calculate circular positions with equal distance from center
+  const getServicePosition = (index: number, total: number, radius: number = 220) => {
+    const angle = (index * 2 * Math.PI) / total;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    return {
+      left: `calc(50% + ${x}px)`,
+      top: `calc(50% + ${y}px)`,
+      transform: 'translate(-50%, -50%)'
+    };
+  };
 
   const handleWhatsApp = (serviceName: string) => {
     const message = `Olá! Tenho interesse no serviço de ${serviceName} da SUPERNET FIBRA. Gostaria de mais informações!`;
@@ -92,39 +95,60 @@ const AdditionalServices = () => {
           </div>
 
           {/* Service Points */}
-          {services.map((service, index) => (
-            <div
-              key={index}
-              className="absolute group cursor-pointer"
-              style={service.position}
-            >
-              {/* Connection Line */}
-              <div className="absolute w-1 h-16 bg-gradient-to-b from-primary/30 to-transparent origin-bottom transform rotate-[var(--rotation)] group-hover:from-primary group-hover:to-primary group-hover:shadow-glow transition-all duration-300"></div>
-              
-              {/* Service Point */}
-              <div className="relative">
-                {/* Small Circle */}
-                <div className="w-4 h-4 bg-primary rounded-full shadow-md group-hover:scale-150 transition-all duration-300"></div>
+          {services.map((service, index) => {
+            const position = getServicePosition(index, services.length);
+            const angle = (index * 2 * Math.PI) / services.length;
+            const lineAngle = (angle * 180) / Math.PI + 90; // Convert to degrees for CSS rotation
+            
+            return (
+              <div
+                key={index}
+                className="absolute group cursor-pointer"
+                style={position}
+              >
+                {/* Connection Line to Center */}
+                <div 
+                  className="absolute w-0.5 h-[220px] bg-gradient-to-b from-primary/20 to-primary/60 origin-bottom group-hover:from-primary group-hover:to-primary group-hover:shadow-glow transition-all duration-300 z-0"
+                  style={{
+                    transform: `rotate(${lineAngle + 180}deg)`,
+                    transformOrigin: 'bottom center',
+                    bottom: '50%',
+                    left: '50%',
+                    marginLeft: '-1px'
+                  }}
+                ></div>
                 
-                {/* Hover Card */}
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 min-w-[280px]">
-                  <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
-                    <div className="text-center">
-                      <h3 className="text-sm font-bold font-varela uppercase text-foreground mb-2 bg-gradient-primary text-transparent bg-clip-text">
-                        {service.title}
-                      </h3>
-                      <div className="inline-flex items-center bg-orange/10 text-orange px-2 py-1 rounded-full text-xs font-medium mb-3">
-                        {service.highlight}
+                {/* Service Point with Title */}
+                <div className="relative z-10">
+                  {/* Circle Point */}
+                  <div className="w-6 h-6 bg-primary rounded-full shadow-lg group-hover:scale-125 transition-all duration-300 flex items-center justify-center">
+                    <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
+                  </div>
+                  
+                  {/* Always Visible Title */}
+                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 min-w-max">
+                    <h3 className="text-xs font-bold font-varela uppercase text-foreground bg-gradient-primary text-transparent bg-clip-text text-center px-2 py-1 bg-card/80 rounded-lg backdrop-blur-sm border border-border/50">
+                      {service.title}
+                    </h3>
+                  </div>
+                  
+                  {/* Hover Expanded Card */}
+                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
+                    <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
+                      <div className="text-center">
+                        <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
+                          {service.highlight}
+                        </div>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {service.description}
+                        </p>
                       </div>
-                      <p className="text-muted-foreground text-xs leading-relaxed">
-                        {service.description}
-                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Instructions */}
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
