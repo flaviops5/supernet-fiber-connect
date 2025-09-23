@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/accordion";
 import { Phone, MessageCircle, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import faqSupport from '@/assets/faq-support-desk-wide.jpg';
+import faqSupport from '@/assets/faq-support-desk-hq.jpg';
 import personPointing from '@/assets/person-pointing-faq.jpg';
 
 const FAQ = () => {
