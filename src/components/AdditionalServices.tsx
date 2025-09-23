@@ -171,7 +171,7 @@ const AdditionalServices = () => {
           })}
 
           {/* Instructions */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center">
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-center">
             <p className="text-muted-foreground text-sm animate-pulse">
               Passe o mouse sobre os pontos para ver os serviços
             </p>
