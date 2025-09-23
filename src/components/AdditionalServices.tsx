@@ -49,15 +49,21 @@ const AdditionalServices = () => {
     }
   ];
 
-  // Calculate circular positions with equal distance from center
-  const getServicePosition = (index: number, total: number, radius: number = 220) => {
+  // Calculate circular positions with varied distances for movement
+  const getServicePosition = (index: number, total: number) => {
+    // Vary radius for more dynamic layout (180-260px range)
+    const baseRadius = 200;
+    const radiusVariation = [40, -20, 30, -30, 20, -40, 35, -25, 25]; // Different for each service
+    const radius = baseRadius + (radiusVariation[index] || 0);
+    
     const angle = (index * 2 * Math.PI) / total;
     const x = Math.cos(angle) * radius;
     const y = Math.sin(angle) * radius;
     return {
       left: `calc(50% + ${x}px)`,
       top: `calc(50% + ${y}px)`,
-      transform: 'translate(-50%, -50%)'
+      transform: 'translate(-50%, -50%)',
+      radius // Return radius for line length
     };
   };
 
@@ -96,7 +102,8 @@ const AdditionalServices = () => {
 
           {/* Service Points */}
           {services.map((service, index) => {
-            const position = getServicePosition(index, services.length);
+            const positionData = getServicePosition(index, services.length);
+            const { radius, ...position } = positionData;
             const angle = (index * 2 * Math.PI) / services.length;
             const lineAngle = (angle * 180) / Math.PI + 90; // Convert to degrees for CSS rotation
             
@@ -108,8 +115,9 @@ const AdditionalServices = () => {
               >
                 {/* Connection Line to Center */}
                 <div 
-                  className="absolute w-0.5 h-[220px] bg-gradient-to-b from-primary/20 to-primary/60 origin-bottom group-hover:from-primary group-hover:to-primary group-hover:shadow-glow transition-all duration-300 z-0"
+                  className="absolute w-0.5 bg-gradient-to-b from-primary/20 to-primary/60 origin-bottom group-hover:from-primary group-hover:to-primary group-hover:shadow-glow transition-all duration-300 z-0"
                   style={{
+                    height: `${radius}px`,
                     transform: `rotate(${lineAngle + 180}deg)`,
                     transformOrigin: 'bottom center',
                     bottom: '50%',
@@ -119,21 +127,21 @@ const AdditionalServices = () => {
                 ></div>
                 
                 {/* Service Point with Title */}
-                <div className="relative z-10">
-                  {/* Circle Point */}
-                  <div className="w-6 h-6 bg-primary rounded-full shadow-lg group-hover:scale-125 transition-all duration-300 flex items-center justify-center">
-                    <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
-                  </div>
-                  
-                  {/* Always Visible Title */}
-                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 min-w-max">
+                <div className="relative z-20">
+                  {/* Always Visible Title - Now in front */}
+                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 min-w-max z-30">
                     <h3 className="text-xs font-bold font-varela uppercase text-foreground bg-gradient-primary text-transparent bg-clip-text text-center px-2 py-1 bg-card/80 rounded-lg backdrop-blur-sm border border-border/50">
                       {service.title}
                     </h3>
                   </div>
                   
-                  {/* Hover Expanded Card */}
-                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
+                  {/* Circle Point - Behind title */}
+                  <div className="w-6 h-6 bg-primary rounded-full shadow-lg group-hover:scale-125 transition-all duration-300 flex items-center justify-center z-10">
+                    <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
+                  </div>
+                  
+                  {/* Hover Expanded Card - High z-index to be above logo */}
+                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
                     <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
                       <div className="text-center">
                         <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
@@ -156,17 +164,6 @@ const AdditionalServices = () => {
               Passe o mouse sobre os pontos para ver os serviços
             </p>
           </div>
-        </div>
-
-        {/* Single CTA Button */}
-        <div className="text-center mt-12">
-          <Button
-            onClick={() => handleWhatsApp("serviços completos")}
-            size="lg"
-            className="bg-gradient-primary hover:opacity-90 text-white text-lg px-8 py-6"
-          >
-            Solicitar Orçamento Geral
-          </Button>
         </div>
 
         {/* Bottom CTA */}
