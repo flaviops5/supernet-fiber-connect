@@ -29,88 +29,88 @@ const FAQ = () => {
       answer: "Fibra óptica é um filamento extremamente fino e flexível, feito de vidro ultrapuro, plástico ou outro isolante térmico (material de com alta resistência ao fluxo de corrente elétrica). Possui uma estrutura simples, composta por capa protetora, interface e núcleo.\n\nFFTH (Fiber To The Home, ou, Fibra para Casa), é a entrega da serviços de internet sobre fibra óptica. FFTH é o método mais rápido, confiável e seguro de conectar sua casa à internet. Transporta informações a velocidade da luz.\n\nA rede é lançada nos postes de energia espalhados em sua região. A partir do poste mais perto de sua casa, a fibra desce e entra na tubulação já existente e vai até o ponto escolhido para a instalação do modem óptico.\n\nEm caso de prédios, a fibra chega até o Distribuidor Geral (DG) e de lá sobre até cada shaft de cada andar. Em cada andar é colocado um Distribuidor Interno Óptico de parede (DIO), a partir deste DIO, a fibra entra em seu apartamento pela tubulação já existente.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Network,
-      gradient: "from-blue-500 to-cyan-500",
-      bgColor: "bg-blue-50"
+      gradient: "from-[#4d64ae] to-[#f48120]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Como funciona a instalação? Tem custo adicional?",
       answer: "A instalação é 100% gratuita! Nossa equipe técnica especializada agenda um horário conveniente, realiza toda a instalação em até 2 horas e deixa tudo funcionando perfeitamente. Também oferecemos orientação completa sobre o uso dos equipamentos.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Wrench,
-      gradient: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50"
+      gradient: "from-[#f48120] to-[#f04a22]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Quais equipamentos serão instalados em minha casa e o que preciso ter em minha residência?",
       answer: "Será instalado um equipamento chamado ONU (Unidades óptica) ela é responsável em converter o sinal de luz em sinal digital. Dependendo do plano escolhido, além da ONU, será também instalado roteadores que são responsáveis pelo sinal wi-fi e também pela rede cabeada caso opte em usar este tipo de conexão.\n\nÉ necessário duas tomadas de energia no ponto principal onde será instalado a ONU e o primeiro roteador. Caso o plano escolhido seja com dois ou mais roteadores, cada equipamento também precisará de tomada com energia.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Router,
-      gradient: "from-purple-500 to-violet-500",
-      bgColor: "bg-purple-50"
+      gradient: "from-[#4d64ae] to-[#2e2a2a]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Meu plano tem mais de um roteador, como é feita a instalação?",
       answer: "Para o serviço de internet ser usado em sua plenitude, interligamos os roteadores dos planos Max e Super através de cabos UTP. Isso garantirá que a velocidade contratada chegue nos equipamentos através dos cabos sem nenhuma interferência. Cada roteador instalado será responsável em distribuir o sinal wi-fi 2.4 e 5.8 no ambiente em que está.\n\nNa sua residência, é necessário que os dutos estejam livres para a passagem do cabo UTP. Na instalação, não nos responsabilizamos por obras civis para desobstrução.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Wifi,
-      gradient: "from-orange-500 to-red-500",
-      bgColor: "bg-orange-50"
+      gradient: "from-[#f04a22] to-[#f48120]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "O sinal wi-fi disponibilizado cobre toda minha casa?",
       answer: "Navegar na internet por rede wi-fi é uma realidade e uma conquista tecnológica, porém essa tecnologia de acesso tem várias limitações de sua própria natureza. Vários fatores podem interferir na propagação do sinal dentro da sua residência: Telefone sem fio, vidros, espelhos, wi-fi dos vizinhos. Obstáculos como paredes e lajes reduzem muito a amplitude do sinal. Além disso, quanto mais distante você estiver do roteador, menores serão as velocidades. Pensando nestes cenários, desenvolvemos os produtos MAX e SUPER. Queremos que nossos clientes usufruam ao máximo as altas velocidades da SUPERNET FIBRA, instalamos roteadores de ótimas marcas com tecnologia AC Gigabits com sinal 2.4 e 5.8 mega-hertz de potência, normalmente, cada roteador em circunstâncias normais, cobre uma área de 50m² a 60m².",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Signal,
-      gradient: "from-indigo-500 to-purple-500",
-      bgColor: "bg-indigo-50"
+      gradient: "from-[#4d64ae] to-[#f04a22]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Qual é a velocidade real da internet fibra da SUPERNET FIBRA?",
       answer: "Nossa internet fibra entrega exatamente a velocidade contratada. Com tecnologia 100% fibra óptica, você tem velocidade simétrica (upload = download) e latência ultra baixa. Realizamos testes regulares para garantir que você receba sempre o que contratou.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Zap,
-      gradient: "from-yellow-500 to-orange-500",
-      bgColor: "bg-yellow-50"
+      gradient: "from-[#f48120] to-[#f04a22]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "E se eu tiver problemas técnicos? Como é o suporte?",
       answer: "Nosso suporte técnico funciona 24/7 com atendimento 100% humano. Você pode nos contatar via WhatsApp, telefone ou chat online. A maioria dos problemas são resolvidos remotamente em minutos. Para casos que precisem visita técnica, não cobramos taxa de deslocamento.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Headphones,
-      gradient: "from-pink-500 to-rose-500",
-      bgColor: "bg-pink-50"
+      gradient: "from-[#f04a22] to-[#2e2a2a]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Como faço para contratar ou migrar minha internet?",
       answer: "É super simples! Entre em contato pelo WhatsApp, informe seu endereço e necessidades. Nossa equipe comercial prepara uma proposta personalizada. Cuidamos de todo o processo de migração, incluindo o cancelamento da operadora anterior se necessário.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: ShoppingCart,
-      gradient: "from-teal-500 to-green-500",
-      bgColor: "bg-teal-50"
+      gradient: "from-[#4d64ae] to-[#f48120]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "A SUPERNET FIBRA atende na minha região?",
       answer: "Estamos em constante expansão! Atendemos as principais cidades de São Paulo, Rio de Janeiro, Minas Gerais e Bahia, com novos bairros sendo conectados mensalmente. Entre em contato via WhatsApp informando seu CEP que verificamos a disponibilidade imediatamente.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: MapPin,
-      gradient: "from-red-500 to-pink-500",
-      bgColor: "bg-red-50"
+      gradient: "from-[#f04a22] to-[#4d64ae]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "Como é o pagamento da mensalidade?",
       answer: "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: CreditCard,
-      gradient: "from-slate-500 to-gray-500",
-      bgColor: "bg-slate-50"
+      gradient: "from-[#2e2a2a] to-[#4d64ae]",
+      bgColor: "bg-[#f8f7f8]"
     },
     {
       question: "O plano tem fidelidade?",
       answer: "Trabalhamos com contratos flexíveis. Nosso plano básico não tem fidelidade. Para planos premium, oferecemos opções com 12 meses de fidelidade em troca de descontos especiais e benefícios extras. Você escolhe o que faz mais sentido para você.",
       videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1",
       icon: Shield,
-      gradient: "from-emerald-500 to-teal-500",
-      bgColor: "bg-emerald-50"
+      gradient: "from-[#f48120] to-[#4d64ae]",
+      bgColor: "bg-[#f8f7f8]"
     }
   ];
 
@@ -128,14 +128,14 @@ const FAQ = () => {
         {/* Section Header */}
         <div className="text-center max-w-4xl mx-auto mb-16">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-orange flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#4d64ae] to-[#f48120] flex items-center justify-center">
               <MessageCircle className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-4xl md:text-5xl font-bold font-varela uppercase text-foreground">
               Perguntas{' '}
               <span className="gradient-text">Frequentes</span>
             </h2>
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange to-red-accent flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#f48120] to-[#f04a22] flex items-center justify-center">
               <Play className="w-6 h-6 text-white ml-1" />
             </div>
           </div>
@@ -155,7 +155,7 @@ const FAQ = () => {
               return (
                 <div
                   key={index}
-                  className={`${faq.bgColor} rounded-2xl border-l-4 border-primary shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
+                  className={`${faq.bgColor} rounded-2xl border-l-4 border-[#4d64ae] shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
@@ -166,7 +166,7 @@ const FAQ = () => {
                             <IconComponent className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                            <h3 className="text-base font-bold text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
                               {faq.question}
                             </h3>
                           </div>
@@ -213,7 +213,7 @@ const FAQ = () => {
               return (
                 <div
                   key={adjustedIndex}
-                  className={`${faq.bgColor} rounded-2xl border-l-4 border-orange shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
+                  className={`${faq.bgColor} rounded-2xl border-l-4 border-[#f48120] shadow-elegant hover:shadow-glow transition-all duration-300 hover:scale-102 animate-fade-in`}
                   style={{ animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s` }}
                 >
                   <Accordion type="single" collapsible>
@@ -224,7 +224,7 @@ const FAQ = () => {
                             <IconComponent className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-bold text-foreground group-hover:text-orange transition-colors">
+                            <h3 className="text-base font-bold text-foreground group-hover:text-[#f48120] transition-colors leading-tight">
                               {faq.question}
                             </h3>
                           </div>
