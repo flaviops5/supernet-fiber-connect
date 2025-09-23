@@ -1,71 +1,50 @@
-import { Home, Tv, Camera, Wrench, Wifi, Phone, Heart, Shield, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import repairTechnicianImg from '@/assets/repair-technician.png';
 
 const AdditionalServices = () => {
   const services = [
     {
-      icon: Home,
       title: "Automação Residencial",
-      description: "Transforme sua casa em um lar inteligente com controle total pelo celular",
-      features: ["Controle de iluminação", "Fechaduras inteligentes", "Climatização automática", "Integração com Alexa/Google"],
+      description: "Transforme sua casa em um lar inteligente com controle de iluminação, fechaduras inteligentes, climatização automática e tudo integrado a Alexa/Google.",
       highlight: "A partir de R$ 299"
     },
     {
-      icon: Tv,
       title: "Canais de Streaming",
-      description: "Acesso completo aos melhores conteúdos de entretenimento",
-      features: ["Paramount+", "Telecine", "HBO MAX", "ESPN", "Premier", "Dentre outros"],
+      description: "Acesso completo aos melhores conteúdos de entretenimento com Paramount+, Telecine, HBO MAX, ESPN, Premier e muito mais.",
       highlight: "Combo por R$ 49,90/mês"
     },
     {
-      icon: Camera,
       title: "Equipamentos & Segurança",
-      description: "Câmeras IP, roteadores profissionais e equipamentos de rede",
-      features: ["Câmeras 4K com visão noturna", "Roteadores Wi-Fi 6E", "Fire TV Stick 4K", "DVR em nuvem"],
+      description: "Câmeras IP 4K com visão noturna, roteadores Wi-Fi 6E profissionais, Fire TV Stick 4K e DVR em nuvem para sua segurança.",
       highlight: "Instalação inclusa"
     },
     {
-      icon: Wrench,
       title: "Reparos Internos",
-      description: "Pequenos reparos e instalações residenciais com técnicos especializados",
-      features: ["Instalação de TVs", "Montagem de móveis", "Pequenos reparos elétricos", "Configuração de rede"],
-      highlight: "Desconto para clientes",
-      image: repairTechnicianImg
+      description: "Pequenos reparos e instalações residenciais com técnicos especializados em instalação de TVs, montagem de móveis, reparos elétricos e configuração de rede.",
+      highlight: "Desconto para clientes"
     },
     {
-      icon: Wifi,
       title: "Redes WiFi",
-      description: "Instalação e configuração de redes WiFi profissionais para sua casa ou empresa",
-      features: ["Cobertura total", "Alta velocidade", "Segurança avançada", "Suporte técnico"],
+      description: "Instalação e configuração de redes WiFi profissionais com cobertura total, alta velocidade, segurança avançada e suporte técnico completo.",
       highlight: "Instalação gratuita"
     },
     {
-      icon: Phone,
       title: "Telefonia Fixa",
-      description: "Linha telefônica fixa com qualidade superior e tarifas especiais",
-      features: ["Chamadas ilimitadas", "Qualidade HD", "Portabilidade gratuita", "Integração com celular"],
+      description: "Linha telefônica fixa com qualidade HD, chamadas ilimitadas, portabilidade gratuita e integração completa com seu celular.",
       highlight: "A partir de R$ 29,90"
     },
     {
-      icon: Heart,
       title: "Telemedicina",
-      description: "Consultas médicas online com profissionais qualificados",
-      features: ["Consultas 24h", "Receitas digitais", "Especialistas", "Plano familiar"],
+      description: "Consultas médicas online 24h com profissionais qualificados, receitas digitais, especialistas disponíveis e plano familiar completo.",
       highlight: "Primeiro mês grátis"
     },
     {
-      icon: Shield,
       title: "Monitoramento Residencial",
-      description: "Sistema completo de monitoramento e segurança para sua residência",
-      features: ["Monitoramento 24h", "Central de alarmes", "App mobile", "Resposta rápida"],
+      description: "Sistema completo de monitoramento 24h com central de alarmes, app mobile e resposta rápida para sua segurança residencial.",
       highlight: "Sem taxa de adesão"
     },
     {
-      icon: Car,
       title: "Monitoramento de Veículos",
-      description: "Rastreamento e monitoramento completo do seu veículo",
-      features: ["GPS em tempo real", "Bloqueio remoto", "Histórico de rotas", "Alertas personalizados"],
+      description: "Rastreamento completo com GPS em tempo real, bloqueio remoto, histórico de rotas e alertas personalizados para seu veículo.",
       highlight: "Desconto anual"
     }
   ];
@@ -91,49 +70,26 @@ const AdditionalServices = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
           {services.map((service, index) => (
             <div
               key={index}
-              className="bg-card border border-border rounded-2xl p-6 hover:shadow-elegant transition-all duration-300 group flex flex-col h-full"
+              className="bg-card border border-border rounded-2xl p-4 hover:shadow-elegant transition-all duration-300 group flex flex-col"
             >
               {/* Header */}
-              <div className="flex flex-col items-center text-center mb-6">
-                {service.image ? (
-                  <div className="w-24 h-24 mb-4 rounded-xl overflow-hidden bg-gradient-primary p-2">
-                    <img 
-                      src={service.image} 
-                      alt={service.title}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-4">
-                    <service.icon className="w-8 h-8 text-primary-foreground" />
-                  </div>
-                )}
-                <h3 className="text-xl font-bold font-varela uppercase text-foreground group-hover:text-primary transition-colors mb-2">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-bold font-varela uppercase text-foreground group-hover:text-primary transition-colors mb-3 bg-gradient-primary text-transparent bg-clip-text">
                   {service.title}
                 </h3>
-                <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-sm font-medium">
+                <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-sm font-medium mb-3">
                   {service.highlight}
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-muted-foreground mb-4 text-center text-sm">
+              <p className="text-muted-foreground text-center text-sm leading-relaxed">
                 {service.description}
               </p>
-
-              {/* Features */}
-              <ul className="space-y-2 mb-6 flex-grow">
-                {service.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-orange rounded-full flex-shrink-0" />
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           ))}
         </div>
