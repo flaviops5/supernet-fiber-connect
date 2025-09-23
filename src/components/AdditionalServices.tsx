@@ -133,7 +133,7 @@ const AdditionalServices = () => {
                     service.title === "Canais de Streaming" 
                       ? "top-1/2 right-8 transform -translate-y-1/2" // Position to the left of circle
                       : service.title === "Equipamentos" 
-                        ? "top-1/2 left-8 transform -translate-y-1/2" // Position in front of circle
+                        ? "top-1/2 right-8 transform -translate-y-1/2" // Position in front of circle (left side)
                         : service.title === "Reparos Internos" 
                           ? "top-12 left-1/2 transform -translate-x-1/2" // Move further down
                           : "top-10 left-1/2 transform -translate-x-1/2"  // Default position for others
