@@ -101,37 +101,15 @@ const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: Telemed
             </div>
 
             {/* Chat Content with Chatbase Iframe */}
-            <div className="h-[600px] relative bg-blue-50 flex items-center justify-center">
-              <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-                <Bot className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-                <h3 className="text-xl font-bold text-foreground mb-4">Configuração do Chatbase</h3>
-                <p className="text-muted-foreground mb-6">
-                  Para usar o chat, você precisa:
-                </p>
-                <ol className="text-left text-sm text-muted-foreground space-y-2 mb-6">
-                  <li>1. Acessar seu dashboard do Chatbase</li>
-                  <li>2. Ir em <strong>Settings</strong> → <strong>Embed on site</strong></li>
-                  <li>3. Copiar o código do <strong>iframe</strong></li>
-                  <li>4. Substituir o código aqui</li>
-                </ol>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-xs text-blue-700">
-                    <strong>ID do Chatbot:</strong> {chatbotId}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Uncomment this when you have the correct embed code */}
-              {/* 
+            <div className="h-[600px] relative bg-blue-50">
               <iframe
                 ref={iframeRef}
-                src="SEU_CODIGO_EMBED_AQUI"
+                src={`https://www.chatbase.co/chatbot-iframe/${chatbotId}`}
                 className="w-full h-full border-0"
                 allow="microphone"
                 title="Assistente Virtual TELEMEDICINA - Chat"
                 style={{ minHeight: '600px' }}
               />
-              */}
             </div>
 
             {/* Chat Footer */}
