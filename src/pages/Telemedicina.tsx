@@ -464,23 +464,48 @@ const Telemedicina = () => {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <Accordion type="single" collapsible className="w-full space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem 
-                  key={index} 
-                  value={`item-${index}`} 
-                  className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8 items-start">
+              {/* First Column */}
+              <div className="space-y-4">
+                <Accordion type="single" collapsible className="w-full space-y-4">
+                  {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => (
+                    <AccordionItem 
+                      key={index} 
+                      value={`item-${index}`} 
+                      className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
+                    >
+                      <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+
+              {/* Second Column */}
+              <div className="space-y-4">
+                <Accordion type="single" collapsible className="w-full space-y-4">
+                  {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => (
+                    <AccordionItem 
+                      key={index + Math.ceil(faqs.length / 2)} 
+                      value={`item-${index + Math.ceil(faqs.length / 2)}`} 
+                      className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
+                    >
+                      <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            </div>
           </div>
 
           {/* Contact CTA */}
