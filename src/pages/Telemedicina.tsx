@@ -5,6 +5,7 @@ import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Vide
 import telemedicinaHero from '@/assets/telemedicina-hero.jpg';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
+import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
 
 const Telemedicina = () => {
   const handleWhatsApp = () => {
@@ -442,6 +443,9 @@ const Telemedicina = () => {
           </div>
         </div>
       </section>
+
+      {/* Telemedicina Chat Widget */}
+      <TelemedicinaChatWidget />
 
       {/* FAQ Section */}
       <section className="py-16 px-4 bg-background">
