@@ -8,6 +8,7 @@ import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
 import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
 
 const Telemedicina = () => {
+  console.log('Telemedicina page loading...');
   const handleWhatsApp = () => {
     window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20contratar!', '_blank');
   };
@@ -444,8 +445,10 @@ const Telemedicina = () => {
         </div>
       </section>
 
-      {/* Telemedicina Chat Widget */}
-      <TelemedicinaChatWidget />
+      {/* Telemedicina Chat Widget - Testing */}
+      <div className="py-8 text-center">
+        <p>Chat widget will be here</p>
+      </div>
 
       {/* FAQ Section */}
       <section className="py-16 px-4 bg-background">

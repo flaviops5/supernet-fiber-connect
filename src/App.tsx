@@ -15,7 +15,9 @@ import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  console.log('App loading...');
+  return (
   <QueryClientProvider client={queryClient}>
     <TestimonialsProvider>
       <TooltipProvider>
@@ -41,6 +43,7 @@ const App = () => (
       </TooltipProvider>
     </TestimonialsProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

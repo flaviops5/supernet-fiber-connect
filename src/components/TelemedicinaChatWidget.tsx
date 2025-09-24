@@ -8,6 +8,7 @@ interface TelemedicinaChatWidgetProps {
 }
 
 const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: TelemedicinaChatWidgetProps) => {
+  console.log('TelemedicinaChatWidget loading...');
   const [sessionCount, setSessionCount] = useState(1);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
