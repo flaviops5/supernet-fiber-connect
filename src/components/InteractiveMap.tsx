@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default markers in Leaflet with Vite
 const initializeLeafletIcons = () => {
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  // Avoid errors if called multiple times
+  // @ts-expect-error private api
+  delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -14,7 +15,16 @@ const initializeLeafletIcons = () => {
 };
 
 // Dados de exemplo das áreas de cobertura (substitua pelos seus dados reais)
-const coverageAreas = [
+type LatLngTuple = [number, number];
+interface CoverageArea {
+  id: number;
+  name: string;
+  coordinates: LatLngTuple[];
+  color: string;
+  plans: string[];
+}
+
+const coverageAreas: CoverageArea[] = [
   {
     id: 1,
     name: 'Setor de Indústria Gráfica - SIG',
@@ -53,89 +63,75 @@ const coverageAreas = [
   }
 ];
 
-const MapUpdater = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, 12);
-  }, [map, center]);
-
-  return null;
-};
-
 interface InteractiveMapProps {
   selectedLocation?: [number, number];
 }
 
 const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const defaultCenter: [number, number] = [-15.7942, -47.8822];
-  const mapCenter = selectedLocation || defaultCenter;
-  const [isMapReady, setIsMapReady] = useState(false);
 
   useEffect(() => {
-    // Initialize Leaflet icons when component mounts
     initializeLeafletIcons();
-    setIsMapReady(true);
+
+    if (containerRef.current && !mapRef.current) {
+      // Create map
+      mapRef.current = L.map(containerRef.current, {
+        center: selectedLocation || defaultCenter,
+        zoom: 11,
+        scrollWheelZoom: true,
+      });
+
+      // Base layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(mapRef.current);
+
+      // Coverage polygons
+      coverageAreas.forEach((area) => {
+        const polygon = L.polygon(area.coordinates as L.LatLngExpression[], {
+          color: area.color,
+          weight: 2,
+          opacity: 0.8,
+          fillColor: area.color,
+          fillOpacity: 0.3,
+        }).addTo(mapRef.current!);
+
+        const plansHtml = area.plans
+          .map((p) => `<span style="display:inline-block;margin:2px;padding:4px 6px;border-radius:6px;background:rgba(0,0,0,0.05);color:#111;font-size:12px;">${p}</span>`) 
+          .join('');
+
+        polygon.bindPopup(
+          `<div style="padding:4px 2px;">
+            <div style="font-weight:600;margin-bottom:6px;">${area.name}</div>
+            <div style="font-size:12px;color:#555;margin-bottom:4px;">Planos disponíveis:</div>
+            <div>${plansHtml}</div>
+          </div>`
+        );
+      });
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
   }, []);
 
-  if (!isMapReady) {
-    return (
-      <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg border border-border flex items-center justify-center bg-muted">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Carregando mapa...</p>
-        </div>
-      </div>
-    );
-  }
+  // Update center when selectedLocation changes
+  useEffect(() => {
+    if (mapRef.current && selectedLocation) {
+      mapRef.current.setView(selectedLocation, 12);
+      // Optional: add or move a marker to highlight selection
+      // L.marker(selectedLocation).addTo(mapRef.current);
+    }
+  }, [selectedLocation]);
 
   return (
     <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg border border-border">
-      <MapContainer
-        center={mapCenter}
-        zoom={11}
-        scrollWheelZoom={true}
-        className="h-full w-full"
-        key={`map-${mapCenter[0]}-${mapCenter[1]}`}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        {selectedLocation && <MapUpdater center={selectedLocation} />}
-        
-        {coverageAreas.map((area) => (
-          <Polygon
-            key={area.id}
-            positions={area.coordinates as [number, number][]}
-            pathOptions={{
-              fillColor: area.color,
-              fillOpacity: 0.3,
-              color: area.color,
-              weight: 2,
-              opacity: 0.8
-            }}
-          >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold text-foreground mb-2">{area.name}</h3>
-                <p className="text-sm text-muted-foreground mb-2">Planos disponíveis:</p>
-                <div className="flex flex-wrap gap-1">
-                  {area.plans.map((plan) => (
-                    <span
-                      key={plan}
-                      className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-md"
-                    >
-                      {plan}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </Popup>
-          </Polygon>
-        ))}
-      </MapContainer>
+      <div ref={containerRef} className="h-full w-full" />
     </div>
   );
 };
