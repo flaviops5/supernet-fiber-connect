@@ -1,15 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Polygon, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default markers in Leaflet with Vite
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+const initializeLeafletIcons = () => {
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  });
+};
 
 // Dados de exemplo das áreas de cobertura (substitua pelos seus dados reais)
 const coverageAreas = [
@@ -68,6 +70,24 @@ interface InteractiveMapProps {
 const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
   const defaultCenter: [number, number] = [-15.7942, -47.8822];
   const mapCenter = selectedLocation || defaultCenter;
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  useEffect(() => {
+    // Initialize Leaflet icons when component mounts
+    initializeLeafletIcons();
+    setIsMapReady(true);
+  }, []);
+
+  if (!isMapReady) {
+    return (
+      <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg border border-border flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Carregando mapa...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg border border-border">
@@ -76,6 +96,7 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         zoom={11}
         scrollWheelZoom={true}
         className="h-full w-full"
+        key={`map-${mapCenter[0]}-${mapCenter[1]}`}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
