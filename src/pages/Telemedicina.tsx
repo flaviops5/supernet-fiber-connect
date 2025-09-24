@@ -266,7 +266,7 @@ const Telemedicina = () => {
             Planos Que Cabem Dentro do Seu Orçamento
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mt-12 items-stretch">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mt-12 items-start">
             {/* Plano Individual */}
             <Card className="border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 rounded-2xl">
               <CardHeader className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground text-center py-6 rounded-t-2xl">
@@ -282,36 +282,42 @@ const Telemedicina = () => {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="p-6 flex flex-col h-full">
-                <h3 className="text-lg font-semibold font-varela uppercase mb-4 text-center text-primary">
-                  O que inclui?
-                </h3>
-                <ul className="space-y-2 mb-6 flex-grow">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Consultas on-line para 1 pessoa</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Clínico geral</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Certificado médico</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Receituário médico</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Atestado médico</span>
-                  </li>
-                </ul>
+              <CardContent className="p-6">
+                <Accordion type="single" collapsible className="w-full mb-6">
+                  <AccordionItem value="individual-details" className="border-none">
+                    <AccordionTrigger className="text-lg font-semibold font-varela uppercase text-primary hover:text-primary/80 py-4">
+                      O que inclui?
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <ul className="space-y-2">
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Consultas on-line para 1 pessoa</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Clínico geral</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Certificado médico</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Receituário médico</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Atestado médico</span>
+                        </li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-2 mt-auto"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
                 >
                   <Phone className="mr-2 h-4 w-4" />
                   Contratar Agora
@@ -320,13 +326,13 @@ const Telemedicina = () => {
             </Card>
 
             {/* Plano Família - Popular */}
-            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden">
+            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden rounded-2xl">
               {/* Highlight badge */}
               <div className="absolute top-4 right-4 bg-orange text-white px-3 py-1 rounded-full text-sm font-bold">
                 POPULAR
               </div>
               
-              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8">
+              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8 rounded-t-2xl">
                 <div className="text-5xl font-bold mb-2">
                   R$49,90
                   <span className="text-lg font-normal">/Mês</span>
@@ -339,30 +345,36 @@ const Telemedicina = () => {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="p-8 flex flex-col h-full">
-                <h3 className="text-xl font-semibold font-varela uppercase mb-6 text-center text-primary">
-                  O que inclui?
-                </h3>
-                <ul className="space-y-3 mb-8 flex-grow">
-                  {planIncludes.map((item, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className={`h-5 w-5 mr-3 flex-shrink-0 mt-0.5 ${
-                        index % 2 === 0 ? 'text-primary' : 'text-orange'
-                      }`} />
-                      <span className="text-muted-foreground text-left">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <div className="bg-gradient-to-r from-primary/5 to-orange/5 p-4 rounded-lg mb-6">
-                  <p className="text-sm text-muted-foreground text-center">
-                    <strong>Economia de mais de R$200/mês</strong> comparado a consultas particulares
-                  </p>
-                </div>
+              <CardContent className="p-6">
+                <Accordion type="single" collapsible className="w-full mb-6">
+                  <AccordionItem value="family-details" className="border-none">
+                    <AccordionTrigger className="text-xl font-semibold font-varela uppercase text-primary hover:text-primary/80 py-4">
+                      O que inclui?
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <ul className="space-y-3 mb-4">
+                        {planIncludes.map((item, index) => (
+                          <li key={index} className="flex items-start">
+                            <CheckCircle className={`h-5 w-5 mr-3 flex-shrink-0 mt-0.5 ${
+                              index % 2 === 0 ? 'text-primary' : 'text-orange'
+                            }`} />
+                            <span className="text-muted-foreground text-left">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      
+                      <div className="bg-gradient-to-r from-primary/5 to-orange/5 p-4 rounded-lg">
+                        <p className="text-sm text-muted-foreground text-center">
+                          <strong>Economia de mais de R$200/mês</strong> comparado a consultas particulares
+                        </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3 mt-auto"
+                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Contratar Agora
@@ -385,36 +397,42 @@ const Telemedicina = () => {
                 </CardDescription>
               </CardHeader>
               
-              <CardContent className="p-6 flex flex-col h-full">
-                <h3 className="text-lg font-semibold font-varela uppercase mb-4 text-center text-primary">
-                  O que inclui?
-                </h3>
-                <ul className="space-y-2 mb-6 flex-grow">
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Consultas on-line para 6 pessoas</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Clínico geral e Pediatra</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Psicólogo e Nutricionista</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Todos os documentos médicos</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
-                    <span className="text-sm text-muted-foreground text-left">Clube de vantagens</span>
-                  </li>
-                </ul>
+              <CardContent className="p-6">
+                <Accordion type="single" collapsible className="w-full mb-6">
+                  <AccordionItem value="premium-details" className="border-none">
+                    <AccordionTrigger className="text-lg font-semibold font-varela uppercase text-primary hover:text-primary/80 py-4">
+                      O que inclui?
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <ul className="space-y-2">
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Consultas on-line para 6 pessoas</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Clínico geral e Pediatra</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Psicólogo e Nutricionista</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Todos os documentos médicos</span>
+                        </li>
+                        <li className="flex items-start">
+                          <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary mt-0.5" />
+                          <span className="text-sm text-muted-foreground text-left">Clube de vantagens</span>
+                        </li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-2 mt-auto"
+                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
                 >
                   <Phone className="mr-2 h-4 w-4" />
                   Contratar Agora
