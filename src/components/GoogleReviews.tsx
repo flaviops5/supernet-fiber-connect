@@ -34,8 +34,20 @@ export const GoogleReviews = () => {
   const [showConfig, setShowConfig] = useState(!apiKey || !placeId);
 
   const saveConfig = () => {
-    localStorage.setItem('google_api_key', apiKey);
-    localStorage.setItem('google_place_id', placeId);
+    const cleanKey = apiKey.trim();
+    const cleanPlace = placeId.trim();
+    if (!cleanKey || !cleanPlace) {
+      toast({
+        title: "Erro",
+        description: "Preencha API Key e Place ID válidos",
+        variant: "destructive",
+      });
+      return;
+    }
+    localStorage.setItem('google_api_key', cleanKey);
+    localStorage.setItem('google_place_id', cleanPlace);
+    setApiKey(cleanKey);
+    setPlaceId(cleanPlace);
     setShowConfig(false);
     toast({
       title: "Configuração salva",
@@ -44,7 +56,10 @@ export const GoogleReviews = () => {
   };
 
   const fetchReviews = async () => {
-    if (!apiKey || !placeId) {
+    const cleanApiKey = apiKey.trim();
+    const cleanPlaceId = placeId.trim();
+
+    if (!cleanApiKey || !cleanPlaceId) {
       toast({
         title: "Erro",
         description: "Configure a API Key e Place ID primeiro",
@@ -55,8 +70,8 @@ export const GoogleReviews = () => {
 
     setIsLoading(true);
     try {
-      // Usando allOrigins como proxy CORS confiável
-      const targetUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,rating,user_ratings_total,reviews,url&key=${apiKey}&language=pt-BR`;
+      // Usando allOrigins como proxy CORS confiável e sanitizando valores
+      const targetUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cleanPlaceId}&fields=name,rating,user_ratings_total,reviews,url&key=${cleanApiKey}&language=pt-BR`;
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
       
       const response = await fetch(proxyUrl);
@@ -69,7 +84,7 @@ export const GoogleReviews = () => {
       const data = JSON.parse(proxyData.contents);
       
       if (data.status !== 'OK') {
-        throw new Error(`Google API Error: ${data.status} - ${data.error_message || 'Verifique sua API Key e Place ID'}`);
+        throw new Error(`Google API Error: ${data.status} - ${data.error_message || 'Verifique sua API Key e Place ID (sem espaços)'}`);
       }
 
       setPlaceDetails(data.result);
