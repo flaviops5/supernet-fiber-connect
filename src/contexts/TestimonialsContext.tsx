@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface Testimonial {
   name: string;
@@ -23,9 +23,9 @@ interface TestimonialsContextType {
 
 const TestimonialsContext = createContext<TestimonialsContextType | undefined>(undefined);
 
-export const useTestimonials = () => {
+export const useTestimonials = (): TestimonialsContextType => {
   const context = useContext(TestimonialsContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useTestimonials must be used within a TestimonialsProvider');
   }
   return context;
@@ -48,7 +48,7 @@ const defaultTestimonials: Testimonial[] = [
   }
 ];
 
-export const TestimonialsProvider = ({ children }: { children: ReactNode }) => {
+export const TestimonialsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
     const saved = localStorage.getItem('selected_testimonials');
     return saved ? JSON.parse(saved) : defaultTestimonials;
