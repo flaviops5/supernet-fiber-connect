@@ -151,7 +151,7 @@ const Telemedicina = () => {
                 <Button
                   onClick={handleWhatsApp}
                   size="lg"
-                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Fale com nosso time
