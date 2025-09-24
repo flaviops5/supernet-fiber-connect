@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Star, RefreshCw, MapPin, ExternalLink } from 'lucide-react';
+import { Star, RefreshCw, MapPin, ExternalLink, Plus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useTestimonials } from '@/contexts/TestimonialsContext';
 
 interface GoogleReview {
   author_name: string;
@@ -26,6 +27,7 @@ interface GooglePlaceDetails {
 
 export const GoogleReviews = () => {
   const { toast } = useToast();
+  const { addTestimonial, updateStats } = useTestimonials();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('google_api_key') || '');
   const [placeId, setPlaceId] = useState(() => localStorage.getItem('google_place_id') || '');
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
@@ -90,6 +92,15 @@ export const GoogleReviews = () => {
       setPlaceDetails(data.result);
       setReviews(data.result.reviews || []);
       
+      // Atualizar estatísticas automaticamente
+      if (data.result.rating && data.result.user_ratings_total) {
+        updateStats({
+          totalClients: data.result.user_ratings_total,
+          availability: 99.4, // Mantém valor padrão
+          averageRating: data.result.rating
+        });
+      }
+      
       toast({
         title: "Sucesso",
         description: `${data.result.reviews?.length || 0} avaliações carregadas`,
@@ -106,7 +117,7 @@ export const GoogleReviews = () => {
     }
   };
 
-  const generateTestimonialCode = (review: GoogleReview) => {
+  const addReviewToTestimonials = (review: GoogleReview) => {
     const testimonial = {
       name: review.author_name,
       location: "Cliente Google",
@@ -116,10 +127,10 @@ export const GoogleReviews = () => {
       photo: review.profile_photo_url
     };
     
-    navigator.clipboard.writeText(JSON.stringify(testimonial, null, 2));
+    addTestimonial(testimonial);
     toast({
-      title: "Copiado!",
-      description: "Código do depoimento copiado para a área de transferência",
+      title: "Adicionado!",
+      description: "Depoimento adicionado à seção 'O que os clientes dizem'",
     });
   };
 
@@ -251,11 +262,13 @@ export const GoogleReviews = () => {
               </div>
               
               <Button 
-                variant="outline" 
+                variant="default" 
                 size="sm"
-                onClick={() => generateTestimonialCode(review)}
+                onClick={() => addReviewToTestimonials(review)}
+                className="bg-primary hover:bg-primary/90"
               >
-                Copiar Código
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
               </Button>
             </div>
             

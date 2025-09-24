@@ -1,61 +1,17 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Star, Quote, Users, Wifi, Award, User } from 'lucide-react';
+import { useTestimonials } from '@/contexts/TestimonialsContext';
 
 const Testimonials = () => {
+  const { testimonials, stats } = useTestimonials();
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  const testimonials = [
-    {
-      name: "Lucca Cabrera Trazzi",
-      location: "Brasília, DF",
-      rating: 5,
-      text: "Desfruto de uma excelente conexão à internet, que não só oferece velocidade e qualidade excepcionais, mas também é perfeita para jogar videogame e trabalhar em home office. Além disso, recebo um atendimento de primeira dos profissionais responsáveis. Dou nota 10 para esse serviço!",
-      service: "Cliente Verificado"
-    },
-    {
-      name: "Thaís Michele",
-      location: "Brasília, DF",
-      rating: 5,
-      text: "Empresa com qualidade, responde rápido e prestativa no atendimento!",
-      service: "Cliente Verificado"
-    },
-    {
-      name: "Sarah Wero",
-      location: "Sobradinho, DF",
-      rating: 5,
-      text: "Melhor serviço de conexão fibra na região de Sobradinho! Outras empresas nunca se interessaram em instalar fibra onde moro, até chegar a Supernet, com um serviço excelente e muita velocidade. São muito solícitos e sempre respondem e resolvem rapidamente qualquer problema. Sempre indico aos amigos e vizinhos!",
-      service: "Cliente Verificado"
-    },
-    {
-      name: "Eduardo Rodrigues",
-      location: "Brasília, DF",
-      rating: 5,
-      text: "Excelente atendimento, tanto pra instalação, quanto para o suporte técnico ao longo do contrato, já tenho há bastante tempo, a Carol do financeiro é sempre prestativa, bem como o Flávio que dá todo o suporte, independente do horário. Só tenho agradecimentos!",
-      service: "Cliente Verificado"
-    },
-    {
-      name: "Jefferson Maia",
-      location: "Brasília, DF",
-      rating: 5,
-      text: "Sou cliente da Supernet desde 2020. Há semanas tinha um problema de conexão que não conseguia detectar/resolver. O gerente do suporte da empresa foi bastante dedicado e não descansou enquanto não conseguiu entender e encontrar a solução para o mesmo. Só tenho elogios à empresa.",
-      service: "Cliente desde 2020"
-    }
-    {
-  "name": "Caroline Gomes",
-  "location": "Cliente Google",
-  "rating": 5,
-  "text": "Melhor empresa de Internet que atende aqui no Condomínio Residencial Novo Horizonte.\nO sinal é  ótimo, sem falar no atendimento do financeiro e suporte que é  super agil e eficiente.",
-  "service": "Avaliação Google - 2 semanas atrás",
-  "photo": "https://lh3.googleusercontent.com/a-/ALV-UjWMLppiTif991BF187NtNyA5KorUnpftspQkDvAPtBoP7gQlQNJ2A=s128-c0x00000000-cc-rp-mo"
-}
-  ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % testimonials.length);
     }, 7000);
     return () => clearInterval(timer);
-  }, []);
+  }, [testimonials.length]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % testimonials.length);
@@ -124,8 +80,16 @@ const Testimonials = () => {
                     <div className="flex items-center justify-between pt-6 border-t border-border">
                       <div className="flex items-center space-x-3">
                         {/* Profile Avatar */}
-                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-5 h-5 text-muted-foreground" />
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {testimonial.photo ? (
+                            <img 
+                              src={testimonial.photo} 
+                              alt={testimonial.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-5 h-5 text-muted-foreground" />
+                          )}
                         </div>
                         <div>
                           <div className="font-semibold text-foreground text-lg">
@@ -188,7 +152,7 @@ const Testimonials = () => {
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div className="text-2xl md:text-3xl font-bold text-primary mb-2">
-              2.500+
+              {stats.totalClients.toLocaleString('pt-BR')}+
             </div>
             <div className="text-sm text-muted-foreground">
               Clientes Satisfeitos
@@ -199,7 +163,7 @@ const Testimonials = () => {
               <Wifi className="w-6 h-6 text-orange" />
             </div>
             <div className="text-2xl md:text-3xl font-bold text-orange mb-2">
-              99.4%
+              {stats.availability}%
             </div>
             <div className="text-sm text-muted-foreground">
               Disponibilidade
@@ -210,7 +174,7 @@ const Testimonials = () => {
               <Award className="w-6 h-6 text-red-accent" />
             </div>
             <div className="text-2xl md:text-3xl font-bold text-red-accent mb-2">
-              4.8/5
+              {stats.averageRating}/5
             </div>
             <div className="text-sm text-muted-foreground">
               Avaliação Média
