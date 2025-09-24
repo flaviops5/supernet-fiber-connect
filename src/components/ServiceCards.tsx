@@ -58,36 +58,6 @@ const ServiceCards = () => {
           ))}
         </div>
 
-        {/* Bottom CTA with Image */}
-        <div className="text-center">
-          <div className="bg-gradient-subtle rounded-2xl p-8 md:p-12 relative overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              <div className="text-left">
-                <h3 className="text-2xl md:text-3xl font-bold font-varela uppercase text-foreground mb-4">
-                  Pronto para ter a melhor internet da sua vida?
-                </h3>
-                <p className="text-muted-foreground mb-8">
-                  Milhares de famílias já confiam na SUPERNET FIBRA. 
-                  Seja você também parte dessa revolução digital.
-                </p>
-                <Button
-                  onClick={handleWhatsApp}
-                  size="lg"
-                  className="cta-gradient text-lg px-10 py-6"
-                >
-                  Fale Conosco Agora
-                </Button>
-              </div>
-              <div className="relative">
-                <img
-                  src={confidentWoman}
-                  alt="Família aproveitando internet de alta velocidade em diversos dispositivos"
-                  className="w-full h-80 object-cover rounded-2xl shadow-elegant"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

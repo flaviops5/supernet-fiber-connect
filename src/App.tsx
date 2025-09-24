@@ -11,7 +11,6 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import ChatbaseWidget from "./components/ChatbaseWidget";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +34,6 @@ const App = () => (
             </Routes>
           </main>
           <Footer />
-          <ChatbaseWidget chatbotId="mMFk_B5d94OhD7fQBxvNU" />
         </div>
       </BrowserRouter>
     </TooltipProvider>
