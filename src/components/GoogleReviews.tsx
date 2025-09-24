@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Star, RefreshCw, MapPin, ExternalLink, Plus } from 'lucide-react';
+import { Star, RefreshCw, MapPin, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useTestimonials } from '@/contexts/TestimonialsContext';
 
@@ -92,6 +92,20 @@ export const GoogleReviews = () => {
       setPlaceDetails(data.result);
       setReviews(data.result.reviews || []);
       
+      // Automaticamente adicionar avaliações acima de 4 estrelas aos depoimentos
+      const highRatedReviews = (data.result.reviews || []).filter(review => review.rating > 4);
+      highRatedReviews.forEach(review => {
+        const testimonial = {
+          name: review.author_name,
+          location: "Cliente Google",
+          rating: review.rating,
+          text: review.text,
+          service: `Avaliação Google - ${review.relative_time_description}`,
+          photo: review.profile_photo_url
+        };
+        addTestimonial(testimonial);
+      });
+      
       // Atualizar estatísticas automaticamente
       if (data.result.rating && data.result.user_ratings_total) {
         updateStats({
@@ -103,7 +117,7 @@ export const GoogleReviews = () => {
       
       toast({
         title: "Sucesso",
-        description: `${data.result.reviews?.length || 0} avaliações carregadas`,
+        description: `${data.result.reviews?.length || 0} avaliações carregadas. ${highRatedReviews.length} avaliações acima de 4 estrelas adicionadas automaticamente.`,
       });
     } catch (error) {
       console.error('Erro ao buscar avaliações:', error);
@@ -117,22 +131,6 @@ export const GoogleReviews = () => {
     }
   };
 
-  const addReviewToTestimonials = (review: GoogleReview) => {
-    const testimonial = {
-      name: review.author_name,
-      location: "Cliente Google",
-      rating: review.rating,
-      text: review.text,
-      service: `Avaliação Google - ${review.relative_time_description}`,
-      photo: review.profile_photo_url
-    };
-    
-    addTestimonial(testimonial);
-    toast({
-      title: "Adicionado!",
-      description: "Depoimento adicionado à seção 'O que os clientes dizem'",
-    });
-  };
 
   useEffect(() => {
     if (apiKey && placeId && !showConfig) {
@@ -261,15 +259,11 @@ export const GoogleReviews = () => {
                 </div>
               </div>
               
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={() => addReviewToTestimonials(review)}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Adicionar
-              </Button>
+              {review.rating > 4 && (
+                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  Adicionado automaticamente
+                </div>
+              )}
             </div>
             
             <p className="text-sm leading-relaxed">{review.text}</p>
