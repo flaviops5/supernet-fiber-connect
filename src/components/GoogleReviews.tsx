@@ -55,21 +55,18 @@ export const GoogleReviews = () => {
 
     setIsLoading(true);
     try {
-      // Usando um proxy CORS-anywhere ou similar para contornar problemas de CORS
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      // Usando allOrigins como proxy CORS confiável
       const targetUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,rating,user_ratings_total,reviews,url&key=${apiKey}&language=pt-BR`;
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
       
-      const response = await fetch(proxyUrl + targetUrl, {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
+      const response = await fetch(proxyUrl);
 
       if (!response.ok) {
         throw new Error('Erro ao buscar dados do Google');
       }
 
-      const data = await response.json();
+      const proxyData = await response.json();
+      const data = JSON.parse(proxyData.contents);
       
       if (data.status !== 'OK') {
         throw new Error(`Google API Error: ${data.status} - ${data.error_message || 'Verifique sua API Key e Place ID'}`);
