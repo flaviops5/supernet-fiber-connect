@@ -149,7 +149,7 @@ const Telemedicina = () => {
                 <Button
                   onClick={handleWhatsApp}
                   size="lg"
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Fale com nosso time
@@ -266,8 +266,61 @@ const Telemedicina = () => {
             Planos Que Cabem Dentro do Seu Orçamento
           </h2>
           
-          <div className="max-w-md mx-auto mt-12">
-            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mt-12">
+            {/* Plano Individual */}
+            <Card className="border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+              <CardHeader className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground text-center py-6">
+                <div className="text-4xl font-bold mb-2">
+                  R$24,90
+                  <span className="text-lg font-normal">/Mês</span>
+                </div>
+                <CardTitle className="text-xl font-bold font-varela uppercase mb-2">
+                  Plano Individual
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/90 text-sm">
+                  Perfeito para quem mora sozinho e quer cuidar da própria saúde.
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold font-varela uppercase mb-4 text-center text-primary">
+                  O que inclui?
+                </h3>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Consultas on-line para 1 pessoa</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange" />
+                    <span className="text-sm text-muted-foreground">Clínico geral</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Certificado médico</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange" />
+                    <span className="text-sm text-muted-foreground">Receituário médico</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Atestado médico</span>
+                  </li>
+                </ul>
+                
+                <Button
+                  onClick={handleWhatsApp}
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-2"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
+                  Contratar Agora
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Plano Família - Popular */}
+            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden scale-105">
               {/* Highlight badge */}
               <div className="absolute top-4 right-4 bg-orange text-white px-3 py-1 rounded-full text-sm font-bold">
                 POPULAR
@@ -294,7 +347,7 @@ const Telemedicina = () => {
                   {planIncludes.map((item, index) => (
                     <li key={index} className="flex items-center">
                       <CheckCircle className={`h-5 w-5 mr-3 flex-shrink-0 ${
-                        index % 3 === 0 ? 'text-primary' : index % 3 === 1 ? 'text-orange' : 'text-green-500'
+                        index % 2 === 0 ? 'text-primary' : 'text-orange'
                       }`} />
                       <span className="text-muted-foreground">{item}</span>
                     </li>
@@ -309,9 +362,61 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
+                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
                 >
                   <Phone className="mr-2 h-5 w-5" />
+                  Contratar Agora
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Plano Premium */}
+            <Card className="border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+              <CardHeader className="bg-gradient-to-br from-orange/80 to-orange text-primary-foreground text-center py-6">
+                <div className="text-4xl font-bold mb-2">
+                  R$79,90
+                  <span className="text-lg font-normal">/Mês</span>
+                </div>
+                <CardTitle className="text-xl font-bold font-varela uppercase mb-2">
+                  Plano Premium
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/90 text-sm">
+                  Para famílias grandes com acesso a especialistas e benefícios extras.
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold font-varela uppercase mb-4 text-center text-primary">
+                  O que inclui?
+                </h3>
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Consultas on-line para 6 pessoas</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange" />
+                    <span className="text-sm text-muted-foreground">Clínico geral e Pediatra</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Psicólogo e Nutricionista</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-orange" />
+                    <span className="text-sm text-muted-foreground">Todos os documentos médicos</span>
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0 text-primary" />
+                    <span className="text-sm text-muted-foreground">Clube de vantagens</span>
+                  </li>
+                </ul>
+                
+                <Button
+                  onClick={handleWhatsApp}
+                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-2"
+                >
+                  <Phone className="mr-2 h-4 w-4" />
                   Contratar Agora
                 </Button>
               </CardContent>
@@ -364,10 +469,10 @@ const Telemedicina = () => {
               <p className="text-muted-foreground mb-6">
                 Nossa equipe está pronta para esclarecer todas as suas questões sobre telemedicina
               </p>
-              <Button
-                onClick={handleWhatsApp}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
-              >
+                <Button
+                  onClick={handleWhatsApp}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
+                >
                 <Phone className="mr-2 h-5 w-5" />
                 Falar com Especialista
               </Button>
