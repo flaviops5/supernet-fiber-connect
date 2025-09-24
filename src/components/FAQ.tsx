@@ -223,7 +223,7 @@ const FAQ = () => {
 
         {/* Contact CTA */}
         <div className="mt-16 text-center">
-          <h3 className="text-2xl font-bold text-foreground mb-6">
+          <h3 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
             Ainda tem dúvidas? Fale conosco.
           </h3>
           <div className="flex justify-center gap-6">
