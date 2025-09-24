@@ -543,7 +543,7 @@ const Telemedicina = () => {
           <div className="mt-16 text-center">
             <h3 className="text-3xl font-bold font-varela uppercase text-foreground mb-6 md:text-3xl">
               Ainda tem dúvidas?{' '}
-              <span className="gradient-text">Fale conosco.</span>
+              <span className="text-primary">Fale conosco.</span>
             </h3>
             <div className="flex justify-center gap-6">
               <button onClick={handleWhatsApp} className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105">
