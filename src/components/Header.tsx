@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Menu, X, ChevronDown, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -18,7 +19,7 @@ const Header = () => {
     href: '/planos-streaming'
   }, {
     name: 'Planos com Telemedicina',
-    href: '/planos-telemedicina'
+    href: '/telemedicina'
   }];
   const services = [{
     name: 'Energia por Assinatura',
@@ -77,9 +78,9 @@ const Header = () => {
               
               {activeDropdown === 'plans' && <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4">
                   <div className="space-y-2">
-                    {plans.map(plan => <a key={plan.name} href={plan.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
+                    {plans.map(plan => <Link key={plan.name} to={plan.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
                         {plan.name}
-                      </a>)}
+                      </Link>)}
                   </div>
                 </div>}
             </div>
@@ -93,22 +94,22 @@ const Header = () => {
               
               {activeDropdown === 'services' && <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4">
                   <div className="space-y-2">
-                    {services.map(service => <a key={service.name} href={service.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
+                    {services.map(service => <Link key={service.name} to={service.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
                         {service.name}
-                      </a>)}
+                      </Link>)}
                   </div>
                 </div>}
             </div>
 
-            <a href="/blog" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/blog" className="text-foreground hover:text-primary transition-colors">
               Blog
-            </a>
-            <a href="/sobre" className="text-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/sobre" className="text-foreground hover:text-primary transition-colors">
               Sobre
-            </a>
-            <a href="/contato" className="text-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/contato" className="text-foreground hover:text-primary transition-colors">
               Contato
-            </a>
+            </Link>
           </nav>
 
           {/* CTA Buttons */}
@@ -134,30 +135,30 @@ const Header = () => {
               <div>
                 <p className="font-semibold text-primary mb-2">Planos</p>
                 <div className="pl-4 space-y-2">
-                  {plans.map(plan => <a key={plan.name} href={plan.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  {plans.map(plan => <Link key={plan.name} to={plan.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
                       {plan.name}
-                    </a>)}
+                    </Link>)}
                 </div>
               </div>
 
               <div>
                 <p className="font-semibold text-primary mb-2">Serviços</p>
                 <div className="pl-4 space-y-2">
-                  {services.map(service => <a key={service.name} href={service.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  {services.map(service => <Link key={service.name} to={service.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
                       {service.name}
-                    </a>)}
+                    </Link>)}
                 </div>
               </div>
 
-              <a href="/blog" className="block text-foreground hover:text-primary transition-colors">
+              <Link to="/blog" className="block text-foreground hover:text-primary transition-colors">
                 Blog
-              </a>
-              <a href="/sobre" className="block text-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/sobre" className="block text-foreground hover:text-primary transition-colors">
                 Sobre
-              </a>
-              <a href="/contato" className="block text-foreground hover:text-primary transition-colors">
+              </Link>
+              <Link to="/contato" className="block text-foreground hover:text-primary transition-colors">
                 Contato
-              </a>
+              </Link>
               
               <Button variant="outline" onClick={() => window.open('http://central.supernetfibra.com.br', '_blank')} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full mb-4">
                 Central do Cliente

@@ -445,10 +445,8 @@ const Telemedicina = () => {
         </div>
       </section>
 
-      {/* Telemedicina Chat Widget - Testing */}
-      <div className="py-8 text-center">
-        <p>Chat widget will be here</p>
-      </div>
+      {/* Telemedicina Chat Widget */}
+      <TelemedicinaChatWidget />
 
       {/* FAQ Section */}
       <section className="py-16 px-4 bg-background">
