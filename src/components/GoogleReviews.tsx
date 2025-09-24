@@ -27,7 +27,7 @@ interface GooglePlaceDetails {
 
 export const GoogleReviews = () => {
   const { toast } = useToast();
-  const { addTestimonial, updateStats } = useTestimonials();
+  const { testimonials, addTestimonial, updateStats } = useTestimonials();
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('google_api_key') || '');
   const [placeId, setPlaceId] = useState(() => localStorage.getItem('google_place_id') || '');
   const [reviews, setReviews] = useState<GoogleReview[]>([]);
@@ -94,16 +94,24 @@ export const GoogleReviews = () => {
       
       // Automaticamente adicionar avaliações acima de 4 estrelas aos depoimentos
       const highRatedReviews = (data.result.reviews || []).filter(review => review.rating > 4);
+      let addedCount = 0;
+      
       highRatedReviews.forEach(review => {
-        const testimonial = {
-          name: review.author_name,
-          location: "Cliente Google",
-          rating: review.rating,
-          text: review.text,
-          service: `Avaliação Google - ${review.relative_time_description}`,
-          photo: review.profile_photo_url
-        };
-        addTestimonial(testimonial);
+        // Verificar se já existe um depoimento com o mesmo nome para evitar duplicação
+        const existingTestimonial = testimonials.find(t => t.name === review.author_name);
+        
+        if (!existingTestimonial) {
+          const testimonial = {
+            name: review.author_name,
+            location: "Cliente Google",
+            rating: review.rating,
+            text: review.text,
+            service: `Avaliação Google - ${review.relative_time_description}`,
+            photo: review.profile_photo_url
+          };
+          addTestimonial(testimonial);
+          addedCount++;
+        }
       });
       
       // Atualizar estatísticas automaticamente
@@ -117,7 +125,7 @@ export const GoogleReviews = () => {
       
       toast({
         title: "Sucesso",
-        description: `${data.result.reviews?.length || 0} avaliações carregadas. ${highRatedReviews.length} avaliações acima de 4 estrelas adicionadas automaticamente.`,
+        description: `${data.result.reviews?.length || 0} avaliações carregadas. ${addedCount} novas avaliações adicionadas aos depoimentos.`,
       });
     } catch (error) {
       console.error('Erro ao buscar avaliações:', error);

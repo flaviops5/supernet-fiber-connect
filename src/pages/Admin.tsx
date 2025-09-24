@@ -2,9 +2,13 @@ import { GoogleReviews } from '@/components/GoogleReviews';
 import { InstructionsCard } from '@/components/InstructionsCard';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Users, Settings, BookOpen } from 'lucide-react';
+import { Star, Users, Settings, BookOpen, Trash2 } from 'lucide-react';
+import { useTestimonials } from '@/contexts/TestimonialsContext';
+import { Button } from '@/components/ui/button';
 
 const Admin = () => {
+  const { testimonials, removeTestimonial } = useTestimonials();
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
@@ -59,50 +63,67 @@ const Admin = () => {
               
               <div className="space-y-4">
                 <div className="grid gap-4">
-                  <Card className="p-4 bg-muted/50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold">Lucca Cabrera Trazzi</h3>
-                        <p className="text-sm text-muted-foreground">Brasília, DF</p>
-                        <div className="flex gap-1 my-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          ))}
+                  {testimonials.length === 0 ? (
+                    <Card className="p-8 text-center">
+                      <p className="text-muted-foreground">
+                        Nenhum depoimento adicionado ainda. Use a aba "Google Reviews" para importar avaliações.
+                      </p>
+                    </Card>
+                  ) : (
+                    testimonials.map((testimonial, index) => (
+                      <Card key={index} className="p-4 bg-muted/50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              {testimonial.photo && (
+                                <img 
+                                  src={testimonial.photo} 
+                                  alt={testimonial.name}
+                                  className="w-10 h-10 rounded-full"
+                                />
+                              )}
+                              <div>
+                                <h3 className="font-semibold">{testimonial.name}</h3>
+                                <p className="text-sm text-muted-foreground">{testimonial.location}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 my-2">
+                              {[...Array(5)].map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className={`w-4 h-4 ${
+                                    i < testimonial.rating 
+                                      ? 'fill-yellow-400 text-yellow-400' 
+                                      : 'text-gray-300'
+                                  }`} 
+                                />
+                              ))}
+                            </div>
+                            <p className="text-sm mb-2">"{testimonial.text}"</p>
+                            <p className="text-xs text-muted-foreground">{testimonial.service}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              Ativo
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeTestimonial(index)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-sm">
-                          "Desfruto de uma excelente conexão à internet..."
-                        </p>
-                      </div>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Ativo
-                      </span>
-                    </div>
-                  </Card>
-                  
-                  <Card className="p-4 bg-muted/50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold">Thaís Michele</h3>
-                        <p className="text-sm text-muted-foreground">Brasília, DF</p>
-                        <div className="flex gap-1 my-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          ))}
-                        </div>
-                        <p className="text-sm">
-                          "Empresa com qualidade, responde rápido..."
-                        </p>
-                      </div>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Ativo
-                      </span>
-                    </div>
-                  </Card>
+                      </Card>
+                    ))
+                  )}
                 </div>
                 
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 <strong>Dica:</strong> Use a aba "Google Reviews" para importar novas avaliações
-                  e copie o código gerado para adicionar aos depoimentos.
+                  💡 <strong>Dica:</strong> Use a aba "Google Reviews" para importar novas avaliações automaticamente.
+                  Avaliações acima de 4 estrelas são adicionadas automaticamente.
                 </p>
               </div>
             </Card>
