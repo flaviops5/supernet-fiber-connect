@@ -222,23 +222,23 @@ const FAQ = () => {
         </div>
 
         {/* Contact CTA */}
-        <div className="mt-16">
-          <div className="bg-[#4d64ae] py-4 px-6 rounded-lg flex items-center justify-between">
-            <span className="text-white font-medium">Ainda tem dúvidas? Fale conosco.</span>
-            <div className="flex gap-4">
-              <button
-                onClick={handleWhatsApp}
-                className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-              >
-                <MessageCircle className="w-5 h-5 text-white" />
-              </button>
-              <button
-                onClick={() => window.open('tel:+556135475886', '_self')}
-                className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
-              >
-                <Phone className="w-5 h-5 text-white" />
-              </button>
-            </div>
+        <div className="mt-16 text-center">
+          <h3 className="text-2xl font-bold text-foreground mb-6">
+            Ainda tem dúvidas? Fale conosco.
+          </h3>
+          <div className="flex justify-center gap-6">
+            <button
+              onClick={handleWhatsApp}
+              className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <MessageCircle className="w-6 h-6 text-white" />
+            </button>
+            <button
+              onClick={() => window.open('tel:+556135475886', '_self')}
+              className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <Phone className="w-6 h-6 text-white" />
+            </button>
           </div>
         </div>
       </div>
