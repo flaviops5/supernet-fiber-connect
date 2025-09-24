@@ -40,6 +40,14 @@ const Testimonials = () => {
       text: "Sou cliente da Supernet desde 2020. Há semanas tinha um problema de conexão que não conseguia detectar/resolver. O gerente do suporte da empresa foi bastante dedicado e não descansou enquanto não conseguiu entender e encontrar a solução para o mesmo. Só tenho elogios à empresa.",
       service: "Cliente desde 2020"
     }
+    {
+  "name": "Caroline Gomes",
+  "location": "Cliente Google",
+  "rating": 5,
+  "text": "Melhor empresa de Internet que atende aqui no Condomínio Residencial Novo Horizonte.\nO sinal é  ótimo, sem falar no atendimento do financeiro e suporte que é  super agil e eficiente.",
+  "service": "Avaliação Google - 2 semanas atrás",
+  "photo": "https://lh3.googleusercontent.com/a-/ALV-UjWMLppiTif991BF187NtNyA5KorUnpftspQkDvAPtBoP7gQlQNJ2A=s128-c0x00000000-cc-rp-mo"
+}
   ];
 
   useEffect(() => {
