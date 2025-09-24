@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle } from 'lucide-react';
-import telemedicinaHero from '@/assets/telemedicina-hero.jpg';
+import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
 import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
