@@ -66,8 +66,8 @@ const IntegratedChat = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: IntegratedChatP
             <span className="gradient-text">SUPERNET</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Converse conosco agora mesmo! Tire suas dúvidas, conheça nossos planos e contrate sua internet. 
-            Atendimento humanizado disponível 24/7.
+            Converse conosco agora mesmo! Tire suas dúvidas, conheça nossos planos e faça parte da supernet. 
+            Atendimento humanizado disponível.
           </p>
         </div>
 
