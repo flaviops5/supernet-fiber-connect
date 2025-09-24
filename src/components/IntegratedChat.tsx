@@ -62,7 +62,7 @@ const IntegratedChat = ({ chatbotId = "mMFk_B5d94OhD7fQBxvNU" }: IntegratedChatP
         {/* Section Header */}
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-4">
-            Assistente Virtual{' '}
+            Contrate agora a{' '}
             <span className="gradient-text">SUPERNET</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
