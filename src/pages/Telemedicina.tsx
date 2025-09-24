@@ -464,47 +464,78 @@ const Telemedicina = () => {
             </p>
           </div>
 
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8 items-start">
-              {/* First Column */}
-              <div className="space-y-4">
-                <Accordion type="single" collapsible className="w-full space-y-4">
-                  {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => (
-                    <AccordionItem 
-                      key={index} 
-                      value={`item-${index}`} 
-                      className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
-                    >
-                      <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
-                        {faq.question}
+          <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+            {/* Left Column - First Half of FAQs */}
+            <div className="space-y-6">
+              {faqs.slice(0, Math.ceil(faqs.length / 2)).map((faq, index) => (
+                <div key={index} className="bg-[#f8f7f8] rounded-2xl border-l-4 border-[#4d64ae] shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in" style={{
+                  animationDelay: `${index * 0.1}s`
+                }}>
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value={`item-${index}`} className="border-none">
+                      <AccordionTrigger className="px-6 py-6 hover:no-underline group">
+                        <div className="flex items-center gap-4 text-left">
+                          <div className="w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <Heart className="w-6 h-6 text-[#4d64ae] stroke-2" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-base text-foreground group-hover:text-[#4d64ae] transition-colors leading-tight">
+                              {faq.question}
+                            </h3>
+                          </div>
+                        </div>
                       </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
-                        {faq.answer}
+                      <AccordionContent className="px-6 pb-6">
+                        <div className="space-y-4 ml-16">
+                          <div className="bg-white/60 rounded-xl p-4 border border-white/30">
+                            <p className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm">
+                              {faq.answer}
+                            </p>
+                          </div>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+                  </Accordion>
+                </div>
+              ))}
+            </div>
 
-              {/* Second Column */}
-              <div className="space-y-4">
-                <Accordion type="single" collapsible className="w-full space-y-4">
-                  {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => (
-                    <AccordionItem 
-                      key={index + Math.ceil(faqs.length / 2)} 
-                      value={`item-${index + Math.ceil(faqs.length / 2)}`} 
-                      className="bg-card rounded-lg px-6 border border-border/50 hover:border-primary/20 transition-colors"
-                    >
-                      <AccordionTrigger className="text-left font-semibold text-primary hover:text-primary/80 py-6">
-                        {faq.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground pb-6 leading-relaxed">
-                        {faq.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+            {/* Right Column - Second Half of FAQs */}
+            <div className="space-y-6">
+              {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => {
+                const adjustedIndex = index + Math.ceil(faqs.length / 2);
+                return (
+                  <div key={adjustedIndex} className="bg-[#f8f7f8] rounded-2xl border-l-4 border-orange-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in" style={{
+                    animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s`
+                  }}>
+                    <Accordion type="single" collapsible>
+                      <AccordionItem value={`item-${adjustedIndex}`} className="border-none">
+                        <AccordionTrigger className="px-6 py-6 hover:no-underline group">
+                          <div className="flex items-center gap-4 text-left">
+                            <div className="w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                              <Heart className="w-6 h-6 text-orange-500 stroke-2" />
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-base text-foreground group-hover:text-orange-500 transition-colors leading-tight">
+                                {faq.question}
+                              </h3>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6 pb-6">
+                          <div className="space-y-4 ml-16">
+                            <div className="bg-white/60 rounded-xl p-4 border border-white/30">
+                              <p className="text-muted-foreground leading-relaxed whitespace-pre-line text-sm">
+                                {faq.answer}
+                              </p>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
