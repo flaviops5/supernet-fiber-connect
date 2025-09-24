@@ -540,21 +540,18 @@ const Telemedicina = () => {
           </div>
 
           {/* Contact CTA */}
-          <div className="text-center mt-12">
-            <div className="bg-gradient-to-r from-primary/5 to-orange/5 rounded-2xl p-8 max-w-2xl mx-auto">
-              <h3 className="text-2xl font-bold font-varela uppercase mb-4 text-primary">
-                Ainda tem dúvidas?
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Nossa equipe está pronta para esclarecer todas as suas questões sobre telemedicina
-              </p>
-                <Button
-                  onClick={handleWhatsApp}
-                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
-                >
-                <Phone className="mr-2 h-5 w-5" />
-                Falar com Especialista
-              </Button>
+          <div className="mt-16 text-center">
+            <h3 className="text-3xl font-bold font-varela uppercase text-foreground mb-6 md:text-3xl">
+              Ainda tem dúvidas?{' '}
+              <span className="gradient-text">Fale conosco.</span>
+            </h3>
+            <div className="flex justify-center gap-6">
+              <button onClick={handleWhatsApp} className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </button>
+              <button onClick={() => window.open('tel:+556135475886', '_self')} className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105">
+                <Phone className="w-6 h-6 text-white" />
+              </button>
             </div>
           </div>
         </div>
