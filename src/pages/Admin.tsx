@@ -244,48 +244,403 @@ const ReviewsManagement = () => {
   );
 };
 
-// Placeholder components for other routes
-const UsersManagement = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-      <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
-    </div>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+// Users Management component
+const UsersManagement = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const PlansManagement = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-3xl font-bold">Gerenciar Planos</h1>
-      <p className="text-muted-foreground">Configure planos de internet e preços</p>
-    </div>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select(`
+            *,
+            user_roles!inner(role)
+          `);
 
-const CoverageManagement = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-3xl font-bold">Gerenciar Cobertura</h1>
-      <p className="text-muted-foreground">Configure áreas de cobertura e disponibilidade</p>
+        if (error) throw error;
+        setUsers(data || []);
+      } catch (error) {
+        console.error('Error loading users:', error);
+        toast.error('Erro ao carregar usuários');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'editor' | 'viewer') => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      setUsers(users.map(user => 
+        user.user_id === userId 
+          ? { ...user, user_roles: [{ role: newRole }] }
+          : user
+      ));
+      
+      toast.success('Permissão atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Erro ao atualizar permissão');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
+          <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando usuários...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
+        <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuários do Sistema</CardTitle>
+          <CardDescription>
+            Total de {users.length} usuário{users.length !== 1 ? 's' : ''} cadastrado{users.length !== 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {users.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhum usuário cadastrado</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{user.name}</h3>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      {user.phone && (
+                        <p className="text-xs text-muted-foreground">{user.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={user.user_roles[0]?.role || 'viewer'}
+                      onChange={(e) => updateUserRole(user.user_id, e.target.value as 'admin' | 'editor' | 'viewer')}
+                      className="px-3 py-1 border rounded text-sm"
+                    >
+                      <option value="viewer">Visualizador</option>
+                      <option value="editor">Editor</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                    
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      user.user_roles[0]?.role === 'admin' 
+                        ? 'bg-red-100 text-red-800' 
+                        : user.user_roles[0]?.role === 'editor'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.user_roles[0]?.role === 'admin' ? 'Admin' : 
+                       user.user_roles[0]?.role === 'editor' ? 'Editor' : 'Viewer'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+  );
+};
+
+const PlansManagement = () => {
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('plans')
+          .select('*')
+          .order('price', { ascending: true });
+
+        if (error) throw error;
+        setPlans(data || []);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+        toast.error('Erro ao carregar planos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
+
+  const togglePlanActive = async (planId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('plans')
+        .update({ active: !currentActive })
+        .eq('id', planId);
+
+      if (error) throw error;
+      
+      setPlans(plans.map(plan => 
+        plan.id === planId 
+          ? { ...plan, active: !currentActive }
+          : plan
+      ));
+      
+      toast.success(`Plano ${!currentActive ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast.error('Erro ao atualizar plano');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Planos</h1>
+          <p className="text-muted-foreground">Configure planos de internet e preços</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando planos...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Gerenciar Planos</h1>
+        <p className="text-muted-foreground">Configure planos de internet e preços</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Planos Disponíveis</CardTitle>
+          <CardDescription>
+            Total de {plans.length} plano{plans.length !== 1 ? 's' : ''} cadastrado{plans.length !== 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {plans.length === 0 ? (
+            <div className="text-center py-8">
+              <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhum plano cadastrado</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {plans.map((plan) => (
+                <Card key={plan.id} className={`relative ${!plan.active ? 'opacity-50' : ''}`}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{plan.name}</CardTitle>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        plan.active 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {plan.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
+                    <CardDescription>{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="text-2xl font-bold text-primary">
+                        R$ {plan.price.toFixed(2).replace('.', ',')}
+                        <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Velocidade: {plan.speed}
+                      </p>
+                    </div>
+                    
+                    <Button
+                      variant={plan.active ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => togglePlanActive(plan.id, plan.active)}
+                      className="w-full"
+                    >
+                      {plan.active ? 'Desativar' : 'Ativar'} Plano
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const CoverageManagement = () => {
+  const [areas, setAreas] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCoverageAreas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('coverage_areas')
+          .select('*')
+          .order('name');
+
+        if (error) throw error;
+        setAreas(data || []);
+      } catch (error) {
+        console.error('Error loading coverage areas:', error);
+        toast.error('Erro ao carregar áreas de cobertura');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCoverageAreas();
+  }, []);
+
+  const toggleAreaActive = async (areaId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('coverage_areas')
+        .update({ active: !currentActive })
+        .eq('id', areaId);
+
+      if (error) throw error;
+      
+      setAreas(areas.map(area => 
+        area.id === areaId 
+          ? { ...area, active: !currentActive }
+          : area
+      ));
+      
+      toast.success(`Área ${!currentActive ? 'ativada' : 'desativada'} com sucesso!`);
+    } catch (error) {
+      console.error('Error updating area:', error);
+      toast.error('Erro ao atualizar área');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Cobertura</h1>
+          <p className="text-muted-foreground">Configure áreas de cobertura e disponibilidade</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando áreas de cobertura...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Gerenciar Cobertura</h1>
+        <p className="text-muted-foreground">Configure áreas de cobertura e disponibilidade</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Áreas de Cobertura</CardTitle>
+          <CardDescription>
+            Total de {areas.length} área{areas.length !== 1 ? 's' : ''} cadastrada{areas.length !== 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {areas.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Nenhuma área de cobertura cadastrada</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {areas.map((area) => (
+                <div
+                  key={area.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div 
+                      className="w-6 h-6 rounded-full border-2"
+                      style={{ backgroundColor: area.color }}
+                    />
+                    <div>
+                      <h3 className="font-semibold">{area.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Código: {area.region_code}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={area.active ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => toggleAreaActive(area.id, area.active)}
+                    >
+                      {area.active ? 'Desativar' : 'Ativar'}
+                    </Button>
+                    
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      area.active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {area.active ? 'Ativa' : 'Inativa'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 const BlogManagement = () => (
   <div className="space-y-6">
