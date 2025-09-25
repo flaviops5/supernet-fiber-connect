@@ -328,13 +328,13 @@ const Telemedicina = () => {
             </Card>
 
             {/* Plano Família - Popular */}
-            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden rounded-2xl">
+            <Card className="border-primary border-2 shadow-2xl relative overflow-hidden rounded-2xl" style={{ borderRadius: '16px' }}>
               {/* Highlight badge */}
               <div className="absolute top-4 right-4 bg-gradient-to-r from-primary to-orange text-white px-3 py-1 rounded-full text-sm font-bold">
                 POPULAR
               </div>
               
-              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8 rounded-t-2xl">
+              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8" style={{ borderTopLeftRadius: '14px', borderTopRightRadius: '14px' }}>
                 <div className="text-5xl font-bold mb-2">
                   R$49,90
                   <span className="text-lg font-normal">/Mês</span>
