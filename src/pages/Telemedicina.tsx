@@ -330,7 +330,7 @@ const Telemedicina = () => {
             {/* Plano Família - Popular */}
             <Card className="border-primary border-2 shadow-2xl relative overflow-hidden rounded-2xl" style={{ borderRadius: '16px' }}>
               {/* Highlight badge */}
-              <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-500 to-[#f8f7f8] text-white px-3 py-1 rounded-full text-sm font-bold">
+              <div className="absolute top-4 right-4 bg-gradient-to-r from-primary to-orange text-white px-3 py-1 rounded-full text-sm font-bold">
                 POPULAR
               </div>
               
@@ -376,7 +376,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-blue-500 to-[#f8f7f8] hover:from-blue-600 hover:to-[#f8f7f8] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
+                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Contratar Agora
