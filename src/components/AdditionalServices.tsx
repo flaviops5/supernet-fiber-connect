@@ -154,14 +154,26 @@ const AdditionalServices = () => {
                   
                   {/* Hover Expanded Card - Smart positioning to avoid overlap */}
                   <div className={`absolute opacity-0 group-hover:opacity-100 transition-all duration-300 z-[99999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto ${
-                    // Position tooltip based on service position to avoid center overlap
-                    index < 2 // Top services
+                    // Position tooltip based on specific service to avoid overlaps
+                    service.title === "Monitoramento Veicular" // índice 0
+                      ? "top-1/2 left-8 transform -translate-y-1/2" // mais para a direita
+                    : service.title === "Monitoramento Residencial" // índice 1
+                      ? "top-1/2 left-8 transform -translate-y-1/2" // mais para a direita
+                    : service.title === "Telemedicina" // índice 2
+                      ? "bottom-4 left-8 transform" // mais para baixo e do lado direito
+                    : service.title === "Telefonia Fixa" // índice 4
+                      ? "top-1/2 right-8 transform -translate-y-1/2" // caixa do lado esquerdo
+                    : service.title === "Automações" // índice 5
+                      ? "top-1/2 right-8 transform -translate-y-1/2" // caixa do lado esquerdo
+                    : service.title === "Reparos Internos" // índice 8
+                      ? "top-1/2 left-8 transform -translate-y-1/2" // mais para a direita
+                    : index < 2 // Other top services
                       ? "top-8 left-1/2 transform -translate-x-1/2"
-                    : index < 4 // Right services  
+                    : index < 4 // Other right services  
                       ? "top-1/2 left-8 transform -translate-y-1/2"
-                    : index < 6 // Bottom services
+                    : index < 6 // Other bottom services
                       ? "bottom-8 left-1/2 transform -translate-x-1/2"
-                    : index < 8 // Left services
+                    : index < 8 // Other left services
                       ? "top-1/2 right-8 transform -translate-y-1/2"
                     : "top-8 left-1/2 transform -translate-x-1/2" // Default for remaining
                   }`}>
