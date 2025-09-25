@@ -355,7 +355,7 @@ const Admin = () => {
 
         if (!role || (role.role !== 'admin' && role.role !== 'editor')) {
           toast.error("Acesso negado. Você não tem permissão para acessar esta área.");
-          navigate('/');
+          navigate('/auth');
           return;
         }
 

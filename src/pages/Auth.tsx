@@ -38,7 +38,7 @@ const Auth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user && window.location.pathname !== '/auth') {
           navigate('/telemedicina');
         }
       }
@@ -49,7 +49,7 @@ const Auth = () => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
+      if (session?.user && window.location.pathname !== '/auth') {
         navigate('/telemedicina');
       }
     });
