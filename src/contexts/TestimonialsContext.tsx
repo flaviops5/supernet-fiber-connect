@@ -50,17 +50,31 @@ const defaultTestimonials: Testimonial[] = [
 
 export const TestimonialsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>(() => {
-    const saved = localStorage.getItem('selected_testimonials');
-    return saved ? JSON.parse(saved) : defaultTestimonials;
+    try {
+      const saved = localStorage.getItem('selected_testimonials');
+      return saved ? JSON.parse(saved) : defaultTestimonials;
+    } catch (error) {
+      console.warn('Error parsing testimonials from localStorage:', error);
+      return defaultTestimonials;
+    }
   });
 
   const [stats, setStats] = useState(() => {
-    const saved = localStorage.getItem('testimonials_stats');
-    return saved ? JSON.parse(saved) : {
-      totalClients: 2500,
-      availability: 99.4,
-      averageRating: 4.8
-    };
+    try {
+      const saved = localStorage.getItem('testimonials_stats');
+      return saved ? JSON.parse(saved) : {
+        totalClients: 2500,
+        availability: 99.4,
+        averageRating: 4.8
+      };
+    } catch (error) {
+      console.warn('Error parsing stats from localStorage:', error);
+      return {
+        totalClients: 2500,
+        availability: 99.4,
+        averageRating: 4.8
+      };
+    }
   });
 
   const addTestimonial = (testimonial: Testimonial) => {

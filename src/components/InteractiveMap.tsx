@@ -73,7 +73,14 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         return {
           id: area.id,
           name: area.name,
-          coordinates: JSON.parse(area.coordinates as string) as LatLngTuple[],
+          coordinates: (() => {
+            try {
+              return JSON.parse(area.coordinates as string) as LatLngTuple[];
+            } catch (error) {
+              console.error('Error parsing coordinates for area:', area.name, error);
+              return [] as LatLngTuple[];
+            }
+          })(),
           color: area.color,
           plans: Array.from(plansSet)
         };
