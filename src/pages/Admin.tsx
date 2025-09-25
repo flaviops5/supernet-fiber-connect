@@ -252,15 +252,30 @@ const UsersManagement = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const { data, error } = await supabase
+        // First get all profiles
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select(`
-            *,
-            user_roles!inner(role)
-          `);
+          .select('*');
 
-        if (error) throw error;
-        setUsers(data || []);
+        if (profilesError) throw profilesError;
+
+        // Then get user roles for each profile
+        const usersWithRoles = await Promise.all(
+          (profilesData || []).map(async (profile) => {
+            const { data: roleData } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', profile.user_id)
+              .single();
+
+            return {
+              ...profile,
+              user_roles: roleData ? [roleData] : [{ role: 'viewer' }]
+            };
+          })
+        );
+
+        setUsers(usersWithRoles);
       } catch (error) {
         console.error('Error loading users:', error);
         toast.error('Erro ao carregar usuários');
