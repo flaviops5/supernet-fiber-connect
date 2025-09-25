@@ -39,13 +39,9 @@ const App = () => {
                 <Route path="/contato" element={<Contact />} />
                 <Route path="/telemedicina" element={<Telemedicina />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/sobre" element={<Navigate to="/" replace />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route 
-                  path="/admin/*" 
-                  element={<AdminWrapper />} 
-                />
-                <Route path="/planos-telemedicina" element={<Navigate to="/telemedicina" replace />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/admin/*" element={<AdminWrapper />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
