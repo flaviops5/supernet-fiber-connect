@@ -221,7 +221,7 @@ const Auth = () => {
               {view === 'login' && (
                 <>
                   <CardTitle className="text-2xl font-bold text-foreground">
-                    Área do Cliente
+                    ÁREA ADMIN
                   </CardTitle>
                   <CardDescription className="text-muted-foreground">
                     Informe seus dados de acesso.
@@ -312,7 +312,7 @@ const Auth = () => {
                       onClick={() => setView('signup')}
                       className="text-sm text-primary hover:underline"
                     >
-                      Primeiro acesso
+                      Criar conta
                     </button>
                   </div>
                 </form>
