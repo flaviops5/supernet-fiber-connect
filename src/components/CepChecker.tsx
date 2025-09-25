@@ -4,14 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Phone, MessageCircle, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-// Dados de exemplo de CEPs atendidos (substitua pelos seus dados reais)
-const mockCepData = {
-  '72400000': { available: true, region: 'SIG - Setor de Indústria Gráfica', plans: ['100MB - R$ 79,90', '200MB - R$ 99,90', '500MB - R$ 129,90', '1GB - R$ 179,90'] },
-  '70000000': { available: true, region: 'Brasília Central', plans: ['200MB - R$ 99,90', '500MB - R$ 129,90', '1GB - R$ 179,90'] },
-  '72000000': { available: true, region: 'Taguatinga', plans: ['100MB - R$ 79,90', '500MB - R$ 129,90', '1GB - R$ 179,90'] },
-  '71000000': { available: false, region: 'Região não atendida', plans: [] },
-};
+interface PostgresPoint {
+  x: number;
+  y: number;
+}
 
 interface CepCheckerProps {
   onLocationFound?: (coordinates: [number, number]) => void;
@@ -65,25 +63,70 @@ const CepChecker = ({ onLocationFound }: CepCheckerProps) => {
 
     setLoading(true);
     
-    // Simular busca de CEP (substitua pela sua API real)
-    setTimeout(() => {
-      const cepKey = cleanCep.substring(0, 8);
-      const mockResult = mockCepData[cepKey as keyof typeof mockCepData] || 
-                        mockCepData['71000000']; // Default para não atendido
-      
-      setResult(mockResult);
-      setLoading(false);
+    try {
+      // Buscar cobertura no Supabase
+      const { data: coverage, error } = await supabase
+        .from('cep_coverage')
+        .select(`
+          *,
+          cep_plans (
+            plans (
+              name,
+              speed,
+              price,
+              description
+            )
+          )
+        `)
+        .lte('cep_start', cleanCep)
+        .gte('cep_end', cleanCep)
+        .single();
 
-      // Simular coordenadas baseadas no CEP (substitua por dados reais)
-      if (mockResult.available && onLocationFound) {
-        const mockCoordinates: [number, number] = cepKey === '72400000' 
-          ? [-15.7942, -47.8822] 
-          : cepKey === '70000000'
-          ? [-15.7900, -47.9100]
-          : [-15.8400, -48.0500];
-        onLocationFound(mockCoordinates);
+      if (error) {
+        console.log('CEP não encontrado na base:', error);
+        // CEP não encontrado - retornar como não atendido
+        setResult({
+          available: false,
+          region: 'Região não atendida',
+          plans: []
+        });
+      } else {
+        // Formatar os planos
+        const plans = coverage.cep_plans?.map((cp: any) => 
+          `${cp.plans.speed} - R$ ${cp.plans.price.toFixed(2).replace('.', ',')}`
+        ) || [];
+
+        setResult({
+          available: coverage.available,
+          region: coverage.region_name,
+          plans: plans
+        });
+
+        // Se tem cobertura e coordenadas, notificar o mapa
+        if (coverage.available && coverage.coordinates && onLocationFound) {
+          // Extrair coordenadas do POINT
+          const coords = coverage.coordinates as PostgresPoint;
+          // POINT format: POINT(longitude latitude)
+          if (coords && typeof coords.x === 'number' && typeof coords.y === 'number') {
+            onLocationFound([coords.y, coords.x]); // Note: Leaflet usa [lat, lng]
+          }
+        }
       }
-    }, 1500);
+    } catch (err) {
+      console.error('Erro ao consultar CEP:', err);
+      toast({
+        title: "Erro na consulta",
+        description: "Ocorreu um erro ao verificar a cobertura. Tente novamente.",
+        variant: "destructive"
+      });
+      setResult({
+        available: false,
+        region: 'Erro na consulta',
+        plans: []
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

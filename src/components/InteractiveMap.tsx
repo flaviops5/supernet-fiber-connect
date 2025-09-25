@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { supabase } from '@/integrations/supabase/client';
 
 // Fix for default markers in Leaflet with Vite
 const initializeLeafletIcons = () => {
@@ -14,54 +15,14 @@ const initializeLeafletIcons = () => {
   });
 };
 
-// Dados de exemplo das áreas de cobertura (substitua pelos seus dados reais)
 type LatLngTuple = [number, number];
 interface CoverageArea {
-  id: number;
+  id: string;
   name: string;
   coordinates: LatLngTuple[];
   color: string;
   plans: string[];
 }
-
-const coverageAreas: CoverageArea[] = [
-  {
-    id: 1,
-    name: 'Setor de Indústria Gráfica - SIG',
-    coordinates: [
-      [-15.7900, -47.8900],
-      [-15.7900, -47.8800],
-      [-15.7980, -47.8800],
-      [-15.7980, -47.8900]
-    ],
-    color: '#3b82f6',
-    plans: ['100MB', '200MB', '500MB', '1GB']
-  },
-  {
-    id: 2,
-    name: 'Região Central - Brasília',
-    coordinates: [
-      [-15.7800, -47.9200],
-      [-15.7800, -47.9000],
-      [-15.8000, -47.9000],
-      [-15.8000, -47.9200]
-    ],
-    color: '#10b981',
-    plans: ['200MB', '500MB', '1GB']
-  },
-  {
-    id: 3,
-    name: 'Taguatinga',
-    coordinates: [
-      [-15.8300, -48.0600],
-      [-15.8300, -48.0400],
-      [-15.8500, -48.0400],  
-      [-15.8500, -48.0600]
-    ],
-    color: '#f59e0b',
-    plans: ['100MB', '500MB', '1GB']
-  }
-];
 
 interface InteractiveMapProps {
   selectedLocation?: [number, number];
@@ -70,12 +31,70 @@ interface InteractiveMapProps {
 const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([]);
   const defaultCenter: [number, number] = [-15.7942, -47.8822];
 
+  // Carregar áreas de cobertura do Supabase
+  const loadCoverageAreas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('coverage_areas')
+        .select(`
+          id,
+          name,
+          coordinates,
+          color,
+          cep_coverage (
+            cep_plans (
+              plans (
+                speed
+              )
+            )
+          )
+        `)
+        .eq('active', true);
+
+      if (error) {
+        console.error('Erro ao carregar áreas de cobertura:', error);
+        return;
+      }
+
+      const areas: CoverageArea[] = data.map((area) => {
+        // Extrair planos únicos das relações
+        const plansSet = new Set<string>();
+        area.cep_coverage?.forEach((cep: any) => {
+          cep.cep_plans?.forEach((cp: any) => {
+            if (cp.plans?.speed) {
+              plansSet.add(cp.plans.speed);
+            }
+          });
+        });
+
+        return {
+          id: area.id,
+          name: area.name,
+          coordinates: JSON.parse(area.coordinates as string) as LatLngTuple[],
+          color: area.color,
+          plans: Array.from(plansSet)
+        };
+      });
+
+      setCoverageAreas(areas);
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+    }
+  };
+
+  // Carregar dados na inicialização
+  useEffect(() => {
+    loadCoverageAreas();
+  }, []);
+
+  // Inicializar mapa e polígonos
   useEffect(() => {
     initializeLeafletIcons();
 
-    if (containerRef.current && !mapRef.current) {
+    if (containerRef.current && !mapRef.current && coverageAreas.length > 0) {
       // Create map
       mapRef.current = L.map(containerRef.current, {
         center: selectedLocation || defaultCenter,
@@ -118,7 +137,7 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [coverageAreas]);
 
   // Update center when selectedLocation changes
   useEffect(() => {

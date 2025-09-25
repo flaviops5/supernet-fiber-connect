@@ -14,7 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cep_coverage: {
+        Row: {
+          available: boolean
+          cep_end: string
+          cep_start: string
+          coordinates: unknown | null
+          coverage_area_id: string | null
+          created_at: string
+          id: string
+          region_name: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          cep_end: string
+          cep_start: string
+          coordinates?: unknown | null
+          coverage_area_id?: string | null
+          created_at?: string
+          id?: string
+          region_name: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          cep_end?: string
+          cep_start?: string
+          coordinates?: unknown | null
+          coverage_area_id?: string | null
+          created_at?: string
+          id?: string
+          region_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cep_coverage_coverage_area_id_fkey"
+            columns: ["coverage_area_id"]
+            isOneToOne: false
+            referencedRelation: "coverage_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cep_plans: {
+        Row: {
+          cep_coverage_id: string
+          created_at: string
+          id: string
+          plan_id: string
+        }
+        Insert: {
+          cep_coverage_id: string
+          created_at?: string
+          id?: string
+          plan_id: string
+        }
+        Update: {
+          cep_coverage_id?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cep_plans_cep_coverage_id_fkey"
+            columns: ["cep_coverage_id"]
+            isOneToOne: false
+            referencedRelation: "cep_coverage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cep_plans_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_areas: {
+        Row: {
+          active: boolean
+          color: string
+          coordinates: Json
+          created_at: string
+          id: string
+          name: string
+          region_code: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          coordinates: Json
+          created_at?: string
+          id?: string
+          name: string
+          region_code: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          coordinates?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          region_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+          speed: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price: number
+          speed: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          speed?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
