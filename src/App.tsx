@@ -9,6 +9,7 @@ import Contact from "./pages/Contact";
 import Telemedicina from "./pages/Telemedicina";
 import Blog from "./pages/Blog";
 import Admin from "./pages/Admin";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -32,7 +33,8 @@ const App = () => {
                 <Route path="/contato" element={<Contact />} />
                 <Route path="/telemedicina" element={<Telemedicina />} />
                 <Route path="/blog" element={<Blog />} />
-                <Route path="/admin" element={<Admin />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin/*" element={<Admin />} />
                 <Route path="/planos-telemedicina" element={<Navigate to="/telemedicina" replace />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
