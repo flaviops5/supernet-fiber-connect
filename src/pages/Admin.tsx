@@ -354,9 +354,8 @@ const Admin = () => {
           .single();
 
         if (!role || (role.role !== 'admin' && role.role !== 'editor')) {
-          toast.error("Acesso negado. Você não tem permissão para acessar esta área.");
-          navigate('/auth');
-          return;
+          toast.error("Bem-vindo ao sistema! Você tem acesso como visualizador.");
+          // Não redireciona, apenas permite acesso limitado
         }
 
         setIsLoading(false);

@@ -39,7 +39,7 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user && window.location.pathname !== '/auth') {
-          navigate('/telemedicina');
+          navigate('/admin');
         }
       }
     );
@@ -50,7 +50,7 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user && window.location.pathname !== '/auth') {
-        navigate('/telemedicina');
+        navigate('/admin');
       }
     });
 
@@ -115,7 +115,7 @@ const Auth = () => {
     setError('');
 
     try {
-      const redirectUrl = `${window.location.origin}/telemedicina`;
+      const redirectUrl = `${window.location.origin}/admin`;
       
       const { error } = await supabase.auth.signUp({
         email,
