@@ -335,10 +335,13 @@ const Admin = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
+      console.log('Admin: Starting authentication check...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Admin: Session check result:', session ? 'authenticated' : 'not authenticated');
         
         if (!session) {
+          console.log('Admin: No session found, redirecting to /auth');
           navigate('/auth');
           return;
         }

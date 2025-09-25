@@ -16,6 +16,12 @@ import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
+// Admin wrapper component for debugging
+const AdminWrapper = () => {
+  console.log('Admin route accessed');
+  return <Admin />;
+};
+
 const App = () => {
   console.log('App loading...');
   return (
@@ -34,7 +40,10 @@ const App = () => {
                 <Route path="/telemedicina" element={<Telemedicina />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/admin/*" element={<Admin />} />
+                <Route 
+                  path="/admin/*" 
+                  element={<AdminWrapper />} 
+                />
                 <Route path="/planos-telemedicina" element={<Navigate to="/telemedicina" replace />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
