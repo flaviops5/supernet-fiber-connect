@@ -205,8 +205,8 @@ const Auth = () => {
         <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-gradient-to-r from-orange/5 to-primary/5 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
       </div>
 
-      {/* Left Column - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 relative z-10">
+      {/* Centered Form */}
+      <div className="w-full flex items-center justify-center p-4 relative z-10">
         <div className="w-full max-w-md">
           <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
             <CardHeader className="text-center pb-8">
@@ -500,42 +500,6 @@ const Auth = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar ao site
             </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column - Image (Desktop only) */}
-      <div className="hidden lg:flex lg:w-1/2 items-center justify-center p-8 relative z-10">
-        <div className="relative max-w-lg">
-          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 shadow-2xl">
-            <img 
-              src={telemedicinHero} 
-              alt="Telemedicina - Atendimento online 24h" 
-              className="w-full h-auto rounded-2xl shadow-lg object-cover"
-            />
-            <div className="mt-6 text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Telemedicina 24 horas
-              </h2>
-              <p className="text-white/90 text-lg leading-relaxed">
-                Consultas médicas online com profissionais qualificados. 
-                Acesso rápido, seguro e disponível a qualquer momento.
-              </p>
-              <div className="grid grid-cols-3 gap-4 mt-6 text-center">
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="text-orange font-bold text-lg">24h</div>
-                  <div className="text-white/80 text-xs">Disponível</div>
-                </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="text-orange font-bold text-lg">4</div>
-                  <div className="text-white/80 text-xs">Pessoas</div>
-                </div>
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="text-orange font-bold text-lg">R$49</div>
-                  <div className="text-white/80 text-xs">Por mês</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
