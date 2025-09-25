@@ -334,7 +334,7 @@ const Telemedicina = () => {
                 POPULAR
               </div>
               
-              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8" style={{ borderTopLeftRadius: '14px', borderTopRightRadius: '14px' }}>
+              <CardHeader className="bg-gradient-to-br from-primary via-primary/90 to-orange/20 text-primary-foreground text-center py-8" style={{ borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
                 <div className="text-5xl font-bold mb-2">
                   R$49,90
                   <span className="text-lg font-normal">/Mês</span>
