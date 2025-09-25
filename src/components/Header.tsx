@@ -117,6 +117,9 @@ const Header = () => {
             <Button variant="outline" onClick={() => window.open('http://central.supernetfibra.com.br', '_blank')} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
               Central do Cliente
             </Button>
+            <Button variant="ghost" asChild size="sm" className="text-muted-foreground hover:text-foreground">
+              <Link to="/auth">Admin</Link>
+            </Button>
             <Button onClick={handleWhatsApp} className="cta-gradient">
               <Phone className="w-4 h-4 mr-2" />
               Contratar Agora
@@ -162,6 +165,10 @@ const Header = () => {
               
               <Button variant="outline" onClick={() => window.open('http://central.supernetfibra.com.br', '_blank')} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full mb-4">
                 Central do Cliente
+              </Button>
+              
+              <Button variant="ghost" asChild size="sm" className="text-muted-foreground hover:text-foreground w-full mb-4">
+                <Link to="/auth">Admin</Link>
               </Button>
               
               <Button onClick={handleWhatsApp} className="cta-gradient w-full">
