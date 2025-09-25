@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle } from 'lucide-react';
+import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle, LogIn } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
@@ -9,8 +10,14 @@ import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
 
 const Telemedicina = () => {
   console.log('Telemedicina page loading...');
+  const navigate = useNavigate();
+  
   const handleWhatsApp = () => {
     window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20contratar!', '_blank');
+  };
+
+  const handleLogin = () => {
+    navigate('/auth');
   };
 
   const features = [
@@ -147,7 +154,7 @@ const Telemedicina = () => {
               </div>
 
               {/* CTA */}
-              <div className="flex justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
                   onClick={handleWhatsApp}
                   size="lg"
@@ -155,6 +162,16 @@ const Telemedicina = () => {
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Fale com nosso time
+                </Button>
+                
+                <Button
+                  onClick={handleLogin}
+                  size="lg"
+                  variant="outline"
+                  className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
+                >
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Área do Cliente
                 </Button>
               </div>
             </div>

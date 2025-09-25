@@ -1,66 +1,55 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
-import { toast } from "sonner";
-import { z } from "zod";
-
-const loginSchema = z.object({
-  email: z.string().email("Email inválido").max(255, "Email muito longo"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres")
-});
-
-const signupSchema = z.object({
-  name: z.string().trim().min(2, "Nome deve ter pelo menos 2 caracteres").max(100, "Nome muito longo"),
-  email: z.string().email("Email inválido").max(255, "Email muito longo"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não coincidem",
-  path: ["confirmPassword"]
-});
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, ArrowLeft, User, Mail, Phone, Calendar, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
+import logoSupernet from '/public/assets/logo-supernet.png';
 
 const Auth = () => {
-  const navigate = useNavigate();
+  const [view, setView] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState('');
+  const [cpf, setCpf] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Login form state
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: ""
-  });
-
-  // Signup form state
-  const [signupData, setSignupData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/admin");
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          navigate('/telemedicina');
+        }
       }
-    };
+    );
 
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        navigate("/admin");
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        navigate('/telemedicina');
       }
     });
 
@@ -69,232 +58,447 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
 
     try {
-      const validatedData = loginSchema.parse(loginData);
-      
       const { error } = await supabase.auth.signInWithPassword({
-        email: validatedData.email,
-        password: validatedData.password,
+        email,
+        password,
       });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          setError("Email ou senha incorretos");
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Email ou senha incorretos');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Por favor, confirme seu email antes de fazer login');
         } else {
           setError(error.message);
         }
       } else {
-        toast.success("Login realizado com sucesso!");
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Você será redirecionado em instantes.",
+        });
       }
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        setError(err.errors[0].message);
-      } else {
-        setError("Erro interno do servidor");
-      }
+      setError('Erro interno. Tente novamente.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    if (!email || !password || !confirmPassword || !fullName) {
+      setError('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
 
     try {
-      const validatedData = signupSchema.parse(signupData);
+      const redirectUrl = `${window.location.origin}/telemedicina`;
       
       const { error } = await supabase.auth.signUp({
-        email: validatedData.email,
-        password: validatedData.password,
+        email,
+        password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
           data: {
-            name: validatedData.name
+            full_name: fullName,
+            phone: phone || null,
+            birth_date: birthDate || null,
+            gender: gender || null,
+            cpf: cpf || null,
           }
         }
       });
 
       if (error) {
-        if (error.message.includes("User already registered")) {
-          setError("Este email já está cadastrado");
+        if (error.message.includes('User already registered')) {
+          setError('Este email já está cadastrado. Tente fazer login.');
         } else {
           setError(error.message);
         }
       } else {
-        toast.success("Conta criada com sucesso! Verifique seu email.");
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Verifique seu email para confirmar a conta.",
+        });
+        setView('login');
       }
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        setError(err.errors[0].message);
-      } else {
-        setError("Erro interno do servidor");
-      }
+      setError('Erro interno. Tente novamente.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/20 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Bem-vindo</CardTitle>
-          <CardDescription>
-            Acesse ou crie sua conta para gerenciar o sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Por favor, informe seu email');
+      return;
+    }
 
-            <TabsContent value="login">
+    setLoading(true);
+    setError('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+        setView('login');
+      }
+    } catch (err) {
+      setError('Erro interno. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    }
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/90 to-orange/30 flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 right-20 w-40 h-40 bg-orange/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-20 w-60 h-60 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-gradient-to-r from-orange/5 to-primary/5 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-8">
+            <div className="mx-auto mb-6 w-24 h-24 bg-white rounded-full shadow-lg flex items-center justify-center p-2">
+              <img 
+                src={logoSupernet} 
+                alt="SuperNet Fibra Óptica" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            
+            {view === 'login' && (
+              <>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Área do Cliente
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Informe seus dados de acesso.
+                </CardDescription>
+              </>
+            )}
+            
+            {view === 'signup' && (
+              <>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Criar Conta
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Preencha seus dados para criar sua conta
+                </CardDescription>
+              </>
+            )}
+            
+            {view === 'forgot-password' && (
+              <>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Esqueceu sua senha?
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Informe seu email para recuperar sua senha
+                </CardDescription>
+              </>
+            )}
+          </CardHeader>
+
+          <CardContent>
+            {error && (
+              <Alert className="mb-4 border-red-200 bg-red-50">
+                <AlertDescription className="text-red-700">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {view === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10"
-                      value={loginData.email}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  <Input
+                    type="email"
+                    placeholder="Email ou Código ou CPF"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12"
+                    disabled={loading}
+                  />
+                </div>
+                
+                <div className="space-y-2 relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 pr-12"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Entrando..." : "Entrar"}
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                  disabled={loading}
+                >
+                  {loading ? 'Entrando...' : 'ENTRAR'}
                 </Button>
-              </form>
-            </TabsContent>
 
-            <TabsContent value="signup">
+                <div className="text-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setView('forgot-password')}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Esqueceu sua senha?
+                  </button>
+                  <br />
+                  <button
+                    type="button"
+                    onClick={() => setView('signup')}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Primeiro acesso
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {view === 'signup' && (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nome completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      className="pl-10"
-                      value={signupData.name}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Nome Completo *"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="h-12"
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10"
-                      value={signupData.email}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  <Input
+                    type="text"
+                    placeholder="CPF"
+                    value={cpf}
+                    onChange={(e) => {
+                      const formatted = formatCPF(e.target.value);
+                      if (formatted.length <= 14) setCpf(formatted);
+                    }}
+                    className="h-12"
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10"
-                      value={signupData.password}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <Input
+                    type="date"
+                    placeholder="Data de nascimento"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="h-12"
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirmar senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-confirm-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      className="pl-10"
-                      value={signupData.confirmPassword}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      required
-                    />
-                  </div>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full h-12 px-3 border border-input bg-background rounded-md text-sm"
+                    disabled={loading}
+                  >
+                    <option value="">Selecione o sexo</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="feminino">Feminino</option>
+                  </select>
                 </div>
 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+                <div className="space-y-2">
+                  <Input
+                    type="text"
+                    placeholder="Telefone"
+                    value={phone}
+                    onChange={(e) => {
+                      const formatted = formatPhone(e.target.value);
+                      if (formatted.length <= 15) setPhone(formatted);
+                    }}
+                    className="h-12"
+                    disabled={loading}
+                  />
+                </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Criando conta..." : "Criar conta"}
-                </Button>
+                <div className="space-y-2">
+                  <Input
+                    type="email"
+                    placeholder="Email *"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="space-y-2 relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Senha *"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 pr-12"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <div className="space-y-2 relative">
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirmar senha *"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-12 pr-12"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setView('login')}
+                    className="flex-1 h-12"
+                    disabled={loading}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Voltar
+                  </Button>
+                  
+                  <Button
+                    type="submit"
+                    className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                    disabled={loading}
+                  >
+                    {loading ? 'Criando...' : 'Criar Conta'}
+                  </Button>
+                </div>
               </form>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            )}
+
+            {view === 'forgot-password' && (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    type="email"
+                    placeholder="Informe seu email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setView('login')}
+                    className="flex-1 h-12"
+                    disabled={loading}
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Voltar
+                  </Button>
+                  
+                  <Button
+                    type="submit"
+                    className="flex-1 h-12 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                    disabled={loading}
+                  >
+                    {loading ? 'Enviando...' : 'Recuperar Senha'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="mt-8 text-center">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/telemedicina')}
+            className="text-white hover:text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Telemedicina
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
