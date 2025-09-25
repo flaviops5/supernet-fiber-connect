@@ -59,7 +59,7 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         return;
       }
 
-      const areas: CoverageArea[] = data.map((area) => {
+      const areas: CoverageArea[] = data?.map((area) => {
         // Extrair planos únicos das relações
         const plansSet = new Set<string>();
         area.cep_coverage?.forEach((cep: any) => {
@@ -77,7 +77,7 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
           color: area.color,
           plans: Array.from(plansSet)
         };
-      });
+      }) || [];
 
       setCoverageAreas(areas);
     } catch (err) {
@@ -85,16 +85,11 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
     }
   };
 
-  // Carregar dados na inicialização
-  useEffect(() => {
-    loadCoverageAreas();
-  }, []);
-
-  // Inicializar mapa e polígonos
+  // Inicializar mapa primeiro
   useEffect(() => {
     initializeLeafletIcons();
 
-    if (containerRef.current && !mapRef.current && coverageAreas.length > 0) {
+    if (containerRef.current && !mapRef.current) {
       // Create map
       mapRef.current = L.map(containerRef.current, {
         center: selectedLocation || defaultCenter,
@@ -107,7 +102,29 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         attribution: '&copy; OpenStreetMap contributors',
       }).addTo(mapRef.current);
 
-      // Coverage polygons
+      // Carregar dados após inicializar o mapa
+      loadCoverageAreas();
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  // Adicionar polígonos quando áreas são carregadas
+  useEffect(() => {
+    if (mapRef.current && coverageAreas.length > 0) {
+      // Limpar polígonos existentes
+      mapRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+          mapRef.current!.removeLayer(layer);
+        }
+      });
+
+      // Adicionar novos polígonos
       coverageAreas.forEach((area) => {
         const polygon = L.polygon(area.coordinates as L.LatLngExpression[], {
           color: area.color,
@@ -130,13 +147,6 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         );
       });
     }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
   }, [coverageAreas]);
 
   // Update center when selectedLocation changes
