@@ -330,7 +330,7 @@ const Telemedicina = () => {
             {/* Plano Família - Popular */}
             <Card className="border-primary border-2 shadow-2xl relative overflow-hidden rounded-2xl">
               {/* Highlight badge */}
-              <div className="absolute top-4 right-4 bg-orange text-white px-3 py-1 rounded-full text-sm font-bold">
+              <div className="absolute top-4 right-4 bg-gradient-to-r from-primary to-orange text-white px-3 py-1 rounded-full text-sm font-bold">
                 POPULAR
               </div>
               
@@ -376,7 +376,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
+                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
                 >
                   <Phone className="mr-2 h-5 w-5" />
                   Contratar Agora
@@ -386,7 +386,7 @@ const Telemedicina = () => {
 
             {/* Plano Premium */}
             <Card className="border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 rounded-2xl">
-              <CardHeader className="bg-gradient-to-br from-orange/80 to-orange text-primary-foreground text-center py-6 rounded-t-2xl">
+              <CardHeader className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground text-center py-6 rounded-t-2xl">
                 <div className="text-4xl font-bold mb-2">
                   R$79,90
                   <span className="text-lg font-normal">/Mês</span>
@@ -434,7 +434,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleWhatsApp}
-                  className="w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
                 >
                   <Phone className="mr-2 h-4 w-4" />
                   Contratar Agora
