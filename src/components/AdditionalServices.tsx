@@ -152,8 +152,19 @@ const AdditionalServices = () => {
                     <div className="w-3 h-3 bg-white rounded-full group-hover:bg-orange transition-colors duration-300"></div>
                   </div>
                   
-                  {/* Hover Expanded Card - Maximum z-index to be above everything including logo */}
-                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-[99999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto">
+                  {/* Hover Expanded Card - Smart positioning to avoid overlap */}
+                  <div className={`absolute opacity-0 group-hover:opacity-100 transition-all duration-300 z-[99999] min-w-[280px] pointer-events-none group-hover:pointer-events-auto ${
+                    // Position tooltip based on service position to avoid center overlap
+                    index < 2 // Top services
+                      ? "top-8 left-1/2 transform -translate-x-1/2"
+                    : index < 4 // Right services  
+                      ? "top-1/2 left-8 transform -translate-y-1/2"
+                    : index < 6 // Bottom services
+                      ? "bottom-8 left-1/2 transform -translate-x-1/2"
+                    : index < 8 // Left services
+                      ? "top-1/2 right-8 transform -translate-y-1/2"
+                    : "top-8 left-1/2 transform -translate-x-1/2" // Default for remaining
+                  }`}>
                     <div className="bg-card border border-border rounded-xl p-4 shadow-elegant backdrop-blur-sm">
                       <div className="text-center">
                         <div className="inline-flex items-center bg-orange/10 text-orange px-3 py-1 rounded-full text-xs font-medium mb-3">
