@@ -141,12 +141,14 @@ Você também pode consultar outros CEPs próximos se desejar.`,
       .from('cep_plans')
       .select(`
         plans (
+          id,
           name,
           speed,
           price,
           original_price,
           popular,
-          features
+          features,
+          image_url
         )
       `)
       .eq('cep_coverage_id', cepData.id)
@@ -167,12 +169,35 @@ Você também pode consultar outros CEPs próximos se desejar.`,
         const discount = plan.original_price ? 
           Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
         
-        response += `${plan.popular ? '⭐ **' : '• **'}${plan.name} - ${plan.speed}**${plan.popular ? ' (Mais Popular)' : ''}\n`
+        // Adicionar imagem se disponível
+        if (plan.image_url) {
+          response += `![${plan.name}](${plan.image_url})\n`
+        }
+        
+        response += `${plan.popular ? '⭐ **' : '• **'}${plan.name}**${plan.popular ? ' (Mais Popular)' : ''}\n`
+        response += `Com uma velocidade de ${plan.speed}\n`
         
         if (plan.original_price && discount > 0) {
-          response += `~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}/mês** (${discount}% OFF)\n`
+          response += `*Valor:* ~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}** (${discount}% OFF)\n`
         } else {
-          response += `**R$ ${plan.price.toFixed(2)}/mês**\n`
+          response += `*Valor:* R$ ${plan.price.toFixed(2)}\n`
+        }
+
+        // Adicionar frase de impacto baseada no ID do plano
+        if (plan.id === 60) {
+          response += `🌐 Plano Premium com rede Mesh! Conectividade superior em toda sua casa!\n`
+        } else if (plan.id === 107) {
+          response += `🏆 Nosso plano mais vendido e de melhor custo-benefício!\n`
+        } else {
+          // Frases de impacto genéricas baseadas na velocidade
+          const speedNumber = parseInt(plan.speed.replace(/\D/g, ''))
+          if (speedNumber >= 500) {
+            response += `🚀 Velocidade máxima para sua casa! ${plan.speed} de internet ultrarrápida! 📶💨\n`
+          } else if (speedNumber >= 300) {
+            response += `⚡ Conexão poderosa para seu dia a dia! ${plan.speed} de pura velocidade! 🌍📡\n`
+          } else {
+            response += `✨ Uma excelente escolha para quem ama assistir filmes e navegar! ${plan.speed} de velocidade.\n`
+          }
         }
 
         if (plan.features && Array.isArray(plan.features)) {
@@ -180,9 +205,10 @@ Você também pode consultar outros CEPs próximos se desejar.`,
             response += `  ✓ ${feature.text}\n`
           })
         }
-        response += `\n`
+        response += `\n\n`
       })
 
+      response += `Qual deles atende melhor sua necessidade?\n\n`
       response += `💬 **Quer contratar?**\n`
       response += `WhatsApp: (61) 99999-9999\n`
       response += `Telefone: (61) 3333-3333\n\n`
@@ -216,7 +242,7 @@ async function listAvailablePlans(supabase: any, cep?: string) {
   try {
     let query = supabase
       .from('plans')
-      .select('*')
+      .select('id, name, speed, price, original_price, description, features, image_url, popular')
       .eq('active', true)
       .order('display_order')
 
@@ -230,14 +256,37 @@ async function listAvailablePlans(supabase: any, cep?: string) {
       const discount = plan.original_price ? 
         Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
       
-      response += `${plan.popular ? '⭐ **' : '• **'}${plan.name} - ${plan.speed}**${plan.popular ? ' (Mais Popular)' : ''}\n`
-      response += `${plan.description}\n`
+      // Adicionar imagem se disponível
+      if (plan.image_url) {
+        response += `![${plan.name}](${plan.image_url})\n`
+      }
+      
+      response += `${plan.popular ? '⭐ **' : '• **'}${plan.name}**${plan.popular ? ' (Mais Popular)' : ''}\n`
+      response += `Com uma velocidade de ${plan.speed}\n`
       
       if (plan.original_price && discount > 0) {
-        response += `~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}/mês** (${discount}% OFF)\n\n`
+        response += `*Valor:* ~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}** (${discount}% OFF)\n`
       } else {
-        response += `**R$ ${plan.price.toFixed(2)}/mês**\n\n`
+        response += `*Valor:* R$ ${plan.price.toFixed(2)}\n`
       }
+
+      if (plan.description) {
+        response += `${plan.description}\n`
+      }
+
+      // Adicionar frase de impacto baseada no ID do plano
+      if (plan.id === 60) {
+        response += `🌐 Plano Premium com rede Mesh!\n`
+      } else if (plan.id === 107) {
+        response += `🏆 Nosso plano mais vendido e de melhor custo-benefício!\n`
+      }
+
+      if (plan.features && Array.isArray(plan.features)) {
+        plan.features.forEach((feature: any) => {
+          response += `  ✓ ${feature.text}\n`
+        })
+      }
+      response += `\n\n`
     })
 
     response += `💡 **Todas as velocidades são simétricas** (upload = download)\n`

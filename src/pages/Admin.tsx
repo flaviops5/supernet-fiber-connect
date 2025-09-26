@@ -546,56 +546,67 @@ const PlansManagement = () => {
                 <Card key={plan.id} className={`relative ${!plan.active ? 'opacity-50' : ''}`}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-lg">{plan.name}</CardTitle>
-                          {plan.popular && (
-                            <span className="bg-gradient-primary text-primary-foreground px-2 py-1 rounded text-xs font-bold">
-                              POPULAR
-                            </span>
-                          )}
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            plan.active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {plan.active ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </div>
-                        <CardDescription className="mb-3">{plan.description}</CardDescription>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium">Velocidade:</span> {plan.speed}
+                      <div className="flex gap-4 flex-1">
+                        {plan.image_url && (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={plan.image_url} 
+                              alt={plan.name} 
+                              className="w-24 h-24 object-cover rounded-lg border"
+                            />
                           </div>
-                          <div>
-                            <span className="font-medium">Preço:</span> R$ {plan.price?.toFixed(2).replace('.', ',')}
-                            {plan.original_price && (
-                              <span className="text-muted-foreground ml-2 line-through">
-                                R$ {plan.original_price.toFixed(2).replace('.', ',')}
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <CardTitle className="text-lg">{plan.name}</CardTitle>
+                            {plan.popular && (
+                              <span className="bg-gradient-primary text-primary-foreground px-2 py-1 rounded text-xs font-bold">
+                                POPULAR
                               </span>
                             )}
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              plan.active 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {plan.active ? 'Ativo' : 'Inativo'}
+                            </span>
                           </div>
-                          <div>
-                            <span className="font-medium">CTA:</span> {plan.cta_text}
-                          </div>
-                        </div>
-                        {plan.features && plan.features.length > 0 && (
-                          <div className="mt-3">
-                            <span className="font-medium text-sm">Características:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {plan.features.slice(0, 3).map((feature: any, idx: number) => (
-                                <span key={idx} className="bg-muted px-2 py-1 rounded text-xs">
-                                  {feature.text}
-                                </span>
-                              ))}
-                              {plan.features.length > 3 && (
-                                <span className="text-muted-foreground text-xs px-2 py-1">
-                                  +{plan.features.length - 3} mais
+                          <CardDescription className="mb-3">{plan.description}</CardDescription>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium">Velocidade:</span> {plan.speed}
+                            </div>
+                            <div>
+                              <span className="font-medium">Preço:</span> R$ {plan.price?.toFixed(2).replace('.', ',')}
+                              {plan.original_price && (
+                                <span className="text-muted-foreground ml-2 line-through">
+                                  R$ {plan.original_price.toFixed(2).replace('.', ',')}
                                 </span>
                               )}
                             </div>
+                            <div>
+                              <span className="font-medium">CTA:</span> {plan.cta_text}
+                            </div>
                           </div>
-                        )}
+                          {plan.features && plan.features.length > 0 && (
+                            <div className="mt-3">
+                              <span className="font-medium text-sm">Características:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {plan.features.slice(0, 3).map((feature: any, idx: number) => (
+                                  <span key={idx} className="bg-muted px-2 py-1 rounded text-xs">
+                                    {feature.text}
+                                  </span>
+                                ))}
+                                {plan.features.length > 3 && (
+                                  <span className="text-muted-foreground text-xs px-2 py-1">
+                                    +{plan.features.length - 3} mais
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-2 ml-4">

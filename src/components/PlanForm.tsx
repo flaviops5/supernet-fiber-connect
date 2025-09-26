@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Link, Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi } from "lucide-react";
+import { Plus, Trash2, Link, Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -45,10 +45,12 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     active: plan?.active ?? true,
     ctaText: plan?.cta_text || "Contratar Agora",
     displayOrder: plan?.display_order || 0,
-    features: plan?.features || []
+    features: plan?.features || [],
+    image_url: plan?.image_url || ""
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +77,8 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
         active: formData.active,
         cta_text: validatedData.ctaText,
         display_order: validatedData.displayOrder,
-        features: formData.features
+        features: formData.features,
+        image_url: formData.image_url
       };
 
       let error;
@@ -130,6 +133,66 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     const newFeatures = [...formData.features];
     newFeatures[index] = { ...newFeatures[index], [field]: value };
     setFormData({ ...formData, features: newFeatures });
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Gerar nome único para o arquivo
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      
+      // Upload para o Storage
+      const { data, error } = await supabase.storage
+        .from('plan-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('plan-images')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, image_url: urlData.publicUrl });
+      toast.success('Imagem enviada com sucesso!');
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = async () => {
+    if (formData.image_url && formData.image_url.includes('plan-images')) {
+      try {
+        // Extrair nome do arquivo da URL
+        const fileName = formData.image_url.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('plan-images')
+            .remove([fileName]);
+        }
+      } catch (error) {
+        console.error('Erro ao remover imagem:', error);
+      }
+    }
+    setFormData({ ...formData, image_url: "" });
   };
 
   return (
@@ -226,6 +289,70 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
             />
             {errors.description && <p className="text-sm text-destructive mt-1">{errors.description}</p>}
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Imagem do Plano</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.image_url ? (
+                <div className="relative">
+                  <img 
+                    src={formData.image_url} 
+                    alt="Preview do plano" 
+                    className="w-full max-w-md h-48 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={removeImage}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Camera className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-500 mb-4">Nenhuma imagem selecionada</p>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                    disabled={uploadingImage}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Label htmlFor="image-upload" className="cursor-pointer">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      disabled={uploadingImage}
+                      asChild
+                    >
+                      <span>
+                        {uploadingImage ? (
+                          <>Enviando...</>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Selecionar Imagem
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </Label>
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">
+                Formatos aceitos: JPG, PNG, WEBP. Tamanho máximo: 5MB
+              </p>
+            </CardContent>
+          </Card>
 
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
