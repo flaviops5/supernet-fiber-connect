@@ -93,42 +93,107 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
     }
   }, [settings, isExpanded]);
 
+  // Monitor chat for contract form triggers
   useEffect(() => {
-    // Listen for messages from iframe
+    if (!isExpanded || plans.length === 0) return;
+
+    let monitoringInterval: NodeJS.Timeout | null = null;
+
+    const findPlanByName = (planName: string) => {
+      return plans.find(plan => 
+        plan.name.toLowerCase().includes(planName.toLowerCase()) ||
+        plan.speed.toLowerCase().includes(planName.toLowerCase()) ||
+        planName.includes(plan.speed.replace(' MB', '').replace(' GB', '')) ||
+        plan.speed.includes(planName)
+      );
+    };
+
     const handleMessage = (event: MessageEvent) => {
-      // Handle messages from the chatbot iframe
-      if (event.data && event.data.type === 'chatbase-response') {
-        console.log('Received message from chatbot:', event.data);
-      }
+      console.log('Received message:', event.data);
       
-      // Handle contract form trigger from chatbot
+      // Handle direct postMessage events
       if (event.data && event.data.type === 'open-contract-form') {
         const planName = event.data.planName || event.data.plan;
         if (planName) {
-          // Find the plan by name
-          const foundPlan = plans.find(plan => 
-            plan.name.toLowerCase().includes(planName.toLowerCase()) ||
-            plan.speed.toLowerCase().includes(planName.toLowerCase())
-          );
+          const foundPlan = findPlanByName(planName);
+          if (foundPlan) {
+            console.log('Opening contract form for plan:', foundPlan);
+            setSelectedPlan(foundPlan);
+            setShowContractForm(true);
+          } else {
+            console.warn('Plan not found:', planName, 'Available plans:', plans.map(p => p.speed));
+          }
+        }
+      }
+
+      // Handle string messages that might contain JSON
+      if (event.data && typeof event.data === 'string') {
+        const match = event.data.match(/\{\s*"type":\s*"open-contract-form",\s*"planName":\s*"([^"]+)"\s*\}/);
+        if (match) {
+          const planName = match[1];
+          console.log('Detected JSON trigger for plan:', planName);
           
+          const foundPlan = findPlanByName(planName);
           if (foundPlan) {
             setSelectedPlan(foundPlan);
             setShowContractForm(true);
           } else {
-            console.warn('Plan not found:', planName);
+            console.warn('Plan not found in JSON:', planName);
           }
         }
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [plans]);
+    // Monitor iframe content periodically for the JSON message
+    const monitorIframeContent = () => {
+      try {
+        const iframe = iframeRef.current;
+        if (iframe && iframe.contentWindow) {
+          // Try to send a heartbeat to detect if the iframe can communicate
+          iframe.contentWindow.postMessage({ type: 'heartbeat' }, '*');
+        }
+      } catch (error) {
+        // Expected due to CORS
+      }
+    };
 
-  // Handle chat open/close and 30-minute reset logic
+    // Set up monitoring
+    window.addEventListener('message', handleMessage);
+    monitoringInterval = setInterval(monitorIframeContent, 2000);
+
+    // Also listen for iframe load events
+    const iframe = iframeRef.current;
+    const handleIframeLoad = () => {
+      console.log('Iframe loaded, attempting to setup communication...');
+      setTimeout(() => {
+        try {
+          iframe?.contentWindow?.postMessage({
+            type: 'setup-contract-trigger',
+            origin: window.location.origin
+          }, '*');
+        } catch (error) {
+          console.log('Cannot setup iframe communication:', error.message);
+        }
+      }, 1000);
+    };
+
+    if (iframe) {
+      iframe.addEventListener('load', handleIframeLoad);
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (monitoringInterval) clearInterval(monitoringInterval);
+      if (iframe) {
+        iframe.removeEventListener('load', handleIframeLoad);
+      }
+    };
+  }, [isExpanded, plans]);
+
+  // Handle chat open/close and timeout logic
   useEffect(() => {
     if (isExpanded) {
-      // When opening chat, check if 30 minutes have passed since last close
+      // When opening chat, check if timeout period has passed since last close
       if (closeTimestampRef.current) {
         const timeSinceClose = Date.now() - closeTimestampRef.current;
         const timeoutMs = (settings?.session_timeout_minutes || 30) * 60 * 1000;
@@ -144,7 +209,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
         resetTimerRef.current = null;
       }
     } else {
-      // When chat is closed, record timestamp and start 30-minute timer
+      // When chat is closed, record timestamp and start timeout timer
       closeTimestampRef.current = Date.now();
       
       // Set timer to reset session after configured timeout
@@ -160,7 +225,7 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
         clearTimeout(resetTimerRef.current);
       }
     };
-  }, [isExpanded]);
+  }, [isExpanded, settings]);
 
   const resetChatSession = () => {
     if (iframeRef.current && settings) {
