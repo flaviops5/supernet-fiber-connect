@@ -14,6 +14,7 @@ import { PlanForm } from "@/components/PlanForm";
 import { HeroSettingsForm, HeroSlideForm } from "@/components/HeroForm";
 import { FAQForm } from "@/components/FAQForm";
 import BlogManagementComponent from "@/components/BlogManagement";
+import ChatbotManagement from "@/components/ChatbotManagement";
 import { toast } from "sonner";
 
 // Dashboard component
@@ -1330,6 +1331,7 @@ const Admin = () => {
               <Route path="/hero" element={<HeroManagement />} />
               <Route path="/faq" element={<FAQManagement />} />
               <Route path="/blog" element={<BlogManagementComponent />} />
+              <Route path="/chatbot" element={<ChatbotManagement />} />
               <Route path="/reviews" element={<ReviewsManagement />} />
               <Route path="/profile" element={<ProfileManagement />} />
               <Route path="/settings" element={<SettingsManagement />} />
