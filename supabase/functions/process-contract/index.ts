@@ -12,6 +12,9 @@ interface ContractRequest {
     phone: string;
     address: string;
     cep: string;
+    cpf: string;
+    birthDate: string;
+    paymentDay: string;
     observations?: string;
   };
   planData: {
@@ -40,8 +43,11 @@ const handler = async (req: Request): Promise<Response> => {
 👤 Nome: ${customerData.name}
 📧 Email: ${customerData.email}
 📱 Telefone: ${customerData.phone}
+🆔 CPF: ${customerData.cpf}
+🎂 Nascimento: ${customerData.birthDate}
 📍 CEP: ${customerData.cep}
 🏠 Endereço: ${customerData.address}
+💳 Melhor dia pagamento: Dia ${customerData.paymentDay}
 ${customerData.observations ? `📝 Observações: ${customerData.observations}` : ''}
 
 💡 *PLANO ESCOLHIDO:*

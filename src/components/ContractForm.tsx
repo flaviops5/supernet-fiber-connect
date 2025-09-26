@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from 'lucide-react';
 
@@ -27,6 +28,9 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     phone: '',
     address: '',
     cep: '',
+    cpf: '',
+    birthDate: '',
+    paymentDay: '',
     observations: ''
   });
 
@@ -38,10 +42,17 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.cep) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.cep || !formData.cpf || !formData.birthDate || !formData.paymentDay) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -75,6 +86,9 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
         phone: '',
         address: '',
         cep: '',
+        cpf: '',
+        birthDate: '',
+        paymentDay: '',
         observations: ''
       });
       
@@ -164,6 +178,47 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
               placeholder="Rua, número, bairro, cidade"
               required
             />
+          </div>
+
+          <div>
+            <Label htmlFor="cpf">CPF *</Label>
+            <Input
+              id="cpf"
+              name="cpf"
+              value={formData.cpf}
+              onChange={handleInputChange}
+              placeholder="000.000.000-00"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="birthDate">Data de Aniversário *</Label>
+            <Input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              value={formData.birthDate}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="paymentDay">Melhor dia para pagamento *</Label>
+            <Select onValueChange={(value) => handleSelectChange('paymentDay', value)} value={formData.paymentDay}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o dia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">Dia 5</SelectItem>
+                <SelectItem value="10">Dia 10</SelectItem>
+                <SelectItem value="15">Dia 15</SelectItem>
+                <SelectItem value="20">Dia 20</SelectItem>
+                <SelectItem value="25">Dia 25</SelectItem>
+                <SelectItem value="30">Dia 30</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
