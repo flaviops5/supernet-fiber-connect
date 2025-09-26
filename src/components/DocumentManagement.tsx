@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Upload, 
   Download, 
@@ -39,8 +40,10 @@ import {
   FileIcon,
   Home,
   Move,
-  UploadCloud
+  UploadCloud,
+  FileSignature
 } from 'lucide-react';
+import SignedContractsView from './SignedContractsView';
 
 interface Document {
   id: string;
@@ -715,6 +718,17 @@ const DocumentManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Navigation Tabs */}
+      <Tabs defaultValue="documents" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="signed-contracts" className="flex items-center gap-2">
+            <FileSignature className="h-4 w-4" />
+            Contratos Assinados
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="documents" className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-foreground">Explorador de Documentos</h2>
@@ -1409,6 +1423,12 @@ const DocumentManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+        
+        <TabsContent value="signed-contracts">
+          <SignedContractsView />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

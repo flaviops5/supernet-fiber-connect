@@ -13,6 +13,7 @@ import { Loader2, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import ContractSigning from './ContractSigning';
 
 interface ContractFormProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ interface ContractFormProps {
 const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showContractSigning, setShowContractSigning] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -90,7 +93,7 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('process-contract', {
+      const { data: result, error } = await supabase.functions.invoke('process-contract', {
         body: {
           customerData: {
             ...formData,
@@ -103,27 +106,16 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
 
       if (error) throw error;
 
+      // Store appointment ID for contract signing
+      setAppointmentId(result.appointmentId);
+
       toast({
-        title: "Solicitação enviada!",
-        description: "Recebemos sua solicitação. Em breve nossa equipe entrará em contato via WhatsApp!",
+        title: "Dados Salvos!",
+        description: "Agora vamos prosseguir para a assinatura digital do contrato.",
       });
 
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        cep: '',
-        cpf: '',
-        birthDate: '',
-        paymentDay: '',
-        appointmentDate: null,
-        appointmentPeriod: '',
-        observations: ''
-      });
-      
-      onClose();
+      // Show contract signing modal
+      setShowContractSigning(true);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -340,6 +332,41 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
           * Campos obrigatórios. Seus dados serão utilizados apenas para processamento da contratação.
         </p>
       </DialogContent>
+
+      {/* Contract Signing Modal */}
+      <ContractSigning
+        isOpen={showContractSigning}
+        onClose={() => {
+          setShowContractSigning(false);
+          // Reset form after contract signing
+          setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            address: '',
+            cep: '',
+            cpf: '',
+            birthDate: '',
+            paymentDay: '',
+            appointmentDate: null,
+            appointmentPeriod: '',
+            observations: ''
+          });
+          onClose();
+        }}
+        appointmentId={appointmentId}
+        customerData={{
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          cpf: formData.cpf,
+          address: formData.address,
+          cep: formData.cep
+        }}
+        planData={plan}
+        appointmentDate={formData.appointmentDate?.toISOString().split('T')[0] || ''}
+        appointmentPeriod={formData.appointmentPeriod}
+      />
     </Dialog>
   );
 };
