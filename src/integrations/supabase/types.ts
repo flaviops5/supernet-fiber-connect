@@ -748,6 +748,59 @@ export type Database = {
         }
         Relationships: []
       }
+      signed_contracts: {
+        Row: {
+          appointment_id: string
+          contract_number: string
+          contract_pdf_url: string
+          cpf_validated: boolean
+          created_at: string
+          id: string
+          ip_address: unknown
+          signature_data: string
+          signed_at: string
+          timestamp_hash: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          appointment_id: string
+          contract_number: string
+          contract_pdf_url: string
+          cpf_validated?: boolean
+          created_at?: string
+          id?: string
+          ip_address: unknown
+          signature_data: string
+          signed_at?: string
+          timestamp_hash: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          contract_number?: string
+          contract_pdf_url?: string
+          cpf_validated?: boolean
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          signature_data?: string
+          signed_at?: string
+          timestamp_hash?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signed_contracts_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "installation_appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -774,6 +827,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_contract_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
