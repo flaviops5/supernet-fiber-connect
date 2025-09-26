@@ -1,39 +1,108 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Wifi, Zap, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from "@/integrations/supabase/client";
 import heroFamily from '@/assets/hero-family-internet.jpg';
 import heroWork from '@/assets/hero-work-from-home.jpg';
 import heroEntertainment from '@/assets/hero-entertainment.jpg';
+
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const slides = [{
-    image: heroFamily,
-    title: "Internet para toda a família",
-    description: "Conexão estável para todos os dispositivos da sua casa"
-  }, {
-    image: heroWork,
-    title: "Trabalhe de casa sem limites",
-    description: "Velocidade e estabilidade para suas videoconferências"
-  }, {
-    image: heroEntertainment,
-    title: "Entretenimento em alta definição",
-    description: "Streaming 4K sem travamentos, jogos online sem lag"
-  }];
+  const [heroSettings, setHeroSettings] = useState(null);
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fallback slides if no data in database
+  const fallbackSlides = [
+    {
+      image: heroFamily,
+      title: "Internet para toda a família",
+      description: "Conexão estável para todos os dispositivos da sua casa"
+    },
+    {
+      image: heroWork,
+      title: "Trabalhe de casa sem limites",
+      description: "Velocidade e estabilidade para suas videoconferências"
+    },
+    {
+      image: heroEntertainment,
+      title: "Entretenimento em alta definição",
+      description: "Streaming 4K sem travamentos, jogos online sem lag"
+    }
+  ];
+
   useEffect(() => {
+    const loadHeroData = async () => {
+      try {
+        // Load hero settings
+        const { data: settings } = await supabase
+          .from('hero_settings')
+          .select('*')
+          .single();
+
+        // Load hero slides
+        const { data: slidesData } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .eq('active', true)
+          .order('display_order', { ascending: true });
+
+        setHeroSettings(settings);
+        
+        // Use database slides if available, otherwise fallback
+        if (slidesData && slidesData.length > 0) {
+          const formattedSlides = slidesData.map(slide => ({
+            image: slide.image_url,
+            title: slide.title,
+            description: slide.description
+          }));
+          setSlides(formattedSlides);
+        } else {
+          setSlides(fallbackSlides);
+        }
+      } catch (error) {
+        console.error('Error loading hero data:', error);
+        // Use fallback data on error
+        setSlides(fallbackSlides);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHeroData();
+  }, []);
+
+  useEffect(() => {
+    if (slides.length === 0) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slides.length]);
+
   const nextSlide = () => {
     setCurrentSlide(prev => (prev + 1) % slides.length);
   };
+
   const prevSlide = () => {
     setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length);
   };
+
   const handleWhatsApp = () => {
-    window.open('https://wa.me/5511999999999?text=Olá! Quero conhecer os planos de internet fibra da SUPERNET FIBRA.', '_blank');
+    const message = heroSettings?.whatsapp_message || 'Olá! Quero conhecer os planos de internet fibra da SUPERNET FIBRA.';
+    window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
+
+  if (loading) {
+    return (
+      <section id="inicio" className="relative bg-gradient-subtle min-h-[80vh] flex items-center">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </section>
+    );
+  }
   return <section id="inicio" className="relative bg-gradient-subtle min-h-[80vh] flex items-center overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-orange/5" />
@@ -47,16 +116,22 @@ const HeroSection = () => {
             <div className="space-y-6">
               <div className="inline-flex items-center space-x-2 bg-orange/10 text-orange px-4 py-2 rounded-full text-sm font-medium">
                 <Zap className="w-4 h-4" />
-                <span>100% Fibra Óptica</span>
+                <span>{heroSettings?.badge_text || '100% Fibra Óptica'}</span>
               </div>
               
                 <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold font-varela text-foreground leading-tight uppercase">
-                  Internet{' '}
-                  <span className="gradient-text">ultra-rápida</span>{' '}
-                  que transforma sua vida digital.
+                  {heroSettings?.main_title || (
+                    <>
+                      Internet{' '}
+                      <span className="gradient-text">ultra-rápida</span>{' '}
+                      que transforma sua vida digital.
+                    </>
+                  )}
                 </h1>
               
-              <p className="text-xl text-muted-foreground leading-relaxed">Experimente a velocidade e estabilidade da fibra óptica da SUPERNET FIBRA. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo.</p>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                {heroSettings?.subtitle || "Experimente a velocidade e estabilidade da fibra óptica da SUPERNET FIBRA. Ideal para trabalho, estudos, entretenimento e toda a família conectada ao mesmo tempo."}
+              </p>
             </div>
 
             {/* Benefits */}
@@ -95,7 +170,7 @@ const HeroSection = () => {
             {/* CTAs */}
             <div className="flex justify-center sm:justify-start">
               <Button onClick={handleWhatsApp} size="lg" className="cta-gradient text-lg px-8 py-6">
-                Contratar Agora no WhatsApp
+                {heroSettings?.cta_text || 'Contratar Agora no WhatsApp'}
               </Button>
             </div>
           </div>

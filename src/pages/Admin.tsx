@@ -6,11 +6,13 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus } from "lucide-react";
+import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle } from "lucide-react";
 import { InstructionsCard } from "@/components/InstructionsCard";
 import { GoogleReviews } from "@/components/GoogleReviews";
 import { useTestimonials } from "@/contexts/TestimonialsContext";
 import { PlanForm } from "@/components/PlanForm";
+import { HeroSettingsForm, HeroSlideForm } from "@/components/HeroForm";
+import { FAQForm } from "@/components/FAQForm";
 import { toast } from "sonner";
 
 // Dashboard component
@@ -809,6 +811,449 @@ const SettingsManagement = () => (
   </div>
 );
 
+const HeroManagement = () => {
+  const [heroSettings, setHeroSettings] = useState(null);
+  const [heroSlides, setHeroSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showSettingsForm, setShowSettingsForm] = useState(false);
+  const [showSlideForm, setShowSlideForm] = useState(false);
+  const [editingSlide, setEditingSlide] = useState(null);
+
+  const loadHeroData = async () => {
+    try {
+      const { data: settings, error: settingsError } = await supabase
+        .from('hero_settings')
+        .select('*')
+        .single();
+
+      const { data: slides, error: slidesError } = await supabase
+        .from('hero_slides')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (settingsError && settingsError.code !== 'PGRST116') throw settingsError;
+      if (slidesError) throw slidesError;
+
+      setHeroSettings(settings);
+      setHeroSlides(slides || []);
+    } catch (error) {
+      console.error('Error loading hero data:', error);
+      toast.error('Erro ao carregar dados da Hero Section');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHeroData();
+  }, []);
+
+  const handleEditSlide = (slide: any) => {
+    setEditingSlide(slide);
+    setShowSlideForm(true);
+  };
+
+  const handleCloseSlideForm = () => {
+    setShowSlideForm(false);
+    setEditingSlide(null);
+  };
+
+  const toggleSlideActive = async (slideId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('hero_slides')
+        .update({ active: !currentActive })
+        .eq('id', slideId);
+
+      if (error) throw error;
+      
+      setHeroSlides(heroSlides.map(slide => 
+        slide.id === slideId 
+          ? { ...slide, active: !currentActive }
+          : slide
+      ));
+      
+      toast.success(`Slide ${!currentActive ? 'ativado' : 'desativado'} com sucesso!`);
+    } catch (error) {
+      console.error('Error updating slide:', error);
+      toast.error('Erro ao atualizar slide');
+    }
+  };
+
+  const deleteSlide = async (slideId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este slide?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('hero_slides')
+        .delete()
+        .eq('id', slideId);
+
+      if (error) throw error;
+      
+      setHeroSlides(heroSlides.filter(slide => slide.id !== slideId));
+      toast.success('Slide excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting slide:', error);
+      toast.error('Erro ao excluir slide');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Hero Section</h1>
+          <p className="text-muted-foreground">Configure a seção principal do site</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Gerenciar Hero Section</h1>
+        <p className="text-muted-foreground">Configure a seção principal do site</p>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Configurações Gerais</CardTitle>
+            <CardDescription>Títulos, textos e mensagens da Hero Section</CardDescription>
+          </div>
+          <Button onClick={() => setShowSettingsForm(true)}>
+            <Edit className="w-4 h-4 mr-2" />
+            Editar
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {heroSettings ? (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium">Título Principal:</h3>
+                <p className="text-muted-foreground">{heroSettings.main_title}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Subtítulo:</h3>
+                <p className="text-muted-foreground">{heroSettings.subtitle}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Badge:</h3>
+                <p className="text-muted-foreground">{heroSettings.badge_text}</p>
+              </div>
+              <div>
+                <h3 className="font-medium">Botão CTA:</h3>
+                <p className="text-muted-foreground">{heroSettings.cta_text}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Nenhuma configuração encontrada</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Slides do Carrossel</CardTitle>
+            <CardDescription>
+              Total de {heroSlides.length} slide{heroSlides.length !== 1 ? 's' : ''} 
+            </CardDescription>
+          </div>
+          <Button onClick={() => setShowSlideForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Slide
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {heroSlides.length === 0 ? (
+            <div className="text-center py-8">
+              <Monitor className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">Nenhum slide cadastrado</p>
+              <Button onClick={() => setShowSlideForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeiro Slide
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {heroSlides.map((slide) => (
+                <Card key={slide.id} className={`${!slide.active ? 'opacity-50' : ''}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <CardTitle className="text-lg">{slide.title}</CardTitle>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            slide.active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {slide.active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </div>
+                        <CardDescription className="mb-3">{slide.description}</CardDescription>
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Ordem:</span> {slide.display_order} | 
+                          <span className="font-medium ml-2">Imagem:</span> {slide.image_url}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditSlide(slide)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant={slide.active ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => toggleSlideActive(slide.id, slide.active)}
+                        >
+                          {slide.active ? 'Desativar' : 'Ativar'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteSlide(slide.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {heroSettings && (
+        <HeroSettingsForm
+          isOpen={showSettingsForm}
+          onClose={() => setShowSettingsForm(false)}
+          settings={heroSettings}
+          onSave={loadHeroData}
+        />
+      )}
+
+      <HeroSlideForm
+        isOpen={showSlideForm}
+        onClose={handleCloseSlideForm}
+        slide={editingSlide}
+        onSave={loadHeroData}
+      />
+    </div>
+  );
+};
+
+const FAQManagement = () => {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingFaq, setEditingFaq] = useState(null);
+
+  const loadFaqs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('faqs')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setFaqs(data || []);
+    } catch (error) {
+      console.error('Error loading FAQs:', error);
+      toast.error('Erro ao carregar FAQs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFaqs();
+  }, []);
+
+  const handleEdit = (faq: any) => {
+    setEditingFaq(faq);
+    setShowForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingFaq(null);
+  };
+
+  const toggleFaqActive = async (faqId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('faqs')
+        .update({ active: !currentActive })
+        .eq('id', faqId);
+
+      if (error) throw error;
+      
+      setFaqs(faqs.map(faq => 
+        faq.id === faqId 
+          ? { ...faq, active: !currentActive }
+          : faq
+      ));
+      
+      toast.success(`FAQ ${!currentActive ? 'ativada' : 'desativada'} com sucesso!`);
+    } catch (error) {
+      console.error('Error updating FAQ:', error);
+      toast.error('Erro ao atualizar FAQ');
+    }
+  };
+
+  const deleteFaq = async (faqId: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta FAQ?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('faqs')
+        .delete()
+        .eq('id', faqId);
+
+      if (error) throw error;
+      
+      setFaqs(faqs.filter(faq => faq.id !== faqId));
+      toast.success('FAQ excluída com sucesso!');
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      toast.error('Erro ao excluir FAQ');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar FAQ</h1>
+          <p className="text-muted-foreground">Configure perguntas frequentes</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar FAQ</h1>
+          <p className="text-muted-foreground">Configure perguntas frequentes</p>
+        </div>
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova FAQ
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Perguntas Frequentes</CardTitle>
+          <CardDescription>
+            Total de {faqs.length} FAQ{faqs.length !== 1 ? 's' : ''} cadastrada{faqs.length !== 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {faqs.length === 0 ? (
+            <div className="text-center py-8">
+              <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">Nenhuma FAQ cadastrada</p>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira FAQ
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {faqs.map((faq) => (
+                <Card key={faq.id} className={`${!faq.active ? 'opacity-50' : ''}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <CardTitle className="text-lg">{faq.question}</CardTitle>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            faq.active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {faq.active ? 'Ativa' : 'Inativa'}
+                          </span>
+                        </div>
+                        <CardDescription className="mb-3">
+                          {faq.answer.length > 150 ? `${faq.answer.substring(0, 150)}...` : faq.answer}
+                        </CardDescription>
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Ícone:</span> {faq.icon} | 
+                          <span className="font-medium ml-2">Ordem:</span> {faq.display_order}
+                          {faq.video_url && (
+                            <span> | <span className="font-medium">Vídeo:</span> Sim</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(faq)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant={faq.active ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => toggleFaqActive(faq.id, faq.active)}
+                        >
+                          {faq.active ? 'Desativar' : 'Ativar'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteFaq(faq.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <FAQForm
+        isOpen={showForm}
+        onClose={handleCloseForm}
+        faq={editingFaq}
+        onSave={loadFaqs}
+      />
+    </div>
+  );
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -881,6 +1326,8 @@ const Admin = () => {
               <Route path="/users" element={<UsersManagement />} />
               <Route path="/plans" element={<PlansManagement />} />
               <Route path="/coverage" element={<CoverageManagement />} />
+              <Route path="/hero" element={<HeroManagement />} />
+              <Route path="/faq" element={<FAQManagement />} />
               <Route path="/blog" element={<BlogManagement />} />
               <Route path="/reviews" element={<ReviewsManagement />} />
               <Route path="/profile" element={<ProfileManagement />} />

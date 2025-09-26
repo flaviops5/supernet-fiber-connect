@@ -127,6 +127,108 @@ export type Database = {
         }
         Relationships: []
       }
+      faqs: {
+        Row: {
+          active: boolean
+          answer: string
+          created_at: string
+          display_order: number
+          icon: string
+          id: string
+          question: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          created_at?: string
+          display_order?: number
+          icon?: string
+          id?: string
+          question: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          created_at?: string
+          display_order?: number
+          icon?: string
+          id?: string
+          question?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      hero_settings: {
+        Row: {
+          badge_text: string
+          created_at: string
+          cta_text: string
+          id: string
+          main_title: string
+          subtitle: string
+          updated_at: string
+          whatsapp_message: string
+        }
+        Insert: {
+          badge_text?: string
+          created_at?: string
+          cta_text?: string
+          id?: string
+          main_title?: string
+          subtitle?: string
+          updated_at?: string
+          whatsapp_message?: string
+        }
+        Update: {
+          badge_text?: string
+          created_at?: string
+          cta_text?: string
+          id?: string
+          main_title?: string
+          subtitle?: string
+          updated_at?: string
+          whatsapp_message?: string
+        }
+        Relationships: []
+      }
+      hero_slides: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          display_order: number
+          id: string
+          image_url: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description: string
+          display_order?: number
+          id?: string
+          image_url: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           active: boolean

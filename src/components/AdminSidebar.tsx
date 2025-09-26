@@ -27,6 +27,8 @@ import {
   Settings,
   LogOut,
   Menu,
+  Monitor,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,6 +60,16 @@ const menuItems = [
     title: "Cobertura",
     url: "/admin/coverage",
     icon: MapPin,
+  },
+  {
+    title: "Hero Section",
+    url: "/admin/hero",
+    icon: Monitor,
+  },
+  {
+    title: "FAQ",
+    url: "/admin/faq",
+    icon: HelpCircle,
   },
   {
     title: "Blog",
