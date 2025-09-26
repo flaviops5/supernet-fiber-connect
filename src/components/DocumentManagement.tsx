@@ -1,35 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Upload, FileText, Download, Edit, Trash2, Eye, Lock, Users, Plus, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Upload, 
+  Download, 
+  Eye, 
+  Trash2, 
+  Edit, 
+  Plus, 
+  Search,
+  Filter,
+  FileText,
+  Image,
+  Video,
+  Music,
+  Archive,
+  File,
+  Folder,
+  FolderOpen,
+  Grid,
+  List,
+  ArrowLeft,
+  ChevronRight,
+  FolderPlus,
+  MoreVertical,
+  SortAsc,
+  Calendar,
+  FileIcon,
+  Home
+} from 'lucide-react';
 
 interface Document {
   id: string;
   title: string;
-  description?: string;
-  file_url?: string;
+  description: string | null;
   file_name: string;
-  file_size?: number;
   file_type: string;
-  category_id?: string;
+  file_size: number | null;
+  file_url: string | null;
+  category_id: string | null;
   access_level: 'public' | 'internal' | 'confidential' | 'secret';
   tags: string[];
-  uploaded_by?: string;
+  version: number | null;
+  is_active: boolean | null;
+  uploaded_by: string | null;
   created_at: string;
   updated_at: string;
-  version: number;
-  is_active: boolean;
+  parent_folder_id: string | null;
+  is_folder: boolean;
 }
 
 interface DocumentCategory {
@@ -41,6 +69,11 @@ interface DocumentCategory {
   updated_at: string;
 }
 
+interface BreadcrumbItem {
+  id: string | null;
+  name: string;
+}
+
 const DocumentManagement = () => {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -49,8 +82,17 @@ const DocumentManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>('all');
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: null, name: 'Início' }]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   
   const [newDocument, setNewDocument] = useState({
     title: '',
@@ -67,7 +109,12 @@ const DocumentManagement = () => {
     color: '#3b82f6'
   });
 
-  const loadDocuments = async () => {
+  const [newFolder, setNewFolder] = useState({
+    name: '',
+    description: ''
+  });
+
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -77,7 +124,9 @@ const DocumentManagement = () => {
           document_categories(name, color)
         `)
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .eq('parent_folder_id', currentFolderId)
+        .order('is_folder', { ascending: false })
+        .order('title', { ascending: true });
 
       if (error) throw error;
       setDocuments(data || []);
@@ -91,9 +140,9 @@ const DocumentManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentFolderId, toast]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('document_categories')
@@ -105,12 +154,85 @@ const DocumentManagement = () => {
     } catch (error) {
       console.error('Error loading categories:', error);
     }
-  };
+  }, []);
+
+  const buildBreadcrumbs = useCallback(async (folderId: string | null) => {
+    const crumbs: BreadcrumbItem[] = [{ id: null, name: 'Início' }];
+    
+    if (folderId) {
+      let currentId = folderId;
+      const path: BreadcrumbItem[] = [];
+      
+      while (currentId) {
+        const { data, error } = await supabase
+          .from('documents')
+          .select('id, title, parent_folder_id')
+          .eq('id', currentId)
+          .single();
+          
+        if (error || !data) break;
+        
+        path.unshift({ id: data.id, name: data.title });
+        currentId = data.parent_folder_id;
+      }
+      
+      crumbs.push(...path);
+    }
+    
+    setBreadcrumbs(crumbs);
+  }, []);
 
   useEffect(() => {
     loadDocuments();
     loadCategories();
-  }, []);
+    buildBreadcrumbs(currentFolderId);
+  }, [currentFolderId, loadDocuments, loadCategories, buildBreadcrumbs]);
+
+  const handleCreateFolder = async () => {
+    if (!newFolder.name) {
+      toast({
+        title: "Erro",
+        description: "Nome da pasta é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .insert({
+          title: newFolder.name,
+          description: newFolder.description,
+          file_name: '',
+          file_type: 'folder',
+          is_folder: true,
+          parent_folder_id: currentFolderId,
+          access_level: 'internal'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Pasta criada com sucesso"
+      });
+
+      setIsFolderDialogOpen(false);
+      setNewFolder({ name: '', description: '' });
+      loadDocuments();
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar pasta",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileUpload = async () => {
     if (!newDocument.file || !newDocument.title) {
@@ -124,12 +246,12 @@ const DocumentManagement = () => {
 
     setLoading(true);
     try {
-      // Sanitize filename - remove spaces, special chars, keep only alphanumeric and dots/dashes
+      // Sanitize filename
       const sanitizedName = newDocument.file.name
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscore
-        .replace(/_{2,}/g, '_'); // Replace multiple underscores with single
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.-]/g, '_')
+        .replace(/_{2,}/g, '_');
       
       const fileName = `${Date.now()}_${sanitizedName}`;
       
@@ -157,7 +279,9 @@ const DocumentManagement = () => {
           file_type: newDocument.file.type,
           category_id: newDocument.category_id || null,
           access_level: newDocument.access_level,
-          tags: newDocument.tags
+          tags: newDocument.tags,
+          parent_folder_id: currentFolderId,
+          is_folder: false
         });
 
       if (insertError) throw insertError;
@@ -224,46 +348,6 @@ const DocumentManagement = () => {
     }
   };
 
-  const handleDeleteCategory = async (categoryId: string) => {
-    try {
-      // Check if category has documents
-      const { data: documents } = await supabase
-        .from('documents')
-        .select('id')
-        .eq('category_id', categoryId)
-        .eq('is_active', true);
-
-      if (documents && documents.length > 0) {
-        toast({
-          title: "Erro",
-          description: "Não é possível deletar categoria que possui documentos",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { error } = await supabase
-        .from('document_categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Categoria deletada com sucesso"
-      });
-      loadCategories();
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao deletar categoria",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleDeleteDocument = async (documentId: string) => {
     try {
       const { error } = await supabase
@@ -275,17 +359,45 @@ const DocumentManagement = () => {
 
       toast({
         title: "Sucesso",
-        description: "Documento excluído com sucesso"
+        description: "Item excluído com sucesso"
       });
       loadDocuments();
     } catch (error) {
       console.error('Error deleting document:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir documento",
+        description: "Erro ao excluir item",
         variant: "destructive"
       });
     }
+  };
+
+  const navigateToFolder = (folderId: string | null) => {
+    setCurrentFolderId(folderId);
+    setCurrentPage(1);
+  };
+
+  const handleDoubleClick = (document: Document) => {
+    if (document.is_folder) {
+      navigateToFolder(document.id);
+    } else if (document.file_url) {
+      window.open(document.file_url, '_blank');
+    }
+  };
+
+  const getFileIcon = (document: Document) => {
+    if (document.is_folder) {
+      return <Folder className="h-8 w-8 text-blue-500" />;
+    }
+
+    const fileType = document.file_type.toLowerCase();
+    if (fileType.includes('image')) return <Image className="h-8 w-8 text-green-500" />;
+    if (fileType.includes('video')) return <Video className="h-8 w-8 text-red-500" />;
+    if (fileType.includes('audio')) return <Music className="h-8 w-8 text-purple-500" />;
+    if (fileType.includes('pdf')) return <FileText className="h-8 w-8 text-red-600" />;
+    if (fileType.includes('zip') || fileType.includes('rar')) return <Archive className="h-8 w-8 text-orange-500" />;
+    
+    return <File className="h-8 w-8 text-gray-500" />;
   };
 
   const getAccessLevelBadge = (level: string) => {
@@ -308,6 +420,13 @@ const DocumentManagement = () => {
     );
   };
 
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`;
+  };
+
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -318,14 +437,46 @@ const DocumentManagement = () => {
     return matchesSearch && matchesCategory && matchesAccessLevel;
   });
 
-  const handleTagInput = (value: string) => {
-    if (value.endsWith(',') || value.endsWith(' ')) {
-      const tag = value.slice(0, -1).trim();
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+    // Folders always first
+    if (a.is_folder !== b.is_folder) {
+      return a.is_folder ? -1 : 1;
+    }
+
+    let comparison = 0;
+    switch (sortBy) {
+      case 'name':
+        comparison = a.title.localeCompare(b.title);
+        break;
+      case 'date':
+        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        break;
+      case 'size':
+        comparison = (a.file_size || 0) - (b.file_size || 0);
+        break;
+    }
+    
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
+  const paginatedDocuments = sortedDocuments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(sortedDocuments.length / itemsPerPage);
+
+  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const target = e.target as HTMLInputElement;
+      const tag = target.value.trim();
       if (tag && !newDocument.tags.includes(tag)) {
         setNewDocument(prev => ({
           ...prev,
           tags: [...prev.tags, tag]
         }));
+        target.value = '';
       }
     }
   };
@@ -339,9 +490,47 @@ const DocumentManagement = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-foreground">Gestão de Documentos</h2>
+        <h2 className="text-3xl font-bold text-foreground">Explorador de Documentos</h2>
         <div className="flex gap-2">
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Nova Pasta
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nova Pasta</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="folder-name">Nome *</Label>
+                  <Input
+                    id="folder-name"
+                    value={newFolder.name}
+                    onChange={(e) => setNewFolder(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nome da pasta"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="folder-description">Descrição</Label>
+                  <Textarea
+                    id="folder-description"
+                    value={newFolder.description}
+                    onChange={(e) => setNewFolder(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Descrição da pasta"
+                  />
+                </div>
+                <Button onClick={handleCreateFolder} className="w-full" disabled={loading}>
+                  {loading ? 'Criando...' : 'Criar Pasta'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -392,7 +581,7 @@ const DocumentManagement = () => {
             <DialogTrigger asChild>
               <Button>
                 <Upload className="h-4 w-4 mr-2" />
-                Enviar Documento
+                Enviar Arquivo
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -452,11 +641,11 @@ const DocumentManagement = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="doc-tags">Tags (separadas por vírgula)</Label>
+                  <Label htmlFor="doc-tags">Tags</Label>
                   <Input
                     id="doc-tags"
-                    placeholder="Digite as tags..."
-                    onKeyUp={(e) => handleTagInput((e.target as HTMLInputElement).value)}
+                    placeholder="Digite e pressione Enter..."
+                    onKeyDown={handleTagInput}
                   />
                   {newDocument.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -487,26 +676,93 @@ const DocumentManagement = () => {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Breadcrumbs */}
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        {breadcrumbs.map((crumb, index) => (
+          <React.Fragment key={crumb.id || 'root'}>
+            <button
+              onClick={() => navigateToFolder(crumb.id)}
+              className="hover:text-foreground flex items-center"
+            >
+              {index === 0 && <Home className="h-4 w-4 mr-1" />}
+              {crumb.name}
+            </button>
+            {index < breadcrumbs.length - 1 && <ChevronRight className="h-4 w-4" />}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* Toolbar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="search">Buscar</Label>
+          <div className="flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Back button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const parent = breadcrumbs[breadcrumbs.length - 2];
+                  if (parent) navigateToFolder(parent.id);
+                }}
+                disabled={breadcrumbs.length <= 1}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+
+              {/* View mode toggle */}
+              <div className="flex border rounded-lg">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Sort options */}
+              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nome</SelectItem>
+                  <SelectItem value="date">Data</SelectItem>
+                  <SelectItem value="size">Tamanho</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              >
+                <SortAsc className={`h-4 w-4 ${sortOrder === 'desc' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+
+            {/* Search and filters */}
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="search"
-                  placeholder="Buscar documentos..."
+                  placeholder="Buscar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 w-64"
                 />
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="filter-category">Categoria</Label>
+
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
@@ -520,10 +776,7 @@ const DocumentManagement = () => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
 
-            <div>
-              <Label htmlFor="filter-access">Nível de Acesso</Label>
               <Select value={selectedAccessLevel} onValueChange={setSelectedAccessLevel}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue />
@@ -541,128 +794,114 @@ const DocumentManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Gestão de Categorias */}
+      {/* File Explorer */}
       <Card>
-        <CardHeader>
-          <CardTitle>Categorias ({categories.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {categories.map((category) => (
-              <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <div>
-                    <p className="font-medium">{category.name}</p>
-                    {category.description && (
-                      <p className="text-sm text-muted-foreground">{category.description}</p>
-                    )}
-                  </div>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja excluir a categoria "{category.name}"? Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            ))}
-            {categories.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma categoria criada
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Documentos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Documentos ({filteredDocuments.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {loading ? (
-            <div className="text-center py-8">Carregando documentos...</div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum documento encontrado
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Carregando...</p>
+            </div>
+          ) : paginatedDocuments.length === 0 ? (
+            <div className="text-center py-12">
+              <Folder className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground">Pasta vazia</h3>
+              <p className="text-sm text-muted-foreground">Nenhum documento ou pasta encontrado</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Acesso</TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDocuments.map((document) => (
-                    <TableRow key={document.id}>
-                      <TableCell>
+            <>
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                  {paginatedDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="flex flex-col items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                      onDoubleClick={() => handleDoubleClick(document)}
+                    >
+                      <div className="mb-2">
+                        {getFileIcon(document)}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium truncate max-w-[120px]" title={document.title}>
+                          {document.title}
+                        </p>
+                        {!document.is_folder && (
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(document.file_size)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="opacity-0 group-hover:opacity-100 mt-1 flex gap-1">
+                        {!document.is_folder && document.file_url && (
+                          <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir "{document.title}"?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteDocument(document.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {paginatedDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="flex items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                      onDoubleClick={() => handleDoubleClick(document)}
+                    >
+                      <div className="mr-3">
+                        {getFileIcon(document)}
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <div>
-                            <div className="font-medium">{document.title}</div>
-                            {document.description && (
-                              <div className="text-sm text-muted-foreground">{document.description}</div>
+                          <p className="text-sm font-medium truncate">{document.title}</p>
+                          {getAccessLevelBadge(document.access_level)}
+                        </div>
+                        {document.description && (
+                          <p className="text-xs text-muted-foreground truncate">{document.description}</p>
+                        )}
+                        {document.tags.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {document.tags.slice(0, 3).map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {document.tags.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{document.tags.length - 3}
+                              </Badge>
                             )}
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {document.category_id && categories.find(c => c.id === document.category_id)?.name}
-                      </TableCell>
-                      <TableCell>
-                        {getAccessLevelBadge(document.access_level)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {document.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(document.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {document.file_url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(document.file_url, '_blank')}
-                            >
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{new Date(document.created_at).toLocaleDateString()}</span>
+                        <span className="w-20 text-right">{formatFileSize(document.file_size)}</span>
+                        <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                          {!document.is_folder && document.file_url && (
+                            <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
                               <Download className="h-4 w-4" />
                             </Button>
                           )}
@@ -676,7 +915,7 @@ const DocumentManagement = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Tem certeza que deseja excluir o documento "{document.title}"?
+                                  Tem certeza que deseja excluir "{document.title}"?
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -688,12 +927,37 @@ const DocumentManagement = () => {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

@@ -386,6 +386,8 @@ export type Database = {
           file_url: string | null
           id: string
           is_active: boolean | null
+          is_folder: boolean
+          parent_folder_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -403,6 +405,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_active?: boolean | null
+          is_folder?: boolean
+          parent_folder_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -420,6 +424,8 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_active?: boolean | null
+          is_folder?: boolean
+          parent_folder_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -432,6 +438,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
