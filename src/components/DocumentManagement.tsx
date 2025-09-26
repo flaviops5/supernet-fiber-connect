@@ -37,7 +37,9 @@ import {
   SortAsc,
   Calendar,
   FileIcon,
-  Home
+  Home,
+  Move,
+  UploadCloud
 } from 'lucide-react';
 
 interface Document {
@@ -89,6 +91,11 @@ const DocumentManagement = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  
+  // Drag and drop states
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [draggedItem, setDraggedItem] = useState<Document | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -188,6 +195,165 @@ const DocumentManagement = () => {
     
     setBreadcrumbs(crumbs);
   }, []);
+
+  // Drag and Drop Functions
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isDragOver) setIsDragOver(true);
+  }, [isDragOver]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleFileDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      try {
+        const sanitizedName = file.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9.-]/g, '_')
+          .replace(/_{2,}/g, '_');
+        
+        const fileName = `${Date.now()}_${sanitizedName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('corporate-documents')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('corporate-documents')
+          .getPublicUrl(fileName);
+
+        const { error: insertError } = await supabase
+          .from('documents')
+          .insert({
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            file_url: publicUrl,
+            file_name: file.name,
+            file_size: file.size,
+            file_type: file.type,
+            parent_folder_id: currentFolderId,
+            is_folder: false,
+            access_level: 'internal'
+          });
+
+        if (insertError) throw insertError;
+
+        toast({
+          title: "Sucesso",
+          description: `${file.name} enviado com sucesso`
+        });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        toast({
+          title: "Erro",
+          description: `Erro ao enviar ${file.name}`,
+          variant: "destructive"
+        });
+      }
+    }
+    
+    loadDocuments();
+  }, [currentFolderId, toast, loadDocuments]);
+
+  const handleItemDragStart = useCallback((e: React.DragEvent, document: Document) => {
+    setDraggedItem(document);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', document.id);
+  }, []);
+
+  const handleItemDragEnd = useCallback(() => {
+    setDraggedItem(null);
+    setDropTarget(null);
+  }, []);
+
+  const handleFolderDragOver = useCallback((e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedItem && draggedItem.id !== folderId) {
+      setDropTarget(folderId);
+    }
+  }, [draggedItem]);
+
+  const handleFolderDragLeave = useCallback(() => {
+    setDropTarget(null);
+  }, []);
+
+  const handleFolderDrop = useCallback(async (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || draggedItem.id === targetFolderId) return;
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update({ parent_folder_id: targetFolderId })
+        .eq('id', draggedItem.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `${draggedItem.title} movido com sucesso`
+      });
+      
+      loadDocuments();
+    } catch (error) {
+      console.error('Error moving document:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao mover item",
+        variant: "destructive"
+      });
+    }
+    
+    setDraggedItem(null);
+    setDropTarget(null);
+  }, [draggedItem, toast, loadDocuments]);
+
+  const handleRootDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    
+    if (!draggedItem) return;
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update({ parent_folder_id: null })
+        .eq('id', draggedItem.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `${draggedItem.title} movido para raiz`
+      });
+      
+      loadDocuments();
+    } catch (error) {
+      console.error('Error moving document:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao mover item",
+        variant: "destructive"
+      });
+    }
+    
+    setDraggedItem(null);
+    setDropTarget(null);
+  }, [draggedItem, toast, loadDocuments]);
 
   useEffect(() => {
     loadDocuments();
@@ -803,7 +969,21 @@ const DocumentManagement = () => {
 
       {/* File Explorer */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent 
+          className={`p-6 ${isDragOver ? 'bg-blue-50 border-blue-300 border-2 border-dashed' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleFileDrop}
+        >
+          {isDragOver && (
+            <div className="fixed inset-0 bg-blue-500/10 flex items-center justify-center z-50 pointer-events-none">
+              <div className="bg-white/90 p-8 rounded-lg border-2 border-blue-500 border-dashed shadow-lg">
+                <UploadCloud className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+                <p className="text-lg font-medium text-blue-700">Solte os arquivos aqui para fazer upload</p>
+              </div>
+            </div>
+          )}
+          
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -813,20 +993,39 @@ const DocumentManagement = () => {
             <div className="text-center py-12">
               <Folder className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground">Pasta vazia</h3>
-              <p className="text-sm text-muted-foreground">Nenhum documento ou pasta encontrado</p>
+              <p className="text-sm text-muted-foreground">Arraste arquivos aqui ou clique em "Enviar Arquivo"</p>
             </div>
           ) : (
             <>
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                <div 
+                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleRootDrop}
+                >
                   {paginatedDocuments.map((document) => (
                     <div
                       key={document.id}
-                      className="flex flex-col items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                      className={`flex flex-col items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-all duration-200 ${
+                        draggedItem?.id === document.id ? 'opacity-50 scale-95' : ''
+                      } ${
+                        document.is_folder && dropTarget === document.id ? 'bg-blue-100 border-2 border-blue-300 border-dashed' : ''
+                      }`}
+                      draggable={true}
+                      onDragStart={(e) => handleItemDragStart(e, document)}
+                      onDragEnd={handleItemDragEnd}
+                      onDragOver={document.is_folder ? (e) => handleFolderDragOver(e, document.id) : undefined}
+                      onDragLeave={document.is_folder ? handleFolderDragLeave : undefined}
+                      onDrop={document.is_folder ? (e) => handleFolderDrop(e, document.id) : undefined}
                       onDoubleClick={() => handleDoubleClick(document)}
                     >
-                      <div className="mb-2">
+                      <div className="mb-2 relative">
                         {getFileIcon(document)}
+                        {document.is_folder && dropTarget === document.id && (
+                          <div className="absolute -top-2 -right-2">
+                            <Move className="h-4 w-4 text-blue-500" />
+                          </div>
+                        )}
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-medium truncate max-w-[120px]" title={document.title}>
@@ -870,15 +1069,34 @@ const DocumentManagement = () => {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div 
+                  className="space-y-2"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleRootDrop}
+                >
                   {paginatedDocuments.map((document) => (
                     <div
                       key={document.id}
-                      className="flex items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group"
+                      className={`flex items-center p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-all duration-200 ${
+                        draggedItem?.id === document.id ? 'opacity-50' : ''
+                      } ${
+                        document.is_folder && dropTarget === document.id ? 'bg-blue-100 border-2 border-blue-300 border-dashed' : ''
+                      }`}
+                      draggable={true}
+                      onDragStart={(e) => handleItemDragStart(e, document)}
+                      onDragEnd={handleItemDragEnd}
+                      onDragOver={document.is_folder ? (e) => handleFolderDragOver(e, document.id) : undefined}
+                      onDragLeave={document.is_folder ? handleFolderDragLeave : undefined}
+                      onDrop={document.is_folder ? (e) => handleFolderDrop(e, document.id) : undefined}
                       onDoubleClick={() => handleDoubleClick(document)}
                     >
-                      <div className="mr-3">
+                      <div className="mr-3 relative">
                         {getFileIcon(document)}
+                        {document.is_folder && dropTarget === document.id && (
+                          <div className="absolute -top-1 -right-1">
+                            <Move className="h-3 w-3 text-blue-500" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
