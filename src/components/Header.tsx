@@ -1,10 +1,27 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Menu, X, ChevronDown, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showDropdown = (dropdownName: string) => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setActiveDropdown(dropdownName);
+  };
+
+  const hideDropdown = () => {
+    hideTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 300); // 300ms delay antes de esconder
+  };
+
   const plans = [{
     name: 'Planos Residenciais',
     href: '/'
@@ -21,6 +38,7 @@ const Header = () => {
     name: 'Planos com Telemedicina',
     href: '/telemedicina'
   }];
+
   const services = [{
     name: 'Energia por Assinatura',
     href: '/energia-assinatura'
@@ -52,10 +70,13 @@ const Header = () => {
     name: 'Assessoria Tecnológica',
     href: '/assessoria-tecnologica'
   }];
+
   const handleWhatsApp = () => {
     window.open('https://wa.me/5511999999999?text=Olá! Gostaria de contratar os serviços da SUPERNET FIBRA.', '_blank');
   };
-  return <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
+
+  return (
+    <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -70,35 +91,67 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
             {/* Plans Dropdown */}
-            <div className="relative" onMouseEnter={() => setActiveDropdown('plans')} onMouseLeave={() => setActiveDropdown(null)}>
+            <div 
+              className="relative" 
+              onMouseEnter={() => showDropdown('plans')} 
+              onMouseLeave={hideDropdown}
+            >
               <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
                 <span>Planos</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
-              {activeDropdown === 'plans' && <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4">
+              {activeDropdown === 'plans' && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4"
+                  onMouseEnter={() => showDropdown('plans')}
+                  onMouseLeave={hideDropdown}
+                >
                   <div className="space-y-2">
-                    {plans.map(plan => <Link key={plan.name} to={plan.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
+                    {plans.map(plan => (
+                      <Link 
+                        key={plan.name} 
+                        to={plan.href} 
+                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
+                      >
                         {plan.name}
-                      </Link>)}
+                      </Link>
+                    ))}
                   </div>
-                </div>}
+                </div>
+              )}
             </div>
 
             {/* Services Dropdown */}
-            <div className="relative" onMouseEnter={() => setActiveDropdown('services')} onMouseLeave={() => setActiveDropdown(null)}>
+            <div 
+              className="relative" 
+              onMouseEnter={() => showDropdown('services')} 
+              onMouseLeave={hideDropdown}
+            >
               <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
                 <span>Serviços</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
-              {activeDropdown === 'services' && <div className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4">
+              {activeDropdown === 'services' && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4"
+                  onMouseEnter={() => showDropdown('services')}
+                  onMouseLeave={hideDropdown}
+                >
                   <div className="space-y-2">
-                    {services.map(service => <Link key={service.name} to={service.href} className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors">
+                    {services.map(service => (
+                      <Link 
+                        key={service.name} 
+                        to={service.href} 
+                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
+                      >
                         {service.name}
-                      </Link>)}
+                      </Link>
+                    ))}
                   </div>
-                </div>}
+                </div>
+              )}
             </div>
 
             <Link to="/blog" className="text-foreground hover:text-primary transition-colors">
@@ -114,7 +167,11 @@ const Header = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" onClick={() => window.open('https://central.supernetfibra.com.br', '_blank')} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+            <Button 
+              variant="outline" 
+              onClick={() => window.open('https://central.supernetfibra.com.br', '_blank')} 
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
               Central do Cliente
             </Button>
             <Button onClick={handleWhatsApp} className="cta-gradient">
@@ -130,23 +187,36 @@ const Header = () => {
         </div>
 
         {/* Mobile Navigation */}
-        {isMenuOpen && <div className="lg:hidden py-4 border-t border-border">
+        {isMenuOpen && (
+          <div className="lg:hidden py-4 border-t border-border">
             <nav className="space-y-4">
               <div>
                 <p className="font-semibold text-primary mb-2">Planos</p>
                 <div className="pl-4 space-y-2">
-                  {plans.map(plan => <Link key={plan.name} to={plan.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  {plans.map(plan => (
+                    <Link 
+                      key={plan.name} 
+                      to={plan.href} 
+                      className="block text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
                       {plan.name}
-                    </Link>)}
+                    </Link>
+                  ))}
                 </div>
               </div>
 
               <div>
                 <p className="font-semibold text-primary mb-2">Serviços</p>
                 <div className="pl-4 space-y-2">
-                  {services.map(service => <Link key={service.name} to={service.href} className="block text-sm text-muted-foreground hover:text-primary transition-colors">
+                  {services.map(service => (
+                    <Link 
+                      key={service.name} 
+                      to={service.href} 
+                      className="block text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
                       {service.name}
-                    </Link>)}
+                    </Link>
+                  ))}
                 </div>
               </div>
 
@@ -160,7 +230,11 @@ const Header = () => {
                 Contato
               </Link>
               
-              <Button variant="outline" onClick={() => window.open('https://central.supernetfibra.com.br', '_blank')} className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full mb-4">
+              <Button 
+                variant="outline" 
+                onClick={() => window.open('https://central.supernetfibra.com.br', '_blank')} 
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full mb-4"
+              >
                 Central do Cliente
               </Button>
               
@@ -169,8 +243,11 @@ const Header = () => {
                 Contratar Agora
               </Button>
             </nav>
-          </div>}
+          </div>
+        )}
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Header;
