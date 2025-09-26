@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_categories: {
         Row: {
           created_at: string
@@ -253,6 +309,133 @@ export type Database = {
         }
         Relationships: []
       }
+      document_categories: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_permissions: {
+        Row: {
+          created_at: string
+          document_id: string
+          granted_by: string | null
+          id: string
+          permission_type: string
+          role: Database["public"]["Enums"]["user_role"] | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          granted_by?: string | null
+          id?: string
+          permission_type: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          granted_by?: string | null
+          id?: string
+          permission_type?: string
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_permissions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          access_level: Database["public"]["Enums"]["access_level"]
+          category_id: string | null
+          created_at: string
+          description: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          version: number | null
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["access_level"]
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faqs: {
         Row: {
           active: boolean
@@ -418,6 +601,56 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_base: {
+        Row: {
+          category: string
+          content: string
+          content_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          source_document_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content: string
+          content_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          source_document_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          content_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          source_document_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_base_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           active: boolean
@@ -541,6 +774,7 @@ export type Database = {
       }
     }
     Enums: {
+      access_level: "public" | "internal" | "confidential" | "secret"
       user_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -669,6 +903,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      access_level: ["public", "internal", "confidential", "secret"],
       user_role: ["admin", "editor", "viewer"],
     },
   },
