@@ -4,6 +4,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import ContractForm from '@/components/ContractForm';
 
 const iconMap: { [key: string]: any } = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
@@ -20,6 +21,8 @@ const ResidentialPlans = () => {
   const [count, setCount] = useState(0);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showContractForm, setShowContractForm] = useState(false);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -56,9 +59,14 @@ const ResidentialPlans = () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
   }, [api]);
-  const handleWhatsApp = (name: string, price: number) => {
-    const message = `Olá! Tenho interesse no ${name} por R$ ${price.toFixed(2).replace('.', ',')}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
-    window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
+  const handleContractClick = (plan: any) => {
+    setSelectedPlan(plan);
+    setShowContractForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setShowContractForm(false);
+    setSelectedPlan(null);
   };
 
   if (loading) {
@@ -195,7 +203,7 @@ const ResidentialPlans = () => {
 
                     {/* CTA */}
                     <Button
-                      onClick={() => handleWhatsApp(plan.name, plan.price)}
+                      onClick={() => handleContractClick(plan)}
                       className={`w-full text-base py-4 mt-auto ${
                         plan.popular 
                           ? 'cta-gradient' 
@@ -237,6 +245,15 @@ const ResidentialPlans = () => {
           </p>
         </div>
       </div>
+
+      {/* Contract Form Modal */}
+      {selectedPlan && (
+        <ContractForm
+          isOpen={showContractForm}
+          onClose={handleCloseForm}
+          plan={selectedPlan}
+        />
+      )}
     </section>
   );
 };
