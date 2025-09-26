@@ -3,6 +3,7 @@ import { Bot, X, Send, Smile, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import ContractForm from '@/components/ContractForm';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -32,12 +33,15 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
   const [inputMessage, setInputMessage] = useState('');
   const [sessionCount, setSessionCount] = useState(1);
   const [settings, setSettings] = useState<ChatbotSettings | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showContractForm, setShowContractForm] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const closeTimestampRef = useRef<number | null>(null);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load settings from database
+  // Load settings and plans from database
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -58,7 +62,24 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
       }
     };
 
+    const loadPlans = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+        setPlans(data || []);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+        setPlans([]);
+      }
+    };
+
     loadSettings();
+    loadPlans();
   }, []);
 
   // Auto-open functionality
@@ -79,11 +100,30 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
       if (event.data && event.data.type === 'chatbase-response') {
         console.log('Received message from chatbot:', event.data);
       }
+      
+      // Handle contract form trigger from chatbot
+      if (event.data && event.data.type === 'open-contract-form') {
+        const planName = event.data.planName || event.data.plan;
+        if (planName) {
+          // Find the plan by name
+          const foundPlan = plans.find(plan => 
+            plan.name.toLowerCase().includes(planName.toLowerCase()) ||
+            plan.speed.toLowerCase().includes(planName.toLowerCase())
+          );
+          
+          if (foundPlan) {
+            setSelectedPlan(foundPlan);
+            setShowContractForm(true);
+          } else {
+            console.warn('Plan not found:', planName);
+          }
+        }
+      }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [plans]);
 
   // Handle chat open/close and 30-minute reset logic
   useEffect(() => {
@@ -171,6 +211,11 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
     setInputMessage(prev => prev + emoji);
     textareaRef.current?.focus();
     setShowEmojiPicker(false);
+  };
+
+  const handleCloseForm = () => {
+    setShowContractForm(false);
+    setSelectedPlan(null);
   };
 
   const commonEmojis = [
@@ -269,6 +314,15 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
           </div>
         )}
       </div>
+
+      {/* Contract Form Modal */}
+      {selectedPlan && (
+        <ContractForm
+          isOpen={showContractForm}
+          onClose={handleCloseForm}
+          plan={selectedPlan}
+        />
+      )}
     </>
   );
 };

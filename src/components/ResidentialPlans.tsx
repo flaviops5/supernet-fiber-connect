@@ -4,8 +4,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ContractForm from '@/components/ContractForm';
-
 const iconMap: { [key: string]: any } = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
   DollarSign, Clock, Router, Wifi
@@ -21,8 +19,6 @@ const ResidentialPlans = () => {
   const [count, setCount] = useState(0);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [showContractForm, setShowContractForm] = useState(false);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -59,15 +55,6 @@ const ResidentialPlans = () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
   }, [api]);
-  const handleContractClick = (plan: any) => {
-    setSelectedPlan(plan);
-    setShowContractForm(true);
-  };
-
-  const handleCloseForm = () => {
-    setShowContractForm(false);
-    setSelectedPlan(null);
-  };
 
   if (loading) {
     return (
@@ -201,18 +188,10 @@ const ResidentialPlans = () => {
                       </ul>
                     </div>
 
-                    {/* CTA */}
-                    <Button
-                      onClick={() => handleContractClick(plan)}
-                      className={`w-full text-base py-4 mt-auto ${
-                        plan.popular 
-                          ? 'cta-gradient' 
-                          : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'
-                      }`}
-                      variant={plan.popular ? 'default' : 'outline'}
-                    >
-                      {plan.cta_text || 'Contratar Agora'}
-                    </Button>
+                    {/* Info Note - Removed CTA since chatbot handles sales */}
+                    <div className="text-center text-sm text-muted-foreground mt-auto p-4 bg-muted/30 rounded-lg">
+                      💬 Converse com nosso assistente virtual para contratar este plano
+                    </div>
                   </div>
                 </CarouselItem>
               ))}
@@ -246,14 +225,6 @@ const ResidentialPlans = () => {
         </div>
       </div>
 
-      {/* Contract Form Modal */}
-      {selectedPlan && (
-        <ContractForm
-          isOpen={showContractForm}
-          onClose={handleCloseForm}
-          plan={selectedPlan}
-        />
-      )}
     </section>
   );
 };
