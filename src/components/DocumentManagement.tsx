@@ -922,19 +922,6 @@ const DocumentManagement = () => {
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4 items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Back button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const parent = breadcrumbs[breadcrumbs.length - 2];
-                  if (parent) navigateToFolder(parent.id);
-                }}
-                disabled={breadcrumbs.length <= 1}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-
               {/* View mode toggle */}
               <div className="flex border rounded-lg">
                 <Button
@@ -1021,8 +1008,30 @@ const DocumentManagement = () => {
 
       {/* File Explorer */}
       <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5" />
+              Arquivos e Pastas
+            </CardTitle>
+            {breadcrumbs.length > 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const parent = breadcrumbs[breadcrumbs.length - 2];
+                  if (parent) navigateToFolder(parent.id);
+                }}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+            )}
+          </div>
+        </CardHeader>
         <CardContent 
-          className={`p-6 ${isDragOver ? 'bg-blue-50 border-blue-300 border-2 border-dashed' : ''}`}
+          className={`p-6 pt-0 ${isDragOver ? 'bg-blue-50 border-blue-300 border-2 border-dashed' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleFileDrop}

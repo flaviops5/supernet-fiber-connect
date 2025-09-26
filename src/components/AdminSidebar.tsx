@@ -55,6 +55,9 @@ const menuItems = [
     url: "/admin/users",
     icon: Users,
   },
+];
+
+const siteManagementItems = [
   {
     title: "Planos",
     url: "/admin/plans",
@@ -81,14 +84,17 @@ const menuItems = [
     icon: FileText,
   },
   {
-    title: "Chatbot",
-    url: "/admin/chatbot",
-    icon: Bot,
-  },
-  {
     title: "Avaliações",
     url: "/admin/reviews",
     icon: Star,
+  },
+];
+
+const systemItems = [
+  {
+    title: "Chatbot",
+    url: "/admin/chatbot",
+    icon: Bot,
   },
   {
     title: "Documentos",
@@ -211,6 +217,48 @@ export function AdminSidebar() {
                       to={item.url}
                       className={getNavClasses(item.url, item.exact)}
                       end={item.exact}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gerencia Site</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {siteManagementItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {systemItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
