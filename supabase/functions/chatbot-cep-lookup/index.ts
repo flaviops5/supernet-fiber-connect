@@ -1,0 +1,311 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface CepLookupRequest {
+  cep?: string;
+  message: string;
+  action: 'check_coverage' | 'list_plans' | 'find_region';
+}
+
+serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    console.log('Chatbot CEP lookup request received')
+    
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const body = await req.json()
+    console.log('Request body:', body)
+
+    // Extract CEP from message if not provided directly
+    let cep = body.cep
+    if (!cep && body.message) {
+      const cepMatch = body.message.match(/\d{5}-?\d{3}/)
+      if (cepMatch) {
+        cep = cepMatch[0].replace(/\D/g, '')
+      }
+    }
+
+    const action = body.action || 'check_coverage'
+
+    switch (action) {
+      case 'check_coverage':
+        return await checkCepCoverage(supabase, cep, body.message)
+      
+      case 'list_plans':
+        return await listAvailablePlans(supabase, cep)
+      
+      case 'find_region':
+        return await findRegionInfo(supabase, cep)
+      
+      default:
+        return await checkCepCoverage(supabase, cep, body.message)
+    }
+
+  } catch (error) {
+    console.error('Error in chatbot CEP lookup:', error)
+    return new Response(
+      JSON.stringify({ 
+        response: 'Desculpe, não consegui processar sua consulta no momento. Tente novamente ou entre em contato pelo WhatsApp (61) 99999-9999.',
+        error: error instanceof Error ? error.message : String(error)
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+  }
+})
+
+async function checkCepCoverage(supabase: any, cep: string, originalMessage: string) {
+  try {
+    if (!cep || cep.length !== 8) {
+      return new Response(
+        JSON.stringify({ 
+          response: `Para verificar a cobertura na sua região, preciso do seu CEP completo com 8 dígitos. 
+
+Por exemplo: "Meu CEP é 70000-000" ou "Tenho cobertura em 71000000?"
+
+Você pode me informar seu CEP?`,
+          requires_cep: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Checking coverage for CEP:', cep)
+
+    // Search for CEP coverage
+    const { data: cepData, error: cepError } = await supabase
+      .from('cep_coverage')
+      .select(`
+        id,
+        cep_start,
+        cep_end,
+        region_name,
+        available,
+        coordinates,
+        coverage_areas (
+          name,
+          color
+        )
+      `)
+      .lte('cep_start', cep)
+      .gte('cep_end', cep)
+      .eq('available', true)
+      .limit(1)
+      .single()
+
+    if (cepError || !cepData) {
+      console.log('No coverage found for CEP:', cep)
+      return new Response(
+        JSON.stringify({ 
+          response: `❌ **Infelizmente não temos cobertura para o CEP ${formatCep(cep)}** na região consultada.
+
+🌟 **Mas temos uma ótima notícia!** Estamos sempre expandindo nossa rede de fibra óptica.
+
+📞 **Entre em contato conosco:**
+• WhatsApp: (61) 99999-9999
+• Telefone: (61) 3333-3333
+
+Deixe seu contato e te avisaremos assim que a fibra óptica chegar na sua região! 
+
+Você também pode consultar outros CEPs próximos se desejar.`,
+          has_coverage: false,
+          cep: formatCep(cep)
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Get available plans for this CEP
+    const { data: plansData } = await supabase
+      .from('cep_plans')
+      .select(`
+        plans (
+          name,
+          speed,
+          price,
+          original_price,
+          popular,
+          features
+        )
+      `)
+      .eq('cep_coverage_id', cepData.id)
+
+    const plans = plansData?.map((cp: any) => cp.plans).filter(Boolean) || []
+
+    let response = `✅ **Ótimas notícias! Temos cobertura para o CEP ${formatCep(cep)}!**
+
+📍 **Região:** ${cepData.region_name}
+🏢 **Área:** ${cepData.coverage_areas?.name || 'Região de Cobertura'}
+
+`
+
+    if (plans.length > 0) {
+      response += `🚀 **Planos Disponíveis:**\n\n`
+      
+      plans.forEach((plan: any) => {
+        const discount = plan.original_price ? 
+          Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
+        
+        response += `${plan.popular ? '⭐ **' : '• **'}${plan.name} - ${plan.speed}**${plan.popular ? ' (Mais Popular)' : ''}\n`
+        
+        if (plan.original_price && discount > 0) {
+          response += `~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}/mês** (${discount}% OFF)\n`
+        } else {
+          response += `**R$ ${plan.price.toFixed(2)}/mês**\n`
+        }
+
+        if (plan.features && Array.isArray(plan.features)) {
+          plan.features.forEach((feature: any) => {
+            response += `  ✓ ${feature.text}\n`
+          })
+        }
+        response += `\n`
+      })
+
+      response += `💬 **Quer contratar?**\n`
+      response += `WhatsApp: (61) 99999-9999\n`
+      response += `Telefone: (61) 3333-3333\n\n`
+      response += `🎁 **Instalação 100% GRATUITA!**\n`
+      response += `⚡ **Velocidade garantida 24h**\n`
+      response += `🛠️ **Suporte técnico especializado**`
+    } else {
+      response += `📋 Entre em contato para conhecer os planos disponíveis:\n`
+      response += `• WhatsApp: (61) 99999-9999\n`
+      response += `• Telefone: (61) 3333-3333`
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        response,
+        has_coverage: true,
+        cep: formatCep(cep),
+        region: cepData.region_name,
+        plans: plans.length
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in checkCepCoverage:', error)
+    throw error
+  }
+}
+
+async function listAvailablePlans(supabase: any, cep?: string) {
+  try {
+    let query = supabase
+      .from('plans')
+      .select('*')
+      .eq('active', true)
+      .order('display_order')
+
+    const { data: plans, error } = await query
+
+    if (error) throw error
+
+    let response = `🚀 **Nossos Planos de Internet Fibra Óptica:**\n\n`
+
+    plans?.forEach((plan: any) => {
+      const discount = plan.original_price ? 
+        Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
+      
+      response += `${plan.popular ? '⭐ **' : '• **'}${plan.name} - ${plan.speed}**${plan.popular ? ' (Mais Popular)' : ''}\n`
+      response += `${plan.description}\n`
+      
+      if (plan.original_price && discount > 0) {
+        response += `~~R$ ${plan.original_price.toFixed(2)}~~ **R$ ${plan.price.toFixed(2)}/mês** (${discount}% OFF)\n\n`
+      } else {
+        response += `**R$ ${plan.price.toFixed(2)}/mês**\n\n`
+      }
+    })
+
+    response += `💡 **Todas as velocidades são simétricas** (upload = download)\n`
+    response += `🎁 **Instalação gratuita** em toda nossa área de cobertura\n\n`
+    
+    if (cep) {
+      response += `Para verificar disponibilidade no seu CEP ${formatCep(cep)}, posso consultar nossa base de dados!\n\n`
+    } else {
+      response += `💬 **Consulte seu CEP** para ver quais planos estão disponíveis na sua região!\n\n`
+    }
+    
+    response += `📞 **Contrate já:**\n`
+    response += `• WhatsApp: (61) 99999-9999\n`
+    response += `• Telefone: (61) 3333-3333`
+
+    return new Response(
+      JSON.stringify({ response }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in listAvailablePlans:', error)
+    throw error
+  }
+}
+
+async function findRegionInfo(supabase: any, cep: string) {
+  try {
+    if (!cep || cep.length !== 8) {
+      return new Response(
+        JSON.stringify({ 
+          response: 'Para consultar informações da região, preciso de um CEP válido com 8 dígitos.' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { data: regions, error } = await supabase
+      .from('coverage_areas')
+      .select('*')
+      .eq('active', true)
+
+    if (error) throw error
+
+    let response = `🌍 **Áreas de Cobertura SUPERNET FIBRA:**\n\n`
+
+    regions?.forEach((region: any) => {
+      response += `📍 **${region.name}** (${region.region_code})\n`
+    })
+
+    response += `\n🔍 **Para verificar se atendemos seu CEP ${formatCep(cep)}**, posso consultar nossa base de dados!\n\n`
+    response += `Ou entre em contato:\n`
+    response += `• WhatsApp: (61) 99999-9999\n`
+    response += `• Telefone: (61) 3333-3333`
+
+    return new Response(
+      JSON.stringify({ response }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error in findRegionInfo:', error)
+    throw error
+  }
+}
+
+function formatCep(cep: string): string {
+  if (!cep) return ''
+  const cleanCep = cep.replace(/\D/g, '')
+  return cleanCep.replace(/(\d{5})(\d{3})/, '$1-$2')
+}
