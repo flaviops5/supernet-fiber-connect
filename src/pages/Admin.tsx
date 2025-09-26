@@ -641,6 +641,9 @@ const PlansManagement = () => {
   );
 };
 
+// Import CepManagement component
+import CepManagement from '@/components/CepManagement';
+
 const CoverageManagement = () => {
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -688,85 +691,136 @@ const CoverageManagement = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciar Cobertura</h1>
-          <p className="text-muted-foreground">Configure áreas de cobertura e disponibilidade</p>
-        </div>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">Carregando áreas de cobertura...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const AreasManagement = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Áreas de Cobertura</CardTitle>
+        <CardDescription>
+          Gerencie as áreas geográficas de cobertura no mapa
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <p className="text-muted-foreground">Carregando áreas de cobertura...</p>
+        ) : areas.length === 0 ? (
+          <div className="text-center py-8">
+            <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Nenhuma área de cobertura cadastrada</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {areas.map((area) => (
+              <div
+                key={area.id}
+                className="flex items-center justify-between p-4 border rounded-lg"
+              >
+                <div className="flex items-center space-x-4">
+                  <div 
+                    className="w-6 h-6 rounded-full border-2"
+                    style={{ backgroundColor: area.color }}
+                  />
+                  <div>
+                    <h3 className="font-semibold">{area.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Código: {area.region_code}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={area.active ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => toggleAreaActive(area.id, area.active)}
+                  >
+                    {area.active ? 'Desativar' : 'Ativar'}
+                  </Button>
+                  
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    area.active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {area.active ? 'Ativa' : 'Inativa'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Gerenciar Cobertura</h1>
-        <p className="text-muted-foreground">Configure áreas de cobertura e disponibilidade</p>
+        <p className="text-muted-foreground">Configure áreas de cobertura, CEPs e disponibilidade de planos</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Áreas de Cobertura</CardTitle>
-          <CardDescription>
-            Total de {areas.length} área{areas.length !== 1 ? 's' : ''} cadastrada{areas.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {areas.length === 0 ? (
-            <div className="text-center py-8">
-              <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Nenhuma área de cobertura cadastrada</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {areas.map((area) => (
-                <div
-                  key={area.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div 
-                      className="w-6 h-6 rounded-full border-2"
-                      style={{ backgroundColor: area.color }}
-                    />
-                    <div>
-                      <h3 className="font-semibold">{area.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Código: {area.region_code}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={area.active ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => toggleAreaActive(area.id, area.active)}
-                    >
-                      {area.active ? 'Desativar' : 'Ativar'}
-                    </Button>
-                    
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      area.active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {area.active ? 'Ativa' : 'Inativa'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="ceps" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="ceps">CEPs e Planos</TabsTrigger>
+          <TabsTrigger value="areas">Áreas Geográficas</TabsTrigger>
+          <TabsTrigger value="config">Configurações</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="ceps" className="space-y-4">
+          <CepManagement />
+        </TabsContent>
+
+        <TabsContent value="areas" className="space-y-4">
+          <AreasManagement />
+        </TabsContent>
+
+        <TabsContent value="config" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações da Cobertura</CardTitle>
+              <CardDescription>
+                Configure as regras e comportamentos do sistema de cobertura
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Mapa Interativo</h3>
+                <p className="text-blue-700 dark:text-blue-300 text-sm mb-3">
+                  O mapa mostra as áreas de cobertura baseado nas coordenadas definidas nas áreas geográficas.
+                </p>
+                <ul className="text-blue-700 dark:text-blue-300 text-sm space-y-1">
+                  <li>• Define as regiões visuais no mapa</li>
+                  <li>• Controla a cor de cada área</li>
+                  <li>• Mostra os planos disponíveis por região</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">Sistema de CEPs</h3>
+                <p className="text-green-700 dark:text-green-300 text-sm mb-3">
+                  Controla quais CEPs têm cobertura e quais planos estão disponíveis.
+                </p>
+                <ul className="text-green-700 dark:text-green-300 text-sm space-y-1">
+                  <li>• Permite configurar faixas de CEP</li>
+                  <li>• Define planos específicos por localização</li>
+                  <li>• Centraliza o mapa quando CEP é encontrado</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold mb-2">Fluxo de Funcionamento</h3>
+                <ol className="text-muted-foreground text-sm space-y-1">
+                  <li>1. Cliente digita CEP no site</li>
+                  <li>2. Sistema consulta a tabela de CEPs</li>
+                  <li>3. Se encontrado, mostra região e planos disponíveis</li>
+                  <li>4. Mapa é centralizado na localização encontrada</li>
+                  <li>5. Cliente pode visualizar a área de cobertura</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
