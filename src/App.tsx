@@ -31,22 +31,29 @@ const App = () => {
         <Toaster />
         
         <BrowserRouter>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/contato" element={<Contact />} />
-                <Route path="/telemedicina" element={<Telemedicina />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/sobre" element={<Navigate to="/" replace />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/admin/*" element={<AdminWrapper />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
+          <Routes>
+            {/* Admin routes without header/footer */}
+            <Route path="/admin/*" element={<AdminWrapper />} />
+            
+            {/* Public routes with header/footer */}
+            <Route path="/*" element={
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/contato" element={<Contact />} />
+                    <Route path="/telemedicina" element={<Telemedicina />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/sobre" element={<Navigate to="/" replace />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <Footer />
+              </div>
+            } />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </TestimonialsProvider>
