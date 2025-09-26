@@ -252,12 +252,18 @@ const UsersManagement = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
+        console.log('Loading users...');
         // First get all profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*');
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Profiles error:', profilesError);
+          throw profilesError;
+        }
+
+        console.log('Profiles loaded:', profilesData);
 
         // Then get user roles for each profile
         const usersWithRoles = await Promise.all(
@@ -266,7 +272,9 @@ const UsersManagement = () => {
               .from('user_roles')
               .select('role')
               .eq('user_id', profile.user_id)
-              .single();
+              .maybeSingle(); // Use maybeSingle to avoid errors when no role found
+
+            console.log(`Role for user ${profile.user_id}:`, roleData);
 
             return {
               ...profile,
@@ -275,6 +283,7 @@ const UsersManagement = () => {
           })
         );
 
+        console.log('Users with roles:', usersWithRoles);
         setUsers(usersWithRoles);
       } catch (error) {
         console.error('Error loading users:', error);
