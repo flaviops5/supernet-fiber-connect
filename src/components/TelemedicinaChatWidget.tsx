@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Bot, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
+import telemedicinaConsultation from '@/assets/telemedicina-consultation.png';
 
 interface TelemedicinaChatWidgetProps {
   chatbotId?: string;
@@ -154,8 +154,8 @@ const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: Telemed
               </div>
               <div className="relative">
                 <img
-                  src={telemedicinaFamily}
-                  alt="Família aproveitando consultas médicas online via telemedicina"
+                  src={telemedicinaConsultation}
+                  alt="Consulta médica virtual através de telemedicina com monitoramento de pressão arterial"
                   className="w-full h-80 object-cover rounded-2xl shadow-elegant"
                 />
               </div>
