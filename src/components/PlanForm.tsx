@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Link, Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi, Upload, X } from "lucide-react";
+import { Plus, Trash2, Link, Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi, Upload, X, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -45,7 +46,10 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     active: plan?.active ?? true,
     ctaText: plan?.cta_text || "Contratar Agora",
     displayOrder: plan?.display_order || 0,
-    features: plan?.features || [],
+    features: (plan?.features || []).map((feature: any, index: number) => ({
+      ...feature,
+      order: feature.order ?? index
+    })),
     image_url: plan?.image_url || ""
   });
 
@@ -116,9 +120,19 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
   };
 
   const addFeature = () => {
+    const newOrder = formData.features.length > 0 
+      ? Math.max(...formData.features.map((f: any) => f.order || 0)) + 1 
+      : 0;
+    
     setFormData({
       ...formData,
-      features: [...formData.features, { text: "", icon: "Download", isLink: false, href: "" }]
+      features: [...formData.features, { 
+        text: "", 
+        icon: "Download", 
+        isLink: false, 
+        href: "",
+        order: newOrder
+      }]
     });
   };
 
@@ -133,6 +147,30 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     const newFeatures = [...formData.features];
     newFeatures[index] = { ...newFeatures[index], [field]: value };
     setFormData({ ...formData, features: newFeatures });
+  };
+
+  const moveFeatureUp = (index: number) => {
+    if (index === 0) return;
+    const newFeatures = [...formData.features];
+    [newFeatures[index - 1], newFeatures[index]] = [newFeatures[index], newFeatures[index - 1]];
+    setFormData({ ...formData, features: newFeatures });
+  };
+
+  const moveFeatureDown = (index: number) => {
+    if (index === formData.features.length - 1) return;
+    const newFeatures = [...formData.features];
+    [newFeatures[index], newFeatures[index + 1]] = [newFeatures[index + 1], newFeatures[index]];
+    setFormData({ ...formData, features: newFeatures });
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(formData.features);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setFormData({ ...formData, features: items });
   };
 
   const handleImageUpload = async (file: File) => {
@@ -383,66 +421,123 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {formData.features.map((feature: any, index: number) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
-                  <div>
-                    <Label>Texto</Label>
-                    <Input
-                      value={feature.text}
-                      onChange={(e) => updateFeature(index, 'text', e.target.value)}
-                      placeholder="Texto da característica"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Ícone</Label>
-                    <Select
-                      value={feature.icon}
-                      onValueChange={(value) => updateFeature(index, 'icon', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.keys(iconMap).map((iconName) => (
-                          <SelectItem key={iconName} value={iconName}>
-                            {iconName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="features">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                      {formData.features.map((feature: any, index: number) => (
+                        <Draggable key={`feature-${index}`} draggableId={`feature-${index}`} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`grid grid-cols-1 md:grid-cols-6 gap-2 items-end p-3 rounded-lg border ${
+                                snapshot.isDragging ? 'border-primary bg-muted/50' : 'border-border'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center">
+                                <div className="flex flex-col gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveFeatureUp(index)}
+                                    disabled={index === 0}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <ChevronUp className="w-3 h-3" />
+                                  </Button>
+                                  <div
+                                    {...provided.dragHandleProps}
+                                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                                  >
+                                    <GripVertical className="w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveFeatureDown(index)}
+                                    disabled={index === formData.features.length - 1}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <ChevronDown className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={feature.isLink}
-                      onCheckedChange={(checked) => updateFeature(index, 'isLink', checked)}
-                    />
-                    <Label>É Link?</Label>
-                  </div>
+                              <div>
+                                <Label>Texto</Label>
+                                <Input
+                                  value={feature.text}
+                                  onChange={(e) => updateFeature(index, 'text', e.target.value)}
+                                  placeholder="Texto da característica"
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label>Ícone</Label>
+                                <Select
+                                  value={feature.icon}
+                                  onValueChange={(value) => updateFeature(index, 'icon', value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.keys(iconMap).map((iconName) => (
+                                      <SelectItem key={iconName} value={iconName}>
+                                        {iconName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                  {feature.isLink && (
-                    <div>
-                      <Label>URL</Label>
-                      <Input
-                        value={feature.href || ""}
-                        onChange={(e) => updateFeature(index, 'href', e.target.value)}
-                        placeholder="/link"
-                      />
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  checked={feature.isLink}
+                                  onCheckedChange={(checked) => updateFeature(index, 'isLink', checked)}
+                                />
+                                <Label>É Link?</Label>
+                              </div>
+
+                              {feature.isLink && (
+                                <div>
+                                  <Label>URL</Label>
+                                  <Input
+                                    value={feature.href || ""}
+                                    onChange={(e) => updateFeature(index, 'href', e.target.value)}
+                                    placeholder="/link"
+                                  />
+                                </div>
+                              )}
+
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeFeature(index)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
                   )}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeFeature(index)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                </Droppable>
+              </DragDropContext>
+              
+              {formData.features.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Nenhuma característica adicionada ainda.</p>
+                  <p className="text-sm">Clique em "Adicionar" para começar.</p>
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
 
