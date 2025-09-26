@@ -97,6 +97,11 @@ const DocumentManagement = () => {
   const [draggedItem, setDraggedItem] = useState<Document | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   
+  // Preview states
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
@@ -610,6 +615,53 @@ const DocumentManagement = () => {
     return matchesSearch && matchesCategory && matchesAccessLevel;
   });
 
+  // Preview Functions
+  const openPreview = useCallback((document: Document) => {
+    if (document.is_folder) return;
+    
+    const previewableDocuments = filteredDocuments.filter(doc => !doc.is_folder && doc.file_url);
+    const index = previewableDocuments.findIndex(doc => doc.id === document.id);
+    
+    if (index !== -1) {
+      setPreviewDocument(document);
+      setPreviewIndex(index);
+      setIsPreviewOpen(true);
+    }
+  }, [filteredDocuments]);
+
+  const navigatePreview = useCallback((direction: 'next' | 'prev') => {
+    const previewableDocuments = filteredDocuments.filter(doc => !doc.is_folder && doc.file_url);
+    const newIndex = direction === 'next' 
+      ? Math.min(previewIndex + 1, previewableDocuments.length - 1)
+      : Math.max(previewIndex - 1, 0);
+    
+    if (newIndex !== previewIndex && previewableDocuments[newIndex]) {
+      setPreviewDocument(previewableDocuments[newIndex]);
+      setPreviewIndex(newIndex);
+    }
+  }, [filteredDocuments, previewIndex]);
+
+  const isImageFile = (fileType: string) => {
+    return fileType.toLowerCase().includes('image');
+  };
+
+  const isPdfFile = (fileType: string) => {
+    return fileType.toLowerCase().includes('pdf');
+  };
+
+  const isVideoFile = (fileType: string) => {
+    return fileType.toLowerCase().includes('video');
+  };
+
+  const isAudioFile = (fileType: string) => {
+    return fileType.toLowerCase().includes('audio');
+  };
+
+  const isTextFile = (fileType: string) => {
+    const textTypes = ['text', 'json', 'xml', 'csv', 'javascript', 'typescript', 'css', 'html'];
+    return textTypes.some(type => fileType.toLowerCase().includes(type));
+  };
+
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     // Folders always first
     if (a.is_folder !== b.is_folder) {
@@ -1039,9 +1091,14 @@ const DocumentManagement = () => {
                       </div>
                       <div className="opacity-0 group-hover:opacity-100 mt-1 flex gap-1">
                         {!document.is_folder && document.file_url && (
-                          <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
-                            <Download className="h-3 w-3" />
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openPreview(document); }}>
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
+                              <Download className="h-3 w-3" />
+                            </Button>
+                          </>
                         )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -1126,9 +1183,14 @@ const DocumentManagement = () => {
                         <span className="w-20 text-right">{formatFileSize(document.file_size)}</span>
                         <div className="opacity-0 group-hover:opacity-100 flex gap-1">
                           {!document.is_folder && document.file_url && (
-                            <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openPreview(document); }}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => window.open(document.file_url, '_blank')}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -1186,6 +1248,158 @@ const DocumentManagement = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Preview Modal */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg font-semibold">
+                  {previewDocument?.title}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {previewDocument?.file_type} • {formatFileSize(previewDocument?.file_size)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {filteredDocuments.filter(d => !d.is_folder && d.file_url).length > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigatePreview('prev')}
+                      disabled={previewIndex === 0}
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {previewIndex + 1} / {filteredDocuments.filter(d => !d.is_folder && d.file_url).length}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigatePreview('next')}
+                      disabled={previewIndex === filteredDocuments.filter(d => !d.is_folder && d.file_url).length - 1}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                {previewDocument?.file_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(previewDocument.file_url!, '_blank')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden p-6 pt-0">
+            {previewDocument && (
+              <div className="w-full h-full flex items-center justify-center bg-muted/20 rounded-lg overflow-hidden">
+                {isImageFile(previewDocument.file_type) ? (
+                  <img
+                    src={previewDocument.file_url!}
+                    alt={previewDocument.title}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                    style={{ maxHeight: 'calc(90vh - 200px)' }}
+                  />
+                ) : isPdfFile(previewDocument.file_type) ? (
+                  <iframe
+                    src={`${previewDocument.file_url!}#view=FitH`}
+                    className="w-full h-full border-0 rounded-lg"
+                    style={{ height: 'calc(90vh - 200px)', minHeight: '500px' }}
+                    title={previewDocument.title}
+                  />
+                ) : isVideoFile(previewDocument.file_type) ? (
+                  <video
+                    src={previewDocument.file_url!}
+                    controls
+                    className="max-w-full max-h-full rounded-lg shadow-lg"
+                    style={{ maxHeight: 'calc(90vh - 200px)' }}
+                  >
+                    Seu navegador não suporta o elemento de vídeo.
+                  </video>
+                ) : isAudioFile(previewDocument.file_type) ? (
+                  <div className="text-center space-y-6">
+                    <div className="w-32 h-32 mx-auto bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                      <Music className="h-16 w-16 text-white" />
+                    </div>
+                    <audio
+                      src={previewDocument.file_url!}
+                      controls
+                      className="mx-auto"
+                    >
+                      Seu navegador não suporta o elemento de áudio.
+                    </audio>
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold">{previewDocument.title}</h3>
+                      <p className="text-muted-foreground">Arquivo de áudio</p>
+                    </div>
+                  </div>
+                ) : isTextFile(previewDocument.file_type) ? (
+                  <div className="w-full h-full">
+                    <iframe
+                      src={previewDocument.file_url!}
+                      className="w-full h-full border-0 rounded-lg bg-white"
+                      style={{ height: 'calc(90vh - 200px)', minHeight: '500px' }}
+                      title={previewDocument.title}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center space-y-6 p-8">
+                    <div className="w-32 h-32 mx-auto bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-lg">
+                      {getFileIcon(previewDocument)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">{previewDocument.title}</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Preview não disponível para este tipo de arquivo
+                      </p>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p><strong>Tipo:</strong> {previewDocument.file_type}</p>
+                        <p><strong>Tamanho:</strong> {formatFileSize(previewDocument.file_size)}</p>
+                        <p><strong>Criado em:</strong> {new Date(previewDocument.created_at).toLocaleString()}</p>
+                      </div>
+                      {previewDocument.description && (
+                        <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                          <p className="text-sm"><strong>Descrição:</strong></p>
+                          <p className="text-sm text-muted-foreground mt-1">{previewDocument.description}</p>
+                        </div>
+                      )}
+                      {previewDocument.tags.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium mb-2">Tags:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {previewDocument.tags.map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      onClick={() => window.open(previewDocument.file_url!, '_blank')}
+                      className="mt-4"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Abrir arquivo
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
