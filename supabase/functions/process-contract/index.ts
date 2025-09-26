@@ -55,7 +55,7 @@ Entre em contato com o cliente o mais breve possível! 📞`;
 
     // Send to WhatsApp (you can replace this with your preferred WhatsApp API service)
     // For now, we'll use a direct WhatsApp link that can be opened manually
-    const whatsappNumber = "5511999999999"; // Replace with your WhatsApp number
+    const whatsappNumber = "5561992757062"; // WhatsApp number configured
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     
     console.log('WhatsApp URL generated:', whatsappUrl);
