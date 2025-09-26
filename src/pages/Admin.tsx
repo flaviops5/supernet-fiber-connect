@@ -6,11 +6,12 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle } from "lucide-react";
+import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle, MessageSquare } from "lucide-react";
 import { InstructionsCard } from "@/components/InstructionsCard";
 import { GoogleReviews } from "@/components/GoogleReviews";
 import { useTestimonials } from "@/contexts/TestimonialsContext";
 import { PlanForm } from "@/components/PlanForm";
+import { PromptGenerator } from "@/components/PromptGenerator";
 import { HeroSettingsForm, HeroSlideForm } from "@/components/HeroForm";
 import { FAQForm } from "@/components/FAQForm";
 import BlogManagementComponent from "@/components/BlogManagement";
@@ -523,13 +524,23 @@ const PlansManagement = () => {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Planos Disponíveis</CardTitle>
-          <CardDescription>
-            Total de {plans.length} plano{plans.length !== 1 ? 's' : ''} cadastrado{plans.length !== 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
+      <Tabs defaultValue="plans" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="plans">Planos</TabsTrigger>
+          <TabsTrigger value="prompt">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Prompt do Chatbot
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="plans" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Planos Disponíveis</CardTitle>
+              <CardDescription>
+                Total de {plans.length} plano{plans.length !== 1 ? 's' : ''} cadastrado{plans.length !== 1 ? 's' : ''}
+              </CardDescription>
+            </CardHeader>
         <CardContent>
           {plans.length === 0 ? (
             <div className="text-center py-8">
@@ -640,7 +651,13 @@ const PlansManagement = () => {
             </div>
           )}
         </CardContent>
-      </Card>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="prompt" className="space-y-6">
+          <PromptGenerator />
+        </TabsContent>
+      </Tabs>
 
       <PlanForm
         isOpen={showForm}
