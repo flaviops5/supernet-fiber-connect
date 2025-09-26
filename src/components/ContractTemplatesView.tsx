@@ -64,7 +64,11 @@ const ContractTemplatesView: React.FC = () => {
       if (error) throw error;
       setTemplates((data || []).map(template => ({
         ...template,
-        plan_types: Array.isArray(template.plan_types) ? template.plan_types : ['all']
+        plan_types: Array.isArray(template.plan_types) 
+          ? (template.plan_types as string[])
+          : (template.plan_types as any)?.length 
+            ? Array.from(template.plan_types as any)
+            : ['all']
       })));
     } catch (error) {
       console.error('Error fetching templates:', error);

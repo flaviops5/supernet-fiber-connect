@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const contractData: ContractData = await req.json();
     
-    console.log('Generating contract PDF for:', contractData.contractNumber);
+    console.log('Generating contract PDF for:', contractData.planName);
 
     // Criar conexão com Supabase
     const supabase = createClient(
@@ -56,11 +56,52 @@ const handler = async (req: Request): Promise<Response> => {
       contractNumber = numberData;
     }
 
-    // Gerar HTML do contrato
-    const contractHTML = generateContractHTML(contractData, contractNumber);
-    
-    // Para uma implementação completa, você pode usar bibliotecas como Puppeteer ou jsPDF
-    // Por enquanto, vamos retornar o HTML que pode ser convertido no frontend
+    // Buscar template apropriado para o plano
+    const { data: templateData, error: templateError } = await supabase
+      .from('contract_templates')
+      .select('template_content')
+      .eq('is_active', true)
+      .or(`plan_types.cs.["${contractData.planName}"], plan_types.cs.["all"]`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (templateError || !templateData) {
+      console.error('Template error:', templateError);
+      // Fallback para template padrão se não encontrar
+      const { data: defaultTemplate, error: defaultError } = await supabase
+        .from('contract_templates')
+        .select('template_content')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      
+      if (defaultError || !defaultTemplate) {
+        throw new Error('Nenhum template de contrato ativo encontrado');
+      }
+      
+      // Usar template padrão
+      const contractHTML = generateContractHTML(contractData, contractNumber, defaultTemplate.template_content);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          contractHTML,
+          contractNumber,
+          message: 'Contract HTML generated with default template'
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
+          },
+        }
+      );
+    }
+
+    // Gerar HTML do contrato substituindo variáveis
+    const contractHTML = generateContractHTML(contractData, contractNumber, templateData.template_content);
     
     return new Response(
       JSON.stringify({ 
@@ -96,231 +137,27 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
--- Atualizar edge function para buscar template baseado no plano
-CREATE OR REPLACE FUNCTION public.get_contract_template_for_plan(plan_name TEXT)
-RETURNS UUID
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  template_id UUID;
-BEGIN
-  -- Primeiro, tenta encontrar um template específico para o plano
-  SELECT id INTO template_id
-  FROM contract_templates
-  WHERE is_active = true
-    AND (plan_types @> to_jsonb(ARRAY[plan_name]) OR plan_types @> to_jsonb(ARRAY['all']))
-  ORDER BY 
-    CASE WHEN plan_types @> to_jsonb(ARRAY[plan_name]) THEN 1 ELSE 2 END,
-    created_at DESC
-  LIMIT 1;
-  
-  -- Se não encontrar, usa o template padrão
-  IF template_id IS NULL THEN
-    SELECT id INTO template_id
-    FROM contract_templates
-    WHERE is_active = true
-      AND plan_types @> to_jsonb(ARRAY['all'])
-    ORDER BY created_at DESC
-    LIMIT 1;
-  END IF;
-  
-  RETURN template_id;
-END;
-$$;
+function generateContractHTML(data: ContractData, contractNumber: string, templateContent: string): string {
   const currentDate = new Date().toLocaleDateString('pt-BR');
   const appointmentFormatted = new Date(data.appointmentDate).toLocaleDateString('pt-BR');
   const periodText = data.appointmentPeriod === 'manha' ? 'Manhã (08h-12h)' : 'Tarde (13h-17h)';
 
-  return `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Contrato de Prestação de Serviços - ${contractNumber}</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                margin: 0;
-                padding: 20px;
-                background: white;
-            }
-            .header {
-                text-align: center;
-                margin-bottom: 30px;
-                border-bottom: 2px solid #333;
-                padding-bottom: 20px;
-            }
-            .contract-number {
-                font-size: 18px;
-                font-weight: bold;
-                color: #e11d48;
-                margin-bottom: 10px;
-            }
-            .title {
-                font-size: 24px;
-                font-weight: bold;
-                margin-bottom: 10px;
-            }
-            .subtitle {
-                font-size: 16px;
-                color: #666;
-            }
-            .section {
-                margin-bottom: 25px;
-            }
-            .section-title {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 15px;
-                color: #333;
-                border-left: 4px solid #e11d48;
-                padding-left: 10px;
-            }
-            .data-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin-bottom: 20px;
-            }
-            .data-item {
-                padding: 10px;
-                background: #f8f9fa;
-                border-radius: 5px;
-            }
-            .data-label {
-                font-weight: bold;
-                color: #333;
-            }
-            .terms {
-                font-size: 14px;
-                line-height: 1.8;
-                text-align: justify;
-                margin-bottom: 20px;
-            }
-            .signature-area {
-                margin-top: 50px;
-                border-top: 1px solid #ddd;
-                padding-top: 30px;
-            }
-            .signature-block {
-                margin-top: 40px;
-                text-align: center;
-            }
-            .signature-line {
-                border-top: 1px solid #333;
-                width: 300px;
-                margin: 0 auto 10px;
-            }
-            .date-location {
-                text-align: right;
-                margin-bottom: 30px;
-                font-size: 14px;
-            }
-            @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <div class="contract-number">Contrato Nº ${contractNumber}</div>
-            <div class="title">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</div>
-            <div class="subtitle">SUPERNET FIBRA</div>
-        </div>
-
-        <div class="date-location">
-            Brasília/DF, ${currentDate}
-        </div>
-
-        <div class="section">
-            <div class="section-title">DADOS DO CONTRATANTE</div>
-            <div class="data-grid">
-                <div class="data-item">
-                    <div class="data-label">Nome Completo:</div>
-                    <div>${data.customerName}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">CPF:</div>
-                    <div>${data.customerCpf}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">E-mail:</div>
-                    <div>${data.customerEmail}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Telefone:</div>
-                    <div>${data.customerPhone}</div>
-                </div>
-            </div>
-            <div class="data-item">
-                <div class="data-label">Endereço de Instalação:</div>
-                <div>${data.customerAddress} - CEP: ${data.customerCep}</div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">PLANO CONTRATADO</div>
-            <div class="data-grid">
-                <div class="data-item">
-                    <div class="data-label">Plano:</div>
-                    <div>${data.planName}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Velocidade:</div>
-                    <div>${data.planSpeed}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Valor Mensal:</div>
-                    <div>R$ ${data.planPrice.toFixed(2).replace('.', ',')}</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Agendamento:</div>
-                    <div>${appointmentFormatted} - ${periodText}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title">TERMOS E CONDIÇÕES</div>
-            <div class="terms">
-                <p><strong>1. OBJETO:</strong> O presente contrato tem por objeto a prestação de serviços de provimento de acesso à internet banda larga através de fibra óptica, nas condições aqui estabelecidas.</p>
-                
-                <p><strong>2. PRAZO:</strong> Este contrato tem prazo indeterminado, iniciando-se na data de instalação dos equipamentos e ativação dos serviços.</p>
-                
-                <p><strong>3. VALOR E PAGAMENTO:</strong> O valor mensal do plano contratado é de R$ ${data.planPrice.toFixed(2).replace('.', ',')} (${numberToWords(data.planPrice)}), devendo ser pago até o dia 10 de cada mês.</p>
-                
-                <p><strong>4. INSTALAÇÃO:</strong> A instalação será realizada na data agendada: ${appointmentFormatted} no período da ${periodText.toLowerCase()}, sem custos adicionais para o contratante.</p>
-                
-                <p><strong>5. VELOCIDADE:</strong> A velocidade contratada é de ${data.planSpeed}, garantindo no mínimo 80% da velocidade nominal.</p>
-                
-                <p><strong>6. RESPONSABILIDADES:</strong> A SUPERNET FIBRA compromete-se a fornecer o serviço com qualidade e disponibilidade de 99,5% do tempo, exceto em casos de força maior.</p>
-                
-                <p><strong>7. RESCISÃO:</strong> Qualquer das partes poderá rescindir este contrato mediante aviso prévio de 30 (trinta) dias.</p>
-                
-                <p><strong>8. FORO:</strong> Fica eleito o foro da Comarca de Brasília/DF para dirimir quaisquer questões decorrentes deste contrato.</p>
-            </div>
-        </div>
-
-        <div class="signature-area">
-            <div class="signature-block">
-                <div class="signature-line"></div>
-                <div><strong>SUPERNET FIBRA</strong></div>
-                <div>CNPJ: 00.000.000/0001-00</div>
-            </div>
-
-            <div class="signature-block">
-                <div class="signature-line"></div>
-                <div><strong>${data.customerName}</strong></div>
-                <div>CPF: ${data.customerCpf}</div>
-                <div>Assinatura Digital</div>
-            </div>
-        </div>
-    </body>
-    </html>
-  `;
+  // Substituir todas as variáveis do template
+  return templateContent
+    .replace(/\{\{CONTRACT_NUMBER\}\}/g, contractNumber)
+    .replace(/\{\{CURRENT_DATE\}\}/g, currentDate)
+    .replace(/\{\{CUSTOMER_NAME\}\}/g, data.customerName)
+    .replace(/\{\{CUSTOMER_CPF\}\}/g, data.customerCpf)
+    .replace(/\{\{CUSTOMER_EMAIL\}\}/g, data.customerEmail)
+    .replace(/\{\{CUSTOMER_PHONE\}\}/g, data.customerPhone)
+    .replace(/\{\{CUSTOMER_ADDRESS\}\}/g, data.customerAddress)
+    .replace(/\{\{CUSTOMER_CEP\}\}/g, data.customerCep)
+    .replace(/\{\{PLAN_NAME\}\}/g, data.planName)
+    .replace(/\{\{PLAN_SPEED\}\}/g, data.planSpeed)
+    .replace(/\{\{PLAN_PRICE\}\}/g, data.planPrice.toFixed(2).replace('.', ','))
+    .replace(/\{\{PLAN_PRICE_WORDS\}\}/g, numberToWords(data.planPrice))
+    .replace(/\{\{APPOINTMENT_DATE\}\}/g, appointmentFormatted)
+    .replace(/\{\{APPOINTMENT_PERIOD\}\}/g, periodText);
 }
 
 function numberToWords(num: number): string {

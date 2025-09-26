@@ -870,6 +870,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_contract_template_for_plan: {
+        Args: { plan_name: string }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
