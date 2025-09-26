@@ -166,6 +166,60 @@ export type Database = {
           },
         ]
       }
+      chatbot_settings: {
+        Row: {
+          auto_open: boolean
+          auto_open_delay_seconds: number
+          chatbot_id: string
+          created_at: string
+          cta_text: string
+          enabled: boolean
+          id: string
+          position: string
+          primary_color: string
+          secondary_color: string
+          session_timeout_minutes: number
+          show_on_pages: Json
+          subtitle: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auto_open?: boolean
+          auto_open_delay_seconds?: number
+          chatbot_id?: string
+          created_at?: string
+          cta_text?: string
+          enabled?: boolean
+          id?: string
+          position?: string
+          primary_color?: string
+          secondary_color?: string
+          session_timeout_minutes?: number
+          show_on_pages?: Json
+          subtitle?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_open?: boolean
+          auto_open_delay_seconds?: number
+          chatbot_id?: string
+          created_at?: string
+          cta_text?: string
+          enabled?: boolean
+          id?: string
+          position?: string
+          primary_color?: string
+          secondary_color?: string
+          session_timeout_minutes?: number
+          show_on_pages?: Json
+          subtitle?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coverage_areas: {
         Row: {
           active: boolean

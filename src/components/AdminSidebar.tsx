@@ -27,6 +27,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Bot,
   Monitor,
   HelpCircle,
 } from "lucide-react";
@@ -75,6 +76,11 @@ const menuItems = [
     title: "Blog",
     url: "/admin/blog",
     icon: FileText,
+  },
+  {
+    title: "Chatbot",
+    url: "/admin/chatbot",
+    icon: Bot,
   },
   {
     title: "Avaliações",
