@@ -13,6 +13,7 @@ import { useTestimonials } from "@/contexts/TestimonialsContext";
 import { PlanForm } from "@/components/PlanForm";
 import { HeroSettingsForm, HeroSlideForm } from "@/components/HeroForm";
 import { FAQForm } from "@/components/FAQForm";
+import BlogManagementComponent from "@/components/BlogManagement";
 import { toast } from "sonner";
 
 // Dashboard component
@@ -1328,7 +1329,7 @@ const Admin = () => {
               <Route path="/coverage" element={<CoverageManagement />} />
               <Route path="/hero" element={<HeroManagement />} />
               <Route path="/faq" element={<FAQManagement />} />
-              <Route path="/blog" element={<BlogManagement />} />
+              <Route path="/blog" element={<BlogManagementComponent />} />
               <Route path="/reviews" element={<ReviewsManagement />} />
               <Route path="/profile" element={<ProfileManagement />} />
               <Route path="/settings" element={<SettingsManagement />} />

@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      blog_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      blog_posts: {
+        Row: {
+          author: string
+          category: string
+          content: string
+          created_at: string
+          excerpt: string
+          featured: boolean | null
+          featured_image: string | null
+          id: string
+          published: boolean | null
+          read_time: number | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          category?: string
+          content: string
+          created_at?: string
+          excerpt: string
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          read_time?: number | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          category?: string
+          content?: string
+          created_at?: string
+          excerpt?: string
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          published?: boolean | null
+          read_time?: number | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cep_coverage: {
         Row: {
           available: boolean
