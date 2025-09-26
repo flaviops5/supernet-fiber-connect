@@ -276,6 +276,45 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          plan_types: Json | null
+          template_content: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_types?: Json | null
+          template_content: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_types?: Json | null
+          template_content?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       coverage_areas: {
         Row: {
           active: boolean
