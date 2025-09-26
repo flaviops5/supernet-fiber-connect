@@ -124,8 +124,16 @@ const DocumentManagement = () => {
 
     setLoading(true);
     try {
+      // Sanitize filename - remove spaces, special chars, keep only alphanumeric and dots/dashes
+      const sanitizedName = newDocument.file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscore
+        .replace(/_{2,}/g, '_'); // Replace multiple underscores with single
+      
+      const fileName = `${Date.now()}_${sanitizedName}`;
+      
       // Upload file to storage
-      const fileName = `${Date.now()}-${newDocument.file.name}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('corporate-documents')
         .upload(fileName, newDocument.file);
@@ -211,6 +219,46 @@ const DocumentManagement = () => {
       toast({
         title: "Erro",
         description: "Erro ao criar categoria",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      // Check if category has documents
+      const { data: documents } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('category_id', categoryId)
+        .eq('is_active', true);
+
+      if (documents && documents.length > 0) {
+        toast({
+          title: "Erro",
+          description: "Não é possível deletar categoria que possui documentos",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('document_categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Categoria deletada com sucesso"
+      });
+      loadCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao deletar categoria",
         variant: "destructive"
       });
     }
@@ -489,6 +537,63 @@ const DocumentManagement = () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Gestão de Categorias */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Categorias ({categories.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3">
+            {categories.map((category) => (
+              <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <div>
+                    <p className="font-medium">{category.name}</p>
+                    {category.description && (
+                      <p className="text-sm text-muted-foreground">{category.description}</p>
+                    )}
+                  </div>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir a categoria "{category.name}"? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDeleteCategory(category.id)}>
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+            {categories.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma categoria criada
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
