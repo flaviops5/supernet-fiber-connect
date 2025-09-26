@@ -131,9 +131,14 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          cta_text: string | null
           description: string | null
+          display_order: number | null
+          features: Json | null
           id: string
           name: string
+          original_price: number | null
+          popular: boolean | null
           price: number
           speed: string
           updated_at: string
@@ -141,9 +146,14 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          cta_text?: string | null
           description?: string | null
+          display_order?: number | null
+          features?: Json | null
           id?: string
           name: string
+          original_price?: number | null
+          popular?: boolean | null
           price: number
           speed: string
           updated_at?: string
@@ -151,9 +161,14 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          cta_text?: string | null
           description?: string | null
+          display_order?: number | null
+          features?: Json | null
           id?: string
           name?: string
+          original_price?: number | null
+          popular?: boolean | null
           price?: number
           speed?: string
           updated_at?: string

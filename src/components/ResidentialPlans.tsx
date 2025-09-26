@@ -3,6 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+const iconMap: { [key: string]: any } = {
+  Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
+  DollarSign, Clock, Router, Wifi
+};
 
 const ResidentialPlans = () => {
   const plugin = useRef(
@@ -12,6 +18,31 @@ const ResidentialPlans = () => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+        setPlans(data || []);
+      } catch (error) {
+        console.error('Error loading plans:', error);
+        // Fallback to empty array if error
+        setPlans([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
 
   useEffect(() => {
     if (!api) {
@@ -25,108 +56,42 @@ const ResidentialPlans = () => {
       setCurrent(api.selectedScrollSnap() + 1);
     });
   }, [api]);
-  const plans = [
-    {
-      speed: "400 Mega",
-      price: "99,00",
-      originalPrice: "109,90",
-      description: "Conexão que acompanha seu ritmo sem pesar no bolso!",
-      features: [
-        { text: "400 mega de download garantido", icon: Download },
-        { text: "1 Roteador Wi-Fi AC 1200", icon: Wifi },
-        { text: "Instalação gratuita", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Sem limite de uso", icon: Globe },
-        { text: "Clube de vantagens", icon: Gift },
-        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
-      ],
-      popular: false
-    },
-    {
-      speed: "500 Mega",
-      price: "119,00",
-      originalPrice: "129,90",
-      description: "A escolha perfeita para famílias conectadas!",
-      features: [
-        { text: "500 mega de download garantido", icon: Download },
-        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
-        { text: "Instalação gratuita", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Sem limite de uso", icon: Globe },
-        { text: "Clique aqui para conhecer os canais", icon: Tv, isLink: true, href: "/canais-streaming" },
-        { text: "Clube de vantagens", icon: Gift },
-        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
-      ],
-      popular: true
-    },
-    {
-      speed: "600 Mega",
-      price: "129,90",
-      originalPrice: "149,90",
-      description: "Potência máxima para quem não abre mão da velocidade!",
-      features: [
-        { text: "600 mega de download garantido", icon: Download },
-        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
-        { text: "Instalação gratuita", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Sem limite de uso", icon: Globe },
-        { text: "Clique aqui para conhecer os canais", icon: Tv, isLink: true, href: "/canais-streaming" },
-        { text: "Clube de vantagens", icon: Gift },
-        { text: "Veja condição e locais da oferta", icon: MapPin, isLink: true, href: "/condicoes" }
-      ],
-      popular: false
-    },
-    {
-      speed: "600 Mega",
-      price: "169,00",
-      originalPrice: "189,90",
-      description: "Segurança e conectividade em um só plano!",
-      features: [
-        { text: "600 mega de download garantido", icon: Download },
-        { text: "1 roteador Wi-Fi 6 Pró", icon: Router },
-        { text: "1 câmera Wi-Fi inclusa", icon: Camera },
-        { text: "Instalação gratuita da câmera", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Clique aqui e saiba mais sobre esse plano", icon: Shield, isLink: true, href: "/plano-focus" }
-      ],
-      popular: false
-    },
-    {
-      speed: "600 Mega",
-      price: "169,00",
-      originalPrice: "189,90",
-      description: "O futuro chegou à sua casa!",
-      features: [
-        { text: "600 mega de download garantido", icon: Download },
-        { text: "Automação 1 cômodo", icon: Settings },
-        { text: "Instalação gratuita da automação", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Clique aqui e saiba mais sobre esse plano", icon: Settings, isLink: true, href: "/plano-automacao" }
-      ],
-      popular: false
-    },
-    {
-      speed: "600 Mega",
-      price: "179,00",
-      originalPrice: "199,90",
-      description: "Cobertura total sem pontos cegos!",
-      features: [
-        { text: "600 mega de download garantido", icon: Download },
-        { text: "2 roteadores Wi-Fi 6", icon: Router },
-        { text: "Rede mesh inteligente", icon: Wifi },
-        { text: "Cobertura total da casa", icon: Globe },
-        { text: "Instalação gratuita", icon: DollarSign },
-        { text: "Instalação em até 24 horas", icon: Clock },
-        { text: "Suporte prioritário", icon: Shield }
-      ],
-      popular: false
-    }
-  ];
-
-  const handleWhatsApp = (speed: string, price: string) => {
-    const message = `Olá! Tenho interesse no plano ${speed} por R$ ${price}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
+  const handleWhatsApp = (name: string, price: number) => {
+    const message = `Olá! Tenho interesse no ${name} por R$ ${price.toFixed(2).replace('.', ',')}/mês da SUPERNET FIBRA. Gostaria de mais informações!`;
     window.open(`https://wa.me/5511999999999?text=${encodeURIComponent(message)}`, '_blank');
   };
+
+  if (loading) {
+    return (
+      <section id="planos-residenciais" className="py-12 bg-gradient-subtle">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
+              Planos{' '}
+              <span className="gradient-text">Residenciais</span>
+            </h2>
+            <p className="text-xl text-muted-foreground">Carregando planos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (plans.length === 0) {
+    return (
+      <section id="planos-residenciais" className="py-12 bg-gradient-subtle">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-6">
+              Planos{' '}
+              <span className="gradient-text">Residenciais</span>
+            </h2>
+            <p className="text-xl text-muted-foreground">Em breve novos planos disponíveis!</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="planos-residenciais" className="py-12 bg-gradient-subtle">
@@ -176,21 +141,29 @@ const ResidentialPlans = () => {
                       <div className="flex items-center justify-center gap-3 mb-3">
                         <Wifi className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                         <div className="flex items-baseline">
-                          <span className="text-5xl md:text-6xl font-black font-varela text-primary">{plan.speed.split(' ')[0]}</span>
-                          <span className="text-2xl md:text-3xl font-black font-varela ml-2 text-orange">{plan.speed.split(' ')[1]}</span>
+                          <span className="text-5xl md:text-6xl font-black font-varela text-primary">
+                            {plan.speed.split(' ')[0]}
+                          </span>
+                          <span className="text-2xl md:text-3xl font-black font-varela ml-2 text-orange">
+                            {plan.speed.split(' ')[1] || ''}
+                          </span>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mb-6">{plan.description}</p>
                       
                       <div className="flex flex-col items-center space-y-2">
                         <div className="text-center">
-                          <div className="text-sm text-muted-foreground mb-1">
-                            De R$ {plan.originalPrice}
-                          </div>
+                          {plan.original_price && (
+                            <div className="text-sm text-muted-foreground mb-1">
+                              De R$ {plan.original_price.toFixed(2).replace('.', ',')}
+                            </div>
+                          )}
                           <div className="text-lg text-primary font-medium">por:</div>
                         </div>
                         <div className="flex items-center justify-center space-x-2">
-                          <span className="text-3xl md:text-4xl font-black font-varela text-primary">R$ {plan.price}</span>
+                          <span className="text-3xl md:text-4xl font-black font-varela text-primary">
+                            R$ {plan.price.toFixed(2).replace('.', ',')}
+                          </span>
                           <span className="text-muted-foreground text-sm font-varela">/mês</span>
                         </div>
                       </div>
@@ -199,27 +172,30 @@ const ResidentialPlans = () => {
                     {/* Features List */}
                     <div className="mb-8 flex-1">
                       <ul className="space-y-3">
-                        {plan.features.map((feature, featureIndex) => (
-                          <li key={featureIndex} className="flex items-center space-x-3">
-                            <feature.icon className="w-4 h-4 text-primary flex-shrink-0" />
-                            {feature.isLink ? (
-                              <a 
-                                href={feature.href} 
-                                className="text-sm text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
-                              >
-                                {feature.text}
-                              </a>
-                            ) : (
-                              <span className="text-sm text-foreground">{feature.text}</span>
-                            )}
-                          </li>
-                        ))}
+                        {(plan.features || []).map((feature: any, featureIndex: number) => {
+                          const IconComponent = iconMap[feature.icon] || Download;
+                          return (
+                            <li key={featureIndex} className="flex items-center space-x-3">
+                              <IconComponent className="w-4 h-4 text-primary flex-shrink-0" />
+                              {feature.isLink ? (
+                                <a 
+                                  href={feature.href} 
+                                  className="text-sm text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                                >
+                                  {feature.text}
+                                </a>
+                              ) : (
+                                <span className="text-sm text-foreground">{feature.text}</span>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
 
                     {/* CTA */}
                     <Button
-                      onClick={() => handleWhatsApp(plan.speed, plan.price)}
+                      onClick={() => handleWhatsApp(plan.name, plan.price)}
                       className={`w-full text-base py-4 mt-auto ${
                         plan.popular 
                           ? 'cta-gradient' 
@@ -227,7 +203,7 @@ const ResidentialPlans = () => {
                       }`}
                       variant={plan.popular ? 'default' : 'outline'}
                     >
-                      Contratar Agora
+                      {plan.cta_text || 'Contratar Agora'}
                     </Button>
                   </div>
                 </CarouselItem>
