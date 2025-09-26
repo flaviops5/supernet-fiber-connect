@@ -5,9 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from 'lucide-react';
+import { Loader2, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface ContractFormProps {
   isOpen: boolean;
@@ -31,6 +36,8 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     cpf: '',
     birthDate: '',
     paymentDay: '',
+    appointmentDate: null as Date | null,
+    appointmentPeriod: '',
     observations: ''
   });
 
@@ -39,6 +46,13 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      appointmentDate: date || null
     }));
   };
 
@@ -52,10 +66,22 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.cep || !formData.cpf || !formData.birthDate || !formData.paymentDay) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.cep || !formData.cpf || !formData.birthDate || !formData.paymentDay || !formData.appointmentDate || !formData.appointmentPeriod) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar se a data é no futuro
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (formData.appointmentDate && formData.appointmentDate < today) {
+      toast({
+        title: "Erro",
+        description: "A data de instalação deve ser no futuro.",
         variant: "destructive",
       });
       return;
@@ -66,7 +92,10 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
     try {
       const { error } = await supabase.functions.invoke('process-contract', {
         body: {
-          customerData: formData,
+          customerData: {
+            ...formData,
+            appointmentDate: formData.appointmentDate?.toISOString().split('T')[0] // Converter Date para string YYYY-MM-DD
+          },
           planData: plan,
           timestamp: new Date().toISOString()
         }
@@ -89,6 +118,8 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
         cpf: '',
         birthDate: '',
         paymentDay: '',
+        appointmentDate: null,
+        appointmentPeriod: '',
         observations: ''
       });
       
@@ -217,6 +248,51 @@ const ContractForm: React.FC<ContractFormProps> = ({ isOpen, onClose, plan }) =>
                 <SelectItem value="20">Dia 20</SelectItem>
                 <SelectItem value="25">Dia 25</SelectItem>
                 <SelectItem value="30">Dia 30</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="appointmentDate">Data de Instalação *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.appointmentDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.appointmentDate ? (
+                    format(formData.appointmentDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                  ) : (
+                    <span>Selecione a data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.appointmentDate || undefined}
+                  onSelect={handleDateChange}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="appointmentPeriod">Período da Instalação *</Label>
+            <Select onValueChange={(value) => handleSelectChange('appointmentPeriod', value)} value={formData.appointmentPeriod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manha">Manhã (08h às 12h)</SelectItem>
+                <SelectItem value="tarde">Tarde (13h às 17h)</SelectItem>
               </SelectContent>
             </Select>
           </div>

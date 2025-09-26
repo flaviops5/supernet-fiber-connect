@@ -355,6 +355,69 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_appointments: {
+        Row: {
+          appointment_date: string
+          appointment_period: string
+          created_at: string
+          customer_address: string
+          customer_birth_date: string
+          customer_cep: string
+          customer_cpf: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id: string
+          observations: string | null
+          payment_day: number
+          plan_name: string
+          plan_price: number
+          plan_speed: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          appointment_period: string
+          created_at?: string
+          customer_address: string
+          customer_birth_date: string
+          customer_cep: string
+          customer_cpf: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          id?: string
+          observations?: string | null
+          payment_day: number
+          plan_name: string
+          plan_price: number
+          plan_speed: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          appointment_period?: string
+          created_at?: string
+          customer_address?: string
+          customer_birth_date?: string
+          customer_cep?: string
+          customer_cpf?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          observations?: string | null
+          payment_day?: number
+          plan_name?: string
+          plan_price?: number
+          plan_speed?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           active: boolean

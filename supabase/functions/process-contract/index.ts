@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,8 @@ interface ContractRequest {
     cpf: string;
     birthDate: string;
     paymentDay: string;
+    appointmentDate: string;
+    appointmentPeriod: string;
     observations?: string;
   };
   planData: {
@@ -36,7 +39,52 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Processing contract request:', { customerData, planData });
 
+    // Criar conexão com Supabase
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // Salvar agendamento no banco de dados
+    const { data: appointment, error: dbError } = await supabase
+      .from('installation_appointments')
+      .insert({
+        customer_name: customerData.name,
+        customer_email: customerData.email,
+        customer_phone: customerData.phone,
+        customer_cpf: customerData.cpf,
+        customer_address: customerData.address,
+        customer_cep: customerData.cep,
+        customer_birth_date: customerData.birthDate,
+        payment_day: parseInt(customerData.paymentDay),
+        plan_name: planData.name,
+        plan_speed: planData.speed,
+        plan_price: planData.price,
+        appointment_date: customerData.appointmentDate,
+        appointment_period: customerData.appointmentPeriod,
+        observations: customerData.observations || null,
+        status: 'pendente'
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Database error:', dbError);
+      throw new Error('Erro ao salvar agendamento no banco de dados');
+    }
+
+    console.log('Appointment saved:', appointment);
+
     // Format message for WhatsApp
+    const periodText = customerData.appointmentPeriod === 'manha' ? 'Manhã (08h-12h)' : 'Tarde (13h-17h)';
+    const appointmentDateFormatted = new Date(customerData.appointmentDate).toLocaleDateString('pt-BR');
+    
     const message = `🔥 *NOVA SOLICITAÇÃO DE CONTRATAÇÃO* 🔥
 
 📋 *DADOS DO CLIENTE:*
@@ -48,14 +96,20 @@ const handler = async (req: Request): Promise<Response> => {
 📍 CEP: ${customerData.cep}
 🏠 Endereço: ${customerData.address}
 💳 Melhor dia pagamento: Dia ${customerData.paymentDay}
-${customerData.observations ? `📝 Observações: ${customerData.observations}` : ''}
 
 💡 *PLANO ESCOLHIDO:*
 🚀 ${planData.name}
 ⚡ Velocidade: ${planData.speed}
 💰 Valor: R$ ${planData.price.toFixed(2).replace('.', ',')}/mês
 
-⏰ *Data/Hora:* ${new Date(timestamp).toLocaleString('pt-BR')}
+📅 *AGENDAMENTO DE INSTALAÇÃO:*
+🗓️ Data: ${appointmentDateFormatted}
+⏰ Período: ${periodText}
+
+${customerData.observations ? `📝 *Observações:* ${customerData.observations}` : ''}
+
+⏰ *Solicitação:* ${new Date(timestamp).toLocaleString('pt-BR')}
+🆔 *ID Agendamento:* ${appointment.id}
 
 Entre em contato com o cliente o mais breve possível! 📞`;
 
@@ -79,6 +133,7 @@ Entre em contato com o cliente o mais breve possível! 📞`;
       JSON.stringify({ 
         success: true, 
         message: 'Contract request processed successfully',
+        appointmentId: appointment.id,
         whatsappUrl: whatsappUrl
       }),
       {
