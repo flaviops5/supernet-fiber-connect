@@ -30,6 +30,9 @@ import {
   Bot,
   Monitor,
   HelpCircle,
+  FolderOpen,
+  Brain,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -86,6 +89,21 @@ const menuItems = [
     title: "Avaliações",
     url: "/admin/reviews",
     icon: Star,
+  },
+  {
+    title: "Documentos",
+    url: "/admin/documents",
+    icon: FolderOpen,
+  },
+  {
+    title: "Base de Conhecimento",
+    url: "/admin/knowledge",
+    icon: BookOpen,
+  },
+  {
+    title: "IA Corporativa",
+    url: "/admin/corporate-ai",
+    icon: Brain,
   },
 ];
 
