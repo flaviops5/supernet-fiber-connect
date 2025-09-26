@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { AuthGuard } from "@/components/AuthGuard";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1400,34 +1401,36 @@ const Admin = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AdminSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b flex items-center px-6">
-            <SidebarTrigger />
-          </header>
-          <main className="flex-1 p-6">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/users" element={<UsersManagement />} />
-              <Route path="/plans" element={<PlansManagement />} />
-              <Route path="/coverage" element={<CoverageManagement />} />
-              <Route path="/hero" element={<HeroManagement />} />
-              <Route path="/faq" element={<FAQManagement />} />
-              <Route path="/blog" element={<BlogManagementComponent />} />
-              <Route path="/chatbot" element={<ChatbotManagement />} />
-              <Route path="/reviews" element={<ReviewsManagement />} />
-              <Route path="/documents" element={<DocumentManagement />} />
-              <Route path="/knowledge" element={<KnowledgeManagement />} />
-              <Route path="/corporate-ai" element={<CorporateAI />} />
-              <Route path="/profile" element={<ProfileManagement />} />
-              <Route path="/settings" element={<SettingsManagement />} />
-            </Routes>
-          </main>
+    <AuthGuard requiredRoles={['admin', 'editor']}>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AdminSidebar />
+          <div className="flex-1 flex flex-col">
+            <header className="h-16 border-b flex items-center px-6">
+              <SidebarTrigger />
+            </header>
+            <main className="flex-1 p-6">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/users" element={<UsersManagement />} />
+                <Route path="/plans" element={<PlansManagement />} />
+                <Route path="/coverage" element={<CoverageManagement />} />
+                <Route path="/hero" element={<HeroManagement />} />
+                <Route path="/faq" element={<FAQManagement />} />
+                <Route path="/blog" element={<BlogManagementComponent />} />
+                <Route path="/chatbot" element={<ChatbotManagement />} />
+                <Route path="/reviews" element={<ReviewsManagement />} />
+                <Route path="/documents" element={<DocumentManagement />} />
+                <Route path="/knowledge" element={<KnowledgeManagement />} />
+                <Route path="/corporate-ai" element={<CorporateAI />} />
+                <Route path="/profile" element={<ProfileManagement />} />
+                <Route path="/settings" element={<SettingsManagement />} />
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </AuthGuard>
   );
 };
 
