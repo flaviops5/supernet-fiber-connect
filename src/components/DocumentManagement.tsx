@@ -117,16 +117,23 @@ const DocumentManagement = () => {
   const loadDocuments = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('documents')
         .select(`
           *,
           document_categories(name, color)
         `)
         .eq('is_active', true)
-        .eq('parent_folder_id', currentFolderId)
         .order('is_folder', { ascending: false })
         .order('title', { ascending: true });
+
+      if (currentFolderId) {
+        query = query.eq('parent_folder_id', currentFolderId);
+      } else {
+        query = query.is('parent_folder_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setDocuments(data || []);
