@@ -44,6 +44,7 @@ import {
   FileSignature
 } from 'lucide-react';
 import SignedContractsView from './SignedContractsView';
+import ContractTemplatesView from './ContractTemplatesView';
 
 interface Document {
   id: string;
@@ -720,13 +721,21 @@ const DocumentManagement = () => {
     <div className="space-y-6">
       {/* Navigation Tabs */}
       <Tabs defaultValue="documents" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="contract-templates" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Templates
+          </TabsTrigger>
           <TabsTrigger value="signed-contracts" className="flex items-center gap-2">
             <FileSignature className="h-4 w-4" />
-            Contratos Assinados
+            Contratos
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="contract-templates">
+          <ContractTemplatesView />
+        </TabsContent>
         
         <TabsContent value="documents" className="space-y-6">
       {/* Header */}
