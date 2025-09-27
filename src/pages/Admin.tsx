@@ -897,6 +897,13 @@ const ProfileManagement = () => {
 
   const changePassword = async () => {
     try {
+      console.log('Attempting to change password...');
+      
+      if (!passwords.newPassword || !passwords.confirmPassword) {
+        toast.error('Por favor, preencha todos os campos');
+        return;
+      }
+
       if (passwords.newPassword !== passwords.confirmPassword) {
         toast.error('As senhas não coincidem');
         return;
@@ -908,12 +915,18 @@ const ProfileManagement = () => {
       }
 
       setChangingPassword(true);
+      console.log('Calling supabase.auth.updateUser...');
 
-      const { error } = await supabase.auth.updateUser({
+      const { data, error } = await supabase.auth.updateUser({
         password: passwords.newPassword
       });
 
-      if (error) throw error;
+      console.log('Supabase response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       setPasswords({
         currentPassword: '',
@@ -922,9 +935,10 @@ const ProfileManagement = () => {
       });
 
       toast.success('Senha alterada com sucesso!');
-    } catch (error) {
+      console.log('Password changed successfully');
+    } catch (error: any) {
       console.error('Error changing password:', error);
-      toast.error('Erro ao alterar senha: ' + (error.message || 'Erro desconhecido'));
+      toast.error('Erro ao alterar senha: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setChangingPassword(false);
     }
