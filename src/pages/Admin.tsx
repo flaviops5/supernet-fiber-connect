@@ -825,31 +825,33 @@ const ProfileManagement = () => {
 
   const loadProfile = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
+        if (profileData) {
+          setProfile({
+            name: profileData.name || '',
+            email: profileData.email || '',
+            phone: profileData.phone || '',
+            avatar_url: profileData.avatar_url || ''
+          });
+        }
 
-      if (profileData) {
-        setProfile({
-          name: profileData.name || '',
-          email: profileData.email || '',
-          phone: profileData.phone || '',
-          avatar_url: profileData.avatar_url || ''
-        });
+        setUserRole(roleData?.role || 'viewer');
       }
-
-      setUserRole(roleData?.role || 'viewer');
     } catch (error) {
       console.error('Error loading profile:', error);
       toast.error('Erro ao carregar perfil');
