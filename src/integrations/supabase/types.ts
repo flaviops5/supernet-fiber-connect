@@ -787,6 +787,78 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempts: number | null
+          blocked_until: string | null
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          updated_at: string
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          action_type: string
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          action_type?: string
+          attempts?: number | null
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          updated_at?: string
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_description: string
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_description: string
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_description?: string
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       signed_contracts: {
         Row: {
           appointment_id: string
@@ -968,6 +1040,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          action_type_param: string
+          block_minutes?: number
+          max_attempts?: number
+          window_minutes?: number
+        }
+        Returns: Json
+      }
       generate_contract_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -986,6 +1067,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          details_param?: Json
+          event_description: string
+          event_type: string
+          severity_param?: string
+          user_id_param?: string
+        }
+        Returns: string
       }
       log_user_activity: {
         Args: {
