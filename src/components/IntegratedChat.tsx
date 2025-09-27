@@ -7,7 +7,7 @@ interface IntegratedChatProps {
   chatbotId?: string;
 }
 
-const IntegratedChat = ({ chatbotId = "HPNDnDra1Ngb6MVly-keh" }: IntegratedChatProps) => {
+const IntegratedChat = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: IntegratedChatProps) => {
   const [sessionCount, setSessionCount] = useState(1);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
