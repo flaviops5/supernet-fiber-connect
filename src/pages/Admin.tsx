@@ -707,19 +707,339 @@ const ProfileManagement = () => (
   </div>
 );
 
-const SettingsManagement = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-3xl font-bold">Configurações</h1>
-      <p className="text-muted-foreground">Configure preferências do sistema</p>
+const SettingsManagement = () => {
+  const [settings, setSettings] = useState({
+    company_name: 'SUPERNET FIBRA',
+    company_email: 'contato@supernetfibra.com.br',
+    company_phone: '(11) 99999-9999',
+    company_whatsapp: '5511999999999',
+    company_address: 'Rua das Fibras, 123 - São Paulo, SP',
+    company_cnpj: '00.000.000/0001-00',
+    site_title: 'SUPERNET FIBRA - Internet Fibra Óptica',
+    site_description: 'Internet de fibra óptica de alta velocidade com tecnologia avançada.',
+    meta_keywords: 'internet fibra, fibra óptica, internet rápida, provedor',
+    google_analytics: '',
+    google_maps_api: '',
+    smtp_host: '',
+    smtp_port: '587',
+    smtp_user: '',
+    smtp_password: '',
+    backup_retention_days: '30',
+    max_file_size_mb: '50'
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      // Load existing settings from database or use defaults
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+        .single();
+      
+      if (data && !error) {
+        setSettings(prev => ({ ...prev, ...data }));
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async () => {
+    try {
+      setSaving(true);
+      
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert(settings, { onConflict: 'id' });
+
+      if (error) throw error;
+
+      toast.success('Configurações salvas com sucesso!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Erro ao salvar configurações: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configurações</h1>
+          <p className="text-muted-foreground">Configure preferências do sistema</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando configurações...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Configurações do Sistema</h1>
+        <p className="text-muted-foreground">Configure as preferências e informações do sistema</p>
+      </div>
+
+      <Tabs defaultValue="company" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="company">Empresa</TabsTrigger>
+          <TabsTrigger value="seo">SEO</TabsTrigger>
+          <TabsTrigger value="integrations">Integrações</TabsTrigger>
+          <TabsTrigger value="system">Sistema</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="company" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações da Empresa</CardTitle>
+              <CardDescription>Configure as informações básicas da empresa</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nome da Empresa</label>
+                  <Input
+                    value={settings.company_name}
+                    onChange={(e) => handleInputChange('company_name', e.target.value)}
+                    placeholder="SUPERNET FIBRA"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">CNPJ</label>
+                  <Input
+                    value={settings.company_cnpj}
+                    onChange={(e) => handleInputChange('company_cnpj', e.target.value)}
+                    placeholder="00.000.000/0001-00"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    type="email"
+                    value={settings.company_email}
+                    onChange={(e) => handleInputChange('company_email', e.target.value)}
+                    placeholder="contato@supernetfibra.com.br"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Telefone</label>
+                  <Input
+                    value={settings.company_phone}
+                    onChange={(e) => handleInputChange('company_phone', e.target.value)}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">WhatsApp (com código do país)</label>
+                  <Input
+                    value={settings.company_whatsapp}
+                    onChange={(e) => handleInputChange('company_whatsapp', e.target.value)}
+                    placeholder="5511999999999"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Endereço</label>
+                  <Input
+                    value={settings.company_address}
+                    onChange={(e) => handleInputChange('company_address', e.target.value)}
+                    placeholder="Rua das Fibras, 123 - São Paulo, SP"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações de SEO</CardTitle>
+              <CardDescription>Configure as informações para otimização dos mecanismos de busca</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Título do Site</label>
+                <Input
+                  value={settings.site_title}
+                  onChange={(e) => handleInputChange('site_title', e.target.value)}
+                  placeholder="SUPERNET FIBRA - Internet Fibra Óptica"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descrição do Site</label>
+                <Input
+                  value={settings.site_description}
+                  onChange={(e) => handleInputChange('site_description', e.target.value)}
+                  placeholder="Internet de fibra óptica de alta velocidade..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Palavras-chave (separadas por vírgula)</label>
+                <Input
+                  value={settings.meta_keywords}
+                  onChange={(e) => handleInputChange('meta_keywords', e.target.value)}
+                  placeholder="internet fibra, fibra óptica, internet rápida"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integrações Externas</CardTitle>
+              <CardDescription>Configure as integrações com serviços externos</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Google Analytics ID</label>
+                <Input
+                  value={settings.google_analytics}
+                  onChange={(e) => handleInputChange('google_analytics', e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Google Maps API Key</label>
+                <Input
+                  value={settings.google_maps_api}
+                  onChange={(e) => handleInputChange('google_maps_api', e.target.value)}
+                  placeholder="AIzaSy..."
+                />
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-sm font-medium mb-3">Configurações de Email SMTP</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Host SMTP</label>
+                    <Input
+                      value={settings.smtp_host}
+                      onChange={(e) => handleInputChange('smtp_host', e.target.value)}
+                      placeholder="smtp.gmail.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Porta SMTP</label>
+                    <Input
+                      value={settings.smtp_port}
+                      onChange={(e) => handleInputChange('smtp_port', e.target.value)}
+                      placeholder="587"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Usuário SMTP</label>
+                    <Input
+                      value={settings.smtp_user}
+                      onChange={(e) => handleInputChange('smtp_user', e.target.value)}
+                      placeholder="seu@email.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Senha SMTP</label>
+                    <Input
+                      type="password"
+                      value={settings.smtp_password}
+                      onChange={(e) => handleInputChange('smtp_password', e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações do Sistema</CardTitle>
+              <CardDescription>Configure as preferências gerais do sistema</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Retenção de Backup (dias)</label>
+                  <Input
+                    type="number"
+                    value={settings.backup_retention_days}
+                    onChange={(e) => handleInputChange('backup_retention_days', e.target.value)}
+                    placeholder="30"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tamanho Máximo de Arquivo (MB)</label>
+                  <Input
+                    type="number"
+                    value={settings.max_file_size_mb}
+                    onChange={(e) => handleInputChange('max_file_size_mb', e.target.value)}
+                    placeholder="50"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <h4 className="text-sm font-medium mb-3">Informações do Sistema</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                  <div>
+                    <strong>Versão:</strong> 1.0.0
+                  </div>
+                  <div>
+                    <strong>Última Atualização:</strong> {new Date().toLocaleDateString('pt-BR')}
+                  </div>
+                  <div>
+                    <strong>Ambiente:</strong> Produção
+                  </div>
+                  <div>
+                    <strong>Status:</strong> Ativo
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <div className="flex justify-end">
+        <Button onClick={saveSettings} disabled={saving} className="w-32">
+          {saving ? 'Salvando...' : 'Salvar Tudo'}
+        </Button>
+      </div>
     </div>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+  );
+};
 
 const HeroManagement = () => {
   const [heroSettings, setHeroSettings] = useState(null);
