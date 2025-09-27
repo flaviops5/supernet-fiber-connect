@@ -901,12 +901,15 @@ const HeroManagement = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <CardTitle className="text-lg">{slide.title}</CardTitle>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            slide.active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {slide.active ? 'Ativo' : 'Inativo'}
+                          <span
+                            className={
+                              "px-2 py-1 rounded-full text-xs font-semibold " +
+                              (slide.active
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800")
+                            }
+                          >
+                            {slide.active ? "Ativo" : "Inativo"}
                           </span>
                         </div>
                         <CardDescription className="mb-3">{slide.description}</CardDescription>
