@@ -739,12 +739,12 @@ const SettingsManagement = () => {
       setLoading(true);
       // Load existing settings from database or use defaults
       const { data, error } = await supabase
-        .from('system_settings')
+        .from('system_settings' as any)
         .select('*')
         .single();
       
-      if (data && !error) {
-        setSettings(prev => ({ ...prev, ...data }));
+      if (data && !error && typeof data === 'object') {
+        setSettings(prev => ({ ...prev, ...(data as any) }));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -758,8 +758,8 @@ const SettingsManagement = () => {
       setSaving(true);
       
       const { error } = await supabase
-        .from('system_settings')
-        .upsert(settings, { onConflict: 'id' });
+        .from('system_settings' as any)
+        .upsert(settings as any, { onConflict: 'id' });
 
       if (error) throw error;
 

@@ -840,6 +840,75 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          company_address: string
+          company_cnpj: string
+          company_email: string
+          company_name: string
+          company_phone: string
+          company_whatsapp: string
+          created_at: string
+          google_analytics_id: string | null
+          google_maps_api_key: string | null
+          id: string
+          maintenance_mode: boolean
+          max_file_size_mb: number
+          meta_keywords: string
+          site_description: string
+          site_title: string
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_address?: string
+          company_cnpj?: string
+          company_email?: string
+          company_name?: string
+          company_phone?: string
+          company_whatsapp?: string
+          created_at?: string
+          google_analytics_id?: string | null
+          google_maps_api_key?: string | null
+          id?: string
+          maintenance_mode?: boolean
+          max_file_size_mb?: number
+          meta_keywords?: string
+          site_description?: string
+          site_title?: string
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_address?: string
+          company_cnpj?: string
+          company_email?: string
+          company_name?: string
+          company_phone?: string
+          company_whatsapp?: string
+          created_at?: string
+          google_analytics_id?: string | null
+          google_maps_api_key?: string | null
+          id?: string
+          maintenance_mode?: boolean
+          max_file_size_mb?: number
+          meta_keywords?: string
+          site_description?: string
+          site_title?: string
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
