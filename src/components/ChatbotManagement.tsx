@@ -57,7 +57,7 @@ const ChatbotManagement = () => {
   const form = useForm<ChatbotSettings>({
     resolver: zodResolver(chatbotSettingsSchema),
     defaultValues: {
-      chatbot_id: 'mMFk_B5d94OhD7fQBxvNU',
+      chatbot_id: 'zyFH0AihcEAIixsQekuvr',
       enabled: true,
       title: 'Assistente Virtual SUPERNET',
       subtitle: 'Contrate agora sua internet - resposta em segundos',
@@ -142,7 +142,7 @@ const ChatbotManagement = () => {
 
   const resetToDefaults = () => {
     form.reset({
-      chatbot_id: 'mMFk_B5d94OhD7fQBxvNU',
+      chatbot_id: 'zyFH0AihcEAIixsQekuvr',
       enabled: true,
       title: 'Assistente Virtual SUPERNET',
       subtitle: 'Contrate agora sua internet - resposta em segundos',
@@ -213,7 +213,7 @@ const ChatbotManagement = () => {
                   <FormItem>
                     <FormLabel>ID do Chatbot (Chatbase)</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="mMFk_B5d94OhD7fQBxvNU" />
+                      <Input {...field} placeholder="zyFH0AihcEAIixsQekuvr" />
                     </FormControl>
                     <FormDescription>
                       ID do chatbot configurado no Chatbase

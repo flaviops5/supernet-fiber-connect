@@ -843,6 +843,8 @@ const AdminCoverageManagement = () => <CoverageManagement />;
   [-15.7960, -47.8825],
   [-15.7955, -47.8815]
 ]`;
+
+  return (
     <Card>
       <CardHeader>
         <CardTitle>Áreas de Cobertura</CardTitle>
