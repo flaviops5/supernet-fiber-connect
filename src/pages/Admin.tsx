@@ -709,6 +709,115 @@ const ProfileManagement = () => {
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Validar tipo e tamanho do arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) { // 5MB
+        toast.error('A imagem deve ter menos de 5MB');
+        return;
+      }
+
+      setUploadingAvatar(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      // Criar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Remover avatar antigo se existir
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('avatars')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload da nova imagem
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública da imagem
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const avatarUrl = data.publicUrl;
+
+      // Atualizar perfil com nova URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Atualizar estado local
+      setProfile(prev => ({ ...prev, avatar_url: avatarUrl }));
+      toast.success('Foto de perfil atualizada com sucesso!');
+
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erro ao fazer upload da imagem');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    try {
+      setUploadingAvatar(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Remover arquivo do storage
+      if (profile.avatar_url) {
+        const fileName = profile.avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage
+          .from('avatars')
+          .remove([fileName]);
+      }
+
+      // Atualizar perfil
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => ({ ...prev, avatar_url: '' }));
+      toast.success('Foto de perfil removida com sucesso!');
+
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      toast.error('Erro ao remover foto de perfil');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   useEffect(() => {
     loadProfile();
@@ -972,21 +1081,38 @@ const ProfileManagement = () => {
                 Recomendamos uma imagem quadrada de pelo menos 200x200 pixels
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Fazer Upload
-                </Button>
+                <label htmlFor="avatar-upload">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={uploadingAvatar}
+                    asChild
+                  >
+                    <span className="cursor-pointer">
+                      {uploadingAvatar ? 'Enviando...' : 'Fazer Upload'}
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadAvatar}
+                  className="hidden"
+                />
                 {profile.avatar_url && (
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => handleInputChange('avatar_url', '')}
+                    onClick={removeAvatar}
+                    disabled={uploadingAvatar}
                   >
                     Remover
                   </Button>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Upload de imagem será implementado em breve
+                Formatos suportados: JPG, PNG, GIF (máximo 5MB)
               </p>
             </div>
           </div>
