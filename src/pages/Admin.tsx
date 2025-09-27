@@ -693,19 +693,334 @@ const BlogManagement = () => (
   </div>
 );
 
-const ProfileManagement = () => (
-  <div className="space-y-6">
-    <div>
-      <h1 className="text-3xl font-bold">Meu Perfil</h1>
-      <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
+const ProfileManagement = () => {
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    avatar_url: ''
+  });
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [userRole, setUserRole] = useState('');
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileData) {
+        setProfile({
+          name: profileData.name || '',
+          email: profileData.email || '',
+          phone: profileData.phone || '',
+          avatar_url: profileData.avatar_url || ''
+        });
+      }
+
+      setUserRole(roleData?.role || 'viewer');
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast.error('Erro ao carregar perfil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePasswordChange = (field: string, value: string) => {
+    setPasswords(prev => ({ ...prev, [field]: value }));
+  };
+
+  const saveProfile = async () => {
+    try {
+      setSaving(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profile.name,
+          phone: profile.phone,
+          avatar_url: profile.avatar_url
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Erro ao salvar perfil');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changePassword = async () => {
+    try {
+      if (passwords.newPassword !== passwords.confirmPassword) {
+        toast.error('As senhas não coincidem');
+        return;
+      }
+
+      if (passwords.newPassword.length < 6) {
+        toast.error('A nova senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+
+      setChangingPassword(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwords.newPassword
+      });
+
+      if (error) throw error;
+
+      setPasswords({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      toast.success('Senha alterada com sucesso!');
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Erro ao alterar senha: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Meu Perfil</h1>
+          <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-muted-foreground">Carregando...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Meu Perfil</h1>
+        <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Informações Pessoais */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações Pessoais</CardTitle>
+            <CardDescription>Atualize seus dados pessoais</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nome Completo</label>
+              <Input
+                value={profile.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Seu nome completo"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                value={profile.email}
+                disabled
+                className="bg-muted"
+                placeholder="Seu email"
+              />
+              <p className="text-xs text-muted-foreground">
+                O email não pode ser alterado por questões de segurança
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Telefone</label>
+              <Input
+                value={profile.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cargo/Função</label>
+              <Input
+                value={userRole}
+                disabled
+                className="bg-muted capitalize"
+                placeholder="Seu cargo"
+              />
+              <p className="text-xs text-muted-foreground">
+                O cargo é definido pelo administrador do sistema
+              </p>
+            </div>
+
+            <Button onClick={saveProfile} disabled={saving} className="w-full">
+              {saving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Alterar Senha */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Alterar Senha</CardTitle>
+            <CardDescription>Mantenha sua conta segura com uma senha forte</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nova Senha</label>
+              <Input
+                type="password"
+                value={passwords.newPassword}
+                onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                placeholder="Digite sua nova senha"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Confirmar Nova Senha</label>
+              <Input
+                type="password"
+                value={passwords.confirmPassword}
+                onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                placeholder="Confirme sua nova senha"
+              />
+            </div>
+
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-medium text-sm mb-2">Requisitos da senha:</h4>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Mínimo de 6 caracteres</li>
+                <li>• Use uma combinação de letras e números</li>
+                <li>• Evite informações pessoais óbvias</li>
+              </ul>
+            </div>
+
+            <Button 
+              onClick={changePassword} 
+              disabled={changingPassword || !passwords.newPassword || !passwords.confirmPassword}
+              className="w-full"
+            >
+              {changingPassword ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Avatar e Estatísticas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Foto do Perfil</CardTitle>
+          <CardDescription>Personalize seu avatar no sistema</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            <div className="h-20 w-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
+              {profile.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Avatar" 
+                  className="h-20 w-20 rounded-full object-cover"
+                />
+              ) : (
+                profile.name?.charAt(0)?.toUpperCase() || 'U'
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Foto do Perfil</p>
+              <p className="text-xs text-muted-foreground">
+                Recomendamos uma imagem quadrada de pelo menos 200x200 pixels
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled>
+                  Fazer Upload
+                </Button>
+                {profile.avatar_url && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleInputChange('avatar_url', '')}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Upload de imagem será implementado em breve
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Atividade Recente */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Atividade Recente</CardTitle>
+          <CardDescription>Suas últimas ações no sistema</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <p className="text-sm font-medium">Perfil atualizado</p>
+                <p className="text-xs text-muted-foreground">Informações pessoais modificadas</p>
+              </div>
+              <span className="text-xs text-muted-foreground">Agora</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <p className="text-sm font-medium">Login realizado</p>
+                <p className="text-xs text-muted-foreground">Acesso ao painel administrativo</p>
+              </div>
+              <span className="text-xs text-muted-foreground">Hoje</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-    <Card>
-      <CardContent className="p-6">
-        <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-      </CardContent>
-    </Card>
-  </div>
-);
+  );
+};
 
 const SettingsManagement = () => {
   const [settings, setSettings] = useState({
