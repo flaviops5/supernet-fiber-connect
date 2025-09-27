@@ -7,6 +7,7 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle, MessageSquare } from "lucide-react";
 import { InstructionsCard } from "@/components/InstructionsCard";
 import { GoogleReviews } from "@/components/GoogleReviews";
@@ -20,6 +21,8 @@ import ChatbotManagement from "@/components/ChatbotManagement";
 import DocumentManagement from "@/components/DocumentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
+import CepManagement from '@/components/CepManagement';
+import CoverageManagement from '@/components/CoverageManagement';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -673,33 +676,139 @@ const PlansManagement = () => {
   );
 };
 
-// Import CepManagement component
-import CepManagement from '@/components/CepManagement';
-
-const CoverageManagement = () => {
+// Simple wrapper for the new CoverageManagement component
+const AdminCoverageManagement = () => <CoverageManagement />;
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingArea, setEditingArea] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    region_code: '',
+    color: '#3b82f6',
+    coordinates: '',
+    active: true
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      region_code: '',
+      color: '#3b82f6',
+      coordinates: '',
+      active: true
+    });
+    setEditingArea(null);
+    setShowForm(false);
+  };
 
   useEffect(() => {
-    const loadCoverageAreas = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('coverage_areas')
-          .select('*')
-          .order('name');
-
-        if (error) throw error;
-        setAreas(data || []);
-      } catch (error) {
-        console.error('Error loading coverage areas:', error);
-        toast.error('Erro ao carregar áreas de cobertura');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadCoverageAreas();
   }, []);
+
+  const loadCoverageAreas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('coverage_areas')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setAreas(data || []);
+    } catch (error) {
+      console.error('Error loading coverage areas:', error);
+      toast.error('Erro ao carregar áreas de cobertura');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveArea = async () => {
+    if (!formData.name || !formData.coordinates) {
+      toast.error('Nome e coordenadas são obrigatórios');
+      return;
+    }
+
+    try {
+      // Validar JSON das coordenadas
+      let coordinates;
+      try {
+        coordinates = JSON.parse(formData.coordinates);
+        if (!Array.isArray(coordinates)) {
+          throw new Error('Coordenadas devem ser um array');
+        }
+      } catch (e) {
+        toast.error('Formato de coordenadas inválido. Use formato JSON: [[-15.7942, -47.8822], ...]');
+        return;
+      }
+
+      const areaData = {
+        name: formData.name,
+        region_code: formData.region_code || formData.name.toUpperCase().replace(/\s/g, '_'),
+        color: formData.color,
+        coordinates: coordinates,
+        active: formData.active
+      };
+
+      if (editingArea) {
+        // Atualizar área existente
+        const { error } = await supabase
+          .from('coverage_areas')
+          .update(areaData)
+          .eq('id', editingArea.id);
+
+        if (error) throw error;
+        toast.success('Área atualizada com sucesso!');
+      } else {
+        // Criar nova área
+        const { error } = await supabase
+          .from('coverage_areas')
+          .insert([areaData]);
+
+        if (error) throw error;
+        toast.success('Área criada com sucesso!');
+      }
+
+      resetForm();
+      loadCoverageAreas();
+    } catch (error) {
+      console.error('Error saving area:', error);
+      toast.error('Erro ao salvar área');
+    }
+  };
+
+  const handleEditArea = (area) => {
+    setEditingArea(area);
+    setFormData({
+      name: area.name,
+      region_code: area.region_code,
+      color: area.color,
+      coordinates: JSON.stringify(area.coordinates, null, 2),
+      active: area.active
+    });
+    setShowForm(true);
+  };
+
+  const handleDeleteArea = async (areaId: string, areaName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir a área "${areaName}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('coverage_areas')
+        .delete()
+        .eq('id', areaId);
+
+      if (error) throw error;
+      
+      toast.success('Área excluída com sucesso!');
+      loadCoverageAreas();
+    } catch (error) {
+      console.error('Error deleting area:', error);
+      toast.error('Erro ao excluir área');
+    }
+  };
 
   const toggleAreaActive = async (areaId: string, currentActive: boolean) => {
     try {
@@ -723,7 +832,17 @@ const CoverageManagement = () => {
     }
   };
 
-  const AreasManagement = () => (
+  const predefinedColors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
+    '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+  ];
+
+  const sampleCoordinates = `[
+  [-15.7942, -47.8822],
+  [-15.7950, -47.8830],  
+  [-15.7960, -47.8825],
+  [-15.7955, -47.8815]
+]`;
     <Card>
       <CardHeader>
         <CardTitle>Áreas de Cobertura</CardTitle>
@@ -1414,7 +1533,7 @@ const Admin = () => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/users" element={<UsersManagement />} />
                 <Route path="/plans" element={<PlansManagement />} />
-                <Route path="/coverage" element={<CoverageManagement />} />
+                <Route path="/coverage" element={<AdminCoverageManagement />} />
                 <Route path="/hero" element={<HeroManagement />} />
                 <Route path="/faq" element={<FAQManagement />} />
                 <Route path="/blog" element={<BlogManagementComponent />} />
