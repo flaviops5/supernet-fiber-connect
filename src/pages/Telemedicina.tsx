@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
-import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
+
 
 const Telemedicina = () => {
   console.log('Telemedicina page loading...');
@@ -461,8 +461,6 @@ const Telemedicina = () => {
         </div>
       </section>
 
-      {/* Telemedicina Chat Widget */}
-      <TelemedicinaChatWidget />
 
       {/* FAQ Section */}
       <section className="py-16 px-4 bg-background">
