@@ -14,19 +14,27 @@ export default function SimulationButton() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // 1. Ensure agent presence exists
-      const { error: presenceError } = await supabase
+      // 1. Check if agent presence exists, if not create it
+      const { data: existingPresence } = await supabase
         .from('agent_presence')
-        .upsert({
-          user_id: user.id,
-          status: 'online',
-          department: 'comercial',
-          current_conversations: 0,
-          max_conversations: 5,
-          last_activity: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      if (presenceError) throw presenceError;
+      if (!existingPresence) {
+        const { error: presenceError } = await supabase
+          .from('agent_presence')
+          .insert({
+            user_id: user.id,
+            status: 'online',
+            department: 'comercial',
+            current_conversations: 0,
+            max_conversations: 5,
+            last_activity: new Date().toISOString()
+          });
+
+        if (presenceError) throw presenceError;
+      }
 
       // 2. Create sample conversations
       const conversations = [
