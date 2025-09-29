@@ -499,11 +499,32 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     const hasFinancialDelay = contracts.some((c: any) => {
       const si = String(c.status_internet ?? '').toUpperCase();
       const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
-      const hasSuspensionWindow = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' &&
+      
+      // Verifica se pago_ate_data está no passado (inadimplente)
+      const pagoAte = c.pago_ate_data && c.pago_ate_data !== '0000-00-00' ? new Date(c.pago_ate_data) : null;
+      const isOverdue = pagoAte && pagoAte < now;
+      
+      // Suspensão só é válida se for recente (últimos 30 dias) e sem data final
+      const suspensionDate = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' 
+        ? new Date(c.data_inicial_suspensao) 
+        : null;
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const hasRecentSuspension = suspensionDate && 
+        suspensionDate > thirtyDaysAgo && 
         (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
-      const hasFinancialAtraso = !!c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00';
-      // Indicadores claros de atraso financeiro: FA (financeiro atraso), R (redução velocidade), suspensão ativa, ou registro de atraso
-      return si === 'FA' || statusVelocidade === 'R' || hasSuspensionWindow || hasFinancialAtraso;
+      
+      // Atraso financeiro só é válido se for recente (últimos 30 dias) OU se estiver inadimplente
+      const atrasoDate = c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00'
+        ? new Date(c.dt_ult_finan_atraso)
+        : null;
+      const hasRecentAtraso = atrasoDate && (atrasoDate > thirtyDaysAgo || isOverdue);
+      
+      // Indicadores de atraso financeiro:
+      // - FA: status explícito de financeiro em atraso
+      // - R: velocidade reduzida (punição por atraso)
+      // - Suspensão recente (últimos 30 dias) sem resolução
+      // - Registro de atraso recente OU inadimplência confirmada por pago_ate_data
+      return si === 'FA' || statusVelocidade === 'R' || hasRecentSuspension || hasRecentAtraso;
     });
 
     const normalizedStatus = isBlocked
