@@ -124,6 +124,7 @@ async function getCustomers(baseUrl: string, auth: string, params: any): Promise
   }
 
   const data = await response.json();
+  console.log('Resposta completa da API IXC (getCustomers):', JSON.stringify(data, null, 2));
   
   // IXC retorna diferentes estruturas dependendo da API
   if (data.type === 'success' && data.registros) {
@@ -133,6 +134,7 @@ async function getCustomers(baseUrl: string, auth: string, params: any): Promise
   } else if (data.data) {
     return data.data;
   } else {
+    console.log('Estrutura de dados não reconhecida:', data);
     return [];
   }
 }
@@ -191,6 +193,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   }
 
   const data = await response.json();
+  console.log('Resposta completa da API IXC (searchCustomers):', JSON.stringify(data, null, 2));
   
   if (data.type === 'success' && data.registros) {
     return data.registros;
@@ -199,6 +202,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   } else if (data.data) {
     return data.data;
   } else {
+    console.log('Estrutura de dados não reconhecida:', data);
     return [];
   }
 }
