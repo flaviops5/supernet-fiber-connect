@@ -191,15 +191,21 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
 
 async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
   // Normaliza a busca e tenta múltiplas estratégias compatíveis com diferentes instalações IXC
-  const q = query.trim().replace(/\s+/g, ' ');
+  const raw = String(query ?? '').trim();
+  const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
+  const digits = q.replace(/\D/g, '');
 
   const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [
     { qtype: 'razao',          oper: 'like',   sortname: 'razao',          q: `%${q}%` },
     { qtype: 'cliente.razao',  oper: 'like',   sortname: 'cliente.razao',  q: `%${q}%` },
     { qtype: 'nome_fantasia',  oper: 'like',   sortname: 'nome_fantasia',  q: `%${q}%` },
     { qtype: 'fantasia',       oper: 'like',   sortname: 'fantasia',       q: `%${q}%` },
-    { qtype: 'cnpj_cpf',       oper: 'like',   sortname: 'razao',          q: `%${q}%` },
+    { qtype: 'cnpj_cpf',       oper: 'like',   sortname: 'razao',          q: `%${digits || q}%` },
   ];
+  
+  if (digits.length >= 11) {
+    attempts.unshift({ qtype: 'cnpj_cpf', oper: '=', sortname: 'razao', q: digits });
+  }
 
   for (const attempt of attempts) {
     try {
