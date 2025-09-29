@@ -4,6 +4,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import ContractForm from '@/components/ContractForm';
 const iconMap: { [key: string]: any } = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
   DollarSign, Clock, Router, Wifi
@@ -19,6 +20,8 @@ const ResidentialPlans = () => {
   const [count, setCount] = useState(0);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showContractForm, setShowContractForm] = useState(false);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -188,10 +191,16 @@ const ResidentialPlans = () => {
                       </ul>
                     </div>
 
-                    {/* Info Note - Removed CTA since chatbot handles sales */}
-                    <div className="text-center text-sm text-muted-foreground mt-auto p-4 bg-muted/30 rounded-lg">
-                      💬 Converse com nosso assistente virtual para contratar este plano
-                    </div>
+                    {/* CTA Button */}
+                    <Button 
+                      className="w-full cta-gradient text-white font-bold py-6 text-lg"
+                      onClick={() => {
+                        setSelectedPlan(plan);
+                        setShowContractForm(true);
+                      }}
+                    >
+                      {plan.cta_text || 'Contratar Agora'}
+                    </Button>
                   </div>
                 </CarouselItem>
               ))}
@@ -225,6 +234,17 @@ const ResidentialPlans = () => {
         </div>
       </div>
 
+      {/* Contract Form Modal */}
+      {selectedPlan && (
+        <ContractForm
+          isOpen={showContractForm}
+          onClose={() => {
+            setShowContractForm(false);
+            setSelectedPlan(null);
+          }}
+          plan={selectedPlan}
+        />
+      )}
     </section>
   );
 };
