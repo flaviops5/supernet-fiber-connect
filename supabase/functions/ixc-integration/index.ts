@@ -23,6 +23,13 @@ interface IXCCustomer {
   status?: string;
 }
 
+function normalizeRegistros(input: any): IXCCustomer[] {
+  if (!input) return [];
+  if (Array.isArray(input)) return input as IXCCustomer[];
+  if (typeof input === 'object') return Object.values(input) as IXCCustomer[];
+  return [];
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,7 +48,7 @@ serve(async (req) => {
     const auth = btoa(`${username}:${password}`);
     const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
 
-    let result = null;
+    let result: any = null;
 
     switch (action) {
       case 'getCustomers':
@@ -72,7 +79,7 @@ serve(async (req) => {
 
     console.log(`IXC Integration - Action: ${action}`, { 
       success: true, 
-      resultCount: Array.isArray(result) ? result.length : 1 
+      resultCount: Array.isArray(result) ? result.length : (result ? 1 : 0)
     });
 
     return new Response(JSON.stringify({ 
@@ -95,141 +102,113 @@ serve(async (req) => {
   }
 });
 
-async function getCustomers(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
-  const queryParams = new URLSearchParams();
-  
-  if (params.limit) queryParams.append('rp', params.limit.toString());
-  if (params.page) queryParams.append('page', params.page.toString());
-  if (params.orderBy) queryParams.append('sortname', params.orderBy);
-  if (params.order) queryParams.append('sortorder', params.order);
-  
-  const url = `${baseUrl}/cliente?${queryParams.toString()}`;
-  
+async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<any> {
+  const body = new URLSearchParams(params);
   const response = await fetch(url, {
-    method: 'GET',
+    method: 'POST',
     headers: {
       'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'ixcsoft': 'listar',
     },
+    body,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na resposta da API IXC:', { status: response.status, error: errorText });
-    throw new Error(`Erro ao buscar clientes: ${response.status} - ${errorText}`);
+  const text = await response.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch (_e) {
+    console.error('Resposta não é JSON válido:', text);
+    throw new Error('Resposta inválida da API IXC');
+  }
+  return { ok: response.ok, status: response.status, data };
+}
+
+async function getCustomers(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
+  const form: Record<string, string> = {};
+  if (params.page) form.page = String(params.page);
+  if (params.limit) form.rp = String(params.limit);
+  if (params.orderBy) form.sortname = params.orderBy;
+  if (params.order) form.sortorder = params.order;
+
+  const { ok, status, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
+  console.log('Resposta completa da API IXC (getCustomers):', JSON.stringify(data, null, 2));
+
+  if (!ok) {
+    throw new Error(`Erro ao buscar clientes: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
   }
 
-  const data = await response.json();
-  console.log('Resposta completa da API IXC (getCustomers):', JSON.stringify(data, null, 2));
-  
   if (data.type === 'success' && data.registros) {
-    return data.registros;
-  } else if (Array.isArray(data)) {
-    return data;
-  } else if (data.data) {
-    return data.data;
-  } else {
-    console.log('Estrutura de dados não reconhecida:', data);
-    return [];
+    return normalizeRegistros(data.registros);
   }
+  if (data.data) return data.data;
+  console.log('Estrutura de dados não reconhecida:', data);
+  return [];
 }
 
 async function getCustomer(baseUrl: string, auth: string, customerId: string): Promise<IXCCustomer | null> {
-  const url = `${baseUrl}/cliente/${customerId}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const form: Record<string, string> = {
+    qtype: 'cliente.id',
+    query: String(customerId),
+    oper: '=',
+    page: '1',
+    rp: '1',
+  };
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      return null;
-    }
-    const errorText = await response.text();
-    console.error('Erro na resposta da API IXC:', { status: response.status, error: errorText });
-    throw new Error(`Erro ao buscar cliente: ${response.status} - ${errorText}`);
+  const { ok, status, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
+  console.log('Resposta completa da API IXC (getCustomer):', JSON.stringify(data, null, 2));
+
+  if (!ok) {
+    if (status === 404) return null;
+    throw new Error(`Erro ao buscar cliente: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
   }
 
-  const data = await response.json();
-  
-  if (data.type === 'success' && data.registro) {
-    return data.registro;
-  } else if (data.data) {
-    return data.data;
-  } else {
-    return data;
+  if (data.type === 'success' && data.registros) {
+    const arr = normalizeRegistros(data.registros);
+    return arr.length ? arr[0] : null;
   }
+  if (data.registro) return data.registro;
+  if (data.data) return Array.isArray(data.data) ? (data.data[0] ?? null) : data.data;
+  return null;
 }
 
 async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
-  const queryParams = new URLSearchParams();
-  queryParams.append('qtype', 'razao');
-  queryParams.append('query', query);
-  queryParams.append('rp', '50');
-  
-  const url = `${baseUrl}/cliente?${queryParams.toString()}`;
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const form: Record<string, string> = {
+    qtype: 'cliente.razao',
+    query,
+    oper: 'like',
+    page: '1',
+    rp: '50',
+    sortname: 'cliente.razao',
+    sortorder: 'asc',
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Erro na resposta da API IXC:', { status: response.status, error: errorText });
-    throw new Error(`Erro ao buscar clientes: ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
+  const { ok, status, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
   console.log('Resposta completa da API IXC (searchCustomers):', JSON.stringify(data, null, 2));
-  
-  if (data.type === 'success' && data.registros) {
-    return data.registros;
-  } else if (Array.isArray(data)) {
-    return data;
-  } else if (data.data) {
-    return data.data;
-  } else {
-    console.log('Estrutura de dados não reconhecida:', data);
-    return [];
+
+  if (!ok) {
+    throw new Error(`Erro ao buscar clientes: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
   }
+
+  if (data.type === 'success' && data.registros) {
+    return normalizeRegistros(data.registros);
+  }
+  if (data.data) return data.data;
+  console.log('Estrutura de dados não reconhecida:', data);
+  return [];
 }
 
 async function testConnection(baseUrl: string, auth: string): Promise<{ status: string; message: string }> {
   try {
-    const url = `${baseUrl}/cliente?rp=1`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      return {
-        status: 'success',
-        message: 'Conexão com IXC ERP estabelecida com sucesso!'
-      };
-    } else {
-      return {
-        status: 'error',
-        message: `Erro na conexão: ${response.status} - ${response.statusText}`
-      };
+    const { ok, status, data } = await postIXC(`${baseUrl}/cliente`, auth, { rp: '1', page: '1' });
+    console.log('Resposta completa da API IXC (testConnection):', JSON.stringify(data, null, 2));
+    if (ok) {
+      return { status: 'success', message: 'Conexão com IXC ERP estabelecida com sucesso!' };
     }
+    return { status: 'error', message: `Erro na conexão: ${status} - ${data?.message ?? 'Erro desconhecido'}` };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    return {
-      status: 'error',
-      message: `Erro na conexão: ${errorMessage}`
-    };
+    return { status: 'error', message: `Erro na conexão: ${errorMessage}` };
   }
 }
