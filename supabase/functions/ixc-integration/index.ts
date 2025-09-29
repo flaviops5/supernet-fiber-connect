@@ -332,8 +332,17 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     let lastConnection = null;
     
     try {
-      console.log('Tentando buscar logs de radius...');
-      const radiusEndpoints = ['/radius_acct', '/radius_log', '/sessao_radius', '/conexao'];
+      console.log('Tentando buscar status online do cliente...');
+      // Endpoints possíveis para verificar status online (testar todos)
+      const radiusEndpoints = [
+        '/fn_acessos_online',      // Função específica para acessos online
+        '/su_acs_sessions_online',  // Sessões ACS online
+        '/radius_online',           // Status radius online
+        '/radius_acct',             // Accounting radius (padrão)
+        '/radius_log',              // Logs radius
+        '/sessao_radius',           // Sessões radius
+        '/conexao'                  // Conexões ativas
+      ];
 
       // 1) Se tivermos contratos, tenta por username/login do contrato
       const candidateUsernames = new Set<string>();
@@ -346,7 +355,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
         }
       }
 
-      const radiusQtypes = ['username','login','usuario','user','acctusername'];
+      const radiusQtypes = ['username','login','usuario','user','acctusername','cliente_id'];
       outer_loop:
       for (const user of candidateUsernames) {
         for (const endpoint of radiusEndpoints) {
@@ -357,54 +366,76 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
                 query: user,
                 oper: '=',
                 page: '1',
-                rp: '5',
+                rp: '10',
                 sortname: 'data_inicio',
                 sortorder: 'desc',
               };
-              const { ok, data } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
-              if (ok && data?.registros) {
-                const logs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-                console.log(`Radius ${endpoint} por ${qtype}=${user}: ${logs.length} logs`);
-                if (logs.length > 0) {
-                  const latestLog = logs[0];
-                  lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
-                  onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
-                  console.log(`Online (username) via ${endpoint}: ${onlineStatus}`);
-                  break outer_loop;
+              const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
+              console.log(`Testando endpoint ${endpoint} com ${qtype}=${user}: HTTP ${httpStatus}`);
+              
+              if (ok && data) {
+                console.log(`✓ Endpoint ${endpoint} respondeu OK. Estrutura:`, JSON.stringify(data, null, 2).substring(0, 500));
+                
+                if (data?.registros) {
+                  const logs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+                  console.log(`✓✓ ${endpoint} retornou ${logs.length} registros com ${qtype}=${user}`);
+                  
+                  if (logs.length > 0) {
+                    const latestLog = logs[0];
+                    console.log('Último registro:', JSON.stringify(latestLog, null, 2).substring(0, 300));
+                    
+                    lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
+                    onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
+                    console.log(`✓✓✓ ENCONTRADO! Online via ${endpoint}: ${onlineStatus}, Última conexão: ${lastConnection}`);
+                    break outer_loop;
+                  }
                 }
               }
-            } catch (_e) { /* tenta próxima combinação */ }
+            } catch (e) { 
+              console.log(`✗ Endpoint ${endpoint} com ${qtype} falhou:`, (e as Error)?.message);
+            }
           }
         }
       }
 
       // 2) Caso não tenha encontrado por username, tenta por cliente_id (fallback)
       if (!onlineStatus) {
+        console.log('Nenhum username encontrado, tentando buscar por cliente_id...');
         const radiusFormCliente: Record<string, string> = {
           qtype: 'cliente_id',
           query: String(customerId),
           oper: '=',
           page: '1',
-          rp: '5',
+          rp: '10',
           sortname: 'data_inicio',
           sortorder: 'desc',
         };
 
         for (const endpoint of radiusEndpoints) {
           try {
-            const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusFormCliente);
-            if (radiusOk && radiusData?.registros) {
-              const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
-              console.log(`Endpoint ${endpoint} (cliente_id): ${logs.length} logs`);
-              if (logs.length > 0) {
-                const latestLog = logs[0];
-                lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
-                onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
-                console.log(`Online (cliente_id) via ${endpoint}: ${onlineStatus}`);
-                break;
+            const { ok: radiusOk, data: radiusData, status: httpStatus } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusFormCliente);
+            console.log(`Testando ${endpoint} com cliente_id=${customerId}: HTTP ${httpStatus}`);
+            
+            if (radiusOk && radiusData) {
+              console.log(`✓ ${endpoint} respondeu OK com cliente_id`);
+              
+              if (radiusData?.registros) {
+                const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
+                console.log(`✓✓ ${endpoint} (cliente_id) retornou ${logs.length} registros`);
+                
+                if (logs.length > 0) {
+                  const latestLog = logs[0];
+                  console.log('Registro encontrado:', JSON.stringify(latestLog, null, 2).substring(0, 300));
+                  lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
+                  onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
+                  console.log(`✓✓✓ ENCONTRADO! Online via ${endpoint} (cliente_id): ${onlineStatus}`);
+                  break;
+                }
               }
             }
-          } catch (_e) { continue; }
+          } catch (e) { 
+            console.log(`✗ ${endpoint} com cliente_id falhou:`, (e as Error)?.message);
+          }
         }
       }
     } catch (radiusError) {
