@@ -501,9 +501,9 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
       const hasSuspensionWindow = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' &&
         (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
-      const overduePayment = !!c.pago_ate_data && new Date(c.pago_ate_data) < now;
       const hasFinancialAtraso = !!c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00';
-      return si === 'FA' || statusVelocidade === 'R' || hasSuspensionWindow || overduePayment || hasFinancialAtraso;
+      // Indicadores claros de atraso financeiro: FA (financeiro atraso), R (redução velocidade), suspensão ativa, ou registro de atraso
+      return si === 'FA' || statusVelocidade === 'R' || hasSuspensionWindow || hasFinancialAtraso;
     });
 
     const normalizedStatus = isBlocked
