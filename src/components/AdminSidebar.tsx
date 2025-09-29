@@ -33,6 +33,7 @@ import {
   FolderOpen,
   Brain,
   BookOpen,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,6 +111,11 @@ const systemItems = [
     title: "IA Corporativa",
     url: "/admin/corporate-ai",
     icon: Brain,
+  },
+  {
+    title: "Integração IXC",
+    url: "/admin/ixc-integration",
+    icon: Database,
   },
 ];
 
