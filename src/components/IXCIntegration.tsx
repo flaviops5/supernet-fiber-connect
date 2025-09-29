@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Search, CheckCircle, XCircle, Users, Database } from 'lucide-react';
+import { Loader2, Search, CheckCircle, XCircle, Users, Database, Wifi, WifiOff, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface IXCCustomer {
@@ -36,6 +36,9 @@ const IXCIntegration = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<IXCCustomer | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [customerStatus, setCustomerStatus] = useState<any>(null);
+  const [onlineClients, setOnlineClients] = useState<any[]>([]);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const testConnection = async () => {
     setConnectionStatus('testing');
@@ -123,6 +126,60 @@ const IXCIntegration = () => {
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
       toast.error('Erro ao buscar clientes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkCustomerStatus = async (customerId: string) => {
+    setStatusLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-integration', {
+        body: { 
+          action: 'getCustomerStatus',
+          params: { id: customerId }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setCustomerStatus(data.data);
+        toast.success('Status verificado com sucesso');
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar status:', error);
+      toast.error('Erro ao verificar status do cliente');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const loadOnlineClients = async () => {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-integration', {
+        body: { 
+          action: 'getOnlineClients',
+          params: { limit: 30, page: 1 }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setOnlineClients(data.data || []);
+        toast.success(`${data.data?.length || 0} clientes online encontrados`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes online:', error);
+      toast.error('Erro ao buscar clientes online');
     } finally {
       setLoading(false);
     }
@@ -226,14 +283,70 @@ const IXCIntegration = () => {
                     <Search className="h-4 w-4" />
                   )}
                 </Button>
-                <Button 
-                  onClick={loadCustomers} 
-                  disabled={loading}
-                >
-                  {loading ? 'Carregando...' : 'Carregar Todos'}
-                </Button>
+                  <Button 
+                    onClick={loadCustomers} 
+                    disabled={loading}
+                  >
+                    {loading ? 'Carregando...' : 'Carregar Todos'}
+                  </Button>
+                  <Button 
+                    onClick={loadOnlineClients} 
+                    disabled={loading}
+                    variant="outline"
+                  >
+                    <Wifi className="mr-2 h-4 w-4" />
+                    {loading ? 'Carregando...' : 'Clientes Online'}
+                  </Button>
               </div>
             </div>
+
+            {/* Lista de Clientes Online */}
+            {onlineClients.length > 0 && (
+              <div className="space-y-4">
+                <Separator />
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-green-500" />
+                  <h3 className="font-semibold">Clientes Online ({onlineClients.length})</h3>
+                </div>
+                <div className="grid gap-4 max-h-96 overflow-y-auto">
+                  {onlineClients.map((client) => (
+                    <Card 
+                      key={client.id} 
+                      className="cursor-pointer transition-colors hover:bg-muted/50"
+                      onClick={() => setSelectedCustomer(client)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold">{client.razao || 'Sem nome'}</h4>
+                              <Badge variant="default" className="bg-green-500">
+                                <Wifi className="h-3 w-3 mr-1" />
+                                Online
+                              </Badge>
+                            </div>
+                            {client.connectionInfo?.ipAddress && (
+                              <p className="text-sm text-muted-foreground">
+                                IP: {client.connectionInfo.ipAddress}
+                              </p>
+                            )}
+                            {client.connectionInfo?.sessionStart && (
+                              <p className="text-sm text-muted-foreground">
+                                Conectado desde: {new Date(client.connectionInfo.sessionStart).toLocaleString()}
+                              </p>
+                            )}
+                            <p className="text-sm">
+                              <span className="font-medium">Doc:</span> {formatDocument(client.cnpj_cpf)}
+                            </p>
+                          </div>
+                          <Badge variant="outline">ID: {client.id}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Lista de Clientes */}
             {customers.length > 0 && (
@@ -343,6 +456,61 @@ const IXCIntegration = () => {
                       <div>
                         <Label>Status</Label>
                         <Badge>{selectedCustomer.status}</Badge>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Verificação de Status Online */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-base font-semibold">Status de Conexão</Label>
+                      <Button 
+                        onClick={() => checkCustomerStatus(selectedCustomer.id)}
+                        disabled={statusLoading}
+                        size="sm"
+                        variant="outline"
+                      >
+                        {statusLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Activity className="h-4 w-4 mr-2" />
+                        )}
+                        Verificar Status
+                      </Button>
+                    </div>
+                    
+                    {customerStatus && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          {customerStatus.isOnline ? (
+                            <div className="flex items-center gap-2 text-green-600">
+                              <Wifi className="h-4 w-4" />
+                              <span className="font-medium">Cliente Online</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-red-600">
+                              <WifiOff className="h-4 w-4" />
+                              <span className="font-medium">Cliente Offline</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {customerStatus.lastConnection && (
+                          <p className="text-sm text-muted-foreground">
+                            Última conexão: {new Date(customerStatus.lastConnection).toLocaleString()}
+                          </p>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <Label>Contratos Totais</Label>
+                            <p>{customerStatus.contractCount || 0}</p>
+                          </div>
+                          <div>
+                            <Label>Contratos Ativos</Label>
+                            <p>{customerStatus.activeContracts?.length || 0}</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

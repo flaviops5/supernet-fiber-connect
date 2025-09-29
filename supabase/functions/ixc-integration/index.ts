@@ -88,6 +88,17 @@ serve(async (req) => {
         result = await testConnection(baseUrl, auth);
         break;
       
+      case 'getCustomerStatus':
+        if (!params.id) {
+          throw new Error('ID do cliente é obrigatório');
+        }
+        result = await getCustomerStatus(baseUrl, auth, params.id);
+        break;
+      
+      case 'getOnlineClients':
+        result = await getOnlineClients(baseUrl, auth, params);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -254,6 +265,130 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   } catch (e) {
     console.error('searchCustomers: fallback também falhou:', (e as Error)?.message);
     throw new Error('Não foi possível realizar a busca no IXC');
+  }
+}
+
+async function getCustomerStatus(baseUrl: string, auth: string, customerId: string): Promise<any> {
+  try {
+    // Busca contratos ativos do cliente
+    const contractsForm: Record<string, string> = {
+      qtype: 'cliente_id',
+      query: String(customerId),
+      oper: '=',
+      page: '1',
+      rp: '50',
+    };
+
+    const { ok, data: contractsData } = await postIXC(`${baseUrl}/contratos`, auth, contractsForm);
+    
+    if (!ok || !contractsData?.registros) {
+      return { isOnline: false, contracts: [], lastConnection: null };
+    }
+
+    const contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
+    
+    // Busca sessões ativas/logs de radius para verificar status online
+    let onlineStatus = false;
+    let lastConnection = null;
+    
+    try {
+      const radiusForm: Record<string, string> = {
+        qtype: 'cliente_id',
+        query: String(customerId),
+        oper: '=',
+        page: '1',
+        rp: '10',
+        sortname: 'id',
+        sortorder: 'desc',
+      };
+      
+      const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}/radius_log`, auth, radiusForm);
+      
+      if (radiusOk && radiusData?.registros) {
+        const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
+        
+        if (logs.length > 0) {
+          const latestLog = logs[0];
+          lastConnection = latestLog.data_inicio || latestLog.data_conexao || null;
+          
+          // Verifica se tem sessão ativa (sem data_fim ou data_fim null)
+          onlineStatus = logs.some((log: any) => !log.data_fim || log.data_fim === null || log.data_fim === '');
+        }
+      }
+    } catch (radiusError) {
+      console.warn('Erro ao buscar logs de radius:', radiusError);
+      // Continua sem erro, apenas não conseguiu verificar status online
+    }
+
+    return {
+      isOnline: onlineStatus,
+      contracts: contracts,
+      lastConnection: lastConnection,
+      contractCount: contracts.length,
+      activeContracts: contracts.filter((c: any) => c.status === 'Ativo' || c.ativo === '1' || c.ativo === 'S')
+    };
+    
+  } catch (error) {
+    console.error('Erro ao verificar status do cliente:', error);
+    throw new Error(`Erro ao verificar status: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function getOnlineClients(baseUrl: string, auth: string, params: any): Promise<any[]> {
+  try {
+    // Busca sessões ativas no radius
+    const form: Record<string, string> = {
+      qtype: 'data_fim',
+      query: '',
+      oper: 'nu', // null (sem data fim = ativo)
+      page: String(params.page || 1),
+      rp: String(params.limit || 50),
+      sortname: 'data_inicio',
+      sortorder: 'desc',
+    };
+
+    const { ok, data } = await postIXC(`${baseUrl}/radius_log`, auth, form);
+    
+    if (!ok || !data?.registros) {
+      return [];
+    }
+
+    const sessions = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+    
+    // Para cada sessão ativa, busca dados do cliente
+    const onlineClients = [];
+    const clientCache = new Map();
+    
+    for (const session of sessions.slice(0, 20)) { // Limita para não sobrecarregar
+      const clientId = session.cliente_id;
+      
+      if (!clientId || clientCache.has(clientId)) continue;
+      
+      try {
+        const client = await getCustomer(baseUrl, auth, clientId);
+        if (client) {
+          clientCache.set(clientId, client);
+          onlineClients.push({
+            ...client,
+            connectionInfo: {
+              sessionStart: session.data_inicio,
+              ipAddress: session.ip || session.framedipaddress,
+              nasPort: session.nasport,
+              bytesIn: session.acctinputoctets,
+              bytesOut: session.acctoutputoctets,
+            }
+          });
+        }
+      } catch (clientError) {
+        console.warn(`Erro ao buscar cliente ${clientId}:`, clientError);
+      }
+    }
+    
+    return onlineClients;
+    
+  } catch (error) {
+    console.error('Erro ao buscar clientes online:', error);
+    throw new Error(`Erro ao buscar clientes online: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
 
