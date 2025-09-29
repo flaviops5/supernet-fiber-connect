@@ -477,18 +477,30 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.log('Todos os campos do cliente:', Object.keys(customerData));
     }
 
-    // Classificação do status de serviço baseada nos contratos (prioridade alta)
-    const hasBlocked = contracts.some((c: any) => {
+    // Classificação do status de serviço baseada nos contratos
+    // Prioridade: 1. Suspensão Parcial (Financeiro em Atraso) 2. Bloqueio Total 3. Normalizado
+    
+    const hasFinancialDelay = contracts.some((c: any) => {
+      // Indicadores de suspensão parcial (redução de velocidade)
       const si = String(c.status_internet ?? '').toUpperCase();
-      const blockedBySI = si === 'CA' || si === 'BLOQ' || si === 'BLOQUEADO';
-      const bloqAuto = c.dt_ult_bloq_auto && (!c.dt_ult_desbloq_auto && !c.dt_ult_des_bloq_conf || new Date(c.dt_ult_bloq_auto) > new Date(c.dt_ult_des_bloq_conf || '1900-01-01'));
-      const accessDisabled = c.data_acesso_desativado && c.data_acesso_desativado !== '0000-00-00';
-      return blockedBySI || bloqAuto || accessDisabled;
+      const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
+      const hasSuspension = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' && 
+                            (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
+      const hasFinancialAtraso = c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00';
+      
+      return si === 'FA' || 
+             statusVelocidade === 'R' || 
+             hasSuspension || 
+             (hasFinancialAtraso && c.pago_ate_data && new Date(c.pago_ate_data) < new Date());
     });
 
-    const hasFinancialDelay = contracts.some((c: any) => {
+    const hasBlocked = contracts.some((c: any) => {
+      // Indicadores de bloqueio total (acesso completamente desativado)
       const si = String(c.status_internet ?? '').toUpperCase();
-      return si === 'FA' || String(c.status_velocidade ?? '').toUpperCase() === 'R';
+      const accessDisabled = c.data_acesso_desativado && c.data_acesso_desativado !== '0000-00-00';
+      const blockedBySI = si === 'BLOQ' || si === 'BLOQUEADO' || si === 'BL';
+      
+      return blockedBySI || accessDisabled;
     });
 
     const normalizedStatus = hasBlocked
