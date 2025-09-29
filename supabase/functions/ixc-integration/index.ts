@@ -215,8 +215,11 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
   }
 
   if (data && data.registros) {
-    const arr = normalizeRegistros(data.registros);
-    return arr.length ? arr[0] : null;
+    const registrosArr = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+    const normalizedArr = normalizeRegistros(registrosArr);
+    const raw = registrosArr[0];
+    const norm = normalizedArr[0];
+    return raw ? { ...raw, ...(norm || {}) } : (norm || null);
   }
   if (data.registro) return data.registro;
   if (data.data) return Array.isArray(data.data) ? (data.data[0] ?? null) : data.data;
@@ -286,75 +289,119 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     const customerData = await getCustomer(baseUrl, auth, customerId);
     console.log('Dados completos do cliente:', JSON.stringify(customerData, null, 2));
     
-    // Busca contratos do cliente usando o endpoint correto
-    const contractsForm: Record<string, string> = {
-      qtype: 'cliente_id',
-      query: String(customerId),
-      oper: '=',
-      page: '1',
-      rp: '50',
-    };
-
-    console.log('Buscando contratos do cliente...');
-    const { ok: contractsOk, data: contractsData } = await postIXC(`${baseUrl}/contratos`, auth, contractsForm);
-    
-    let contracts = [];
-    if (contractsOk && contractsData?.registros) {
-      contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
-      console.log(`Encontrados ${contracts.length} contratos para o cliente`);
-    } else {
-      console.log('Nenhum contrato encontrado ou erro na busca de contratos');
+    // Busca contratos do cliente tentando múltiplos endpoints/qtypes
+    const contractsEndpoints = ['/cliente_contrato', '/contratos', '/cliente_contrato_servico'];
+    const contractsQtypes = ['cliente_id', 'cliente', 'id_cliente', 'cliente.id'];
+    let contracts: any[] = [];
+    console.log('Buscando contratos do cliente (múltiplas tentativas)...');
+    for (const endpoint of contractsEndpoints) {
+      if (contracts.length) break;
+      for (const qtype of contractsQtypes) {
+        try {
+          const form: Record<string, string> = {
+            qtype,
+            query: String(customerId),
+            oper: '=',
+            page: '1',
+            rp: '50',
+          };
+          const { ok, data } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
+          if (ok && data?.registros) {
+            const regs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+            if (regs.length) {
+              contracts = regs;
+              console.log(`Contratos encontrados via ${endpoint} com qtype ${qtype}: ${contracts.length}`);
+              break;
+            }
+          }
+        } catch (e) {
+          console.log(`Tentativa ${endpoint} (${qtype}) falhou:`, (e as Error)?.message);
+          continue;
+        }
+      }
+    }
+    if (!contracts.length) {
+      console.log('Nenhum contrato encontrado após múltiplas tentativas');
     }
     
     // Tenta verificar sessões ativas usando endpoints alternativos
     let onlineStatus = false;
     let lastConnection = null;
     
-    // Tenta primeiro com radius_acct (se existir)
     try {
       console.log('Tentando buscar logs de radius...');
-      const radiusForm: Record<string, string> = {
-        qtype: 'cliente_id',
-        query: String(customerId),
-        oper: '=',
-        page: '1',
-        rp: '5',
-        sortname: 'data_inicio',
-        sortorder: 'desc',
-      };
-      
-      // Tenta vários endpoints possíveis para radius
       const radiusEndpoints = ['/radius_acct', '/radius_log', '/sessao_radius', '/conexao'];
-      
-      for (const endpoint of radiusEndpoints) {
-        try {
-          const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusForm);
-          
-          if (radiusOk && radiusData?.registros) {
-            const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
-            console.log(`Endpoint ${endpoint}: encontrados ${logs.length} logs`);
-            
-            if (logs.length > 0) {
-              const latestLog = logs[0];
-              lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
-              
-              // Verifica se tem sessão ativa (sem data_fim ou data_fim null/vazia)
-              onlineStatus = logs.some((log: any) => 
-                !log.data_fim || 
-                log.data_fim === null || 
-                log.data_fim === '' || 
-                !log.acctstoptime ||
-                log.acctstoptime === null ||
-                log.acctstoptime === ''
-              );
-              
-              console.log(`Status online encontrado via ${endpoint}: ${onlineStatus}`);
-              break; // Para no primeiro endpoint que funcionar
-            }
+
+      // 1) Se tivermos contratos, tenta por username/login do contrato
+      const candidateUsernames = new Set<string>();
+      for (const c of contracts) {
+        for (const [key, value] of Object.entries(c || {})) {
+          const k = key.toLowerCase();
+          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k.includes(s))) {
+            if (value) candidateUsernames.add(String(value));
           }
-        } catch (endpointError) {
-          console.log(`Endpoint ${endpoint} não funcionou:`, endpointError);
-          continue;
+        }
+      }
+
+      const radiusQtypes = ['username','login','usuario','user','acctusername'];
+      outer_loop:
+      for (const user of candidateUsernames) {
+        for (const endpoint of radiusEndpoints) {
+          for (const qtype of radiusQtypes) {
+            try {
+              const form: Record<string, string> = {
+                qtype,
+                query: user,
+                oper: '=',
+                page: '1',
+                rp: '5',
+                sortname: 'data_inicio',
+                sortorder: 'desc',
+              };
+              const { ok, data } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
+              if (ok && data?.registros) {
+                const logs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+                console.log(`Radius ${endpoint} por ${qtype}=${user}: ${logs.length} logs`);
+                if (logs.length > 0) {
+                  const latestLog = logs[0];
+                  lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
+                  onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
+                  console.log(`Online (username) via ${endpoint}: ${onlineStatus}`);
+                  break outer_loop;
+                }
+              }
+            } catch (_e) { /* tenta próxima combinação */ }
+          }
+        }
+      }
+
+      // 2) Caso não tenha encontrado por username, tenta por cliente_id (fallback)
+      if (!onlineStatus) {
+        const radiusFormCliente: Record<string, string> = {
+          qtype: 'cliente_id',
+          query: String(customerId),
+          oper: '=',
+          page: '1',
+          rp: '5',
+          sortname: 'data_inicio',
+          sortorder: 'desc',
+        };
+
+        for (const endpoint of radiusEndpoints) {
+          try {
+            const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusFormCliente);
+            if (radiusOk && radiusData?.registros) {
+              const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
+              console.log(`Endpoint ${endpoint} (cliente_id): ${logs.length} logs`);
+              if (logs.length > 0) {
+                const latestLog = logs[0];
+                lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
+                onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
+                console.log(`Online (cliente_id) via ${endpoint}: ${onlineStatus}`);
+                break;
+              }
+            }
+          } catch (_e) { continue; }
         }
       }
     } catch (radiusError) {
