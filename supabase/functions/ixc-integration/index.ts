@@ -129,7 +129,20 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
     body,
   });
 
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`HTTP ${response.status}:`, text);
+    throw new Error(`Erro HTTP ${response.status}: ${text}`);
+  }
+
   const text = await response.text();
+  
+  // Verifica se retornou HTML de erro do IXC
+  if (text.includes('<div') && text.includes('Ocorreu um erro ao processar')) {
+    console.error('IXC retornou erro HTML:', text);
+    throw new Error('Erro interno do IXC - parâmetros inválidos ou endpoint não suportado');
+  }
+
   let data: any;
   try {
     data = JSON.parse(text);
@@ -190,22 +203,16 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
 }
 
 async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
-  // Normaliza a busca e tenta múltiplas estratégias compatíveis com diferentes instalações IXC
   const raw = String(query ?? '').trim();
   const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
-  const digits = q.replace(/\D/g, '');
-
-  const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [
-    { qtype: 'razao',          oper: 'like',   sortname: 'razao',          q: `%${q}%` },
-    { qtype: 'cliente.razao',  oper: 'like',   sortname: 'cliente.razao',  q: `%${q}%` },
-    { qtype: 'nome_fantasia',  oper: 'like',   sortname: 'nome_fantasia',  q: `%${q}%` },
-    { qtype: 'fantasia',       oper: 'like',   sortname: 'fantasia',       q: `%${q}%` },
-    { qtype: 'cnpj_cpf',       oper: 'like',   sortname: 'razao',          q: `%${digits || q}%` },
-  ];
   
-  if (digits.length >= 11) {
-    attempts.unshift({ qtype: 'cnpj_cpf', oper: '=', sortname: 'razao', q: digits });
-  }
+  // Baseado na documentação: usar "L" para operador LIKE (contém)
+  const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [
+    { qtype: 'cliente.razao',      oper: 'L',   sortname: 'cliente.razao',      q },
+    { qtype: 'cliente.fantasia',   oper: 'L',   sortname: 'cliente.fantasia',   q },
+    { qtype: 'razao',              oper: 'L',   sortname: 'razao',              q },
+    { qtype: 'fantasia',           oper: 'L',   sortname: 'fantasia',           q },
+  ];
 
   for (const attempt of attempts) {
     try {
@@ -220,20 +227,20 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
       };
 
       const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
-      if (ok && data && (data.registros || data.data)) {
-        const registros = data.registros ? normalizeRegistros(data.registros) : data.data;
-        if (Array.isArray(registros)) {
-          console.log(`searchCustomers: tentativa bem-sucedida (${attempt.qtype}) com ${registros.length} resultados`);
+      if (ok && data && data.registros) {
+        const registros = normalizeRegistros(data.registros);
+        if (Array.isArray(registros) && registros.length > 0) {
+          console.log(`searchCustomers: sucesso com ${attempt.qtype} - ${registros.length} resultados`);
           return registros as IXCCustomer[];
         }
       }
     } catch (e) {
-      console.warn(`searchCustomers: tentativa falhou (${attempt.qtype}):`, (e as Error)?.message);
-      // Continua para a próxima tentativa
+      console.warn(`searchCustomers: tentativa ${attempt.qtype} falhou:`, (e as Error)?.message);
+      // Continua para próxima tentativa
     }
   }
 
-  // Fallback: carrega um lote e filtra localmente (evita erro HTML do IXC ao usar qtype inválido)
+  // Fallback: carrega um lote e filtra localmente
   try {
     const lote = await getCustomers(baseUrl, auth, { limit: 200, page: 1, orderBy: 'razao', order: 'asc' });
     const qLower = q.toLowerCase();
