@@ -174,29 +174,58 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
 }
 
 async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
-  const form: Record<string, string> = {
-    qtype: 'cliente.razao',
-    query,
-    oper: 'like',
-    page: '1',
-    rp: '50',
-    sortname: 'cliente.razao',
-    sortorder: 'asc',
-  };
+  // Normaliza a busca e tenta múltiplas estratégias compatíveis com diferentes instalações IXC
+  const q = query.trim().replace(/\s+/g, ' ');
 
-  const { ok, status, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
-  console.log('Resposta completa da API IXC (searchCustomers):', JSON.stringify(data, null, 2));
+  const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [
+    { qtype: 'razao',          oper: 'like',   sortname: 'razao',          q: `%${q}%` },
+    { qtype: 'cliente.razao',  oper: 'like',   sortname: 'cliente.razao',  q: `%${q}%` },
+    { qtype: 'nome_fantasia',  oper: 'like',   sortname: 'nome_fantasia',  q: `%${q}%` },
+    { qtype: 'fantasia',       oper: 'like',   sortname: 'fantasia',       q: `%${q}%` },
+    { qtype: 'cnpj_cpf',       oper: 'like',   sortname: 'razao',          q: `%${q}%` },
+  ];
 
-  if (!ok) {
-    throw new Error(`Erro ao buscar clientes: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
+  for (const attempt of attempts) {
+    try {
+      const form: Record<string, string> = {
+        qtype: attempt.qtype,
+        query: attempt.q,
+        oper: attempt.oper,
+        page: '1',
+        rp: '50',
+        sortname: attempt.sortname,
+        sortorder: 'asc',
+      };
+
+      const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
+      if (ok && data && (data.registros || data.data)) {
+        const registros = data.registros ? normalizeRegistros(data.registros) : data.data;
+        if (Array.isArray(registros)) {
+          console.log(`searchCustomers: tentativa bem-sucedida (${attempt.qtype}) com ${registros.length} resultados`);
+          return registros as IXCCustomer[];
+        }
+      }
+    } catch (e) {
+      console.warn(`searchCustomers: tentativa falhou (${attempt.qtype}):`, (e as Error)?.message);
+      // Continua para a próxima tentativa
+    }
   }
 
-  if (data.type === 'success' && data.registros) {
-    return normalizeRegistros(data.registros);
+  // Fallback: carrega um lote e filtra localmente (evita erro HTML do IXC ao usar qtype inválido)
+  try {
+    const lote = await getCustomers(baseUrl, auth, { limit: 200, page: 1, orderBy: 'razao', order: 'asc' });
+    const qLower = q.toLowerCase();
+    const filtrados = (lote || []).filter((c) =>
+      [c.razao, c.nome_fantasia, c.cnpj_cpf]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(qLower))
+    );
+    console.log(`searchCustomers: fallback local retornou ${filtrados.length} resultados`);
+    return filtrados;
+  } catch (e) {
+    console.error('searchCustomers: fallback também falhou:', (e as Error)?.message);
+    throw new Error('Não foi possível realizar a busca no IXC');
   }
-  if (data.data) return data.data;
-  console.log('Estrutura de dados não reconhecida:', data);
-  return [];
 }
 
 async function testConnection(baseUrl: string, auth: string): Promise<{ status: string; message: string }> {
