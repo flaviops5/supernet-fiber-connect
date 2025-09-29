@@ -25,9 +25,24 @@ interface IXCCustomer {
 
 function normalizeRegistros(input: any): IXCCustomer[] {
   if (!input) return [];
-  if (Array.isArray(input)) return input as IXCCustomer[];
-  if (typeof input === 'object') return Object.values(input) as IXCCustomer[];
-  return [];
+  const arr = Array.isArray(input) ? input : (typeof input === 'object' ? Object.values(input) : []);
+  // Normaliza chaves divergentes (ex.: fantasia -> nome_fantasia)
+  return arr.map((r: any) => ({
+    id: String(r.id ?? ''),
+    razao: String(r.razao ?? r.nome ?? ''),
+    nome_fantasia: r.nome_fantasia ?? r.fantasia ?? undefined,
+    cnpj_cpf: String(r.cnpj_cpf ?? r.cnpj ?? r.cpf ?? ''),
+    email: r.email ?? r.hotsite_email ?? undefined,
+    telefone_comercial: r.telefone_comercial ?? undefined,
+    telefone_celular: r.telefone_celular ?? r.whatsapp ?? undefined,
+    endereco: r.endereco ?? undefined,
+    numero: r.numero ?? undefined,
+    bairro: r.bairro ?? undefined,
+    cidade: r.cidade ?? undefined,
+    uf: r.uf ?? undefined,
+    cep: r.cep ?? undefined,
+    status: r.status ?? r.ativo ?? undefined,
+  })) as IXCCustomer[];
 }
 
 serve(async (req) => {
@@ -139,10 +154,11 @@ async function getCustomers(baseUrl: string, auth: string, params: any): Promise
     throw new Error(`Erro ao buscar clientes: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
   }
 
-  if (data.type === 'success' && data.registros) {
+  // Muitas instalações retornam { page, total, registros } sem "type"
+  if (data && data.registros) {
     return normalizeRegistros(data.registros);
   }
-  if (data.data) return data.data;
+  if (data && data.data) return data.data;
   console.log('Estrutura de dados não reconhecida:', data);
   return [];
 }
@@ -164,7 +180,7 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
     throw new Error(`Erro ao buscar cliente: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
   }
 
-  if (data.type === 'success' && data.registros) {
+  if (data && data.registros) {
     const arr = normalizeRegistros(data.registros);
     return arr.length ? arr[0] : null;
   }

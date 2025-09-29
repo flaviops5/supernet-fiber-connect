@@ -245,10 +245,10 @@ const IXCIntegration = () => {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
-                            <h4 className="font-semibold">{customer.razao}</h4>
-                            {customer.nome_fantasia && (
+                            <h4 className="font-semibold">{customer.razao || 'Sem nome'}</h4>
+                            {(customer.nome_fantasia || (customer as any).fantasia) && (
                               <p className="text-sm text-muted-foreground">
-                                {customer.nome_fantasia}
+                                {customer.nome_fantasia || (customer as any).fantasia}
                               </p>
                             )}
                             <p className="text-sm">
