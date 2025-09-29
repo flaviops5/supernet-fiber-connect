@@ -516,6 +516,43 @@ const IXCIntegration = () => {
                         {customerStatus.accessStatus && (
                           <div className="mt-4 pt-4 border-t">
                             <Label className="text-base font-semibold">Status de Acesso no Sistema</Label>
+                            
+                            {/* Status Principal */}
+                            {customerStatus.accessStatus.statusDeAcesso && (
+                              <div className="mb-4 p-3 rounded-lg bg-muted">
+                                <Label className="text-sm font-medium">STATUS DE ACESSO</Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  {customerStatus.accessStatus.statusDeAcesso === 'ATIVO' && (
+                                    <div className="flex items-center gap-2 text-green-600">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <span className="font-semibold">ATIVO</span>
+                                      <span className="text-sm text-muted-foreground">- Serviço normalizado</span>
+                                    </div>
+                                  )}
+                                  {customerStatus.accessStatus.statusDeAcesso === 'BLOQUEADO' && (
+                                    <div className="flex items-center gap-2 text-red-600">
+                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                      <span className="font-semibold">BLOQUEADO</span>
+                                      <span className="text-sm text-muted-foreground">- Inadimplência {'>'}30 dias, serviço interrompido</span>
+                                    </div>
+                                  )}
+                                  {customerStatus.accessStatus.statusDeAcesso === 'FINANCEIRO EM ATRASO' && (
+                                    <div className="flex items-center gap-2 text-yellow-600">
+                                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                      <span className="font-semibold">FINANCEIRO EM ATRASO</span>
+                                      <span className="text-sm text-muted-foreground">- Inadimplência {'>'}20 dias, velocidade reduzida</span>
+                                    </div>
+                                  )}
+                                  {!['ATIVO', 'BLOQUEADO', 'FINANCEIRO EM ATRASO'].includes(customerStatus.accessStatus.statusDeAcesso) && (
+                                    <div className="flex items-center gap-2 text-blue-600">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                      <span className="font-semibold">{customerStatus.accessStatus.statusDeAcesso}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
                             <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
                               <div>
                                 <Label>Cliente Ativo</Label>
@@ -544,6 +581,23 @@ const IXCIntegration = () => {
                                 </p>
                               </div>
                             </div>
+                            
+                            {/* Debug: Mostrar todos os campos relacionados a status */}
+                            {customerStatus.accessStatus.allFields && Object.keys(customerStatus.accessStatus.allFields).length > 0 && (
+                              <details className="mt-4">
+                                <summary className="cursor-pointer text-sm text-muted-foreground">
+                                  Debug: Campos de status encontrados ({Object.keys(customerStatus.accessStatus.allFields).length})
+                                </summary>
+                                <div className="mt-2 p-2 bg-muted rounded text-xs">
+                                  {Object.entries(customerStatus.accessStatus.allFields).map(([key, value]) => (
+                                    <div key={key} className="flex justify-between">
+                                      <span className="font-mono">{key}:</span>
+                                      <span>{String(value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            )}
                           </div>
                         )}
                       </div>

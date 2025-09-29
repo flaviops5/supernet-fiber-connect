@@ -361,22 +361,64 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.warn('Erro geral ao buscar logs de radius:', radiusError);
     }
 
-    // Verifica campos específicos do cliente que podem indicar status de acesso
+    // Procura especificamente pelo campo "STATUS DE ACESSO" e campos relacionados
     let accessStatus = null;
+    let statusDeAcesso = null;
+    
     if (customerData) {
-      // Procura por campos relacionados a status de acesso
+      // Primeiro, procura por campos que podem conter o "STATUS DE ACESSO"
+      // Campos possíveis: status_acesso, situacao, status, ativo, etc.
+      const possibleStatusFields = [
+        'status_acesso', 'STATUS_ACESSO', 'status_de_acesso',
+        'situacao', 'SITUACAO', 'situacao_cliente',
+        'status_cliente', 'status_contrato', 'status_servico',
+        'status_financeiro', 'situacao_financeira'
+      ];
+      
+      for (const field of possibleStatusFields) {
+        if (customerData[field] !== undefined && customerData[field] !== null) {
+          statusDeAcesso = customerData[field];
+          console.log(`Campo ${field} encontrado com valor:`, statusDeAcesso);
+          break;
+        }
+      }
+      
+      // Se não encontrou um campo específico, tenta interpretar com base nos campos disponíveis
+      if (!statusDeAcesso) {
+        // Verifica se cliente está ativo
+        if (customerData.ativo === 'S') {
+          // Cliente ativo, mas precisa verificar situação financeira
+          if (customerData.participa_cobranca === 'S') {
+            statusDeAcesso = 'ATIVO';
+          }
+        } else if (customerData.ativo === 'N') {
+          statusDeAcesso = 'BLOQUEADO';
+        }
+      }
+      
       accessStatus = {
+        statusDeAcesso: statusDeAcesso,
         ativo: customerData.ativo,
         acesso_automatico_central: customerData.acesso_automatico_central,
         hotsite_acesso: customerData.hotsite_acesso,
         status_prospeccao: customerData.status_prospeccao,
         ultima_atualizacao: customerData.ultima_atualizacao,
-        // Outros campos que podem indicar status
         participa_cobranca: customerData.participa_cobranca,
         cob_envia_email: customerData.cob_envia_email,
-        tipo_assinante: customerData.tipo_assinante
+        tipo_assinante: customerData.tipo_assinante,
+        // Log todos os campos para debug
+        allFields: Object.keys(customerData).filter(key => 
+          key.toLowerCase().includes('status') || 
+          key.toLowerCase().includes('situacao') ||
+          key.toLowerCase().includes('ativo')
+        ).reduce((obj: any, key) => {
+          obj[key] = customerData[key];
+          return obj;
+        }, {})
       };
-      console.log('Status de acesso encontrado:', accessStatus);
+      
+      console.log('Status de acesso completo encontrado:', accessStatus);
+      console.log('Todos os campos do cliente:', Object.keys(customerData));
     }
 
     const result = {
