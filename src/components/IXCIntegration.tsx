@@ -516,20 +516,80 @@ const IXCIntegration = () => {
                       </Button>
                     </div>
                     
+                    {/* Mostrar SEM STATUS quando não verificado */}
+                    {!customerStatus && !statusLoading && (
+                      <div className="p-4 rounded-lg border-2 border-muted bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Activity className="h-6 w-6 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Status de Conexão</p>
+                              <p className="text-xl font-bold text-muted-foreground">SEM STATUS</p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-lg px-4 py-2">
+                            N/A
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Clique em "Verificar Status" para checar se o cliente está online
+                        </p>
+                      </div>
+                    )}
+                    
                     {customerStatus && (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          {customerStatus.isOnline ? (
-                            <div className="flex items-center gap-2 text-green-600">
-                              <Wifi className="h-4 w-4" />
-                              <span className="font-medium">Cliente Online</span>
+                        {/* Indicador de Status Online - Destaque Principal */}
+                        <div className="p-4 rounded-lg border-2" style={{
+                          borderColor: customerStatus.isOnline === true ? 'hsl(var(--success))' : 
+                                       customerStatus.isOnline === false ? 'hsl(var(--destructive))' : 
+                                       'hsl(var(--muted))',
+                          backgroundColor: customerStatus.isOnline === true ? 'hsl(var(--success) / 0.1)' : 
+                                          customerStatus.isOnline === false ? 'hsl(var(--destructive) / 0.1)' : 
+                                          'hsl(var(--muted) / 0.3)'
+                        }}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {customerStatus.isOnline === true ? (
+                                <>
+                                  <div className="relative">
+                                    <Wifi className="h-6 w-6 text-green-600" />
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Status de Conexão</p>
+                                    <p className="text-xl font-bold text-green-600">ONLINE</p>
+                                  </div>
+                                </>
+                              ) : customerStatus.isOnline === false ? (
+                                <>
+                                  <WifiOff className="h-6 w-6 text-red-600" />
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Status de Conexão</p>
+                                    <p className="text-xl font-bold text-red-600">OFFLINE</p>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Activity className="h-6 w-6 text-muted-foreground" />
+                                  <div>
+                                    <p className="text-sm text-muted-foreground">Status de Conexão</p>
+                                    <p className="text-xl font-bold text-muted-foreground">SEM STATUS</p>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-red-600">
-                              <WifiOff className="h-4 w-4" />
-                              <span className="font-medium">Cliente Offline</span>
-                            </div>
-                          )}
+                            <Badge 
+                              variant={customerStatus.isOnline === true ? 'default' : 
+                                      customerStatus.isOnline === false ? 'destructive' : 
+                                      'secondary'}
+                              className="text-lg px-4 py-2"
+                            >
+                              {customerStatus.isOnline === true ? 'SIM' : 
+                               customerStatus.isOnline === false ? 'NÃO' : 
+                               'N/A'}
+                            </Badge>
+                          </div>
                         </div>
                         
                         {customerStatus.lastConnection && (
