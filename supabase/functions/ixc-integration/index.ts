@@ -478,34 +478,37 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     }
 
     // Classificação do status de serviço baseada nos contratos
-    // Prioridade: 1. Suspensão Parcial (Financeiro em Atraso) 2. Bloqueio Total 3. Normalizado
-    
-    const hasFinancialDelay = contracts.some((c: any) => {
-      // Indicadores de suspensão parcial (redução de velocidade)
-      const si = String(c.status_internet ?? '').toUpperCase();
-      const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
-      const hasSuspension = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' && 
-                            (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
-      const hasFinancialAtraso = c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00';
-      
-      return si === 'FA' || 
-             statusVelocidade === 'R' || 
-             hasSuspension || 
-             (hasFinancialAtraso && c.pago_ate_data && new Date(c.pago_ate_data) < new Date());
-    });
+    // Regras:
+    // - BLOQUEADO: não está online e contrato indica bloqueio (CA/CM/BLOQ/BLOQUEADO/BL) ou acesso desativado
+    // - FINANCEIRO EM ATRASO: indicadores de atraso/suspensão parcial (FA, redução de velocidade, janela de suspensão, vencimento em atraso)
+    // - ATIVO: caso contrário
+    const now = new Date();
 
-    const hasBlocked = contracts.some((c: any) => {
-      // Indicadores de bloqueio total (acesso completamente desativado)
+    const isBlocked = contracts.some((c: any) => {
       const si = String(c.status_internet ?? '').toUpperCase();
       const accessDisabled = c.data_acesso_desativado && c.data_acesso_desativado !== '0000-00-00';
-      const blockedBySI = si === 'BLOQ' || si === 'BLOQUEADO' || si === 'BL';
-      
-      return blockedBySI || accessDisabled;
+      const autoBlockedActive = !!c.dt_ult_bloq_auto && (
+        !c.dt_ult_desbloq_auto && !c.dt_ult_des_bloq_conf ||
+        new Date(c.dt_ult_bloq_auto) >= new Date(c.dt_ult_des_bloq_conf || '1900-01-01')
+      );
+      const blockedByCode = ['CA','CM','BLOQ','BLOQUEADO','BL'].includes(si);
+      // Considera bloqueado apenas se não estiver online (evita falso positivo como no caso do Thiago)
+      return !onlineStatus && (blockedByCode || accessDisabled || autoBlockedActive);
     });
 
-    const normalizedStatus = hasBlocked
+    const hasFinancialDelay = contracts.some((c: any) => {
+      const si = String(c.status_internet ?? '').toUpperCase();
+      const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
+      const hasSuspensionWindow = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' &&
+        (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
+      const overduePayment = !!c.pago_ate_data && new Date(c.pago_ate_data) < now;
+      const hasFinancialAtraso = !!c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00';
+      return si === 'FA' || statusVelocidade === 'R' || hasSuspensionWindow || overduePayment || hasFinancialAtraso;
+    });
+
+    const normalizedStatus = isBlocked
       ? 'BLOQUEADO'
-      : (hasFinancialDelay ? 'FINANCEIRO EM ATRASO' : 'SERVIÇO NORMALIZADO');
+      : (hasFinancialDelay ? 'FINANCEIRO EM ATRASO' : 'ATIVO');
 
     const result = {
       isOnline: onlineStatus,
