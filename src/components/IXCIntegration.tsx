@@ -185,6 +185,35 @@ const IXCIntegration = () => {
     }
   };
 
+  const loadCustomersByStatus = async (status: string) => {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-integration', {
+        body: { 
+          action: 'getCustomersByStatus',
+          params: { status, limit: 100, page: 1 }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setCustomers(data.data || []);
+        setLastResponse(data);
+        setDebugInfo(`Clientes com status "${status}" - Encontrados: ${data.data?.length || 0} registros`);
+        toast.success(`${data.data?.length || 0} clientes com status "${status}" encontrados`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar clientes por status:', error);
+      toast.error('Erro ao buscar clientes por status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatPhone = (phone?: string) => {
     if (!phone) return 'N/A';
     return phone.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
@@ -271,33 +300,41 @@ const IXCIntegration = () => {
                   onKeyPress={(e) => e.key === 'Enter' && searchCustomers()}
                 />
               </div>
-              <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2">
+              <Button 
+                onClick={searchCustomers} 
+                disabled={loading}
+                variant="outline"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
                 <Button 
-                  onClick={searchCustomers} 
+                  onClick={loadCustomers} 
+                  disabled={loading}
+                >
+                  {loading ? 'Carregando...' : 'Carregar Todos'}
+                </Button>
+                <Button 
+                  onClick={loadOnlineClients} 
                   disabled={loading}
                   variant="outline"
                 >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
+                  <Wifi className="mr-2 h-4 w-4" />
+                  {loading ? 'Carregando...' : 'Clientes Online'}
                 </Button>
-                  <Button 
-                    onClick={loadCustomers} 
-                    disabled={loading}
-                  >
-                    {loading ? 'Carregando...' : 'Carregar Todos'}
-                  </Button>
-                  <Button 
-                    onClick={loadOnlineClients} 
-                    disabled={loading}
-                    variant="outline"
-                  >
-                    <Wifi className="mr-2 h-4 w-4" />
-                    {loading ? 'Carregando...' : 'Clientes Online'}
-                  </Button>
-              </div>
+                <Button 
+                  onClick={() => loadCustomersByStatus('FINANCEIRO EM ATRASO')} 
+                  disabled={loading}
+                  variant="destructive"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  {loading ? 'Carregando...' : 'Financeiro em Atraso'}
+                </Button>
+            </div>
             </div>
 
             {/* Lista de Clientes Online */}

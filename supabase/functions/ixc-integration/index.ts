@@ -109,6 +109,10 @@ serve(async (req) => {
         result = await getOnlineClients(baseUrl, auth, params);
         break;
       
+      case 'getCustomersByStatus':
+        result = await getCustomersByStatus(baseUrl, auth, params);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -580,6 +584,49 @@ async function getOnlineClients(baseUrl: string, auth: string, params: any): Pro
   } catch (error) {
     console.error('Erro ao buscar clientes online:', error);
     throw new Error(`Erro ao buscar clientes online: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function getCustomersByStatus(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
+  try {
+    const status = params.status;
+    const limit = params.limit || 100;
+    const page = params.page || 1;
+    
+    console.log(`🔍 Buscando clientes com status "${status}" - Página: ${page}, Limite: ${limit}`);
+    
+    // Buscar todos os clientes primeiro
+    const customersData = await getCustomers(baseUrl, auth, { limit, page });
+    
+    if (!customersData || !Array.isArray(customersData)) {
+      return [];
+    }
+
+    // Filtrar clientes por status
+    const clientsWithStatus = [];
+    
+    for (const customer of customersData) {
+      try {
+        // Verificar status de cada cliente
+        const statusData = await getCustomerStatus(baseUrl, auth, customer.id);
+        
+        if (statusData?.accessStatus?.statusDeAcesso === status) {
+          clientsWithStatus.push({
+            ...customer,
+            statusInfo: statusData.accessStatus
+          });
+        }
+      } catch (error) {
+        console.error(`Erro ao verificar status do cliente ${customer.id}:`, error);
+      }
+    }
+
+    console.log(`✅ Encontrados ${clientsWithStatus.length} clientes com status "${status}"`);
+    return clientsWithStatus;
+    
+  } catch (error) {
+    console.error('Erro ao buscar clientes por status:', error);
+    throw new Error(`Erro ao buscar clientes por status: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
 
