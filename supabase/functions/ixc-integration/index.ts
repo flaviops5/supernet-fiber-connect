@@ -344,6 +344,39 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
         const regs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
         contracts = regs;
         console.log(`Contratos encontrados: ${contracts.length}`);
+        
+        // Para cada contrato, buscar produtos/serviços vinculados
+        for (const contract of contracts) {
+          try {
+            console.log(`Buscando produtos do contrato ${contract.id}...`);
+            const productsForm: Record<string, string> = {
+              qtype: 'su_oss_chamado.id',
+              query: '1',
+              oper: '>=',
+              page: '1',
+              rp: '100',
+              sortname: 'su_oss_chamado.id',
+              sortorder: 'desc',
+              grid_param: JSON.stringify([{
+                TB: 'su_oss_chamado.id_cliente_contrato',
+                OP: '=',
+                P: String(contract.id)
+              }])
+            };
+            
+            const { ok: prodOk, data: prodData } = await postIXC(`${baseUrl}/su_oss_chamado`, auth, productsForm);
+            if (prodOk && prodData?.registros) {
+              const products = Array.isArray(prodData.registros) ? prodData.registros : Object.values(prodData.registros || {});
+              contract.produtos = products;
+              console.log(`✅ ${products.length} produto(s) encontrado(s) para contrato ${contract.id}`);
+            } else {
+              contract.produtos = [];
+            }
+          } catch (e) {
+            console.error(`Erro ao buscar produtos do contrato ${contract.id}:`, (e as Error)?.message);
+            contract.produtos = [];
+          }
+        }
       }
     } catch (e) {
       console.error('Erro ao buscar contratos:', (e as Error)?.message);

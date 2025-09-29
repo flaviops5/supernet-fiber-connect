@@ -201,11 +201,58 @@ function parseDocumentationContent(content: string): DocumentationEntry[] {
       description: 'Lista todos os contratos ativos e inativos',
       category: 'contratos',
       tags: ['contratos', 'serviços'],
+    },
+    {
+      endpoint: '/su_oss_chamado',
+      method: 'POST',
+      title: 'Listar Produtos/Serviços dos Contratos',
+      description: 'Lista produtos e serviços vinculados aos contratos (ex: Telemedicina, Antivírus, etc)',
+      category: 'contratos',
+      tags: ['contratos', 'produtos', 'serviços', 'telemedicina'],
       parameters: [
         { name: 'page', type: 'string', description: 'Número da página' },
         { name: 'rp', type: 'string', description: 'Registros por página' },
-        { name: 'cliente_id', type: 'string', description: 'ID do cliente' }
-      ]
+        { name: 'qtype', type: 'string', description: 'Tipo de consulta (ex: su_oss_chamado.id)' },
+        { name: 'query', type: 'string', description: 'Valor para busca' },
+        { name: 'oper', type: 'string', description: 'Operador: = (igual), >= (maior ou igual)' },
+        { name: 'grid_param', type: 'string', description: 'Filtro avançado JSON para id_cliente_contrato' }
+      ],
+      request_body: {
+        page: "1",
+        rp: "100",
+        qtype: "su_oss_chamado.id",
+        query: "1",
+        oper: ">=",
+        sortname: "su_oss_chamado.id",
+        sortorder: "desc",
+        grid_param: JSON.stringify([{
+          TB: "su_oss_chamado.id_cliente_contrato",
+          OP: "=",
+          P: "12345"
+        }])
+      },
+      response_example: {
+        page: "1",
+        total: 2,
+        registros: [
+          {
+            id: "1001",
+            id_cliente_contrato: "12345",
+            descricao: "Telemedicina Premium",
+            valor: "49.90",
+            status: "Ativo",
+            tipo_produto: "Serviço Adicional"
+          },
+          {
+            id: "1002",
+            id_cliente_contrato: "12345",
+            descricao: "Antivírus Kaspersky",
+            valor: "19.90",
+            status: "Ativo",
+            tipo_produto: "Serviço Adicional"
+          }
+        ]
+      }
     },
     {
       endpoint: '/caixa',
