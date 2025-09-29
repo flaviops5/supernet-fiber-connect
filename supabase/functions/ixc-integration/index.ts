@@ -334,18 +334,44 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     try {
       console.log('Verificando status online via /radusuarios...');
       
-      // 1) Extrair logins dos contratos
+      // 1) Extrair logins dos contratos E do próprio cliente
       const candidateLogins = new Set<string>();
+      
+      // Buscar login nos contratos
       for (const c of contracts) {
         for (const [key, value] of Object.entries(c || {})) {
           const k = key.toLowerCase();
           if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k.includes(s))) {
-            if (value) candidateLogins.add(String(value));
+            if (value && String(value).trim() && String(value) !== '0') candidateLogins.add(String(value).trim());
           }
         }
       }
       
-      console.log(`Logins encontrados nos contratos: ${Array.from(candidateLogins).join(', ')}`);
+      // Buscar login no cadastro do cliente
+      if (customerData) {
+        for (const [key, value] of Object.entries(customerData)) {
+          const k = key.toLowerCase();
+          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user','senha'].some(s => k.includes(s))) {
+            if (value && String(value).trim() && String(value) !== '0' && String(value) !== '1234') {
+              candidateLogins.add(String(value).trim());
+            }
+          }
+        }
+        
+        // Tentar também com CPF/CNPJ como possível login
+        if (customerData.cnpj_cpf) {
+          const cpfCnpj = String(customerData.cnpj_cpf).replace(/[^\d]/g, '');
+          if (cpfCnpj) candidateLogins.add(cpfCnpj);
+        }
+        
+        // Tentar com email como possível login
+        if (customerData.email || customerData.hotsite_email) {
+          const email = customerData.email || customerData.hotsite_email;
+          if (email) candidateLogins.add(String(email).trim());
+        }
+      }
+      
+      console.log(`Logins candidatos encontrados: ${Array.from(candidateLogins).join(', ')}`);
 
       // 2) Verificar cada login no endpoint /radusuarios com filtro de online
       for (const login of candidateLogins) {

@@ -104,6 +104,8 @@ const IXCIntegration = () => {
     }
 
     setLoading(true);
+    setSelectedCustomer(null);
+    setCustomerStatus(null);
     
     try {
       const { data, error } = await supabase.functions.invoke('ixc-integration', {
@@ -119,6 +121,14 @@ const IXCIntegration = () => {
         setCustomers(data.data || []);
         setLastResponse(data);
         setDebugInfo(`Busca "${searchQuery}" - Encontrados: ${data.data?.length || 0} registros`);
+        
+        // Se encontrou apenas 1 cliente, seleciona automaticamente e busca status
+        if (data.data?.length === 1) {
+          const customer = data.data[0];
+          setSelectedCustomer(customer);
+          await checkCustomerStatus(customer.id);
+        }
+        
         toast.success(`${data.data?.length || 0} clientes encontrados`);
       } else {
         throw new Error(data.error);
@@ -277,8 +287,7 @@ const IXCIntegration = () => {
       </Card>
 
       {/* Busca de Clientes */}
-      {connectionStatus === 'success' && (
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -391,30 +400,23 @@ const IXCIntegration = () => {
                 <Separator />
                 <div className="grid gap-4 max-h-96 overflow-y-auto">
                   {customers.map((customer) => (
-                    <Card 
+                     <Card 
                       key={customer.id} 
                       className={`cursor-pointer transition-colors ${
                         selectedCustomer?.id === customer.id ? 'bg-muted' : 'hover:bg-muted/50'
                       }`}
-                      onClick={() => setSelectedCustomer(customer)}
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        checkCustomerStatus(customer.id);
+                      }}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <h4 className="font-semibold">{customer.razao || 'Sem nome'}</h4>
-                            {(customer.nome_fantasia || (customer as any).fantasia) && (
-                              <p className="text-sm text-muted-foreground">
-                                {customer.nome_fantasia || (customer as any).fantasia}
-                              </p>
-                            )}
                             <p className="text-sm">
                               <span className="font-medium">Doc:</span> {formatDocument(customer.cnpj_cpf)}
                             </p>
-                            {customer.email && (
-                              <p className="text-sm">
-                                <span className="font-medium">Email:</span> {customer.email}
-                              </p>
-                            )}
                             {(customer.telefone_comercial || customer.telefone_celular) && (
                               <p className="text-sm">
                                 <span className="font-medium">Fone:</span> {
@@ -448,22 +450,10 @@ const IXCIntegration = () => {
                       <Label>Razão Social</Label>
                       <p>{selectedCustomer.razao}</p>
                     </div>
-                    {selectedCustomer.nome_fantasia && (
-                      <div>
-                        <Label>Nome Fantasia</Label>
-                        <p>{selectedCustomer.nome_fantasia}</p>
-                      </div>
-                    )}
                     <div>
                       <Label>CNPJ/CPF</Label>
                       <p>{formatDocument(selectedCustomer.cnpj_cpf)}</p>
                     </div>
-                    {selectedCustomer.email && (
-                      <div>
-                        <Label>Email</Label>
-                        <p>{selectedCustomer.email}</p>
-                      </div>
-                    )}
                     {selectedCustomer.telefone_comercial && (
                       <div>
                         <Label>Telefone Comercial</Label>
@@ -497,47 +487,18 @@ const IXCIntegration = () => {
                     )}
                   </div>
                   
-                  {/* Verificação de Status Online */}
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center justify-between mb-4">
-                      <Label className="text-base font-semibold">Status de Conexão</Label>
-                      <Button 
-                        onClick={() => checkCustomerStatus(selectedCustomer.id)}
-                        disabled={statusLoading}
-                        size="sm"
-                        variant="outline"
-                      >
-                        {statusLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Activity className="h-4 w-4 mr-2" />
-                        )}
-                        Verificar Status
-                      </Button>
-                    </div>
+                  <Separator className="my-4" />
+                  
+                  {/* Status de Conexão */}
+                  <div className="space-y-4">
+                    <Label className="text-lg font-semibold">Status de Conexão</Label>
                     
-                    {/* Mostrar SEM STATUS quando não verificado */}
-                    {!customerStatus && !statusLoading && (
-                      <div className="p-4 rounded-lg border-2 border-muted bg-muted/30">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Activity className="h-6 w-6 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm text-muted-foreground">Status de Conexão</p>
-                              <p className="text-xl font-bold text-muted-foreground">SEM STATUS</p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-lg px-4 py-2">
-                            N/A
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Clique em "Verificar Status" para checar se o cliente está online
-                        </p>
+                    {statusLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Carregando status...</span>
                       </div>
-                    )}
-                    
-                    {customerStatus && (
+                    ) : customerStatus ? (
                       <div className="space-y-3">
                         {/* Indicador de Status Online - Destaque Principal */}
                         <div className="p-4 rounded-lg border-2" style={{
@@ -725,8 +686,13 @@ const IXCIntegration = () => {
                                 </div>
                               </details>
                             )}
-                          </div>
+                           </div>
                         )}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-lg border-2 border-muted bg-muted/30 text-center">
+                        <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Selecione um cliente para ver o status</p>
                       </div>
                     )}
                   </div>
@@ -735,7 +701,6 @@ const IXCIntegration = () => {
             )}
           </CardContent>
         </Card>
-      )}
 
       {/* Debug Information */}
       {debugInfo && (
