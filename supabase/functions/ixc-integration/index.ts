@@ -327,119 +327,99 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.log('Nenhum contrato encontrado após múltiplas tentativas');
     }
     
-    // Tenta verificar sessões ativas usando endpoints alternativos
+    // Verifica status ONLINE usando o endpoint correto: /radusuarios
     let onlineStatus = false;
     let lastConnection = null;
     
     try {
-      console.log('Tentando buscar status online do cliente...');
-      // Endpoints possíveis para verificar status online (testar todos)
-      const radiusEndpoints = [
-        '/fn_acessos_online',      // Função específica para acessos online
-        '/su_acs_sessions_online',  // Sessões ACS online
-        '/radius_online',           // Status radius online
-        '/radius_acct',             // Accounting radius (padrão)
-        '/radius_log',              // Logs radius
-        '/sessao_radius',           // Sessões radius
-        '/conexao'                  // Conexões ativas
-      ];
-
-      // 1) Se tivermos contratos, tenta por username/login do contrato
-      const candidateUsernames = new Set<string>();
+      console.log('Verificando status online via /radusuarios...');
+      
+      // 1) Extrair logins dos contratos
+      const candidateLogins = new Set<string>();
       for (const c of contracts) {
         for (const [key, value] of Object.entries(c || {})) {
           const k = key.toLowerCase();
           if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k.includes(s))) {
-            if (value) candidateUsernames.add(String(value));
+            if (value) candidateLogins.add(String(value));
           }
         }
       }
+      
+      console.log(`Logins encontrados nos contratos: ${Array.from(candidateLogins).join(', ')}`);
 
-      const radiusQtypes = ['username','login','usuario','user','acctusername','cliente_id'];
-      outer_loop:
-      for (const user of candidateUsernames) {
-        for (const endpoint of radiusEndpoints) {
-          for (const qtype of radiusQtypes) {
-            try {
-              const form: Record<string, string> = {
-                qtype,
-                query: user,
-                oper: '=',
-                page: '1',
-                rp: '10',
-                sortname: 'data_inicio',
-                sortorder: 'desc',
-              };
-              const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
-              console.log(`Testando endpoint ${endpoint} com ${qtype}=${user}: HTTP ${httpStatus}`);
-              
-              if (ok && data) {
-                console.log(`✓ Endpoint ${endpoint} respondeu OK. Estrutura:`, JSON.stringify(data, null, 2).substring(0, 500));
-                
-                if (data?.registros) {
-                  const logs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-                  console.log(`✓✓ ${endpoint} retornou ${logs.length} registros com ${qtype}=${user}`);
-                  
-                  if (logs.length > 0) {
-                    const latestLog = logs[0];
-                    console.log('Último registro:', JSON.stringify(latestLog, null, 2).substring(0, 300));
-                    
-                    lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
-                    onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
-                    console.log(`✓✓✓ ENCONTRADO! Online via ${endpoint}: ${onlineStatus}, Última conexão: ${lastConnection}`);
-                    break outer_loop;
-                  }
-                }
-              }
-            } catch (e) { 
-              console.log(`✗ Endpoint ${endpoint} com ${qtype} falhou:`, (e as Error)?.message);
-            }
-          }
-        }
-      }
-
-      // 2) Caso não tenha encontrado por username, tenta por cliente_id (fallback)
-      if (!onlineStatus) {
-        console.log('Nenhum username encontrado, tentando buscar por cliente_id...');
-        const radiusFormCliente: Record<string, string> = {
-          qtype: 'cliente_id',
-          query: String(customerId),
-          oper: '=',
-          page: '1',
-          rp: '10',
-          sortname: 'data_inicio',
-          sortorder: 'desc',
-        };
-
-        for (const endpoint of radiusEndpoints) {
-          try {
-            const { ok: radiusOk, data: radiusData, status: httpStatus } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusFormCliente);
-            console.log(`Testando ${endpoint} com cliente_id=${customerId}: HTTP ${httpStatus}`);
+      // 2) Verificar cada login no endpoint /radusuarios com filtro de online
+      for (const login of candidateLogins) {
+        try {
+          // Buscar este login específico com filtro para apenas usuários ONLINE
+          const form: Record<string, string> = {
+            qtype: 'radusuarios.login',
+            query: login,
+            oper: '=',
+            page: '1',
+            rp: '20',
+            grid_param: JSON.stringify([{
+              TB: 'radusuarios.online',
+              OP: '=',
+              P: 'S'
+            }])
+          };
+          
+          const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}/radusuarios`, auth, form);
+          console.log(`Verificando login "${login}" no /radusuarios: HTTP ${httpStatus}`);
+          
+          if (ok && data?.registros) {
+            const users = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+            console.log(`✓ /radusuarios retornou ${users.length} usuários online para login "${login}"`);
             
-            if (radiusOk && radiusData) {
-              console.log(`✓ ${endpoint} respondeu OK com cliente_id`);
+            if (users.length > 0) {
+              // Encontrou usuário online!
+              const onlineUser = users[0];
+              console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2).substring(0, 500));
               
-              if (radiusData?.registros) {
-                const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
-                console.log(`✓✓ ${endpoint} (cliente_id) retornou ${logs.length} registros`);
-                
-                if (logs.length > 0) {
-                  const latestLog = logs[0];
-                  console.log('Registro encontrado:', JSON.stringify(latestLog, null, 2).substring(0, 300));
-                  lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
-                  onlineStatus = logs.some((log: any) => !log.data_fim && !log.acctstoptime);
-                  console.log(`✓✓✓ ENCONTRADO! Online via ${endpoint} (cliente_id): ${onlineStatus}`);
-                  break;
-                }
+              onlineStatus = true;
+              lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
+              
+              console.log(`✓✓✓ Cliente ONLINE confirmado! Login: ${login}, Última conexão: ${lastConnection}`);
+              break; // Encontrou, não precisa verificar outros logins
+            }
+          }
+        } catch (e) {
+          console.log(`✗ Erro ao verificar login "${login}":`, (e as Error)?.message);
+        }
+      }
+      
+      // 3) Fallback: tentar buscar histórico de conexões se não estiver online
+      if (!onlineStatus && candidateLogins.size > 0) {
+        console.log('Cliente não está online, buscando histórico de conexões...');
+        for (const login of candidateLogins) {
+          try {
+            const formHistory: Record<string, string> = {
+              qtype: 'radusuarios.login',
+              query: login,
+              oper: '=',
+              page: '1',
+              rp: '5',
+              sortname: 'radusuarios.data_inicio',
+              sortorder: 'desc'
+            };
+            
+            const { ok, data } = await postIXC(`${baseUrl}/radusuarios`, auth, formHistory);
+            if (ok && data?.registros) {
+              const history = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+              if (history.length > 0) {
+                lastConnection = history[0].data_inicio || history[0].acctstarttime || history[0].data_conexao || null;
+                console.log(`Última conexão encontrada no histórico: ${lastConnection}`);
+                break;
               }
             }
-          } catch (e) { 
-            console.log(`✗ ${endpoint} com cliente_id falhou:`, (e as Error)?.message);
+          } catch (e) {
+            console.log(`Erro ao buscar histórico do login "${login}":`, (e as Error)?.message);
           }
         }
       }
+
     } catch (radiusError) {
-      console.warn('Erro geral ao buscar logs de radius:', radiusError);
+      console.warn('Erro ao verificar status online:', radiusError);
     }
 
     // Procura especificamente pelo campo "STATUS DE ACESSO" e campos relacionados
