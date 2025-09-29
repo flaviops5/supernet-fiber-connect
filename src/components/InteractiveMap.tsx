@@ -59,32 +59,47 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         return;
       }
 
-      const areas: CoverageArea[] = data?.map((area) => {
-        // Extrair planos únicos das relações
-        const plansSet = new Set<string>();
-        area.cep_coverage?.forEach((cep: any) => {
-          cep.cep_plans?.forEach((cp: any) => {
-            if (cp.plans?.speed) {
-              plansSet.add(cp.plans.speed);
-            }
+      const areas: CoverageArea[] = (data || [])
+        .map((area) => {
+          // Extrair planos únicos das relações
+          const plansSet = new Set<string>();
+          area.cep_coverage?.forEach((cep: any) => {
+            cep.cep_plans?.forEach((cp: any) => {
+              if (cp.plans?.speed) {
+                plansSet.add(cp.plans.speed);
+              }
+            });
           });
-        });
 
-        return {
-          id: area.id,
-          name: area.name,
-          coordinates: (() => {
-            try {
-              return JSON.parse(area.coordinates as string) as LatLngTuple[];
-            } catch (error) {
-              console.error('Error parsing coordinates for area:', area.name, error);
-              return [] as LatLngTuple[];
+          // Parse e validação de coordenadas
+          let coordinates: LatLngTuple[] = [];
+          try {
+            // Tenta fazer parse se for string
+            const parsed = typeof area.coordinates === 'string' 
+              ? JSON.parse(area.coordinates) 
+              : area.coordinates;
+            
+            // Valida se é array válido
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              coordinates = parsed as LatLngTuple[];
+            } else {
+              console.warn(`Área ${area.name} tem coordenadas inválidas (array vazio ou formato incorreto)`);
+              return null; // Retorna null para filtrar depois
             }
-          })(),
-          color: area.color,
-          plans: Array.from(plansSet)
-        };
-      }) || [];
+          } catch (error) {
+            console.warn(`Área ${area.name} possui coordenadas com formato inválido:`, error);
+            return null; // Retorna null para filtrar depois
+          }
+
+          return {
+            id: area.id,
+            name: area.name,
+            coordinates,
+            color: area.color,
+            plans: Array.from(plansSet)
+          };
+        })
+        .filter((area): area is CoverageArea => area !== null && area.coordinates.length > 0);
 
       setCoverageAreas(areas);
     } catch (err) {
