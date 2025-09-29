@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Bot, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import telemedicinaConsultation from '@/assets/telemedicina-consultation.png';
-import assistantAvatar from '@/assets/assistant-avatar.png';
 
 interface TelemedicinaChatWidgetProps {
   chatbotId?: string;
@@ -83,8 +82,8 @@ const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: Telemed
             {/* Chat Header */}
             <div className="flex items-center justify-between p-6 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
-                  <img src={assistantAvatar} alt="Assistente Virtual Telemedicina" className="w-full h-full object-cover" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Bot className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg">Assistente Virtual TELEMEDICINA</h3>

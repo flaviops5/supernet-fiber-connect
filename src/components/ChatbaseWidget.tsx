@@ -324,8 +324,12 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
               className="flex items-center justify-between px-6 py-4 cursor-pointer hover:opacity-90 transition-all duration-300"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
-                  <img src={assistantAvatar} alt="Assistente Virtual" className="w-full h-full object-cover" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden border border-white/30">
+                  <img 
+                    src={assistantAvatar} 
+                    alt="Assistente Virtual Supernet" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
                 </div>
                 
                 <div className="text-white">
@@ -349,8 +353,12 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
             {/* Header */}
             <div className="flex items-center justify-between p-4 text-white" style={gradientStyle}>
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
-                  <img src={assistantAvatar} alt="Assistente Virtual" className="w-full h-full object-cover" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden border border-white/30">
+                  <img 
+                    src={assistantAvatar} 
+                    alt="Assistente Virtual Supernet" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
                 </div>
                 <div>
                   <h3 className="font-medium text-base">{settings.title}</h3>
