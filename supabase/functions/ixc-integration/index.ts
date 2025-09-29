@@ -270,7 +270,9 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
 
 async function getCustomerStatus(baseUrl: string, auth: string, customerId: string): Promise<any> {
   try {
-    // Busca contratos ativos do cliente
+    console.log(`Verificando status do cliente: ${customerId}`);
+    
+    // Primeiro, busca contratos do cliente usando o endpoint correto
     const contractsForm: Record<string, string> = {
       qtype: 'cliente_id',
       query: String(customerId),
@@ -279,54 +281,87 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       rp: '50',
     };
 
-    const { ok, data: contractsData } = await postIXC(`${baseUrl}/contratos`, auth, contractsForm);
+    console.log('Buscando contratos do cliente...');
+    const { ok: contractsOk, data: contractsData } = await postIXC(`${baseUrl}/contratos`, auth, contractsForm);
     
-    if (!ok || !contractsData?.registros) {
-      return { isOnline: false, contracts: [], lastConnection: null };
+    let contracts = [];
+    if (contractsOk && contractsData?.registros) {
+      contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
+      console.log(`Encontrados ${contracts.length} contratos para o cliente`);
+    } else {
+      console.log('Nenhum contrato encontrado ou erro na busca de contratos');
     }
-
-    const contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
     
-    // Busca sessões ativas/logs de radius para verificar status online
+    // Tenta verificar sessões ativas usando endpoints alternativos
     let onlineStatus = false;
     let lastConnection = null;
     
+    // Tenta primeiro com radius_acct (se existir)
     try {
+      console.log('Tentando buscar logs de radius...');
       const radiusForm: Record<string, string> = {
         qtype: 'cliente_id',
         query: String(customerId),
         oper: '=',
         page: '1',
-        rp: '10',
-        sortname: 'id',
+        rp: '5',
+        sortname: 'data_inicio',
         sortorder: 'desc',
       };
       
-      const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}/radius_log`, auth, radiusForm);
+      // Tenta vários endpoints possíveis para radius
+      const radiusEndpoints = ['/radius_acct', '/radius_log', '/sessao_radius', '/conexao'];
       
-      if (radiusOk && radiusData?.registros) {
-        const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
-        
-        if (logs.length > 0) {
-          const latestLog = logs[0];
-          lastConnection = latestLog.data_inicio || latestLog.data_conexao || null;
+      for (const endpoint of radiusEndpoints) {
+        try {
+          const { ok: radiusOk, data: radiusData } = await postIXC(`${baseUrl}${endpoint}`, auth, radiusForm);
           
-          // Verifica se tem sessão ativa (sem data_fim ou data_fim null)
-          onlineStatus = logs.some((log: any) => !log.data_fim || log.data_fim === null || log.data_fim === '');
+          if (radiusOk && radiusData?.registros) {
+            const logs = Array.isArray(radiusData.registros) ? radiusData.registros : Object.values(radiusData.registros || {});
+            console.log(`Endpoint ${endpoint}: encontrados ${logs.length} logs`);
+            
+            if (logs.length > 0) {
+              const latestLog = logs[0];
+              lastConnection = latestLog.data_inicio || latestLog.data_conexao || latestLog.acctstarttime || null;
+              
+              // Verifica se tem sessão ativa (sem data_fim ou data_fim null/vazia)
+              onlineStatus = logs.some((log: any) => 
+                !log.data_fim || 
+                log.data_fim === null || 
+                log.data_fim === '' || 
+                !log.acctstoptime ||
+                log.acctstoptime === null ||
+                log.acctstoptime === ''
+              );
+              
+              console.log(`Status online encontrado via ${endpoint}: ${onlineStatus}`);
+              break; // Para no primeiro endpoint que funcionar
+            }
+          }
+        } catch (endpointError) {
+          console.log(`Endpoint ${endpoint} não funcionou:`, endpointError);
+          continue;
         }
       }
     } catch (radiusError) {
-      console.warn('Erro ao buscar logs de radius:', radiusError);
-      // Continua sem erro, apenas não conseguiu verificar status online
+      console.warn('Erro geral ao buscar logs de radius:', radiusError);
     }
 
-    return {
+    const result = {
       isOnline: onlineStatus,
       contracts: contracts,
       lastConnection: lastConnection,
       contractCount: contracts.length,
-      activeContracts: contracts.filter((c: any) => c.status === 'Ativo' || c.ativo === '1' || c.ativo === 'S')
+      activeContracts: contracts.filter((c: any) => 
+        c.status === 'Ativo' || 
+        c.ativo === '1' || 
+        c.ativo === 'S' || 
+        c.situacao === 'A'
+      )
     };
+    
+    console.log('Resultado final do status:', result);
+    return result;
     
   } catch (error) {
     console.error('Erro ao verificar status do cliente:', error);
@@ -336,54 +371,88 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
 
 async function getOnlineClients(baseUrl: string, auth: string, params: any): Promise<any[]> {
   try {
-    // Busca sessões ativas no radius
-    const form: Record<string, string> = {
-      qtype: 'data_fim',
-      query: '',
-      oper: 'nu', // null (sem data fim = ativo)
+    console.log('Iniciando busca por clientes online...');
+    
+    // Estratégia alternativa: buscar clientes ativos e verificar contratos ativos
+    const clientsForm: Record<string, string> = {
+      qtype: 'ativo',
+      query: 'S',
+      oper: '=',
       page: String(params.page || 1),
-      rp: String(params.limit || 50),
-      sortname: 'data_inicio',
+      rp: String(params.limit || 30),
+      sortname: 'ultima_atualizacao',
       sortorder: 'desc',
     };
 
-    const { ok, data } = await postIXC(`${baseUrl}/radius_log`, auth, form);
+    console.log('Buscando clientes ativos...');
+    const { ok: clientsOk, data: clientsData } = await postIXC(`${baseUrl}/cliente`, auth, clientsForm);
     
-    if (!ok || !data?.registros) {
+    if (!clientsOk || !clientsData?.registros) {
+      console.log('Nenhum cliente ativo encontrado');
       return [];
     }
 
-    const sessions = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+    const activeClients = Array.isArray(clientsData.registros) ? clientsData.registros : Object.values(clientsData.registros || {});
+    console.log(`Encontrados ${activeClients.length} clientes ativos`);
     
-    // Para cada sessão ativa, busca dados do cliente
     const onlineClients = [];
-    const clientCache = new Map();
     
-    for (const session of sessions.slice(0, 20)) { // Limita para não sobrecarregar
-      const clientId = session.cliente_id;
-      
-      if (!clientId || clientCache.has(clientId)) continue;
-      
+    // Para cada cliente ativo, verifica se tem contratos ativos (indicando possível conexão)
+    for (const client of activeClients.slice(0, 15)) { // Limita para não sobrecarregar
       try {
-        const client = await getCustomer(baseUrl, auth, clientId);
-        if (client) {
-          clientCache.set(clientId, client);
-          onlineClients.push({
-            ...client,
-            connectionInfo: {
-              sessionStart: session.data_inicio,
-              ipAddress: session.ip || session.framedipaddress,
-              nasPort: session.nasport,
-              bytesIn: session.acctinputoctets,
-              bytesOut: session.acctoutputoctets,
-            }
-          });
+        // Busca contratos do cliente
+        const contractsForm: Record<string, string> = {
+          qtype: 'cliente_id',
+          query: String(client.id),
+          oper: '=',
+          page: '1',
+          rp: '10',
+        };
+        
+        const { ok: contractsOk, data: contractsData } = await postIXC(`${baseUrl}/contratos`, auth, contractsForm);
+        
+        if (contractsOk && contractsData?.registros) {
+          const contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
+          const activeContracts = contracts.filter((c: any) => 
+            c.status === 'Ativo' || 
+            c.ativo === '1' || 
+            c.ativo === 'S' || 
+            c.situacao === 'A'
+          );
+          
+          if (activeContracts.length > 0) {
+            // Normaliza os dados do cliente
+            const normalizedClient = {
+              id: String(client.id ?? ''),
+              razao: String(client.razao ?? client.nome ?? ''),
+              nome_fantasia: client.nome_fantasia ?? client.fantasia ?? undefined,
+              cnpj_cpf: String(client.cnpj_cpf ?? client.cnpj ?? client.cpf ?? ''),
+              email: client.email ?? client.hotsite_email ?? undefined,
+              telefone_comercial: client.telefone_comercial ?? undefined,
+              telefone_celular: client.telefone_celular ?? client.whatsapp ?? undefined,
+              endereco: client.endereco ?? undefined,
+              numero: client.numero ?? undefined,
+              bairro: client.bairro ?? undefined,
+              cidade: client.cidade ?? undefined,
+              uf: client.uf ?? undefined,
+              cep: client.cep ?? undefined,
+              status: client.status ?? client.ativo ?? undefined,
+              connectionInfo: {
+                contractsCount: activeContracts.length,
+                lastUpdate: client.ultima_atualizacao,
+                clientStatus: client.ativo === 'S' ? 'Ativo' : 'Inativo'
+              }
+            };
+            
+            onlineClients.push(normalizedClient);
+          }
         }
       } catch (clientError) {
-        console.warn(`Erro ao buscar cliente ${clientId}:`, clientError);
+        console.warn(`Erro ao verificar contratos do cliente ${client.id}:`, clientError);
       }
     }
     
+    console.log(`Encontrados ${onlineClients.length} clientes com contratos ativos`);
     return onlineClients;
     
   } catch (error) {
