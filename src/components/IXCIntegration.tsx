@@ -365,24 +365,34 @@ const IXCIntegration = () => {
                         
                         {/* Status de Acesso */}
                         <Card className={`border-2 ${
-                          customerStatus.accessStatus?.statusDeAcesso === 'ATIVO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
-                          customerStatus.accessStatus?.statusDeAcesso === 'BLOQUEADO' ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
-                          customerStatus.accessStatus?.statusDeAcesso === 'FINANCEIRO EM ATRASO' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : 
+                          customerStatus.serviceStatus === 'SERVIÇO NORMALIZADO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          customerStatus.serviceStatus === 'BLOQUEADO' ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
+                          customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : 
                           'border-muted'
                         }`}>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-2 mb-2">
                               <FileText className="h-5 w-5" />
-                              <Label className="text-xs text-muted-foreground">Status de Acesso</Label>
+                              <Label className="text-xs text-muted-foreground">Status do Serviço</Label>
                             </div>
                             <p className={`text-lg font-bold ${
-                              customerStatus.accessStatus?.statusDeAcesso === 'ATIVO' ? 'text-green-600' : 
-                              customerStatus.accessStatus?.statusDeAcesso === 'BLOQUEADO' ? 'text-red-600' : 
-                              customerStatus.accessStatus?.statusDeAcesso === 'FINANCEIRO EM ATRASO' ? 'text-yellow-600' : 
+                              customerStatus.serviceStatus === 'SERVIÇO NORMALIZADO' ? 'text-green-600' : 
+                              customerStatus.serviceStatus === 'BLOQUEADO' ? 'text-red-600' : 
+                              customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'text-yellow-600' : 
                               'text-muted-foreground'
                             }`}>
-                              {customerStatus.accessStatus?.statusDeAcesso || 'N/A'}
+                              {customerStatus.serviceStatus || 'N/A'}
                             </p>
+                            {customerStatus.serviceStatus === 'BLOQUEADO' && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Inadimplência - Serviço interrompido
+                              </p>
+                            )}
+                            {customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Velocidade reduzida
+                              </p>
+                            )}
                           </CardContent>
                         </Card>
                         
