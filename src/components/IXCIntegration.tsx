@@ -284,33 +284,6 @@ const IXCIntegration = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Informações Básicas */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-2">
-                      <CardContent className="p-4">
-                        <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
-                        <p className="text-lg font-semibold mt-1">{selectedCustomer.razao}</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-2">
-                      <CardContent className="p-4">
-                        <Label className="text-xs text-muted-foreground">CPF/CNPJ</Label>
-                        <p className="text-lg font-mono font-semibold mt-1">{formatDocument(selectedCustomer.cnpj_cpf)}</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="border-2">
-                      <CardContent className="p-4">
-                        <Label className="text-xs text-muted-foreground">Celular</Label>
-                        <p className="text-lg font-semibold mt-1">
-                          {formatPhone(selectedCustomer.telefone_celular || selectedCustomer.telefone_comercial)}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <Separator />
                   
                   {/* Status do Cliente */}
                   {statusLoading ? (
@@ -397,20 +370,34 @@ const IXCIntegration = () => {
                         </Card>
                         
                         {/* Login PPPoE */}
-                        <Card className="border-2">
+                        <Card className={`border-2 ${
+                          customerStatus.isOnline === true ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          customerStatus.isOnline === false ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
+                          'border-muted'
+                        }`}>
                           <CardContent className="p-4">
                             <Label className="text-xs text-muted-foreground">Login PPPoE</Label>
-                            <p className="text-lg font-mono font-semibold mt-1 break-all">
+                            <p className={`text-lg font-mono font-semibold mt-1 break-all ${
+                              customerStatus.isOnline === true ? 'text-green-600' : 
+                              customerStatus.isOnline === false ? 'text-red-600' : 
+                              'text-foreground'
+                            }`}>
                               {customerStatus.pppoeLogin || 'N/A'}
                             </p>
                           </CardContent>
                         </Card>
                         
                         {/* Número de Contratos */}
-                        <Card className="border-2">
+                        <Card className={`border-2 ${
+                          (customerStatus.contractCount || 0) > 0 ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          'border-muted'
+                        }`}>
                           <CardContent className="p-4">
                             <Label className="text-xs text-muted-foreground">Contratos</Label>
-                            <p className="text-3xl font-bold mt-1">
+                            <p className={`text-3xl font-bold mt-1 ${
+                              (customerStatus.contractCount || 0) > 0 ? 'text-green-600' : 
+                              'text-muted-foreground'
+                            }`}>
                               {customerStatus.contractCount || 0}
                             </p>
                           </CardContent>
