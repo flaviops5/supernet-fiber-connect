@@ -21,6 +21,16 @@ interface IXCCustomer {
   uf?: string;
   cep?: string;
   status?: string;
+  // Campos adicionais para status de acesso
+  ativo?: string;
+  acesso_automatico_central?: string;
+  hotsite_acesso?: string;
+  status_prospeccao?: string;
+  ultima_atualizacao?: string;
+  participa_cobranca?: string;
+  cob_envia_email?: string;
+  tipo_assinante?: string;
+  [key: string]: any; // Para permitir campos dinâmicos
 }
 
 function normalizeRegistros(input: any): IXCCustomer[] {
@@ -272,7 +282,11 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
   try {
     console.log(`Verificando status do cliente: ${customerId}`);
     
-    // Primeiro, busca contratos do cliente usando o endpoint correto
+    // Primeiro, busca dados completos do cliente para verificar campos de status
+    const customerData = await getCustomer(baseUrl, auth, customerId);
+    console.log('Dados completos do cliente:', JSON.stringify(customerData, null, 2));
+    
+    // Busca contratos do cliente usando o endpoint correto
     const contractsForm: Record<string, string> = {
       qtype: 'cliente_id',
       query: String(customerId),
@@ -347,11 +361,30 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.warn('Erro geral ao buscar logs de radius:', radiusError);
     }
 
+    // Verifica campos específicos do cliente que podem indicar status de acesso
+    let accessStatus = null;
+    if (customerData) {
+      // Procura por campos relacionados a status de acesso
+      accessStatus = {
+        ativo: customerData.ativo,
+        acesso_automatico_central: customerData.acesso_automatico_central,
+        hotsite_acesso: customerData.hotsite_acesso,
+        status_prospeccao: customerData.status_prospeccao,
+        ultima_atualizacao: customerData.ultima_atualizacao,
+        // Outros campos que podem indicar status
+        participa_cobranca: customerData.participa_cobranca,
+        cob_envia_email: customerData.cob_envia_email,
+        tipo_assinante: customerData.tipo_assinante
+      };
+      console.log('Status de acesso encontrado:', accessStatus);
+    }
+
     const result = {
       isOnline: onlineStatus,
       contracts: contracts,
       lastConnection: lastConnection,
       contractCount: contracts.length,
+      accessStatus: accessStatus,
       activeContracts: contracts.filter((c: any) => 
         c.status === 'Ativo' || 
         c.ativo === '1' || 

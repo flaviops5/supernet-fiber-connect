@@ -511,6 +511,41 @@ const IXCIntegration = () => {
                             <p>{customerStatus.activeContracts?.length || 0}</p>
                           </div>
                         </div>
+                        
+                        {/* Status de Acesso */}
+                        {customerStatus.accessStatus && (
+                          <div className="mt-4 pt-4 border-t">
+                            <Label className="text-base font-semibold">Status de Acesso no Sistema</Label>
+                            <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+                              <div>
+                                <Label>Cliente Ativo</Label>
+                                <p>{customerStatus.accessStatus.ativo === 'S' ? 'Sim' : 'Não'}</p>
+                              </div>
+                              <div>
+                                <Label>Acesso Automático</Label>
+                                <p>{customerStatus.accessStatus.acesso_automatico_central || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <Label>Hotsite Acesso</Label>
+                                <p>{customerStatus.accessStatus.hotsite_acesso || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <Label>Status Prospecção</Label>
+                                <p>{customerStatus.accessStatus.status_prospeccao || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <Label>Tipo Assinante</Label>
+                                <p>{customerStatus.accessStatus.tipo_assinante || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <Label>Última Atualização</Label>
+                                <p>{customerStatus.accessStatus.ultima_atualizacao ? 
+                                  new Date(customerStatus.accessStatus.ultima_atualizacao).toLocaleString() : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
