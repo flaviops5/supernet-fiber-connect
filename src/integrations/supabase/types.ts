@@ -653,6 +653,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ixc_documentation: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          description: string | null
+          endpoint: string
+          id: string
+          is_active: boolean
+          method: string
+          parameters: Json | null
+          request_body: Json | null
+          response_example: Json | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          method: string
+          parameters?: Json | null
+          request_body?: Json | null
+          response_example?: Json | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          method?: string
+          parameters?: Json | null
+          request_body?: Json | null
+          response_example?: Json | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           category: string

@@ -24,6 +24,7 @@ import CorporateAI from "@/components/CorporateAI";
 import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
+import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -2027,6 +2028,7 @@ const Admin = () => {
                 <Route path="/knowledge" element={<KnowledgeManagement />} />
                 <Route path="/corporate-ai" element={<CorporateAI />} />
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
+                <Route path="/ixc-documentation" element={<IXCDocumentationManager />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

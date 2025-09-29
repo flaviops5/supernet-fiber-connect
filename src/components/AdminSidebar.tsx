@@ -117,6 +117,11 @@ const systemItems = [
     url: "/admin/ixc-integration",
     icon: Database,
   },
+  {
+    title: "Documentação IXC",
+    url: "/admin/ixc-documentation",
+    icon: BookOpen,
+  },
 ];
 
 const profileItems = [
