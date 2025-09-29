@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_presence: {
+        Row: {
+          created_at: string | null
+          current_conversations: number | null
+          department: Database["public"]["Enums"]["agent_department"]
+          id: string
+          last_activity: string | null
+          max_conversations: number | null
+          status: Database["public"]["Enums"]["agent_status"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_conversations?: number | null
+          department: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          last_activity?: string | null
+          max_conversations?: number | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_conversations?: number | null
+          department?: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          last_activity?: string | null
+          max_conversations?: number | null
+          status?: Database["public"]["Enums"]["agent_status"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           created_at: string
@@ -312,6 +348,166 @@ export type Database = {
           template_content?: string
           updated_at?: string
           version?: number
+        }
+        Relationships: []
+      }
+      conversation_messages: {
+        Row: {
+          ai_suggestion: boolean | null
+          attachments: Json | null
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          sender_id: string | null
+          sender_name: string
+          sender_type: string
+        }
+        Insert: {
+          ai_suggestion?: boolean | null
+          attachments?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          sender_id?: string | null
+          sender_name: string
+          sender_type: string
+        }
+        Update: {
+          ai_suggestion?: boolean | null
+          attachments?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          sender_id?: string | null
+          sender_name?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_transfers: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          from_agent_id: string | null
+          from_department:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
+          id: string
+          notes: string | null
+          reason: string | null
+          to_agent_id: string | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          from_agent_id?: string | null
+          from_department?:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          to_agent_id?: string | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          from_agent_id?: string | null
+          from_department?:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
+          id?: string
+          notes?: string | null
+          reason?: string | null
+          to_agent_id?: string | null
+          to_department?: Database["public"]["Enums"]["agent_department"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_transfers_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          assigned_agent_id: string | null
+          channel: Database["public"]["Enums"]["conversation_channel"]
+          created_at: string | null
+          customer_cpf: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          department: Database["public"]["Enums"]["agent_department"] | null
+          first_response_at: string | null
+          id: string
+          ixc_client_id: string | null
+          last_message_at: string | null
+          metadata: Json | null
+          priority: number | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["conversation_status"]
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_agent_id?: string | null
+          channel: Database["public"]["Enums"]["conversation_channel"]
+          created_at?: string | null
+          customer_cpf?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          department?: Database["public"]["Enums"]["agent_department"] | null
+          first_response_at?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          priority?: number | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_agent_id?: string | null
+          channel?: Database["public"]["Enums"]["conversation_channel"]
+          created_at?: string | null
+          customer_cpf?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          department?: Database["public"]["Enums"]["agent_department"] | null
+          first_response_at?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          last_message_at?: string | null
+          metadata?: Json | null
+          priority?: number | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          tags?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -838,6 +1034,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_replies: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          department: Database["public"]["Enums"]["agent_department"] | null
+          id: string
+          is_active: boolean | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["agent_department"] | null
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["agent_department"] | null
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action_type: string
@@ -1141,6 +1376,24 @@ export type Database = {
     }
     Enums: {
       access_level: "public" | "internal" | "confidential" | "secret"
+      agent_department:
+        | "comercial"
+        | "tecnico"
+        | "financeiro"
+        | "administrativo"
+      agent_status: "online" | "busy" | "away" | "offline"
+      conversation_channel:
+        | "whatsapp"
+        | "facebook"
+        | "instagram"
+        | "chatbot"
+        | "email"
+      conversation_status:
+        | "waiting"
+        | "active"
+        | "paused"
+        | "resolved"
+        | "transferred"
       user_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -1270,6 +1523,27 @@ export const Constants = {
   public: {
     Enums: {
       access_level: ["public", "internal", "confidential", "secret"],
+      agent_department: [
+        "comercial",
+        "tecnico",
+        "financeiro",
+        "administrativo",
+      ],
+      agent_status: ["online", "busy", "away", "offline"],
+      conversation_channel: [
+        "whatsapp",
+        "facebook",
+        "instagram",
+        "chatbot",
+        "email",
+      ],
+      conversation_status: [
+        "waiting",
+        "active",
+        "paused",
+        "resolved",
+        "transferred",
+      ],
       user_role: ["admin", "editor", "viewer"],
     },
   },
