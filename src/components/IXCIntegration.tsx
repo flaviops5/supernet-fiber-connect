@@ -231,36 +231,6 @@ const IXCIntegration = () => {
               </div>
             </div>
 
-
-            {/* Lista de Clientes */}
-            {customers.length > 0 && (
-              <div className="space-y-4">
-                <Separator />
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {customers.map((customer) => (
-                    <div 
-                      key={customer.id} 
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedCustomer?.id === customer.id ? 'bg-muted border-primary' : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => {
-                        setSelectedCustomer(customer);
-                        checkCustomerStatus(customer.id);
-                      }}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">{customer.razao || 'Sem nome'}</p>
-                          <p className="text-sm text-muted-foreground">ID: {customer.id}</p>
-                        </div>
-                        <Badge variant="outline">Ver Detalhes</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Detalhes do Cliente Selecionado */}
             {selectedCustomer && (
               <Card>
@@ -291,7 +261,7 @@ const IXCIntegration = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Informações Básicas */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
                     <div>
                       <Label className="text-xs text-muted-foreground">Nome</Label>
                       <p className="font-semibold">{selectedCustomer.razao || 'N/A'}</p>
@@ -303,6 +273,16 @@ const IXCIntegration = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Telefone</Label>
                       <p>{formatPhone(selectedCustomer.telefone_comercial || selectedCustomer.telefone_celular)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Login PPPoE</Label>
+                      <p className="font-mono text-sm break-all">
+                        {statusLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin inline" />
+                        ) : (
+                          customerStatus?.pppoeLogin || 'N/A'
+                        )}
+                      </p>
                     </div>
                   </div>
                   
@@ -319,7 +299,7 @@ const IXCIntegration = () => {
                         Dashboard de Conexão
                       </h3>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* Status de Conexão */}
                         <Card className={`border-2 ${
                           customerStatus.isOnline === true ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
@@ -359,7 +339,8 @@ const IXCIntegration = () => {
                         
                         {/* Status do Serviço */}
                         <Card className={`border-2 ${
-                          customerStatus.serviceStatus === 'ATIVO' || customerStatus.serviceStatus === 'NORMALIZADO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          customerStatus.serviceStatus === 'ATIVO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          customerStatus.serviceStatus === 'NORMALIZADO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
                           customerStatus.serviceStatus === 'BLOQUEADO' ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
                           customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : 
                           'border-muted'
@@ -370,7 +351,8 @@ const IXCIntegration = () => {
                               <Label className="text-xs text-muted-foreground">Status do Serviço</Label>
                             </div>
                             <p className={`text-lg font-bold ${
-                              customerStatus.serviceStatus === 'ATIVO' || customerStatus.serviceStatus === 'NORMALIZADO' ? 'text-green-600' : 
+                              customerStatus.serviceStatus === 'ATIVO' ? 'text-green-600' : 
+                              customerStatus.serviceStatus === 'NORMALIZADO' ? 'text-green-600' : 
                               customerStatus.serviceStatus === 'BLOQUEADO' ? 'text-red-600' : 
                               customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'text-yellow-600' : 
                               'text-muted-foreground'
@@ -390,31 +372,13 @@ const IXCIntegration = () => {
                           </CardContent>
                         </Card>
                         
-                        {/* Login PPPoE */}
-                        <Card className={`border-2 ${
-                          customerStatus.isOnline === true ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
-                          customerStatus.isOnline === false ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
-                          'border-muted'
-                        }`}>
-                          <CardContent className="p-4">
-                            <Label className="text-xs text-muted-foreground">Login PPPoE</Label>
-                            <p className={`text-lg font-mono font-semibold mt-1 break-all ${
-                              customerStatus.isOnline === true ? 'text-green-600' : 
-                              customerStatus.isOnline === false ? 'text-red-600' : 
-                              'text-foreground'
-                            }`}>
-                              {customerStatus.pppoeLogin || 'N/A'}
-                            </p>
-                          </CardContent>
-                        </Card>
-                        
                         {/* Número de Contratos */}
                         <Card className={`border-2 ${
                           (customerStatus.contractCount || 0) > 0 ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
                           'border-muted'
                         }`}>
                           <CardContent className="p-4">
-                            <Label className="text-xs text-muted-foreground">Contratos</Label>
+                            <Label className="text-xs text-muted-foreground">Contratos Ativos</Label>
                             <p className={`text-3xl font-bold mt-1 ${
                               (customerStatus.contractCount || 0) > 0 ? 'text-green-600' : 
                               'text-muted-foreground'
