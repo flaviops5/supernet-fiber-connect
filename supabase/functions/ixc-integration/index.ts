@@ -293,36 +293,35 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     const customerData = await getCustomer(baseUrl, auth, customerId);
     console.log('Dados completos do cliente:', JSON.stringify(customerData, null, 2));
     
-    // Busca contratos do cliente tentando múltiplos endpoints/qtypes
-    const contractsEndpoints = ['/cliente_contrato', '/contratos', '/cliente_contrato_servico'];
-    const contractsQtypes = ['cliente_id', 'cliente', 'id_cliente', 'cliente.id'];
+    // Busca contratos do cliente usando grid_param para melhor precisão
     let contracts: any[] = [];
-    console.log('Buscando contratos do cliente (múltiplas tentativas)...');
-    for (const endpoint of contractsEndpoints) {
-      if (contracts.length) break;
-      for (const qtype of contractsQtypes) {
-        try {
-          const form: Record<string, string> = {
-            qtype,
-            query: String(customerId),
-            oper: '=',
-            page: '1',
-            rp: '50',
-          };
-          const { ok, data } = await postIXC(`${baseUrl}${endpoint}`, auth, form);
-          if (ok && data?.registros) {
-            const regs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-            if (regs.length) {
-              contracts = regs;
-              console.log(`Contratos encontrados via ${endpoint} com qtype ${qtype}: ${contracts.length}`);
-              break;
-            }
-          }
-        } catch (e) {
-          console.log(`Tentativa ${endpoint} (${qtype}) falhou:`, (e as Error)?.message);
-          continue;
-        }
+    console.log('Buscando contratos do cliente...');
+    
+    try {
+      // Método recomendado: usar grid_param com id_cliente
+      const form: Record<string, string> = {
+        qtype: 'cliente_contrato.id',
+        query: '1',
+        oper: '>=',
+        page: '1',
+        rp: '1000',
+        sortname: 'cliente_contrato.id',
+        sortorder: 'desc',
+        grid_param: JSON.stringify([{
+          TB: 'cliente_contrato.id_cliente',
+          OP: '=',
+          P: String(customerId)
+        }])
+      };
+      
+      const { ok, data } = await postIXC(`${baseUrl}/cliente_contrato`, auth, form);
+      if (ok && data?.registros) {
+        const regs = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+        contracts = regs;
+        console.log(`Contratos encontrados: ${contracts.length}`);
       }
+    } catch (e) {
+      console.error('Erro ao buscar contratos:', (e as Error)?.message);
     }
     if (!contracts.length) {
       console.log('Nenhum contrato encontrado após múltiplas tentativas');
@@ -606,7 +605,7 @@ async function getOnlineClients(baseUrl: string, auth: string, params: any): Pro
   }
 }
 
-async function getCustomersByStatus(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
+async function getCustomersByStatus(baseUrl: string, auth: string, params: any): Promise<any[]> {
   try {
     const status = params.status;
     const limit = params.limit || 100;
@@ -614,40 +613,78 @@ async function getCustomersByStatus(baseUrl: string, auth: string, params: any):
     
     console.log(`🔍 Buscando clientes com status "${status}" - Página: ${page}, Limite: ${limit}`);
     
-    // Buscar todos os clientes primeiro
-    const customersData = await getCustomers(baseUrl, auth, { limit, page });
+    // Mapear status para códigos do IXC status_internet
+    const statusMap: Record<string, string[]> = {
+      'BLOQUEADO': ['CA', 'CM'],  // CA = Cancelado/Bloqueado, CM = Bloqueio Manual
+      'FINANCEIRO EM ATRASO': ['FA'],  // FA = Financeiro em Atraso
+      'SERVIÇO NORMALIZADO': ['A']  // A = Ativo
+    };
     
-    if (!customersData || !Array.isArray(customersData)) {
+    const statusCodes = statusMap[status];
+    if (!statusCodes || statusCodes.length === 0) {
+      console.log(`⚠️ Status "${status}" não mapeado, retornando vazio`);
       return [];
     }
-
-    // Filtrar clientes por status (usando o status do serviço baseado nos contratos)
+    
+    // Usar grid_param para filtrar contratos por status_internet
+    const gridParam = statusCodes.length === 1
+      ? [{ TB: 'cliente_contrato.status_internet', OP: '=', P: statusCodes[0] }]
+      : [{ TB: 'cliente_contrato.status_internet', OP: 'IN', P: statusCodes[0], P2: statusCodes[1] }];
+    
+    console.log(`📋 Buscando contratos com grid_param:`, JSON.stringify(gridParam));
+    
+    const form: Record<string, string> = {
+      qtype: 'cliente_contrato.id',
+      query: '1',
+      oper: '>=',
+      page: String(page),
+      rp: String(limit),
+      sortname: 'cliente_contrato.id',
+      sortorder: 'desc',
+      grid_param: JSON.stringify(gridParam)
+    };
+    
+    const { ok, data } = await postIXC(`${baseUrl}/cliente_contrato`, auth, form);
+    
+    if (!ok || !data?.registros) {
+      console.log('❌ Nenhum contrato encontrado com o status especificado');
+      return [];
+    }
+    
+    const contracts = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+    console.log(`✅ Encontrados ${contracts.length} contratos com status ${status}`);
+    
+    // Buscar dados dos clientes para cada contrato (sem duplicatas)
+    const customerIds = [...new Set(contracts.map((c: any) => c.id_cliente).filter(Boolean))];
+    console.log(`👥 Buscando dados de ${customerIds.length} clientes únicos...`);
+    
     const clientsWithStatus = [] as any[];
     
-    for (const customer of customersData) {
+    for (const customerId of customerIds) {
       try {
-        // Verificar status de cada cliente
-        const statusData = await getCustomerStatus(baseUrl, auth, customer.id);
-        const normalized = statusData?.serviceStatus;
-        
-        if (normalized === status) {
+        const customer = await getCustomer(baseUrl, auth, String(customerId));
+        if (customer) {
+          // Adicionar informações dos contratos ao cliente
+          const customerContracts = contracts.filter((c: any) => String(c.id_cliente) === String(customerId));
           clientsWithStatus.push({
             ...customer,
             statusInfo: {
-              serviceStatus: normalized,
-              contracts: (statusData?.contracts || []).map((c: any) => ({
+              serviceStatus: status,
+              contracts: customerContracts.map((c: any) => ({
                 id: c.id,
+                status: c.status,
                 status_internet: c.status_internet,
+                contrato: c.contrato,
                 pago_ate_data: c.pago_ate_data,
                 dt_ult_bloq_auto: c.dt_ult_bloq_auto,
                 dt_ult_des_bloq_conf: c.dt_ult_des_bloq_conf,
-                status_velocidade: c.status_velocidade,
+                situacao_financeira_contrato: c.situacao_financeira_contrato,
               })),
             },
           });
         }
       } catch (error) {
-        console.error(`Erro ao verificar status do cliente ${customer.id}:`, error);
+        console.error(`❌ Erro ao buscar cliente ${customerId}:`, error);
       }
     }
 
