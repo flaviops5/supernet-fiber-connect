@@ -8,6 +8,7 @@ import ConversationQueue from '@/components/atendimento/ConversationQueue';
 import ChatArea from '@/components/atendimento/ChatArea';
 import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
 import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
+import SimulationButton from '@/components/atendimento/SimulationButton';
 
 export default function Atendimento() {
   const navigate = useNavigate();
@@ -86,7 +87,10 @@ export default function Atendimento() {
               </h1>
             </div>
             
-            <AtendimentoMetrics />
+            <div className="flex items-center gap-4">
+              <SimulationButton />
+              <AtendimentoMetrics />
+            </div>
           </div>
         </header>
 
