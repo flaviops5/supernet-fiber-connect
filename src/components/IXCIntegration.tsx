@@ -241,51 +241,6 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
-      {/* Status da Conexão */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Integração IXC ERP
-          </CardTitle>
-          <CardDescription>
-            Teste e configure a conexão com o sistema IXC para buscar dados dos clientes
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={testConnection} 
-              disabled={connectionStatus === 'testing'}
-              variant={connectionStatus === 'success' ? 'outline' : 'default'}
-            >
-              {connectionStatus === 'testing' ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : connectionStatus === 'success' ? (
-                <CheckCircle className="mr-2 h-4 w-4" />
-              ) : connectionStatus === 'error' ? (
-                <XCircle className="mr-2 h-4 w-4" />
-              ) : null}
-              {connectionStatus === 'testing' ? 'Testando...' : 'Testar Conexão'}
-            </Button>
-
-            {connectionStatus !== 'idle' && (
-              <Badge 
-                variant={connectionStatus === 'success' ? 'default' : 'destructive'}
-              >
-                {connectionStatus === 'success' ? 'Conectado' : 'Erro'}
-              </Badge>
-            )}
-          </div>
-
-          {connectionMessage && (
-            <Alert>
-              <AlertDescription>{connectionMessage}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Busca de Clientes */}
       <Card>
           <CardHeader>

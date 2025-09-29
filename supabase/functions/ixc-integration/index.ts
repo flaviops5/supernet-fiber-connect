@@ -351,9 +351,19 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       if (customerData) {
         for (const [key, value] of Object.entries(customerData)) {
           const k = key.toLowerCase();
-          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user','senha'].some(s => k.includes(s))) {
-            if (value && String(value).trim() && String(value) !== '0' && String(value) !== '1234') {
-              candidateLogins.add(String(value).trim());
+          // Buscar apenas em campos específicos de login, não em senha
+          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k === s || k.includes('_' + s) || k.includes(s + '_'))) {
+            const val = String(value).trim();
+            // Filtrar valores inválidos
+            if (val && 
+                val !== '0' && 
+                val !== '1234' && 
+                val.length > 2 && // Ignorar valores muito curtos como P, N, S
+                !['P', 'N', 'S', 'A'].includes(val.toUpperCase()) && // Ignorar flags
+                !val.startsWith('@') && // Ignorar senhas como @superNET@
+                !val.match(/^[PN]+$/i) // Ignorar apenas letras P ou N
+            ) {
+              candidateLogins.add(val);
             }
           }
         }
@@ -361,13 +371,13 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
         // Tentar também com CPF/CNPJ como possível login
         if (customerData.cnpj_cpf) {
           const cpfCnpj = String(customerData.cnpj_cpf).replace(/[^\d]/g, '');
-          if (cpfCnpj) candidateLogins.add(cpfCnpj);
+          if (cpfCnpj && cpfCnpj.length >= 11) candidateLogins.add(cpfCnpj);
         }
         
         // Tentar com email como possível login
         if (customerData.email || customerData.hotsite_email) {
           const email = customerData.email || customerData.hotsite_email;
-          if (email) candidateLogins.add(String(email).trim());
+          if (email && email.includes('@')) candidateLogins.add(String(email).trim());
         }
       }
       
