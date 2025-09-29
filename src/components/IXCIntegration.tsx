@@ -236,37 +236,26 @@ const IXCIntegration = () => {
             {customers.length > 0 && (
               <div className="space-y-4">
                 <Separator />
-                <div className="grid gap-4 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-96 overflow-y-auto">
                   {customers.map((customer) => (
-                     <Card 
+                    <div 
                       key={customer.id} 
-                      className={`cursor-pointer transition-colors ${
-                        selectedCustomer?.id === customer.id ? 'bg-muted' : 'hover:bg-muted/50'
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedCustomer?.id === customer.id ? 'bg-muted border-primary' : 'hover:bg-muted/50'
                       }`}
                       onClick={() => {
                         setSelectedCustomer(customer);
                         checkCustomerStatus(customer.id);
                       }}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <h4 className="font-semibold">{customer.razao || 'Sem nome'}</h4>
-                            <p className="text-sm">
-                              <span className="font-medium">Doc:</span> {formatDocument(customer.cnpj_cpf)}
-                            </p>
-                            {(customer.telefone_comercial || customer.telefone_celular) && (
-                              <p className="text-sm">
-                                <span className="font-medium">Fone:</span> {
-                                  formatPhone(customer.telefone_comercial || customer.telefone_celular)
-                                }
-                              </p>
-                            )}
-                          </div>
-                          <Badge variant="outline">ID: {customer.id}</Badge>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold">{customer.razao || 'Sem nome'}</p>
+                          <p className="text-sm text-muted-foreground">ID: {customer.id}</p>
                         </div>
-                      </CardContent>
-                    </Card>
+                        <Badge variant="outline">Ver Detalhes</Badge>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -278,12 +267,44 @@ const IXCIntegration = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Detalhes do Cliente</span>
-                    <Badge variant="outline" className="text-sm">
-                      ID: {selectedCustomer.id}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-sm">
+                        ID: {selectedCustomer.id}
+                      </Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          checkCustomerStatus(selectedCustomer.id);
+                        }}
+                        disabled={statusLoading}
+                      >
+                        {statusLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Activity className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Informações Básicas */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Nome</Label>
+                      <p className="font-semibold">{selectedCustomer.razao || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">CPF/CNPJ</Label>
+                      <p className="font-mono">{formatDocument(selectedCustomer.cnpj_cpf)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Telefone</Label>
+                      <p>{formatPhone(selectedCustomer.telefone_comercial || selectedCustomer.telefone_celular)}</p>
+                    </div>
+                  </div>
                   
                   {/* Status do Cliente */}
                   {statusLoading ? (
@@ -336,9 +357,9 @@ const IXCIntegration = () => {
                           </CardContent>
                         </Card>
                         
-                        {/* Status de Acesso */}
+                        {/* Status do Serviço */}
                         <Card className={`border-2 ${
-                          customerStatus.serviceStatus === 'SERVIÇO NORMALIZADO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
+                          customerStatus.serviceStatus === 'ATIVO' || customerStatus.serviceStatus === 'NORMALIZADO' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 
                           customerStatus.serviceStatus === 'BLOQUEADO' ? 'border-red-500 bg-red-50 dark:bg-red-950' : 
                           customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950' : 
                           'border-muted'
@@ -349,7 +370,7 @@ const IXCIntegration = () => {
                               <Label className="text-xs text-muted-foreground">Status do Serviço</Label>
                             </div>
                             <p className={`text-lg font-bold ${
-                              customerStatus.serviceStatus === 'SERVIÇO NORMALIZADO' ? 'text-green-600' : 
+                              customerStatus.serviceStatus === 'ATIVO' || customerStatus.serviceStatus === 'NORMALIZADO' ? 'text-green-600' : 
                               customerStatus.serviceStatus === 'BLOQUEADO' ? 'text-red-600' : 
                               customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' ? 'text-yellow-600' : 
                               'text-muted-foreground'
