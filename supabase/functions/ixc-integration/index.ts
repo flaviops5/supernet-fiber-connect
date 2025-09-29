@@ -21,11 +21,9 @@ interface IXCCustomer {
   uf?: string;
   cep?: string;
   status?: string;
-  // Adicione outros campos conforme necessário
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -33,7 +31,6 @@ serve(async (req) => {
   try {
     const { action, params = {} } = await req.json();
     
-    // Obter credenciais do IXC
     const username = Deno.env.get('IXC_API_USERNAME');
     const password = Deno.env.get('IXC_API_PASSWORD');
     
@@ -41,7 +38,6 @@ serve(async (req) => {
       throw new Error('Credenciais do IXC não configuradas');
     }
 
-    // Configurar autenticação Basic Auth
     const auth = btoa(`${username}:${password}`);
     const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
 
@@ -88,11 +84,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Erro na integração IXC:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: errorMessage
     }), {
-      status: error.message.includes('não configuradas') ? 401 : 500,
+      status: errorMessage.includes('não configuradas') ? 401 : 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -101,7 +98,6 @@ serve(async (req) => {
 async function getCustomers(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
   const queryParams = new URLSearchParams();
   
-  // Parâmetros opcionais para paginação e filtros
   if (params.limit) queryParams.append('rp', params.limit.toString());
   if (params.page) queryParams.append('page', params.page.toString());
   if (params.orderBy) queryParams.append('sortname', params.orderBy);
@@ -126,7 +122,6 @@ async function getCustomers(baseUrl: string, auth: string, params: any): Promise
   const data = await response.json();
   console.log('Resposta completa da API IXC (getCustomers):', JSON.stringify(data, null, 2));
   
-  // IXC retorna diferentes estruturas dependendo da API
   if (data.type === 'success' && data.registros) {
     return data.registros;
   } else if (Array.isArray(data)) {
@@ -172,9 +167,9 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
 
 async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
   const queryParams = new URLSearchParams();
-  queryParams.append('qtype', 'razao'); // Buscar por razão social/nome
+  queryParams.append('qtype', 'razao');
   queryParams.append('query', query);
-  queryParams.append('rp', '50'); // Limite de resultados
+  queryParams.append('rp', '50');
   
   const url = `${baseUrl}/cliente?${queryParams.toString()}`;
   
@@ -209,7 +204,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
 
 async function testConnection(baseUrl: string, auth: string): Promise<{ status: string; message: string }> {
   try {
-    const url = `${baseUrl}/cliente?rp=1`; // Buscar apenas 1 registro para testar
+    const url = `${baseUrl}/cliente?rp=1`;
     
     const response = await fetch(url, {
       method: 'GET',
@@ -231,9 +226,10 @@ async function testConnection(baseUrl: string, auth: string): Promise<{ status: 
       };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return {
       status: 'error',
-      message: `Erro na conexão: ${error.message}`
+      message: `Erro na conexão: ${errorMessage}`
     };
   }
 }
