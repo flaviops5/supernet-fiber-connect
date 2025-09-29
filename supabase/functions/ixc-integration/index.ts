@@ -327,130 +327,86 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.log('Nenhum contrato encontrado após múltiplas tentativas');
     }
     
-    // Verifica status ONLINE usando o endpoint correto: /radusuarios
+    // Verifica status ONLINE usando o endpoint /radusuarios DIRETAMENTE pelo id_cliente
     let onlineStatus = false;
     let lastConnection = null;
     
     try {
-      console.log('Verificando status online via /radusuarios...');
+      console.log('Verificando status online via /radusuarios usando id_cliente...');
       
-      // 1) Extrair logins dos contratos E do próprio cliente
-      const candidateLogins = new Set<string>();
-      
-      // Buscar login nos contratos
-      for (const c of contracts) {
-        for (const [key, value] of Object.entries(c || {})) {
-          const k = key.toLowerCase();
-          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k.includes(s))) {
-            if (value && String(value).trim() && String(value) !== '0') candidateLogins.add(String(value).trim());
-          }
-        }
-      }
-      
-      // Buscar login no cadastro do cliente
-      if (customerData) {
-        for (const [key, value] of Object.entries(customerData)) {
-          const k = key.toLowerCase();
-          // Buscar apenas em campos específicos de login, não em senha
-          if (['login','usuario','username','pppoe_login','login_pppoe','nome_login','user'].some(s => k === s || k.includes('_' + s) || k.includes(s + '_'))) {
-            const val = String(value).trim();
-            // Filtrar valores inválidos
-            if (val && 
-                val !== '0' && 
-                val !== '1234' && 
-                val.length > 2 && // Ignorar valores muito curtos como P, N, S
-                !['P', 'N', 'S', 'A'].includes(val.toUpperCase()) && // Ignorar flags
-                !val.startsWith('@') && // Ignorar senhas como @superNET@
-                !val.match(/^[PN]+$/i) // Ignorar apenas letras P ou N
-            ) {
-              candidateLogins.add(val);
-            }
-          }
-        }
-        
-        // Tentar também com CPF/CNPJ como possível login
-        if (customerData.cnpj_cpf) {
-          const cpfCnpj = String(customerData.cnpj_cpf).replace(/[^\d]/g, '');
-          if (cpfCnpj && cpfCnpj.length >= 11) candidateLogins.add(cpfCnpj);
-        }
-        
-        // Tentar com email como possível login
-        if (customerData.email || customerData.hotsite_email) {
-          const email = customerData.email || customerData.hotsite_email;
-          if (email && email.includes('@')) candidateLogins.add(String(email).trim());
-        }
-      }
-      
-      console.log(`Logins candidatos encontrados: ${Array.from(candidateLogins).join(', ')}`);
-
-      // 2) Verificar cada login no endpoint /radusuarios com filtro de online
-      for (const login of candidateLogins) {
-        try {
-          // Buscar este login específico com filtro para apenas usuários ONLINE
-          const form: Record<string, string> = {
-            qtype: 'radusuarios.login',
-            query: login,
-            oper: '=',
-            page: '1',
-            rp: '20',
-            grid_param: JSON.stringify([{
+      // Buscar DIRETAMENTE no radusuarios usando o id_cliente
+      try {
+        const formOnline: Record<string, string> = {
+          qtype: 'radusuarios.id',
+          query: '1',
+          oper: '>=',
+          page: '1',
+          rp: '100',
+          grid_param: JSON.stringify([
+            {
+              TB: 'radusuarios.id_cliente',
+              OP: '=',
+              P: String(customerId)
+            },
+            {
               TB: 'radusuarios.online',
               OP: '=',
               P: 'S'
+            }
+          ])
+        };
+        
+        const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}/radusuarios`, auth, formOnline);
+        console.log(`Buscando radusuarios para id_cliente ${customerId}: HTTP ${httpStatus}`);
+        
+        if (ok && data?.registros) {
+          const users = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+          console.log(`✓ /radusuarios retornou ${users.length} registros online para id_cliente ${customerId}`);
+          
+          if (users.length > 0) {
+            // Encontrou usuário online!
+            const onlineUser = users[0];
+            console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2));
+            
+            onlineStatus = true;
+            lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
+            
+            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Última conexão: ${lastConnection}`);
+          }
+        }
+      } catch (e) {
+        console.log(`✗ Erro ao buscar status online por id_cliente:`, (e as Error)?.message);
+      }
+      
+      // Se não estiver online, buscar histórico de conexões
+      if (!onlineStatus) {
+        console.log('Cliente não está online, buscando histórico de conexões...');
+        try {
+          const formHistory: Record<string, string> = {
+            qtype: 'radusuarios.id',
+            query: '1',
+            oper: '>=',
+            page: '1',
+            rp: '5',
+            sortname: 'radusuarios.data_inicio',
+            sortorder: 'desc',
+            grid_param: JSON.stringify([{
+              TB: 'radusuarios.id_cliente',
+              OP: '=',
+              P: String(customerId)
             }])
           };
           
-          const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}/radusuarios`, auth, form);
-          console.log(`Verificando login "${login}" no /radusuarios: HTTP ${httpStatus}`);
-          
+          const { ok, data } = await postIXC(`${baseUrl}/radusuarios`, auth, formHistory);
           if (ok && data?.registros) {
-            const users = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-            console.log(`✓ /radusuarios retornou ${users.length} usuários online para login "${login}"`);
-            
-            if (users.length > 0) {
-              // Encontrou usuário online!
-              const onlineUser = users[0];
-              console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2).substring(0, 500));
-              
-              onlineStatus = true;
-              lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
-              
-              console.log(`✓✓✓ Cliente ONLINE confirmado! Login: ${login}, Última conexão: ${lastConnection}`);
-              break; // Encontrou, não precisa verificar outros logins
+            const history = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+            if (history.length > 0) {
+              lastConnection = history[0].data_inicio || history[0].acctstarttime || history[0].data_conexao || null;
+              console.log(`Última conexão encontrada no histórico: ${lastConnection}`);
             }
           }
         } catch (e) {
-          console.log(`✗ Erro ao verificar login "${login}":`, (e as Error)?.message);
-        }
-      }
-      
-      // 3) Fallback: tentar buscar histórico de conexões se não estiver online
-      if (!onlineStatus && candidateLogins.size > 0) {
-        console.log('Cliente não está online, buscando histórico de conexões...');
-        for (const login of candidateLogins) {
-          try {
-            const formHistory: Record<string, string> = {
-              qtype: 'radusuarios.login',
-              query: login,
-              oper: '=',
-              page: '1',
-              rp: '5',
-              sortname: 'radusuarios.data_inicio',
-              sortorder: 'desc'
-            };
-            
-            const { ok, data } = await postIXC(`${baseUrl}/radusuarios`, auth, formHistory);
-            if (ok && data?.registros) {
-              const history = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-              if (history.length > 0) {
-                lastConnection = history[0].data_inicio || history[0].acctstarttime || history[0].data_conexao || null;
-                console.log(`Última conexão encontrada no histórico: ${lastConnection}`);
-                break;
-              }
-            }
-          } catch (e) {
-            console.log(`Erro ao buscar histórico do login "${login}":`, (e as Error)?.message);
-          }
+          console.log(`Erro ao buscar histórico:`, (e as Error)?.message);
         }
       }
 
