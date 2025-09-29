@@ -454,9 +454,27 @@ const ChatbotManagement = () => {
           <Separator />
 
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={resetToDefaults}>
-              Restaurar Padrões
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={resetToDefaults}>
+                Restaurar Padrões
+              </Button>
+              <Button 
+                type="button" 
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    toast.info('Sincronizando Knowledge Base...');
+                    const { data, error } = await supabase.functions.invoke('sync-chatbot-knowledge');
+                    if (error) throw error;
+                    toast.success(`✅ Sincronizado! ${data.stats.planos} planos, ${data.stats.faqs} FAQs`);
+                  } catch (error: any) {
+                    toast.error('Erro: ' + error.message);
+                  }
+                }}
+              >
+                Sincronizar Knowledge Base
+              </Button>
+            </div>
             <Button type="submit" disabled={loading}>
               {loading ? 'Salvando...' : 'Salvar Configurações'}
             </Button>

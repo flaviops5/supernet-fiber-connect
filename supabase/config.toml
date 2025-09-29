@@ -1,1 +1,4 @@
 project_id = "mxdupkbpxjcfxdgrwknp"
+
+[functions.sync-chatbot-knowledge]
+verify_jwt = false
