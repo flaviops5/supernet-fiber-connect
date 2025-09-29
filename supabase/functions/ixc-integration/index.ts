@@ -330,6 +330,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     // Verifica status ONLINE usando o endpoint /radusuarios DIRETAMENTE pelo id_cliente
     let onlineStatus = false;
     let lastConnection = null;
+    let pppoeLogin = null;
     
     try {
       console.log('Verificando status online via /radusuarios usando id_cliente...');
@@ -370,8 +371,9 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
             
             onlineStatus = true;
             lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
+            pppoeLogin = onlineUser.login || onlineUser.usuario || onlineUser.username || null;
             
-            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Última conexão: ${lastConnection}`);
+            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Login PPPoE: ${pppoeLogin}, Última conexão: ${lastConnection}`);
           }
         }
       } catch (e) {
@@ -402,7 +404,8 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
             const history = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
             if (history.length > 0) {
               lastConnection = history[0].data_inicio || history[0].acctstarttime || history[0].data_conexao || null;
-              console.log(`Última conexão encontrada no histórico: ${lastConnection}`);
+              pppoeLogin = history[0].login || history[0].usuario || history[0].username || null;
+              console.log(`Última conexão encontrada no histórico: ${lastConnection}, Login PPPoE: ${pppoeLogin}`);
             }
           }
         } catch (e) {
@@ -496,6 +499,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       isOnline: onlineStatus,
       contracts: contracts,
       lastConnection: lastConnection,
+      pppoeLogin: pppoeLogin,
       contractCount: contracts.length,
       accessStatus: accessStatus, // status do cadastro do cliente (referência)
       serviceStatus: normalizedStatus, // status do serviço (baseado no contrato)
