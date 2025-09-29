@@ -549,6 +549,36 @@ const IXCIntegration = () => {
                           </div>
                         </div>
                         
+                        {/* Status do Serviço (Contrato) */}
+                        {customerStatus.serviceStatus && (
+                          <div className="mt-4 pt-4 border-t">
+                            <Label className="text-base font-semibold">Status do Serviço (Contrato)</Label>
+                            <div className="mb-4 p-3 rounded-lg bg-muted">
+                              <Label className="text-sm font-medium">STATUS</Label>
+                              <div className="flex items-center gap-2 mt-1">
+                                {customerStatus.serviceStatus === 'SERVIÇO NORMALIZADO' && (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span className="font-semibold">SERVIÇO NORMALIZADO</span>
+                                  </div>
+                                )}
+                                {customerStatus.serviceStatus === 'FINANCEIRO EM ATRASO' && (
+                                  <div className="flex items-center gap-2 text-yellow-600">
+                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                    <span className="font-semibold">FINANCEIRO EM ATRASO</span>
+                                  </div>
+                                )}
+                                {customerStatus.serviceStatus === 'BLOQUEADO' && (
+                                  <div className="flex items-center gap-2 text-red-600">
+                                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    <span className="font-semibold">BLOQUEADO</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Status de Acesso */}
                         {customerStatus.accessStatus && (
                           <div className="mt-4 pt-4 border-t">

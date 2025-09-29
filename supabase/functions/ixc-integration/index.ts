@@ -472,12 +472,31 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.log('Todos os campos do cliente:', Object.keys(customerData));
     }
 
+    // Classificação do status de serviço baseada nos contratos (prioridade alta)
+    const hasBlocked = contracts.some((c: any) => {
+      const si = String(c.status_internet ?? '').toUpperCase();
+      const blockedBySI = si === 'CA' || si === 'BLOQ' || si === 'BLOQUEADO';
+      const bloqAuto = c.dt_ult_bloq_auto && (!c.dt_ult_desbloq_auto && !c.dt_ult_des_bloq_conf || new Date(c.dt_ult_bloq_auto) > new Date(c.dt_ult_des_bloq_conf || '1900-01-01'));
+      const accessDisabled = c.data_acesso_desativado && c.data_acesso_desativado !== '0000-00-00';
+      return blockedBySI || bloqAuto || accessDisabled;
+    });
+
+    const hasFinancialDelay = contracts.some((c: any) => {
+      const si = String(c.status_internet ?? '').toUpperCase();
+      return si === 'FA' || String(c.status_velocidade ?? '').toUpperCase() === 'R';
+    });
+
+    const normalizedStatus = hasBlocked
+      ? 'BLOQUEADO'
+      : (hasFinancialDelay ? 'FINANCEIRO EM ATRASO' : 'SERVIÇO NORMALIZADO');
+
     const result = {
       isOnline: onlineStatus,
       contracts: contracts,
       lastConnection: lastConnection,
       contractCount: contracts.length,
-      accessStatus: accessStatus,
+      accessStatus: accessStatus, // status do cadastro do cliente (referência)
+      serviceStatus: normalizedStatus, // status do serviço (baseado no contrato)
       activeContracts: contracts.filter((c: any) => 
         c.status === 'Ativo' || 
         c.ativo === '1' || 
@@ -602,18 +621,29 @@ async function getCustomersByStatus(baseUrl: string, auth: string, params: any):
       return [];
     }
 
-    // Filtrar clientes por status
-    const clientsWithStatus = [];
+    // Filtrar clientes por status (usando o status do serviço baseado nos contratos)
+    const clientsWithStatus = [] as any[];
     
     for (const customer of customersData) {
       try {
         // Verificar status de cada cliente
         const statusData = await getCustomerStatus(baseUrl, auth, customer.id);
+        const normalized = statusData?.serviceStatus;
         
-        if (statusData?.accessStatus?.statusDeAcesso === status) {
+        if (normalized === status) {
           clientsWithStatus.push({
             ...customer,
-            statusInfo: statusData.accessStatus
+            statusInfo: {
+              serviceStatus: normalized,
+              contracts: (statusData?.contracts || []).map((c: any) => ({
+                id: c.id,
+                status_internet: c.status_internet,
+                pago_ate_data: c.pago_ate_data,
+                dt_ult_bloq_auto: c.dt_ult_bloq_auto,
+                dt_ult_des_bloq_conf: c.dt_ult_des_bloq_conf,
+                status_velocidade: c.status_velocidade,
+              })),
+            },
           });
         }
       } catch (error) {
