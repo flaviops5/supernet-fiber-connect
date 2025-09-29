@@ -34,6 +34,8 @@ const IXCIntegration = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<IXCCustomer | null>(null);
+  const [lastResponse, setLastResponse] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const testConnection = async () => {
     setConnectionStatus('testing');
@@ -78,6 +80,8 @@ const IXCIntegration = () => {
 
       if (data.success) {
         setCustomers(data.data || []);
+        setLastResponse(data);
+        setDebugInfo(`Carregar Todos - Encontrados: ${data.data?.length || 0} registros`);
         toast.success(`${data.data?.length || 0} clientes carregados`);
       } else {
         throw new Error(data.error);
@@ -110,6 +114,8 @@ const IXCIntegration = () => {
 
       if (data.success) {
         setCustomers(data.data || []);
+        setLastResponse(data);
+        setDebugInfo(`Busca "${searchQuery}" - Encontrados: ${data.data?.length || 0} registros`);
         toast.success(`${data.data?.length || 0} clientes encontrados`);
       } else {
         throw new Error(data.error);
@@ -343,6 +349,32 @@ const IXCIntegration = () => {
                 </CardContent>
               </Card>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Debug Information */}
+      {debugInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações de Debug</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label>Status da Última Consulta</Label>
+                <p className="text-sm bg-muted p-2 rounded">{debugInfo}</p>
+              </div>
+              
+              {lastResponse && (
+                <div>
+                  <Label>Resposta Completa da API</Label>
+                  <pre className="text-xs bg-muted p-4 rounded overflow-auto max-h-96">
+                    {JSON.stringify(lastResponse, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
