@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import ContractForm from '@/components/ContractForm';
+import assistantAvatar from '@/assets/assistant-avatar.png';
 
 interface ChatbaseWidgetProps {
   chatbotId?: string;
@@ -323,8 +324,8 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
               className="flex items-center justify-between px-6 py-4 cursor-pointer hover:opacity-90 transition-all duration-300"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
+                  <img src={assistantAvatar} alt="Assistente Virtual" className="w-full h-full object-cover" />
                 </div>
                 
                 <div className="text-white">
@@ -348,8 +349,8 @@ const ChatbaseWidget = ({ chatbotId }: ChatbaseWidgetProps) => {
             {/* Header */}
             <div className="flex items-center justify-between p-4 text-white" style={gradientStyle}>
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm overflow-hidden">
+                  <img src={assistantAvatar} alt="Assistente Virtual" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h3 className="font-medium text-base">{settings.title}</h3>
