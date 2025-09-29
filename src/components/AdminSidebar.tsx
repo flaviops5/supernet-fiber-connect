@@ -34,6 +34,7 @@ import {
   Brain,
   BookOpen,
   Database,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,6 +51,12 @@ const menuItems = [
     url: "/admin",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    title: "Central de Atendimento",
+    url: "/atendimento",
+    icon: MessageSquare,
+    external: true,
   },
   {
     title: "Usuários",
@@ -224,14 +231,24 @@ export function AdminSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={getNavClasses(item.url, item.exact)}
-                      end={item.exact}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    {item.external ? (
+                      <a
+                        href={item.url}
+                        className={getNavClasses(item.url, item.exact)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </a>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url, item.exact)}
+                        end={item.exact}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

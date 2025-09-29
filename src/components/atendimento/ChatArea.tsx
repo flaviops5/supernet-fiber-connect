@@ -1,0 +1,226 @@
+import { useEffect, useState, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface Message {
+  id: string;
+  sender_type: string;
+  sender_name: string;
+  content: string;
+  ai_suggestion: boolean;
+  created_at: string;
+}
+
+interface Props {
+  conversationId: string | null;
+}
+
+export default function ChatArea({ conversationId }: Props) {
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+
+    loadMessages();
+
+    const channel = supabase
+      .channel(`messages-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const loadMessages = async () => {
+    if (!conversationId) return;
+
+    const { data, error } = await supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading messages:', error);
+      return;
+    }
+
+    setMessages(data || []);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async () => {
+    if (!conversationId || !newMessage.trim()) return;
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single();
+
+      const { error } = await supabase
+        .from('conversation_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_type: 'agent',
+          sender_id: user.id,
+          sender_name: profile?.name || 'Agente',
+          content: newMessage.trim()
+        });
+
+      if (error) throw error;
+
+      // Update conversation status to active if waiting
+      await supabase
+        .from('conversations')
+        .update({ 
+          status: 'active',
+          assigned_agent_id: user.id,
+          first_response_at: new Date().toISOString()
+        })
+        .eq('id', conversationId)
+        .eq('status', 'waiting');
+
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: 'Erro ao enviar',
+        description: 'Não foi possível enviar a mensagem.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!conversationId) {
+    return (
+      <Card className="h-full flex items-center justify-center shadow-lg border-border/50">
+        <div className="text-center text-muted-foreground">
+          <Phone className="h-16 w-16 mx-auto mb-4 opacity-50" />
+          <p className="text-lg font-medium">Selecione uma conversa</p>
+          <p className="text-sm">Escolha uma conversa da fila para começar</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="h-full flex flex-col shadow-lg border-border/50">
+      <CardHeader className="border-b pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">Chat</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline">
+              <ArrowLeftRight className="h-4 w-4 mr-1" />
+              Transferir
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex gap-2 ${
+              message.sender_type === 'agent' ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            <div
+              className={`max-w-[80%] rounded-lg p-3 ${
+                message.sender_type === 'agent'
+                  ? 'bg-primary text-primary-foreground'
+                  : message.sender_type === 'ai'
+                  ? 'bg-purple-500/10 border border-purple-500/20'
+                  : 'bg-muted'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {message.sender_type === 'ai' && <Bot className="h-3 w-3" />}
+                {message.sender_type === 'customer' && <User className="h-3 w-3" />}
+                <span className="text-xs font-medium">{message.sender_name}</span>
+                {message.ai_suggestion && (
+                  <Badge variant="secondary" className="text-xs">IA</Badge>
+                )}
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className="text-xs opacity-70 mt-1">
+                {format(new Date(message.created_at), 'HH:mm', { locale: ptBR })}
+              </p>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </CardContent>
+
+      <div className="border-t p-4">
+        <div className="flex gap-2">
+          <Button size="icon" variant="outline">
+            <Paperclip className="h-4 w-4" />
+          </Button>
+          <Textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            placeholder="Digite sua mensagem..."
+            className="min-h-[60px] resize-none"
+            disabled={loading}
+          />
+          <Button
+            size="icon"
+            onClick={handleSendMessage}
+            disabled={loading || !newMessage.trim()}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
