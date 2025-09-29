@@ -234,13 +234,38 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   const raw = String(query ?? '').trim();
   const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
   
-  // Baseado na documentação: usar "L" para operador LIKE (contém)
-  const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [
+  // Remove pontos e traços para buscar CPF/CNPJ
+  const cleanNumber = raw.replace(/[.\-\/]/g, '');
+  const isCpfCnpj = /^\d{11,14}$/.test(cleanNumber);
+  
+  // Baseado na documentação: usar "L" para operador LIKE (contém), "=" para igualdade exata
+  const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [];
+  
+  // Se for CPF/CNPJ, tenta buscar primeiro por igualdade exata (com formatação)
+  if (isCpfCnpj) {
+    // Formata CPF: 000.000.000-00 ou CNPJ: 00.000.000/0000-00
+    let formatted = cleanNumber;
+    if (cleanNumber.length === 11) {
+      formatted = cleanNumber.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (cleanNumber.length === 14) {
+      formatted = cleanNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    
+    attempts.push(
+      { qtype: 'cliente.cnpj_cpf', oper: '=', sortname: 'cliente.razao', q: formatted },
+      { qtype: 'cnpj_cpf',         oper: '=', sortname: 'razao',         q: formatted },
+      { qtype: 'cliente.cnpj_cpf', oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
+      { qtype: 'cnpj_cpf',         oper: 'L', sortname: 'razao',         q: cleanNumber },
+    );
+  }
+  
+  // Tenta buscar por nome
+  attempts.push(
     { qtype: 'cliente.razao',      oper: 'L',   sortname: 'cliente.razao',      q },
     { qtype: 'cliente.fantasia',   oper: 'L',   sortname: 'cliente.fantasia',   q },
     { qtype: 'razao',              oper: 'L',   sortname: 'razao',              q },
     { qtype: 'fantasia',           oper: 'L',   sortname: 'fantasia',           q },
-  ];
+  );
 
   for (const attempt of attempts) {
     try {
