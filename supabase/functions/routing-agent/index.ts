@@ -168,25 +168,30 @@ serve(async (req) => {
               continue;
             }
             
-            // Verifica se há bloqueio real (flags de bloqueio ou acesso desativado)
-            const blockedByFlag = /BLOQ|BLOQUE/.test(statusInternet) 
-              || (contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00');
+            // Status que indicam bloqueio/problema financeiro no IXC:
+            // CA = Cancelado Automático (bloqueado por inadimplência)
+            // CM = Cancelado Manual
+            // CB = Cancelado por Boleto
+            // FA = Financeiro em Atraso
+            // BLOQ/BLOQUE = Bloqueado explicitamente
+            const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+            const isBlockedByStatus = financialBlockStatus.includes(statusInternet) 
+              || /BLOQ|BLOQUE/.test(statusInternet);
             
-            // Verifica se está explicitamente marcado como financeiro em atraso
-            const isFinancialStatus = statusInternet === 'FA';
+            // Verifica se acesso foi desativado
+            const isAccessDisabled = contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00';
             
-            // Só considera problema financeiro se:
-            // 1. Está bloqueado (flag de bloqueio OU acesso desativado) OU
-            // 2. Status explícito de financeiro em atraso (FA)
-            if (blockedByFlag) {
+            // Verifica negativação recente (últimos 60 dias)
+            const hasRecentNegativity = contract.data_negativacao && contract.data_negativacao !== '0000-00-00';
+            
+            // PRIORIDADE: Verifica bloqueio/financeiro ANTES de qualquer outra coisa
+            if (isBlockedByStatus || isAccessDisabled || hasRecentNegativity) {
               hasFinancialIssue = true;
-              financialReason = 'bloqueado por inadimplência';
-              break;
-            }
-            
-            if (isFinancialStatus) {
-              hasFinancialIssue = true;
-              financialReason = 'financeiro em atraso (status FA)';
+              financialReason = isBlockedByStatus 
+                ? `bloqueado por inadimplência (status: ${statusInternet})`
+                : isAccessDisabled
+                  ? 'acesso desativado'
+                  : 'negativado';
               break;
             }
           }
