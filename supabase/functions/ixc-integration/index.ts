@@ -113,6 +113,20 @@ serve(async (req) => {
         result = await getCustomersByStatus(baseUrl, auth, params);
         break;
       
+      case 'createCustomer':
+        if (!params.customerData) {
+          throw new Error('Dados do cliente são obrigatórios');
+        }
+        result = await createCustomer(baseUrl, auth, params.customerData);
+        break;
+      
+      case 'createAtendimento':
+        if (!params.customerId || !params.atendimentoData) {
+          throw new Error('ID do cliente e dados do atendimento são obrigatórios');
+        }
+        result = await createAtendimento(baseUrl, auth, params.customerId, params.atendimentoData);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -809,5 +823,122 @@ async function testConnection(baseUrl: string, auth: string): Promise<{ status: 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return { status: 'error', message: `Erro na conexão: ${errorMessage}` };
+  }
+}
+
+async function createCustomer(baseUrl: string, auth: string, customerData: any): Promise<any> {
+  try {
+    console.log('Criando novo cliente no IXC:', customerData);
+    
+    const form: Record<string, string> = {
+      razao: customerData.name,
+      nome_fantasia: customerData.name,
+      cnpj_cpf: customerData.cpf.replace(/\D/g, ''),
+      email: customerData.email,
+      telefone_celular: customerData.phone.replace(/\D/g, ''),
+      endereco: customerData.address || '',
+      cep: customerData.cep.replace(/\D/g, ''),
+      tipo_cliente: 'F', // Pessoa Física
+      ativo: 'S',
+      acesso_automatico_central: 'S',
+      participa_cobranca: 'S',
+      tipo_assinante: 'PF',
+    };
+    
+    // Adiciona data de nascimento se fornecida
+    if (customerData.birthDate) {
+      form.data_nascimento = customerData.birthDate;
+    }
+    
+    const response = await fetch(`${baseUrl}/cliente`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'inserir',
+      },
+      body: new URLSearchParams(form),
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`Erro ao criar cliente - HTTP ${response.status}:`, text);
+      throw new Error(`Erro ao criar cliente: ${response.status} - ${text}`);
+    }
+    
+    const text = await response.text();
+    const data = JSON.parse(text);
+    
+    console.log('Cliente criado com sucesso:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('Erro ao criar cliente no IXC:', error);
+    throw new Error(`Erro ao criar cliente: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function createAtendimento(baseUrl: string, auth: string, customerId: string, atendimentoData: any): Promise<any> {
+  try {
+    console.log('Criando atendimento no IXC:', { customerId, atendimentoData });
+    
+    const form: Record<string, string> = {
+      id_cliente: String(customerId),
+      id_tipo_problema: '1', // Tipo: Instalação/Novo Cliente
+      assunto: `Instalação - ${atendimentoData.planName}`,
+      descricao: `
+DADOS DO CLIENTE:
+- Nome: ${atendimentoData.customerName}
+- CPF: ${atendimentoData.cpf}
+- Email: ${atendimentoData.email}
+- Telefone: ${atendimentoData.phone}
+- Endereço: ${atendimentoData.address}
+- CEP: ${atendimentoData.cep}
+
+PLANO CONTRATADO:
+- Plano: ${atendimentoData.planName}
+- Velocidade: ${atendimentoData.planSpeed}
+- Valor: R$ ${atendimentoData.planPrice}
+- Dia de vencimento: ${atendimentoData.paymentDay}
+
+AGENDAMENTO:
+- Data: ${new Date(atendimentoData.installationDate).toLocaleDateString('pt-BR')}
+- Período: ${atendimentoData.installationPeriod}
+      `.trim(),
+      status: 'A', // Aberto
+      prioridade: 'N', // Normal
+      id_setor_responsavel: '1', // Setor de instalação
+    };
+    
+    // Adiciona data de agendamento se fornecida
+    if (atendimentoData.installationDate) {
+      form.data_agendamento = atendimentoData.installationDate;
+    }
+    
+    const response = await fetch(`${baseUrl}/su_oss_chamado`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'inserir',
+      },
+      body: new URLSearchParams(form),
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`Erro ao criar atendimento - HTTP ${response.status}:`, text);
+      throw new Error(`Erro ao criar atendimento: ${response.status} - ${text}`);
+    }
+    
+    const text = await response.text();
+    const data = JSON.parse(text);
+    
+    console.log('Atendimento criado com sucesso:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('Erro ao criar atendimento no IXC:', error);
+    throw new Error(`Erro ao criar atendimento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }

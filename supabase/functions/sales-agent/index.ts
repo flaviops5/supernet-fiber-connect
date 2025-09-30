@@ -40,41 +40,117 @@ serve(async (req) => {
         });
       }
 
-      const { data: appointment, error } = await supabase
-        .from('installation_appointments')
-        .insert({
-          customer_name: orderData.name,
-          customer_cpf: orderData.cpf,
-          customer_email: orderData.email,
-          customer_phone: orderData.phone,
-          customer_birth_date: orderData.birthDate || new Date().toISOString().split('T')[0],
-          customer_address: orderData.address,
-          customer_cep: orderData.cep,
-          plan_name: plan.name,
-          plan_speed: plan.speed,
-          plan_price: plan.price,
-          payment_day: parseInt(orderData.paymentDay) || 10,
-          appointment_date: orderData.installation_date,
-          appointment_period: orderData.installation_period,
-          status: 'pendente'
-        })
-        .select()
-        .single();
+      try {
+        // 1. Criar cliente no IXC
+        console.log('Criando cliente no IXC...');
+        const { data: customerResult, error: customerError } = await supabase.functions.invoke('ixc-integration', {
+          body: {
+            action: 'createCustomer',
+            params: {
+              customerData: {
+                name: orderData.name,
+                cpf: orderData.cpf,
+                email: orderData.email,
+                phone: orderData.phone,
+                birthDate: orderData.birthDate,
+                address: orderData.address,
+                cep: orderData.cep
+              }
+            }
+          }
+        });
 
-      if (error) {
-        console.error('Erro ao criar agendamento:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        if (customerError) {
+          console.error('Erro ao criar cliente no IXC:', customerError);
+          throw new Error('Erro ao criar cliente no IXC');
+        }
+
+        const customerId = customerResult?.data?.id || customerResult?.data?.registro?.id;
+        console.log('Cliente criado no IXC com ID:', customerId);
+
+        if (!customerId) {
+          throw new Error('ID do cliente não retornado pelo IXC');
+        }
+
+        // 2. Criar atendimento no IXC
+        console.log('Criando atendimento no IXC...');
+        const { data: atendimentoResult, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
+          body: {
+            action: 'createAtendimento',
+            params: {
+              customerId: customerId,
+              atendimentoData: {
+                customerName: orderData.name,
+                cpf: orderData.cpf,
+                email: orderData.email,
+                phone: orderData.phone,
+                address: orderData.address,
+                cep: orderData.cep,
+                planName: plan.name,
+                planSpeed: plan.speed,
+                planPrice: plan.price,
+                paymentDay: orderData.paymentDay,
+                installationDate: orderData.installation_date,
+                installationPeriod: orderData.installation_period
+              }
+            }
+          }
+        });
+
+        if (atendimentoError) {
+          console.error('Erro ao criar atendimento no IXC:', atendimentoError);
+          throw new Error('Erro ao criar atendimento no IXC');
+        }
+
+        const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
+        console.log('Atendimento criado no IXC com ID:', atendimentoId);
+
+        // 3. Criar registro local do agendamento
+        const { data: appointment, error } = await supabase
+          .from('installation_appointments')
+          .insert({
+            customer_name: orderData.name,
+            customer_cpf: orderData.cpf,
+            customer_email: orderData.email,
+            customer_phone: orderData.phone,
+            customer_birth_date: orderData.birthDate || new Date().toISOString().split('T')[0],
+            customer_address: orderData.address,
+            customer_cep: orderData.cep,
+            plan_name: plan.name,
+            plan_speed: plan.speed,
+            plan_price: plan.price,
+            payment_day: parseInt(orderData.paymentDay) || 10,
+            appointment_date: orderData.installation_date,
+            appointment_period: orderData.installation_period,
+            status: 'pendente',
+            observations: `Cliente IXC ID: ${customerId}, Atendimento IXC ID: ${atendimentoId}`
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Erro ao criar agendamento local:', error);
+        }
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          appointment_id: appointment?.id,
+          ixc_customer_id: customerId,
+          ixc_atendimento_id: atendimentoId
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      } catch (ixcError) {
+        console.error('Erro na integração IXC:', ixcError);
+        return new Response(JSON.stringify({ 
+          error: 'Erro ao processar no sistema IXC. Tente novamente ou entre em contato.',
+          details: ixcError instanceof Error ? ixcError.message : 'Erro desconhecido'
+        }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      return new Response(JSON.stringify({ 
-        success: true,
-        appointment_id: appointment.id 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

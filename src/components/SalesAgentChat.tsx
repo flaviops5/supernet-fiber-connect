@@ -172,8 +172,37 @@ export const SalesAgentChat = () => {
         
         // Detecta se o usuário escolheu um plano
         const lastMessage = data.message.toLowerCase();
-        if ((lastMessage.includes('escolheu') || lastMessage.includes('ótima escolha')) && lastMessage.includes('plano')) {
-          setShowForm(true);
+        const userMsg = userMessage.toLowerCase();
+        
+        // Verifica se a mensagem menciona escolha de plano
+        if ((lastMessage.includes('escolheu') || lastMessage.includes('ótima escolha') || lastMessage.includes('dados para')) && 
+            (lastMessage.includes('plano') || userMsg.includes('quero') || userMsg.includes('escolho'))) {
+          
+          // Busca planos para identificar qual foi escolhido
+          const { data: plans } = await supabase
+            .from('plans')
+            .select('*')
+            .eq('active', true);
+          
+          if (plans) {
+            // Tenta identificar o plano pela mensagem do usuário ou assistente
+            const selectedPlan = plans.find(p => 
+              userMsg.includes(p.name.toLowerCase()) || 
+              userMsg.includes(p.speed.toLowerCase()) ||
+              lastMessage.includes(p.name.toLowerCase())
+            );
+            
+            if (selectedPlan) {
+              setSelectedPlanId(selectedPlan.id);
+              // Preenche CEP automaticamente se já foi informado
+              const cepMatch = messages.find(m => /\d{5}-?\d{3}/.test(m.content));
+              if (cepMatch) {
+                const cep = cepMatch.content.match(/\d{5}-?\d{3}/)?.[0] || '';
+                setFormData(prev => ({ ...prev, cep: cep.replace('-', '') }));
+              }
+              setShowForm(true);
+            }
+          }
         }
       }
 
@@ -291,8 +320,8 @@ export const SalesAgentChat = () => {
 
                 {/* Form */}
                 {showForm && (
-                  <div className="border-t bg-white p-6 max-h-[400px] overflow-y-auto">
-                    <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <div className="border-t bg-white p-6">
+                    <form onSubmit={handleFormSubmit} className="space-y-4" onClick={(e) => e.stopPropagation()}>
                       <h3 className="font-semibold text-lg mb-4">📋 Dados para Contratação</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -381,8 +410,8 @@ export const SalesAgentChat = () => {
 
                 {/* Scheduler */}
                 {showScheduler && (
-                  <div className="border-t bg-white p-6 max-h-[400px] overflow-y-auto">
-                    <div className="space-y-4">
+                  <div className="border-t bg-white p-6">
+                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
                       <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                         <Calendar className="w-5 h-5" />
                         Agende sua Instalação
