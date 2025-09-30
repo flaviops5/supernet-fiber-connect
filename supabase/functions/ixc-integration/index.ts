@@ -913,47 +913,50 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     console.log('⏳ Aguardando 3 segundos para o IXC processar...');
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // 3) Busca diretamente usando filtros por CPF com diversos formatos e campos
-    console.log('🔍 Buscando cliente pelo CPF:', cleanCpf);
+    // 3) Busca pelo CPF e pega o ID MAIS RECENTE (maior ID)
+    console.log('🔍 Buscando cliente pelo CPF (ordenado por ID DESC):', cleanCpf);
 
     const cpfFormats = [
       cleanCpf, // 04112287143
       cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), // 041.122.871-43
     ];
-    const cpfQtypes = ['cliente.cnpj_cpf', 'cnpj_cpf'];
-    const cpfOpers = ['=', 'L'];
 
     let customerId: string | null = null;
 
-    outer: for (const cpfFormat of cpfFormats) {
-      for (const qtype of cpfQtypes) {
-        for (const oper of cpfOpers) {
-          console.log(`Tentando buscar por CPF (qtype=${qtype}, oper=${oper}): ${cpfFormat}`);
-          const searchForm = {
-            qtype,
-            query: cpfFormat,
-            oper,
-            page: '1',
-            rp: '20',
-            sortname: 'razao',
-            sortorder: 'asc',
-          };
-          try {
-            const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
-            console.log(`Resultado da busca (qtype=${qtype}, oper=${oper}):`, JSON.stringify(searchData, null, 2));
-            if (searchOk && searchData?.registros) {
-              const registros = Array.isArray(searchData.registros) ? searchData.registros : Object.values(searchData.registros);
-              const match = (registros as any[]).find((r: any) => String(r.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
-              if (match) {
-                customerId = String(match.id);
-                console.log('✅ Cliente encontrado por CPF! ID:', customerId);
-                break outer;
-              }
-            }
-          } catch (e) {
-            console.error('Erro na busca por CPF:', e);
+    // Busca por CPF com ordem DESC por ID (pega o mais recente)
+    for (const cpfFormat of cpfFormats) {
+      console.log(`Tentando buscar por CPF: ${cpfFormat}`);
+      const searchForm = {
+        qtype: 'cnpj_cpf',
+        query: cpfFormat,
+        oper: '=',
+        page: '1',
+        rp: '10',
+        sortname: 'id',
+        sortorder: 'desc', // IMPORTANTE: ordem decrescente para pegar o mais recente
+      };
+      
+      try {
+        const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
+        console.log(`Resultado da busca com CPF ${cpfFormat}:`, JSON.stringify(searchData, null, 2));
+        
+        if (searchOk && searchData?.registros) {
+          const registros = Array.isArray(searchData.registros) ? searchData.registros : Object.values(searchData.registros);
+          
+          // Busca o cliente com CPF correspondente (já vem ordenado por ID DESC)
+          const match = (registros as any[]).find((r: any) => {
+            const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
+            return customerCpf === cleanCpf;
+          });
+          
+          if (match) {
+            customerId = String(match.id);
+            console.log('✅ Cliente encontrado por CPF! ID:', customerId, 'Nome:', match.razao);
+            break;
           }
         }
+      } catch (e) {
+        console.error('Erro na busca por CPF:', e);
       }
     }
 
@@ -966,8 +969,8 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
         oper: 'L',
         page: '1',
         rp: '50',
-        sortname: 'razao',
-        sortorder: 'asc',
+        sortname: 'id',
+        sortorder: 'desc', // Ordem decrescente
       };
       try {
         const { ok: nameOk, data: nameData } = await postIXC(`${baseUrl}/cliente`, auth, nameSearchForm);
@@ -985,21 +988,18 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       }
     }
 
-    // 5) Fallback final: pagina a listagem e filtra por CPF
+    // 5) Fallback final: busca os últimos 50 clientes criados
     if (!customerId) {
-      console.log('🔎 Fallback: listando clientes por páginas para filtrar por CPF...');
-      for (let page = 1; page <= 5; page++) {
-        try {
-          const lote = await getCustomers(baseUrl, auth, { limit: 200, page, orderBy: 'razao', order: 'asc' });
-          const found = (lote || []).find(c => String(c.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
-          if (found) {
-            customerId = String(found.id);
-            console.log(`✅ Cliente encontrado na página ${page}! ID:`, customerId);
-            break;
-          }
-        } catch (e) {
-          console.error(`Erro ao paginar página ${page}:`, e);
+      console.log('🔎 Fallback: buscando últimos 50 clientes criados...');
+      try {
+        const lote = await getCustomers(baseUrl, auth, { limit: 50, page: 1, orderBy: 'id', order: 'desc' });
+        const found = (lote || []).find(c => String(c.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
+        if (found) {
+          customerId = String(found.id);
+          console.log('✅ Cliente encontrado nos últimos cadastros! ID:', customerId);
         }
+      } catch (e) {
+        console.error('Erro ao buscar últimos clientes:', e);
       }
     }
 
