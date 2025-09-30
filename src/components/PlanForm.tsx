@@ -83,8 +83,8 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
 
       if (error) throw error;
 
-      if (data?.registros) {
-        setIxcPlans(data.registros);
+      if (data?.contracts) {
+        setIxcPlans(data.contracts);
       }
     } catch (error) {
       console.error('Erro ao carregar planos IXC:', error);
