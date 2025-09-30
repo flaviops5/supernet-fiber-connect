@@ -37,47 +37,70 @@ serve(async (req) => {
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
     const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
 
-    // Buscar planos do IXC
-    const body = new URLSearchParams({
-      page: '1',
-      rp: '1000',
-      sortname: 'radgrupos.grupo',
-      sortorder: 'asc',
-    });
+    // Buscar TODOS os planos do IXC com paginação
+    console.log('🔄 Iniciando busca paginada de planos...');
+    let allRegistros: any[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
 
-    const response = await fetch(`${baseUrl}/radgrupos`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ixcsoft': 'listar',
-      },
-      body,
-    });
+    do {
+      const body = new URLSearchParams({
+        page: String(currentPage),
+        rp: '100', // 100 registros por página
+        sortname: 'radgrupos.grupo',
+        sortorder: 'asc',
+      });
 
-    const text = await response.text();
-    let data: any;
-    
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error('Resposta não-JSON do IXC:', text);
-      throw new Error('Resposta inválida do IXC');
-    }
+      const response = await fetch(`${baseUrl}/radgrupos`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'ixcsoft': 'listar',
+        },
+        body,
+      });
 
-    if (!response.ok) {
-      console.error(`IXC HTTP ${response.status}:`, text);
-      throw new Error(data?.message || `HTTP ${response.status}`);
-    }
+      const text = await response.text();
+      let data: any;
+      
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error('Resposta não-JSON do IXC:', text);
+        throw new Error('Resposta inválida do IXC');
+      }
 
-    // Extrair registros
-    const registros = Array.isArray(data?.registros)
-      ? data.registros
-      : (data?.registros ? Object.values(data.registros) : []);
+      if (!response.ok) {
+        console.error(`IXC HTTP ${response.status}:`, text);
+        throw new Error(data?.message || `HTTP ${response.status}`);
+      }
 
-    if (!registros || registros.length === 0) {
+      // Extrair registros da página atual
+      const pageRegistros = Array.isArray(data?.registros)
+        ? data.registros
+        : (data?.registros ? Object.values(data.registros) : []);
+
+      if (pageRegistros.length > 0) {
+        allRegistros = allRegistros.concat(pageRegistros);
+        console.log(`📄 Página ${currentPage}: ${pageRegistros.length} planos carregados (Total: ${allRegistros.length})`);
+      }
+
+      // Calcular total de páginas
+      const total = Number(data?.total || 0);
+      const rp = 100;
+      totalPages = Math.ceil(total / rp);
+
+      currentPage++;
+    } while (currentPage <= totalPages);
+
+    console.log(`✅ Total de ${allRegistros.length} planos carregados do IXC`);
+
+    if (allRegistros.length === 0) {
       throw new Error('Nenhum plano encontrado no IXC');
     }
+
+    const registros = allRegistros;
 
     console.log(`Total de ${registros.length} planos no IXC`);
     console.log('Primeiros 5 IDs:', registros.slice(0, 5).map((r: any) => ({ id: r.id, tipo: typeof r.id, nome: r.grupo })));
