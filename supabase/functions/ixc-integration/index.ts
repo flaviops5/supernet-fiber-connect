@@ -1034,6 +1034,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
       prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
       menssagem: tituloAssunto, // Obrigatório - Igual ao título/assunto
       su_status: 'N', // Obrigatório - N = Normal
+      id_wfl_processo: '11', // Obrigatório quando id_assunto=25 - Gatilho para abertura de OS
       
       // CAMPOS OPCIONAIS
       id_filial: '1',
