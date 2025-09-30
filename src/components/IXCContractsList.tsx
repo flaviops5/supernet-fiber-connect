@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, FileText, User, Calendar, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
 
 interface IXCContract {
   id: string;
@@ -22,22 +24,43 @@ export const IXCContractsList = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [rp] = useState(24);
+  const [totalPages, setTotalPages] = useState(1);
+  const [localPlans, setLocalPlans] = useState<{ id: string; name: string }[]>([]);
+  const [selectedMap, setSelectedMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
-  const loadContracts = async () => {
+  const loadLocalPlans = async () => {
+    const { data, error } = await supabase.from('plans').select('id,name');
+    if (error) {
+      console.error('Erro ao carregar planos locais:', error);
+      return;
+    }
+    setLocalPlans(data || []);
+  };
+
+  const loadContracts = async (p?: number) => {
+    const nextPage = p ?? page;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ixc-list-contracts');
+      const { data, error } = await supabase.functions.invoke('ixc-list-contracts', {
+        body: { page: nextPage, rp }
+      });
 
       if (error) throw error;
 
       if (data.success) {
         setContracts(data.contracts);
         setTotal(data.total);
-        
+        setPage(data.page || nextPage);
+        setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || 0) / rp)));
+
+        await loadLocalPlans();
+
         console.log('IXC Plans Response:', data);
-        
-        if (data.total === 0) {
+
+        if ((data.total || 0) === 0) {
           toast({
             title: "Nenhum plano encontrado",
             description: "A API do IXC não retornou planos disponíveis.",
@@ -52,7 +75,7 @@ export const IXCContractsList = () => {
       } else {
         throw new Error(data.error || 'Erro ao carregar planos');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading plans:', error);
       toast({
         title: "Erro ao carregar planos",
@@ -119,10 +142,10 @@ export const IXCContractsList = () => {
                 Sincronizando...
               </>
             ) : (
-              "Sincronizar Planos (73, 78, 107)"
+              "Sincronizar Selecionados"
             )}
           </Button>
-          <Button onClick={loadContracts} disabled={loading} variant="outline">
+          <Button onClick={() => loadContracts(1)} disabled={loading} variant="outline">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

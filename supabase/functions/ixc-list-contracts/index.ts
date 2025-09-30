@@ -19,8 +19,11 @@ serve(async (req) => {
       throw new Error('IXC API credentials not configured');
     }
 
-    // Body is optional for future filters (e.g., only active plans)
-    const _body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const bodyJson = await req.json().catch(() => ({} as Record<string, unknown>));
+
+    const page = Number((bodyJson as any).page) > 0 ? Number((bodyJson as any).page) : 1;
+    const rp = Number((bodyJson as any).rp) > 0 ? Number((bodyJson as any).rp) : 50;
+    const search = typeof (bodyJson as any).search === 'string' ? String((bodyJson as any).search) : '';
 
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
     const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
@@ -55,14 +58,23 @@ serve(async (req) => {
     // Use radgrupos (Planos de velocidades) which has all info: name, download, upload, value
     const endpoint = 'radgrupos';
     let found: any[] = [];
+    let lastTotal = 0;
 
     try {
-      const data = await postIXC(endpoint, {
-        page: '1',
-        rp: '1000',
+      const form: Record<string, string> = {
+        page: String(page),
+        rp: String(rp),
         sortname: 'radgrupos.grupo',
         sortorder: 'asc',
-      });
+      };
+      if (search) {
+        form.qtype = 'radgrupos.grupo';
+        form.oper = 'L';
+        form.query = search;
+      }
+
+      const data = await postIXC(endpoint, form);
+      lastTotal = Number(data?.total || 0);
 
       const registros = Array.isArray(data?.registros)
         ? data.registros
@@ -117,11 +129,17 @@ serve(async (req) => {
 
     console.log(`IXC radgrupos fetch OK: ${internetPlans.length} internet plans (total: ${normalized.length})`);
 
+    const total = lastTotal || internetPlans.length;
+    const totalPages = Math.max(1, Math.ceil(total / rp));
+
     return new Response(
       JSON.stringify({
         success: true,
         contracts: internetPlans,
-        total: internetPlans.length,
+        total,
+        page,
+        rp,
+        totalPages,
         endpoint: 'radgrupos',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
