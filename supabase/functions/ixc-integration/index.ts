@@ -846,6 +846,20 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     if (!cleanCep || cleanCep === '00000000' || !/^\d{8}$/.test(cleanCep)) {
       throw new Error(`CEP inválido: ${customerData.cep}. O CEP deve conter exatamente 8 dígitos numéricos.`);
     }
+
+    // Enriquecer dados do CEP via ViaCEP para preencher UF automaticamente
+    let ufFromCep = '';
+    try {
+      const viaCepResp = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      if (viaCepResp.ok) {
+        const viaCep = await viaCepResp.json();
+        if (!viaCep.erro && typeof viaCep.uf === 'string') {
+          ufFromCep = String(viaCep.uf || '').toUpperCase();
+        }
+      }
+    } catch (_e) {
+      // Se ViaCEP falhar, seguimos sem UF (IXC pode aceitar dependendo da config)
+    }
     
     // Formatar CPF com máscara XXX.XXX.XXX-XX
     const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
@@ -872,7 +886,8 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       cpf_cnpj: documentField,
       cep: cleanCep,
       data_nascimento: formattedBirthDate,
-      tipo_pessoa: customerData.personType
+      tipo_pessoa: customerData.personType,
+      ufFromCep,
     });
     
     // Campos obrigatórios conforme documentação oficial do IXC
@@ -902,22 +917,22 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       data_nascimento: formattedBirthDate,
       contato: customerData.name,
       
-      // CONFIGURAÇÕES
-      acesso_automatico_central: '2',
-      participa_cobranca: 'S',
-      id_tipo_cliente: '0',
-      filial_id: '1',
-      uf: '',
-      
-      // COBRANÇA
-      cep_cob: cleanCep,
+    // CONFIGURAÇÕES
+    acesso_automatico_central: '2',
+    participa_cobranca: 'S',
+    id_tipo_cliente: '0',
+    filial_id: '1',
+    uf: ufFromCep || '',
+    
+    // COBRANÇA
+    cep_cob: cleanCep,
       endereco_cob: customerData.address || 'Rua Teste',
       numero_cob: customerData.number || '1200',
       bairro_cob: customerData.neighborhood || 'Centro',
       cidade_cob: customerData.cityId || '5564',
       complemento_cob: '',
       referencia_cob: '',
-      uf_cob: '',
+      uf_cob: ufFromCep || '',
       
       // CONTATOS
       fone: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
