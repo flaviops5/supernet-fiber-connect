@@ -45,39 +45,104 @@ serve(async (req) => {
     
     // Se for uma ordem direta do formulário
     if (directOrder) {
-      // Parse do texto formatado
-      const content = messages[0].content;
-      const extractValue = (label: string) => {
-        const regex = new RegExp(`${label}:\\s*(.+)`, 'i');
-        const match = content.match(regex);
-        return match ? match[1].trim() : '';
+      const content = messages[0].content || '';
+
+      // Tenta parsear JSON primeiro; se falhar, aceita texto com labels
+      const parseDirectOrder = (raw: string) => {
+        let data: any = {};
+        const trimmed = (raw || '').trim();
+        if (trimmed.startsWith('{')) {
+          try { data = JSON.parse(trimmed); } catch { data = {}; }
+        }
+        if (!Object.keys(data).length) {
+          const extractValue = (label: string) => {
+            const regex = new RegExp(`${label}:\\s*(.+)`, 'i');
+            const match = raw.match(regex);
+            return match ? match[1].trim() : '';
+          };
+          data = {
+            name: extractValue('Nome'),
+            email: extractValue('Email'),
+            phone: extractValue('Telefone'),
+            cpf: extractValue('CPF'),
+            birthDate: extractValue('Data Nascimento'),
+            cep: extractValue('CEP'),
+            address: extractValue('Endereço'),
+            planName: extractValue('Plano'),
+            appointmentDate: extractValue('Data Instalação'),
+            appointmentPeriod: extractValue('Período'),
+            paymentDay: parseInt(extractValue('Dia Pagamento')) || 10,
+          };
+        }
+        // Normalização de chaves vindas do front/LLM
+        const normalized = {
+          name: data.name || data.customerName || '',
+          email: data.email || data.customerEmail || '',
+          phone: data.phone || data.customerPhone || '',
+          cpf: data.cpf || data.customerCpf || '',
+          birthDate: data.birthDate || data.customerBirthDate || '',
+          cep: data.cep || data.customerCep || '',
+          address: data.address || data.customerAddress || '',
+          plan_id: data.plan_id || data.planId || '',
+          planName: data.planName || data.plan || '',
+          appointmentDate: data.appointmentDate || data.installation_date || '',
+          appointmentPeriod: data.appointmentPeriod || data.installation_period || '',
+          paymentDay: Number(data.paymentDay ?? data.payment_day ?? 10) || 10,
+        };
+        return normalized;
       };
 
-      const orderData = {
-        name: extractValue('Nome'),
-        email: extractValue('Email'),
-        phone: extractValue('Telefone'),
-        cpf: extractValue('CPF'),
-        birthDate: extractValue('Data Nascimento'),
-        cep: extractValue('CEP'),
-        address: extractValue('Endereço'),
-        planName: extractValue('Plano'),
-        appointmentDate: extractValue('Data Instalação'),
-        appointmentPeriod: extractValue('Período'),
-        paymentDay: parseInt(extractValue('Dia Pagamento')) || 10
-      };
+      const orderData = parseDirectOrder(content);
 
-      console.log('Dados do pedido parseados:', orderData);
+      console.log('Pedido recebido (normalizado):', {
+        ...orderData,
+        cpf: orderData.cpf ? `${orderData.cpf.slice(0,3)}***` : '',
+      });
 
-      // Buscar plano pelo nome
-      const { data: plan } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('name', orderData.planName)
-        .single();
+      // Validação mínima
+      const required = ['name','email','phone','cpf','cep','address','appointmentDate','appointmentPeriod'] as const;
+      const missing = required.filter((k) => !orderData[k]);
+      if (missing.length) {
+        return new Response(JSON.stringify({
+          error: 'Campos obrigatórios ausentes',
+          missing,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Buscar plano por id (preferencial) ou por nome
+      let plan: any = null;
+      let planLookup: { by: 'id' | 'name'; value: string } | null = null;
+      if (orderData.plan_id) {
+        const { data } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('id', orderData.plan_id)
+          .maybeSingle();
+        plan = data;
+        planLookup = { by: 'id', value: orderData.plan_id };
+      } else if (orderData.planName) {
+        const { data } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('name', orderData.planName)
+          .maybeSingle();
+        plan = data;
+        planLookup = { by: 'name', value: orderData.planName };
+      } else {
+        return new Response(JSON.stringify({ error: 'Plano não informado' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       if (!plan) {
-        return new Response(JSON.stringify({ error: 'Plano não encontrado' }), {
+        return new Response(JSON.stringify({
+          error: 'Plano não encontrado',
+          lookup: planLookup,
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -97,10 +162,10 @@ serve(async (req) => {
                 phone: orderData.phone,
                 birthDate: orderData.birthDate,
                 address: orderData.address,
-                cep: orderData.cep
-              }
-            }
-          }
+                cep: orderData.cep,
+              },
+            },
+          },
         });
 
         if (customerError) {
@@ -116,7 +181,7 @@ serve(async (req) => {
         }
 
         // 2. Criar contrato no IXC (vincula o plano ao cliente)
-        let contractId = null;
+        let contractId: string | null = null;
         if (plan.ixc_plan_id) {
           console.log('Criando contrato no IXC com plano:', plan.ixc_plan_id);
           const { data: contractResult, error: contractError } = await supabase.functions.invoke('ixc-integration', {
@@ -126,10 +191,10 @@ serve(async (req) => {
                 customerId: customerId,
                 contractData: {
                   planId: plan.ixc_plan_id,
-                  planName: plan.name
-                }
-              }
-            }
+                  planName: plan.name,
+                },
+              },
+            },
           });
 
           if (contractError) {
@@ -162,10 +227,10 @@ serve(async (req) => {
                 planPrice: plan.price,
                 paymentDay: orderData.paymentDay,
                 installationDate: orderData.appointmentDate,
-                installationPeriod: orderData.appointmentPeriod
-              }
-            }
-          }
+                installationPeriod: orderData.appointmentPeriod,
+              },
+            },
+          },
         });
 
         if (atendimentoError) {
@@ -190,12 +255,12 @@ serve(async (req) => {
             plan_name: plan.name,
             plan_speed: plan.speed,
             plan_price: plan.price,
-            payment_day: parseInt(orderData.paymentDay) || 10,
+            payment_day: Number(orderData.paymentDay) || 10,
             appointment_date: orderData.appointmentDate,
             appointment_period: orderData.appointmentPeriod,
             status: 'pendente',
             ixc_contract_id: contractId,
-            observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`
+            observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`,
           })
           .select()
           .single();
@@ -204,25 +269,30 @@ serve(async (req) => {
           console.error('Erro ao criar agendamento local:', error);
         }
 
-        return new Response(JSON.stringify({ 
-          success: true,
-          appointment_id: appointment?.id,
-          ixc_customer_id: customerId,
-          ixc_contract_id: contractId,
-          ixc_atendimento_id: atendimentoId
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
+        return new Response(
+          JSON.stringify({
+            success: true,
+            appointment_id: appointment?.id,
+            ixc_customer_id: customerId,
+            ixc_contract_id: contractId,
+            ixc_atendimento_id: atendimentoId,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
       } catch (ixcError) {
         console.error('Erro na integração IXC:', ixcError);
-        return new Response(JSON.stringify({ 
-          error: 'Erro ao processar no sistema IXC. Tente novamente ou entre em contato.',
-          details: ixcError instanceof Error ? ixcError.message : 'Erro desconhecido'
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            error: 'Erro ao processar no sistema IXC. Tente novamente ou entre em contato.',
+            details: ixcError instanceof Error ? ixcError.message : 'Erro desconhecido',
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
       }
     }
     
