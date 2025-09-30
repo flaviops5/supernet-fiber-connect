@@ -131,16 +131,35 @@ serve(async (req) => {
         download: down !== null ? String(down) : undefined,
         upload: up !== null ? String(up) : undefined,
         raw: r,
+      } as {
+        id: string;
+        descricao: string;
+        valor?: string;
+        download?: string;
+        upload?: string;
+        raw: any;
       };
     });
 
-    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${normalized.length} items`);
+    // Prefer day-to-day plans mentioned: Escolar, Octo; fallback to likely internet plans
+    const preferredKeywords = ['escolar', 'octo'];
+    const preferred = normalized.filter(p =>
+      preferredKeywords.some(k => p.descricao.toLowerCase().includes(k))
+    );
+
+    const likelyInternet = preferred.length ? preferred : normalized.filter(p =>
+      Boolean(p.download || p.upload) || /\b(mega|mbps|gbps|giga|mb|gb|fibra|plano)\b/i.test(p.descricao)
+    );
+
+    const finalList = likelyInternet;
+
+    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${finalList.length} items (filtered)`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        contracts: normalized,
-        total: normalized.length,
+        contracts: finalList,
+        total: finalList.length,
         endpoint: usedEndpoint,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
