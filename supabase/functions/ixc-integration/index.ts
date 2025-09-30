@@ -835,42 +835,80 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
     const cleanCep = customerData.cep.replace(/\D/g, '');
     
-    console.log('CEP recebido (sem validação):', cleanCep);
+    console.log('CEP recebido:', cleanCep, 'CPF:', cleanCpf);
     
-    // Criar formulário completo com todos os dados de uma vez
+    // Campos obrigatórios conforme documentação do suporte IXC
     const form: Record<string, string> = {
-      // Dados do cliente
-      razao: customerData.name,
-      nome_fantasia: customerData.name,
-      cnpj_cpf: cleanCpf,
-      email: customerData.email,
-      hotsite_email: customerData.email,
-      senha: '1234',
-      tipo_pessoa: customerData.personType || 'F',
-      ativo: 'S',
-      contribuinte_icms: 'N',
-      acesso_automatico_central: '2',
-      participa_cobranca: 'S',
-      tipo_assinante: '3',
-      id_tipo_cliente: '2',
+      // OBRIGATÓRIOS BÁSICOS
+      ativo: 'S', // OBRIGATÓRIO
+      tipo_pessoa: customerData.personType || 'F', // OBRIGATÓRIO (F=Física, J=Jurídica)
+      razao: customerData.name, // OBRIGATÓRIO (Nome do cliente)
+      cnpj_cpf: cleanCpf, // OBRIGATÓRIO
+      contribuinte_icms: 'I', // OBRIGATÓRIO (I=Isento, C=Contribuinte, N=Não contribuinte)
+      tipo_assinante: '1', // OBRIGATÓRIO (1=Residencial, 2=Comercial, etc.)
+      
+      // ENDEREÇO - OBRIGATÓRIOS
+      cep: cleanCep, // OBRIGATÓRIO
+      endereco: customerData.address || 'Rua Teste', // OBRIGATÓRIO
+      numero: customerData.number || '1200', // OBRIGATÓRIO
+      bairro: customerData.neighborhood || 'Centro', // OBRIGATÓRIO
+      cidade: '1', // OBRIGATÓRIO (ID da cidade no IXC - ajustar conforme necessário)
+      tipo_localidade: 'U', // OBRIGATÓRIO (U=Urbano, R=Rural)
+      
+      // ISS - OBRIGATÓRIO
+      iss_classificacao_padrao: '00', // OBRIGATÓRIO
+      
+      // DADOS ADICIONAIS (RECOMENDADOS)
+      fantasia: customerData.name,
+      email: customerData.email || '',
+      hotsite_email: customerData.email || '',
+      senha: '1234', // Senha padrão para acesso
+      telefone_celular: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
       data_nascimento: customerData.birthDate || '',
       
-      // Endereço
-      cep: cleanCep,
-      endereco: customerData.address || 'Rua Teste, 123',
-      numero: customerData.number || '123',
-      bairro: customerData.neighborhood || 'Centro',
-      cidade: '5564',
-      tipo_localidade: 'U', // Zona Urbana
-      classificacao_iss: '1', // PADRÃO
+      // CONFIGURAÇÕES DO SISTEMA
+      acesso_automatico_central: '2',
+      participa_cobranca: 'S',
+      id_tipo_cliente: '2',
+      uf: '',
       
-      // Contato
-      telefone_celular: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
-      email_nfe: customerData.email,
-      email_financeiro: customerData.email,
+      // COBRANÇA
+      cep_cob: cleanCep,
+      endereco_cob: customerData.address || 'Rua Teste',
+      numero_cob: customerData.number || '1200',
+      bairro_cob: customerData.neighborhood || 'Centro',
+      cidade_cob: '1',
+      complemento_cob: '',
+      referencia_cob: '',
+      uf_cob: '',
+      
+      // CONTATOS
+      fone: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
+      telefone_comercial: '',
+      ramal: '',
+      id_operadora_celular: '',
+      whatsapp: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
+      contato: customerData.name,
+      website: '',
+      skype: '',
+      facebook: '',
+      
+      // FINANCEIRO
+      cond_pagamento: '',
+      id_conta: '',
+      deb_automatico: '',
+      deb_agencia: '',
+      deb_conta: '',
+      codigo_operacao: '',
+      tipo_pessoa_titular_conta: '',
+      cnpj_cpf_titular_conta: '',
+      
+      // OUTROS
+      obs: '',
+      alerta: '',
     };
 
-    console.log('Enviando todos os dados de uma vez:', form);
+    console.log('Enviando dados do cliente para IXC:', form);
 
     const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, {
       ...form,

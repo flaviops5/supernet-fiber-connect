@@ -25,6 +25,7 @@ import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
 import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
+import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { toast } from "sonner";
 
@@ -539,8 +540,9 @@ const PlansManagement = () => {
       </div>
 
       <Tabs defaultValue="plans" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="plans">Planos</TabsTrigger>
+          <TabsTrigger value="ixc-plans">Vincular IXC</TabsTrigger>
           <TabsTrigger value="prompt">
             <MessageSquare className="w-4 h-4 mr-2" />
             Prompt do Chatbot
@@ -666,6 +668,10 @@ const PlansManagement = () => {
           )}
         </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="ixc-plans" className="space-y-6">
+          <IXCPlanSelector />
         </TabsContent>
         
         <TabsContent value="prompt" className="space-y-6">
