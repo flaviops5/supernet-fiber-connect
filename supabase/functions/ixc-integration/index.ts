@@ -835,139 +835,63 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     console.log('CEP recebido (sem validação):', cleanCep);
     
-    // PASSO 1: Salvar ABA CLIENTE (dados básicos)
-    const formCliente: Record<string, string> = {
+    // Criar formulário completo com todos os dados de uma vez
+    const form: Record<string, string> = {
+      // Dados do cliente
       razao: customerData.name,
       nome_fantasia: customerData.name,
       cnpj_cpf: cleanCpf,
       email: customerData.email,
-      tipo_pessoa: 'F',
+      tipo_pessoa: customerData.personType || 'F',
       ativo: 'S',
       contribuinte_icms: 'N',
       acesso_automatico_central: '2',
       participa_cobranca: 'S',
       tipo_assinante: '3',
       id_tipo_cliente: '2',
-    };
-    
-    if (customerData.birthDate) {
-      formCliente.data_nascimento = customerData.birthDate;
-    }
-
-    console.log('PASSO 1: Salvando ABA CLIENTE:', formCliente);
-    
-    const responseCliente = await fetch(`${baseUrl}/cliente`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ixcsoft': 'inserir',
-      },
-      body: new URLSearchParams(formCliente),
-    });
-    
-    if (!responseCliente.ok) {
-      const text = await responseCliente.text();
-      console.error(`Erro ao criar cliente (ABA CLIENTE) - HTTP ${responseCliente.status}:`, text);
-      throw new Error(`Erro ao criar cliente: ${responseCliente.status} - ${text}`);
-    }
-    
-    const textCliente = await responseCliente.text();
-    console.log('Resposta ABA CLIENTE:', textCliente);
-    
-    let parsedCliente: any = null;
-    try {
-      parsedCliente = JSON.parse(textCliente);
-    } catch {}
-
-    if (parsedCliente && parsedCliente.type === 'error') {
-      throw new Error(parsedCliente.message || 'Erro ao criar cliente no IXC');
-    }
-
-    // Aguarda processamento e busca o ID do cliente recém-criado
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log('Buscando cliente recém-criado pelo CPF:', cleanCpf);
-    
-    let customerId: string | null = null;
-    try {
-      const customers = await searchCustomers(baseUrl, auth, cleanCpf);
+      data_nascimento: customerData.birthDate || '',
       
-      if (customers && customers.length > 0) {
-        const customer = customers[0];
-        customerId = String(customer.id);
-        console.log('Cliente encontrado após criação, ID:', customerId);
-      }
-    } catch (e) {
-      console.error('Erro ao buscar cliente após criação:', e);
-    }
-
-    if (!customerId) {
-      throw new Error('Cliente criado mas não foi possível recuperar o ID. Verifique manualmente no IXC.');
-    }
-
-    // PASSO 2: Salvar ABA ENDEREÇO
-    const formEndereco: Record<string, string> = {
-      id: customerId,
+      // Endereço
       cep: cleanCep,
       endereco: customerData.address || 'Rua Teste, 123',
       numero: customerData.number || '123',
       bairro: customerData.neighborhood || 'Centro',
-      cidade: '5564', // Código da cidade fixo
-      tipo_localidade: 'U', // U = Zona Urbana
+      cidade: '5564',
+      tipo_localidade: 'U', // Zona Urbana
       classificacao_iss: '1', // PADRÃO
+      
+      // Contato
+      telefone_celular: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
+      email_nfe: customerData.email,
+      email_financeiro: customerData.email,
     };
 
-    console.log('PASSO 2: Salvando ABA ENDEREÇO:', formEndereco);
-    
-    const responseEndereco = await fetch(`${baseUrl}/cliente`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ixcsoft': 'alterar',
-      },
-      body: new URLSearchParams(formEndereco),
+    console.log('Enviando todos os dados de uma vez:', form);
+
+    const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, {
+      ...form,
+      ixcsoft: 'inserir'
     });
-    
-    if (!responseEndereco.ok) {
-      const text = await responseEndereco.text();
-      console.error(`Erro ao atualizar endereço - HTTP ${responseEndereco.status}:`, text);
-    } else {
-      const textEndereco = await responseEndereco.text();
-      console.log('Resposta ABA ENDEREÇO:', textEndereco);
+
+    if (!ok) {
+      console.error('Erro ao criar cliente no IXC:', data);
+      throw new Error(`Erro ao criar cliente: ${JSON.stringify(data)}`);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Resposta do IXC:', data);
 
-    // PASSO 3: Salvar ABA CONTATO
-    const formContato: Record<string, string> = {
-      id: customerId,
-      telefone_celular: customerData.phone.replace(/\D/g, ''),
-      email: customerData.email,
-    };
+    // Aguardar processamento
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    console.log('PASSO 3: Salvando ABA CONTATO:', formContato);
-    
-    const responseContato = await fetch(`${baseUrl}/cliente`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ixcsoft': 'alterar',
-      },
-      body: new URLSearchParams(formContato),
-    });
-    
-    if (!responseContato.ok) {
-      const text = await responseContato.text();
-      console.error(`Erro ao atualizar contato - HTTP ${responseContato.status}:`, text);
-    } else {
-      const textContato = await responseContato.text();
-      console.log('Resposta ABA CONTATO:', textContato);
+    // Buscar o cliente recém-criado para obter o ID
+    const createdCustomer = await searchCustomers(baseUrl, auth, cleanCpf);
+    if (!createdCustomer || createdCustomer.length === 0) {
+      throw new Error('Cliente criado mas não encontrado na busca');
     }
 
-    console.log('Cliente criado com sucesso em 3 etapas, ID:', customerId);
+    const customerId = String(createdCustomer[0].id);
+    console.log('Cliente criado com sucesso! ID:', customerId);
+    
     return { id: customerId };
 
   } catch (error) {
