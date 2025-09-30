@@ -844,6 +844,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       razao: customerData.name,
       nome_fantasia: customerData.name,
       cnpj_cpf: cleanCpf,
+      cep: cleanCep, // CEP validado
       email: customerData.email,
       telefone_celular: customerData.phone.replace(/\D/g, ''),
       ativo: 'S',
