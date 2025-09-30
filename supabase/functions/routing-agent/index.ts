@@ -155,7 +155,8 @@ serve(async (req) => {
           const isOnline = clientStatus.online === true || clientStatus.onlineStatus === true;
           const isBlocked = clientStatus.blocked === true || clientStatus.financiallyBlocked === true;
           const serviceStatus = clientStatus.serviceStatus || '';
-          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO') || serviceStatus.includes('ATRASO') || serviceStatus.includes('BLOQUEADO');
+          // Problema financeiro = bloqueado OU serviceStatus contendo "FINANCEIRO"
+          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO');
 
           console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}, ServiceStatus=${serviceStatus}, HasFinancialIssue=${hasFinancialIssue}`);
 
