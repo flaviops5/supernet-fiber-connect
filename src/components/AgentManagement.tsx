@@ -31,6 +31,7 @@ interface AgentConfig {
 
 const AgentManagement = () => {
   const [stats, setStats] = useState<Record<string, AgentStats>>({
+    routing: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
@@ -75,6 +76,7 @@ const AgentManagement = () => {
 
       if (conversations) {
         const statsByDept: Record<string, AgentStats> = {
+          routing: { totalConversations: conversations.length, activeConversations: 0, resolvedToday: 0 },
           sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
@@ -121,6 +123,20 @@ const AgentManagement = () => {
   };
 
   const agents = [
+    {
+      id: 'routing',
+      name: 'Agente de Roteamento',
+      icon: Bot,
+      color: 'bg-orange-500',
+      description: 'Analisa mensagens e direciona para o agente especializado correto',
+      capabilities: [
+        'Análise de intenção com IA',
+        'Classificação automática de solicitações',
+        'Roteamento inteligente para departamentos',
+        'Detecção de contexto da conversa',
+        'Solicita esclarecimento quando necessário'
+      ]
+    },
     {
       id: 'sales',
       name: 'Agente de Vendas',
@@ -212,7 +228,7 @@ const AgentManagement = () => {
       )}
 
       {/* Agent Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         {agents.map(agent => {
           const AgentIcon = agent.icon;
           const agentStats = stats[agent.id];
@@ -247,8 +263,9 @@ const AgentManagement = () => {
       </div>
 
       {/* Agent Details */}
-      <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="routing" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="routing">Roteamento</TabsTrigger>
           <TabsTrigger value="sales">Vendas</TabsTrigger>
           <TabsTrigger value="support_tech">Suporte Técnico</TabsTrigger>
           <TabsTrigger value="support_financial">Suporte Financeiro</TabsTrigger>
