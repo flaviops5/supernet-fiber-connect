@@ -1015,12 +1015,19 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
     console.log('Criando atendimento no IXC:', { customerId, atendimentoData });
     
     const form: Record<string, string> = {
-      // CAMPOS OBRIGATÓRIOS
-      id_cliente: String(customerId),
-      id_filial: '1', // Filial padrão
-      id_assunto: '25', // ID do assunto - IXC preenche automaticamente setor e outros campos
-      id_tipo_problema: '1', // Tipo: Instalação/Novo Cliente
-      origem_endereco: 'C', // C = Cliente (origem do endereço)
+      // CAMPOS OBRIGATÓRIOS SEGUNDO DOCUMENTAÇÃO IXC
+      tipo: 'C', // C = Cliente (obrigatório)
+      id_cliente: String(customerId), // Obrigatório
+      id_assunto: '25', // Obrigatório - IXC preenche automaticamente setor
+      titulo: `Instalação - ${atendimentoData.planName}`, // Obrigatório
+      id_ticket_setor: '2', // Obrigatório - Setor do ticket
+      prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
+      menssagem: `Nova instalação do plano ${atendimentoData.planName} para ${atendimentoData.customerName}`, // Obrigatório
+      su_status: 'N', // Obrigatório - N = Normal
+      
+      // CAMPOS ADICIONAIS
+      id_filial: '1',
+      origem_endereco: 'C', // C = Cliente
       
       // DESCRIÇÃO DETALHADA
       descricao: `
@@ -1043,10 +1050,7 @@ AGENDAMENTO:
 - Período: ${atendimentoData.installationPeriod}
       `.trim(),
       
-      // STATUS E PRIORIDADE
       status: 'A', // A = Aberto
-      prioridade: 'N', // N = Normal
-      id_setor_responsavel: '1', // Setor responsável pela execução
     };
     
     // Adiciona data de agendamento se fornecida
