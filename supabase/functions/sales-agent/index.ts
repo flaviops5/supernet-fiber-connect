@@ -26,11 +26,35 @@ serve(async (req) => {
     
     // Se for uma ordem direta do formulário
     if (directOrder) {
-      const orderData = JSON.parse(messages[0].content);
+      // Parse do texto formatado
+      const content = messages[0].content;
+      const extractValue = (label: string) => {
+        const regex = new RegExp(`${label}:\\s*(.+)`, 'i');
+        const match = content.match(regex);
+        return match ? match[1].trim() : '';
+      };
+
+      const orderData = {
+        name: extractValue('Nome'),
+        email: extractValue('Email'),
+        phone: extractValue('Telefone'),
+        cpf: extractValue('CPF'),
+        birthDate: extractValue('Data Nascimento'),
+        cep: extractValue('CEP'),
+        address: extractValue('Endereço'),
+        planName: extractValue('Plano'),
+        appointmentDate: extractValue('Data Instalação'),
+        appointmentPeriod: extractValue('Período'),
+        paymentDay: parseInt(extractValue('Dia Pagamento')) || 10
+      };
+
+      console.log('Dados do pedido parseados:', orderData);
+
+      // Buscar plano pelo nome
       const { data: plan } = await supabase
         .from('plans')
         .select('*')
-        .eq('id', orderData.plan_id)
+        .eq('name', orderData.planName)
         .single();
 
       if (!plan) {
@@ -118,8 +142,8 @@ serve(async (req) => {
                 planSpeed: plan.speed,
                 planPrice: plan.price,
                 paymentDay: orderData.paymentDay,
-                installationDate: orderData.installation_date,
-                installationPeriod: orderData.installation_period
+                installationDate: orderData.appointmentDate,
+                installationPeriod: orderData.appointmentPeriod
               }
             }
           }
@@ -148,8 +172,8 @@ serve(async (req) => {
             plan_speed: plan.speed,
             plan_price: plan.price,
             payment_day: parseInt(orderData.paymentDay) || 10,
-            appointment_date: orderData.installation_date,
-            appointment_period: orderData.installation_period,
+            appointment_date: orderData.appointmentDate,
+            appointment_period: orderData.appointmentPeriod,
             status: 'pendente',
             ixc_contract_id: contractId,
             observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`
