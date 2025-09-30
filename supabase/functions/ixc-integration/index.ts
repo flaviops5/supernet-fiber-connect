@@ -1018,8 +1018,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
       // CAMPOS OBRIGATÓRIOS
       id_cliente: String(customerId),
       id_filial: '1', // Filial padrão
-      assunto: atendimentoData.subject || `Instalação - ${atendimentoData.planName}`,
-      id_setor: '1', // Setor de instalação (campo obrigatório diferente de id_setor_responsavel)
+      id_assunto: '25', // ID do assunto - IXC preenche automaticamente setor e outros campos
       id_tipo_problema: '1', // Tipo: Instalação/Novo Cliente
       origem_endereco: 'C', // C = Cliente (origem do endereço)
       
