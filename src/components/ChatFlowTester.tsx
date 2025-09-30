@@ -143,11 +143,11 @@ export default function ChatFlowTester() {
 
   const getAgentBadge = (agent: string) => {
     const variants: Record<string, { label: string; color: string }> = {
-      sales: { label: 'Vendas', color: 'bg-green-500' },
+      sales: { label: 'Vicente (Vendas)', color: 'bg-green-500' },
       support_tech: { label: 'Suporte Técnico', color: 'bg-blue-500' },
-      support_financial: { label: 'Financeiro', color: 'bg-orange-500' },
-      routing: { label: 'Roteamento', color: 'bg-gray-500' },
-      identification: { label: 'Identificação', color: 'bg-purple-500' }
+      support_financial: { label: 'Julia Martins (Financeiro)', color: 'bg-orange-500' },
+      routing: { label: 'Cloé (Roteamento)', color: 'bg-gray-500' },
+      identification: { label: 'Cloé (Identificação)', color: 'bg-purple-500' }
     };
 
     return variants[agent] || { label: agent, color: 'bg-gray-500' };

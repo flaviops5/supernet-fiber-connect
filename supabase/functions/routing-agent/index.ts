@@ -265,7 +265,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: 'Olá! Tudo bem? Sou o assistente virtual da SUPERNET FIBRA. Como posso ajudá-lo hoje? 😊',
+            message: 'Olá! Tudo bem? Meu nome é Cloé, da SUPERNET FIBRA. Como posso ajudá-lo hoje? 😊',
             isGreeting: true
           }),
           {
@@ -380,10 +380,10 @@ MENSAGEM ATUAL DO CLIENTE:
         agent: decision.agent,
         confidence: decision.confidence,
         reason: decision.reason,
-        message: `Transferindo você para o ${
-          decision.agent === 'sales' ? 'setor de Vendas' :
-          decision.agent === 'support_tech' ? 'Suporte Técnico' :
-          'Suporte Financeiro'
+        message: `Transferindo você para ${
+          decision.agent === 'sales' ? 'o Vicente, do setor de Vendas' :
+          decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
+          'a Julia Martins, do Financeiro'
         }. Um momento, por favor...`
       }),
       {
