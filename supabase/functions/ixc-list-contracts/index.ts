@@ -70,8 +70,10 @@ serve(async (req) => {
       'produtos',
     ];
     let found: any[] = [];
-    let rawResponse: any = null;
     let usedEndpoint = '';
+
+    // Keywords from real day-to-day plans to identify the correct endpoint
+    const knownPlanKeywords = ['escolar', 'octo'];
 
     for (const ep of candidateEndpoints) {
       try {
@@ -79,22 +81,33 @@ serve(async (req) => {
           page: '1',
           rp: '1000',
         });
-        rawResponse = data;
         // Many IXC installs return { page, total, registros }
         const registros = Array.isArray(data?.registros)
           ? data.registros
           : (data?.registros ? Object.values(data.registros) : []);
+        
+        let candidates: any[] = [];
         if (registros && registros.length > 0) {
-          found = registros as any[];
-          usedEndpoint = ep;
-          break;
+          candidates = registros;
+        } else if (Array.isArray(data?.data) && data.data.length) {
+          candidates = data.data;
         }
-        // Some return { data: [...] }
-        if (Array.isArray(data?.data) && data.data.length) {
-          found = data.data;
-          usedEndpoint = ep;
-          break;
+
+        // Check if this endpoint contains known real plans
+        if (candidates.length > 0) {
+          const hasKnownPlans = candidates.some((r: any) => {
+            const name = String(r.descricao ?? r.nome ?? r.plano ?? r.titulo ?? '').toLowerCase();
+            return knownPlanKeywords.some(kw => name.includes(kw));
+          });
+
+          if (hasKnownPlans) {
+            console.log(`✓ Found real plans at /${ep} (matched: Escolar/Octo)`);
+            found = candidates;
+            usedEndpoint = ep;
+            break;
+          }
         }
+
         // Some return { type: 'error', message: 'Recurso ... não está disponível!' }
         if (data?.type === 'error') {
           console.warn(`[IXC ${ep}] ${data.message}`);
@@ -107,11 +120,11 @@ serve(async (req) => {
     }
 
     if (!found.length) {
-      console.error('No plan endpoint returned data.');
+      console.error('No plan endpoint with known plans found.');
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Nenhum endpoint de planos do IXC retornou dados. Tentativas: ${candidateEndpoints.join(', ')}. Verifique com o suporte IXC qual recurso está habilitado para listar planos/comercial.`,
+          error: `Nenhum endpoint retornou os planos conhecidos (Escolar/Octo). Tentativas: ${candidateEndpoints.join(', ')}. Verifique com o suporte IXC.`,
           tried: candidateEndpoints,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
@@ -124,42 +137,32 @@ serve(async (req) => {
       const down = r.download ?? r.velocidade_download ?? r.vel_down ?? r.vdownload ?? null;
       const up = r.upload ?? r.velocidade_upload ?? r.vel_up ?? r.vupload ?? null;
       const descricao = r.descricao ?? r.nome ?? r.plano ?? r.titulo ?? `Plano ${r.id ?? ''}`;
+      const ativo = r.ativo ?? r.status ?? r.situacao ?? null;
       return {
         id: String(r.id ?? ''),
         descricao: String(descricao ?? ''),
         valor: price !== null ? String(price) : undefined,
         download: down !== null ? String(down) : undefined,
         upload: up !== null ? String(up) : undefined,
+        ativo: ativo !== null ? String(ativo) : undefined,
         raw: r,
-      } as {
-        id: string;
-        descricao: string;
-        valor?: string;
-        download?: string;
-        upload?: string;
-        raw: any;
       };
     });
 
-    // Prefer day-to-day plans mentioned: Escolar, Octo; fallback to likely internet plans
-    const preferredKeywords = ['escolar', 'octo'];
-    const preferred = normalized.filter(p =>
-      preferredKeywords.some(k => p.descricao.toLowerCase().includes(k))
-    );
+    // Filter only active plans if status field exists
+    const activePlans = normalized.filter(p => {
+      if (!p.ativo) return true; // No status field, include all
+      const statusStr = String(p.ativo).toLowerCase();
+      return statusStr === 's' || statusStr === 'sim' || statusStr === 'ativo' || statusStr === 'true' || statusStr === '1';
+    });
 
-    const likelyInternet = preferred.length ? preferred : normalized.filter(p =>
-      Boolean(p.download || p.upload) || /\b(mega|mbps|gbps|giga|mb|gb|fibra|plano)\b/i.test(p.descricao)
-    );
-
-    const finalList = likelyInternet;
-
-    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${finalList.length} items (filtered)`);
+    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${activePlans.length} active plans (total: ${normalized.length})`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        contracts: finalList,
-        total: finalList.length,
+        contracts: activePlans,
+        total: activePlans.length,
         endpoint: usedEndpoint,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
