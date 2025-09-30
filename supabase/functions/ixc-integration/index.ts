@@ -865,20 +865,10 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.tipo_pessoa = 'F'; // Pessoa Física
     form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
     
-    // ABA Endereço
-    const rawAddress: string = customerData.address || '';
-    const bairroMatch = rawAddress.match(/Bairro\s+([^-,]+)/i);
-    const parsedBairro = customerData.neighborhood || (bairroMatch ? bairroMatch[1].trim() : 'Centro');
-    const parsedStreet = customerData.street || (rawAddress.split(',')[0] || '').trim();
-
-    if (parsedStreet) {
-      form.endereco = parsedStreet;
-    }
-    form.numero = '0'; // Número = sempre 0
-    form.bairro = parsedBairro;
-    form.cidade = '5564'; // Cidade = sempre código 5564
-    form.cep = cleanCep; // CEP sem formatação, apenas números
-    form.tipo_localidade = 'U'; // Tipo de localidade = Zona Urbana
+    // ABA Endereço - enviar apenas CEP (já definido) e número fixo
+    // Não enviar endereco, bairro ou cidade; o IXC preencherá após validação do CEP
+    form.numero = '1';
+    form.tipo_localidade = 'U'; // Zona Urbana
     form.iss_classificacao_padrao = '99';
 
     console.log('Enviando dados para criar cliente:', form);
