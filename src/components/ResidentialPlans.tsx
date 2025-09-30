@@ -4,7 +4,6 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import ContractForm from '@/components/ContractForm';
 const iconMap: { [key: string]: any } = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
   DollarSign, Clock, Router, Wifi
@@ -20,8 +19,12 @@ const ResidentialPlans = () => {
   const [count, setCount] = useState(0);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [showContractForm, setShowContractForm] = useState(false);
+
+  const handleWhatsApp = (plan: any) => {
+    const message = `Olá! Gostaria de contratar o plano *${plan.name}* de *${plan.speed}* por *R$ ${plan.price.toFixed(2).replace('.', ',')}*/mês.`;
+    const whatsappUrl = `https://wa.me/5561999475886?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -194,11 +197,7 @@ const ResidentialPlans = () => {
                     {/* CTA Button */}
                     <Button 
                       className="w-full cta-gradient text-white font-bold py-6 text-lg"
-                      onClick={() => {
-                        console.log('Button clicked for plan:', plan.name);
-                        setSelectedPlan(plan);
-                        setShowContractForm(true);
-                      }}
+                      onClick={() => handleWhatsApp(plan)}
                     >
                       {plan.cta_text || 'Contratar Agora'}
                     </Button>
@@ -234,18 +233,6 @@ const ResidentialPlans = () => {
           </p>
         </div>
       </div>
-
-      {/* Contract Form Modal */}
-      {selectedPlan && (
-        <ContractForm
-          isOpen={showContractForm}
-          onClose={() => {
-            setShowContractForm(false);
-            setSelectedPlan(null);
-          }}
-          plan={selectedPlan}
-        />
-      )}
     </section>
   );
 };
