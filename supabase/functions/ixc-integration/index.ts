@@ -851,7 +851,30 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     if (customerData.birthDate) {
       form.data_nascimento = customerData.birthDate;
     }
-    
+
+    // Campos obrigatórios do IXC com inferência e defaults seguros
+    const personType = customerData.personType || (cleanCpf.length === 11 ? 'F' : 'J');
+    const defaultCityId = customerData.cityId || '5564'; // Brasília (ajuste conforme seu IXC)
+
+    // Parse simples do endereço para extrair rua, número e bairro
+    const rawAddress: string = customerData.address || '';
+    const numberMatch = rawAddress.match(/\b\d+\b/);
+    const parsedNumber = customerData.number || (numberMatch ? numberMatch[0] : 'SN');
+    const bairroMatch = rawAddress.match(/Bairro\s+([^-,]+)/i);
+    const parsedBairro = customerData.neighborhood || (bairroMatch ? bairroMatch[1].trim() : 'Centro');
+    const parsedStreet = customerData.street || (rawAddress.split(',')[0] || '').trim();
+
+    if (parsedStreet) {
+      form.endereco = parsedStreet;
+    }
+    form.numero = String(parsedNumber);
+    form.bairro = parsedBairro;
+    form.cidade = String(defaultCityId);
+    form.tipo_pessoa = personType; // requerido pelo IXC
+    form.iss_classificacao_padrao = customerData.issClass || '99';
+    form.contribuinte_icms = customerData.icmsContributor || 'N';
+    form.tipo_localidade = customerData.localityType || 'U';
+
     console.log('Enviando dados para criar cliente:', form);
     
     const response = await fetch(`${baseUrl}/cliente`, {

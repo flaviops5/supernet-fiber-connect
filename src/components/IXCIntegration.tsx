@@ -52,12 +52,16 @@ const IXCIntegration = () => {
           params: {
             customerData: {
               name: 'João da Silva Teste',
-              cpf: '123.456.789-00',
+              cpf: '111.444.777-35',
               email: 'joao.teste@email.com',
               phone: '(11) 98765-4321',
               birthDate: '1990-05-15',
               address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
-              cep: '70630-902'
+              cep: '70630-902',
+              cityId: '5564',
+              neighborhood: 'Centro',
+              number: '123',
+              personType: 'F'
             }
           }
         }
@@ -83,7 +87,7 @@ const IXCIntegration = () => {
             customerId: customerId,
             atendimentoData: {
               customerName: 'João da Silva Teste',
-              cpf: '123.456.789-00',
+              cpf: '111.444.777-35',
               email: 'joao.teste@email.com',
               phone: '(11) 98765-4321',
               address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
