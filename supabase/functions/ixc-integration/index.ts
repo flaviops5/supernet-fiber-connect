@@ -157,13 +157,15 @@ serve(async (req) => {
 });
 
 async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<any> {
-  const body = new URLSearchParams(params);
+  const { ixcsoft: ixcsoftParam, ...rest } = params || {} as any;
+  const ixcsoftHeader = (typeof ixcsoftParam === 'string' && ixcsoftParam) ? ixcsoftParam : 'listar';
+  const body = new URLSearchParams(rest as Record<string, string>);
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'ixcsoft': 'listar',
+      'ixcsoft': ixcsoftHeader,
     },
     body,
   });
