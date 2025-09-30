@@ -12,23 +12,33 @@ export function TestSalesJourney() {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   
-  const [testData, setTestData] = useState({
-    customerName: "João da Silva Teste",
-    customerEmail: "joao.teste@email.com",
-    customerPhone: "11987654321",
-    customerCpf: "04112287143",
-    customerCep: "01310-100",
-    customerAddress: "Av. Paulista, 1000",
-    customerBirthDate: "1990-01-15",
-    planId: "", // Will be fetched
-    appointmentDate: new Date().toISOString().split('T')[0],
-    appointmentPeriod: "manhã",
-    paymentDay: 10,
-  });
+  const generateUniqueTestData = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return {
+      customerName: `Cliente Teste ${random}`,
+      customerEmail: `teste${timestamp}@testeautomatizado.local`,
+      customerPhone: "11987654321",
+      customerCpf: "04112287143", // CPF válido de teste
+      customerCep: "70630100", // CEP válido e sem formatação
+      customerAddress: "Av. Paulista, 1000",
+      customerBirthDate: "1990-01-15",
+      planId: "",
+      appointmentDate: new Date().toISOString().split('T')[0],
+      appointmentPeriod: "manhã",
+      paymentDay: 10,
+    };
+  };
+
+  const [testData, setTestData] = useState(generateUniqueTestData());
 
   const runTest = async () => {
     setIsLoading(true);
     setResults(null);
+    
+    // Gerar novos dados únicos para cada teste
+    const freshTestData = generateUniqueTestData();
+    setTestData(freshTestData);
 
     try {
       // 1. Buscar um plano ativo
@@ -44,21 +54,23 @@ export function TestSalesJourney() {
         throw new Error("Nenhum plano com IXC ID encontrado");
       }
 
-      // 2. Chamar o sales-agent com directOrder
+      // 2. Chamar o sales-agent com directOrder usando os dados gerados
       const orderPayload = {
-        name: testData.customerName,
-        email: testData.customerEmail,
-        phone: testData.customerPhone,
-        cpf: testData.customerCpf,
-        birthDate: testData.customerBirthDate,
-        cep: testData.customerCep,
-        address: testData.customerAddress,
+        name: freshTestData.customerName,
+        email: freshTestData.customerEmail,
+        phone: freshTestData.customerPhone,
+        cpf: freshTestData.customerCpf,
+        birthDate: freshTestData.customerBirthDate,
+        cep: freshTestData.customerCep,
+        address: freshTestData.customerAddress,
         plan_id: plans.id,
         planName: plans.name,
-        appointmentDate: testData.appointmentDate,
-        appointmentPeriod: testData.appointmentPeriod,
-        paymentDay: testData.paymentDay,
+        appointmentDate: freshTestData.appointmentDate,
+        appointmentPeriod: freshTestData.appointmentPeriod,
+        paymentDay: freshTestData.paymentDay,
       };
+
+      console.log('📤 Enviando order payload:', { ...orderPayload, cpf: orderPayload.cpf.slice(0,3) + '***' });
 
       const SUPABASE_URL = "https://mxdupkbpxjcfxdgrwknp.supabase.co";
       const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I";
@@ -86,10 +98,12 @@ export function TestSalesJourney() {
       const { data: appointment, error: appointmentError } = await supabase
         .from("installation_appointments")
         .select("*")
-        .eq("customer_cpf", testData.customerCpf)
+        .eq("customer_email", freshTestData.customerEmail)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
+
+      console.log('📋 Appointment encontrado:', appointment ? 'Sim' : 'Não', appointmentError || '');
 
       setResults({
         success: true,
@@ -179,16 +193,21 @@ export function TestSalesJourney() {
           </div>
         </div>
 
-        <Button onClick={runTest} disabled={isLoading} className="w-full">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Executando teste...
-            </>
-          ) : (
-            "Executar Teste Completo"
-          )}
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={runTest} disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Executando teste...
+              </>
+            ) : (
+              "Executar Teste Completo"
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            ℹ️ Cada teste gera dados únicos automaticamente (email e nome) para evitar conflitos no IXC
+          </p>
+        </div>
       </Card>
 
       {results && (
@@ -238,12 +257,14 @@ export function TestSalesJourney() {
               </div>
 
               <div className="p-4 bg-green-50 border border-green-200 rounded">
-                <p className="text-sm font-semibold text-green-800">Passos Executados:</p>
+                <p className="text-sm font-semibold text-green-800">Passos Executados com Sucesso:</p>
                 <ul className="text-sm text-green-700 mt-2 space-y-1">
-                  <li>✅ Cliente criado no IXC</li>
-                  <li>✅ Contrato criado no IXC (vinculado ao plano)</li>
+                  <li>✅ Cliente criado no IXC (ID: {results.ixcClientId})</li>
+                  <li>✅ Contrato criado no IXC (ID: {results.ixcContractId})</li>
                   <li>✅ Atendimento criado no IXC</li>
                   <li>✅ Registro salvo no Supabase com ixc_contract_id</li>
+                  <li>✅ CEP validado: {results.appointment?.customer_cep}</li>
+                  <li>✅ Email único gerado: {results.appointment?.customer_email}</li>
                 </ul>
               </div>
             </div>
