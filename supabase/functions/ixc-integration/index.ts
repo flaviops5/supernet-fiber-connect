@@ -844,6 +844,8 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       nome_fantasia: customerData.name,
       cnpj_cpf: cleanCpf,
       email: customerData.email,
+      hotsite_email: customerData.email,
+      senha: '1234',
       tipo_pessoa: customerData.personType || 'F',
       ativo: 'S',
       contribuinte_icms: 'N',
