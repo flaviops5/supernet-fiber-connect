@@ -146,9 +146,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na integração IXC:', error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorDetails = (error as any)?.details;
     return new Response(JSON.stringify({ 
       success: false, 
-      error: errorMessage
+      error: errorMessage,
+      details: errorDetails
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -157,7 +159,7 @@ serve(async (req) => {
 });
 
 async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<any> {
-  const { ixcsoft: ixcsoftParam, ...rest } = params || {} as any;
+  const { ixcsoft: ixcsoftParam, ...rest } = params || ({} as any);
   const ixcsoftHeader = (typeof ixcsoftParam === 'string' && ixcsoftParam) ? ixcsoftParam : 'listar';
   const body = new URLSearchParams(rest as Record<string, string>);
   const response = await fetch(url, {
@@ -170,28 +172,33 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
     body,
   });
 
+  const rawText = await response.text();
+
   if (!response.ok) {
-    const text = await response.text();
-    console.error(`HTTP ${response.status}:`, text);
-    throw new Error(`Erro HTTP ${response.status}: ${text}`);
+    console.error(`HTTP ${response.status}:`, rawText);
+    const err: any = new Error(`Erro HTTP ${response.status}`);
+    err.details = { status: response.status, rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    throw err;
   }
 
-  const text = await response.text();
-  
   // Verifica se retornou HTML de erro do IXC
-  if (text.includes('<div') && text.includes('Ocorreu um erro ao processar')) {
-    console.error('IXC retornou erro HTML:', text);
-    throw new Error('Erro interno do IXC - parâmetros inválidos ou endpoint não suportado');
+  if (rawText.includes('<div') && rawText.includes('Ocorreu um erro ao processar')) {
+    console.error('IXC retornou erro HTML:', rawText);
+    const err: any = new Error('Erro interno do IXC - parâmetros inválidos ou endpoint não suportado');
+    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    throw err;
   }
 
   let data: any;
   try {
-    data = JSON.parse(text);
+    data = JSON.parse(rawText);
   } catch (_e) {
-    console.error('Resposta não é JSON válido:', text);
-    throw new Error('Resposta inválida da API IXC');
+    console.error('Resposta não é JSON válido:', rawText);
+    const err: any = new Error('Resposta inválida da API IXC');
+    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    throw err;
   }
-  return { ok: response.ok, status: response.status, data };
+  return { ok: response.ok, status: response.status, data, rawText, ixcsoft: ixcsoftHeader };
 }
 
 async function getCustomers(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
