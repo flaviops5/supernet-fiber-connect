@@ -565,60 +565,8 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       console.log('Todos os campos do cliente:', Object.keys(customerData));
     }
 
-    // Classificação do status de serviço baseada nos contratos
-    // Regras:
-    // - BLOQUEADO: não está online e contrato indica bloqueio (CA/CM/BLOQ/BLOQUEADO/BL) ou acesso desativado
-    // - FINANCEIRO EM ATRASO: indicadores de atraso/suspensão parcial (FA, redução de velocidade, janela de suspensão, vencimento em atraso)
-    // - ATIVO: caso contrário
-    const now = new Date();
-
-    const isBlocked = contracts.some((c: any) => {
-      const si = String(c.status_internet ?? '').toUpperCase();
-      const accessDisabled = c.data_acesso_desativado && c.data_acesso_desativado !== '0000-00-00';
-      const autoBlockedActive = !!c.dt_ult_bloq_auto && (
-        !c.dt_ult_desbloq_auto && !c.dt_ult_des_bloq_conf ||
-        new Date(c.dt_ult_bloq_auto) >= new Date(c.dt_ult_des_bloq_conf || '1900-01-01')
-      );
-      const blockedByCode = ['CA','CM','BLOQ','BLOQUEADO','BL'].includes(si);
-      // Considera bloqueado apenas se não estiver online (evita falso positivo como no caso do Thiago)
-      return !onlineStatus && (blockedByCode || accessDisabled || autoBlockedActive);
-    });
-
-    const hasFinancialDelay = contracts.some((c: any) => {
-      const si = String(c.status_internet ?? '').toUpperCase();
-      const statusVelocidade = String(c.status_velocidade ?? '').toUpperCase();
-      
-      // Verifica se pago_ate_data está no passado (inadimplente)
-      const pagoAte = c.pago_ate_data && c.pago_ate_data !== '0000-00-00' ? new Date(c.pago_ate_data) : null;
-      const isOverdue = pagoAte && pagoAte < now;
-      
-      // Suspensão só é válida se for recente (últimos 30 dias) e sem data final
-      const suspensionDate = c.data_inicial_suspensao && c.data_inicial_suspensao !== '0000-00-00' 
-        ? new Date(c.data_inicial_suspensao) 
-        : null;
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const hasRecentSuspension = suspensionDate && 
-        suspensionDate > thirtyDaysAgo && 
-        (!c.data_final_suspensao || c.data_final_suspensao === '0000-00-00');
-      
-      // Atraso financeiro só é válido se for recente (últimos 30 dias) OU se estiver inadimplente
-      const atrasoDate = c.dt_ult_finan_atraso && c.dt_ult_finan_atraso !== '0000-00-00'
-        ? new Date(c.dt_ult_finan_atraso)
-        : null;
-      const hasRecentAtraso = atrasoDate && (atrasoDate > thirtyDaysAgo || isOverdue);
-      
-      // Indicadores de atraso financeiro:
-      // - FA: status explícito de financeiro em atraso
-      // - R: velocidade reduzida (punição por atraso)
-      // - Suspensão recente (últimos 30 dias) sem resolução
-      // - Registro de atraso recente OU inadimplência confirmada por pago_ate_data
-      return si === 'FA' || statusVelocidade === 'R' || hasRecentSuspension || hasRecentAtraso;
-    });
-
-    const normalizedStatus = isBlocked
-      ? 'BLOQUEADO'
-      : (hasFinancialDelay ? 'FINANCEIRO EM ATRASO' : 'ATIVO');
-
+    // Retorna os contratos com todos os campos reais do IXC
+    // O routing-agent vai analisar os campos reais para tomar decisões precisas
     const result = {
       isOnline: onlineStatus,
       contracts: contracts,
@@ -626,7 +574,6 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       pppoeLogin: pppoeLogin,
       contractCount: contracts.length,
       accessStatus: accessStatus, // status do cadastro do cliente (referência)
-      serviceStatus: normalizedStatus, // status do serviço (baseado no contrato)
       activeContracts: contracts.filter((c: any) => 
         c.status === 'Ativo' || 
         c.ativo === '1' || 

@@ -152,28 +152,73 @@ serve(async (req) => {
 
         // AUTOMATIC ROUTING BASED ON STATUS
         if (clientStatus) {
-          const isOnline = clientStatus.online === true || clientStatus.onlineStatus === true;
-          const isBlocked = clientStatus.blocked === true || clientStatus.financiallyBlocked === true;
-          const serviceStatus = clientStatus.serviceStatus || '';
-          // IMPORTANTE: BLOQUEADO e FINANCEIRO EM ATRASO sempre são por motivo financeiro
-          // Após vencimento: velocidade reduzida para 4 mega
-          // Após 20 dias: aparece "FINANCEIRO EM ATRASO" no IXC
-          // Após 30 dias: serviço é BLOQUEADO
-          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO') || serviceStatus.includes('ATRASO') || serviceStatus.includes('BLOQUEADO');
+          const isOnline = clientStatus.isOnline === true;
+          const contracts = clientStatus.contracts || [];
+          const now = new Date();
+          
+          // Verifica se há problema financeiro analisando os CONTRATOS ATIVOS
+          let hasFinancialIssue = false;
+          let financialReason = '';
+          
+          for (const contract of contracts) {
+            // Ignora contratos cancelados/desistidos
+            const status = String(contract.status || '').toUpperCase();
+            const statusInternet = String(contract.status_internet || '').toUpperCase();
+            if (status === 'D' || status === 'C' || statusInternet === 'D' || statusInternet === 'C') {
+              continue;
+            }
+            
+            // 1. Verifica se está inadimplente (pago_ate_data no passado)
+            const pagoAte = contract.pago_ate_data && contract.pago_ate_data !== '0000-00-00' 
+              ? new Date(contract.pago_ate_data) 
+              : null;
+            if (pagoAte && pagoAte < now) {
+              hasFinancialIssue = true;
+              financialReason = 'inadimplente (pago_ate_data vencido)';
+              break;
+            }
+            
+            // 2. Verifica se status_internet = FA (financeiro em atraso explícito)
+            if (statusInternet === 'FA') {
+              hasFinancialIssue = true;
+              financialReason = 'status_internet = FA';
+              break;
+            }
+            
+            // 3. Verifica redução de velocidade (R = punição por atraso)
+            const statusVelocidade = String(contract.status_velocidade || '').toUpperCase();
+            if (statusVelocidade === 'R') {
+              hasFinancialIssue = true;
+              financialReason = 'velocidade reduzida (status_velocidade = R)';
+              break;
+            }
+            
+            // 4. Verifica última marcação de atraso financeiro recente (últimos 60 dias)
+            const atrasoDate = contract.dt_ult_finan_atraso && contract.dt_ult_finan_atraso !== '0000-00-00'
+              ? new Date(contract.dt_ult_finan_atraso)
+              : null;
+            const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+            if (atrasoDate && atrasoDate > sixtyDaysAgo) {
+              hasFinancialIssue = true;
+              financialReason = 'registro de atraso financeiro recente';
+              break;
+            }
+          }
 
-          console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}, ServiceStatus=${serviceStatus}, HasFinancialIssue=${hasFinancialIssue}`);
+          console.log(`Status: Online=${isOnline}, HasFinancialIssue=${hasFinancialIssue}, Reason=${financialReason}`);
 
           // If blocked/overdue/financial issue → Financial Support (Julia Martins)
           if (hasFinancialIssue) {
-            console.log('Client has financial issue - routing to financial support');
+            console.log(`Client has financial issue (${financialReason}) - routing to financial support`);
+            const firstName = customerData.customer_name.split(' ')[0];
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
-                message: `Obrigado, ${customerData.customer_name}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`,
+                message: `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
-                routeReason: 'financial_issue'
+                routeReason: financialReason
               }),
               {
                 status: 200,
@@ -185,10 +230,11 @@ serve(async (req) => {
           // If offline → Technical Support
           if (!isOnline) {
             console.log('Client is offline - routing to technical support');
+            const firstName = customerData.customer_name.split(' ')[0];
             return new Response(
               JSON.stringify({
                 agent: 'support_tech',
-                message: `Obrigado, ${customerData.customer_name}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
+                message: `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
@@ -203,10 +249,11 @@ serve(async (req) => {
 
           // If online and not blocked - confirm and continue with normal routing
           console.log('Client is online and not blocked - confirming and proceeding');
+          const firstName = customerData.customer_name.split(' ')[0];
           return new Response(
             JSON.stringify({
               agent: 'routing',
-              message: `Obrigado, ${customerData.customer_name}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
+              message: `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
               customerIdentified: true,
               customerData,
               requiresIntent: true
@@ -271,7 +318,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: 'Olá! Tudo bem? Meu nome é Cloé, da SUPERNET FIBRA. Como posso ajudá-lo hoje? 😊',
+            message: 'Olá! Tudo bem? Meu nome é Cloé. Como posso ajudá-lo hoje? 😊',
             isGreeting: true
           }),
           {
@@ -305,8 +352,7 @@ CONTEXTO DO CLIENTE:
 Nome: ${conversation?.customer_name || 'Não identificado'}
 CPF: ${conversation?.customer_cpf || 'Não informado'}
 ID IXC: ${conversation?.ixc_client_id || 'N/A'}
-Status Online: ${clientStatus?.online ? 'SIM' : 'NÃO'}
-Bloqueado: ${clientStatus?.blocked ? 'SIM' : 'NÃO'}
+Status Online: ${clientStatus?.isOnline ? 'SIM' : 'NÃO'}
 ${context ? `Departamento Atual: ${context.department}` : ''}
 
 HISTÓRICO RECENTE:
