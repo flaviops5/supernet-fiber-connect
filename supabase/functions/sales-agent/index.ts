@@ -18,7 +18,26 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userContext, directOrder } = await req.json();
+    let messages: Message[] = [];
+    let userContext: any = undefined;
+    let directOrder = false;
+    try {
+      const body = await req.json();
+      messages = body?.messages ?? [];
+      userContext = body?.userContext;
+      directOrder = !!body?.directOrder;
+    } catch (_) {
+      // Fallback: aceitar texto puro e tratar como ordem direta
+      const text = await req.text();
+      messages = [{ role: 'user', content: typeof text === 'string' ? text : '' }];
+      directOrder = true;
+    }
+    if (!messages?.length || !messages[0]?.content) {
+      return new Response(JSON.stringify({ error: 'Mensagem vazia' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
