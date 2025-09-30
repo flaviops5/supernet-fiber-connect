@@ -52,7 +52,7 @@ const IXCIntegration = () => {
           params: {
             customerData: {
               name: 'João da Silva Teste',
-              cpf: '111.444.777-35',
+              cpf: '041.122.871-43',
               email: 'joao.teste@email.com',
               phone: '(11) 98765-4321',
               birthDate: '1990-05-15',
@@ -87,7 +87,7 @@ const IXCIntegration = () => {
             customerId: customerId,
             atendimentoData: {
               customerName: 'João da Silva Teste',
-              cpf: '111.444.777-35',
+              cpf: '041.122.871-43',
               email: 'joao.teste@email.com',
               phone: '(11) 98765-4321',
               address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
