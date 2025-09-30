@@ -252,10 +252,79 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
         }
       }
 
-      // Retorna resposta com resultados das ferramentas
+      // Fazer segunda chamada com os resultados dos tools para continuar a conversa
+      const followUpResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...messages,
+            message,
+            ...toolResults
+          ],
+          tools: [
+            {
+              type: 'function',
+              function: {
+                name: 'check_cep_coverage',
+                description: 'Verifica se o CEP tem cobertura da SUPERNET FIBRA',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    cep: { type: 'string', description: 'CEP para verificar (somente números)' }
+                  },
+                  required: ['cep']
+                }
+              }
+            },
+            {
+              type: 'function',
+              function: {
+                name: 'create_installation_order',
+                description: 'Cria ordem de serviço de instalação no IXC após coletar todos os dados do cliente',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    customer_name: { type: 'string', description: 'Nome completo do cliente' },
+                    customer_cpf: { type: 'string', description: 'CPF do cliente' },
+                    customer_email: { type: 'string', description: 'Email do cliente' },
+                    customer_phone: { type: 'string', description: 'Telefone/WhatsApp do cliente' },
+                    customer_birth_date: { type: 'string', description: 'Data de nascimento (YYYY-MM-DD)' },
+                    customer_address: { type: 'string', description: 'Endereço completo' },
+                    customer_cep: { type: 'string', description: 'CEP' },
+                    plan_id: { type: 'string', description: 'ID do plano escolhido' },
+                    payment_day: { type: 'number', description: 'Dia do vencimento (1-28)' },
+                    installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' }
+                  },
+                  required: [
+                    'customer_name', 'customer_cpf', 'customer_email', 
+                    'customer_phone', 'customer_birth_date', 'customer_address',
+                    'customer_cep', 'plan_id', 'payment_day', 'installation_date'
+                  ]
+                }
+              }
+            }
+          ],
+          tool_choice: 'auto'
+        }),
+      });
+
+      if (!followUpResponse.ok) {
+        console.error('Erro na chamada de follow-up');
+        throw new Error('Erro ao processar resposta da IA');
+      }
+
+      const followUpData = await followUpResponse.json();
+      const finalMessage = followUpData.choices[0].message;
+
+      // Retorna resposta final processada
       return new Response(JSON.stringify({ 
-        message: message.content || 'Processando sua solicitação...',
-        tool_calls: message.tool_calls,
+        message: finalMessage.content,
         tool_results: toolResults
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

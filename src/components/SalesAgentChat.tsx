@@ -63,15 +63,19 @@ export const SalesAgentChat = () => {
         }]);
       }
 
-      // Se houve tool calls bem-sucedidos, mostra confirmação
+      // Se houve criação de OS, mostra confirmação
       if (data.tool_results) {
-        const successResults = data.tool_results.filter((r: any) => {
-          const content = JSON.parse(r.content);
-          return content.success;
+        const hasOrderCreation = data.tool_results.some((r: any) => {
+          try {
+            const content = JSON.parse(r.content);
+            return content.success && r.name === 'create_installation_order';
+          } catch {
+            return false;
+          }
         });
 
-        if (successResults.length > 0) {
-          toast.success('✅ Ordem de instalação criada! Em breve entraremos em contato.');
+        if (hasOrderCreation) {
+          toast.success('✅ Ordem de instalação criada com sucesso!');
         }
       }
 
