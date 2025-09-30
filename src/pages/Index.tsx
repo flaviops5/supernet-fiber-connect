@@ -2,7 +2,7 @@ import HeroSection from '@/components/HeroSection';
 import ResidentialPlans from '@/components/ResidentialPlans';
 import CoverageSection from '@/components/CoverageSection';
 import ServiceCards from '@/components/ServiceCards';
-import IntegratedChat from '@/components/IntegratedChat';
+import { SalesAgentChat } from '@/components/SalesAgentChat';
 import Testimonials from '@/components/Testimonials';
 import AdditionalServices from '@/components/AdditionalServices';
 import FAQ from '@/components/FAQ';
@@ -14,7 +14,7 @@ const Index = () => {
       <ResidentialPlans />
       <CoverageSection />
       <ServiceCards />
-      <IntegratedChat />
+      <SalesAgentChat />
       <FAQ />
       <Testimonials />
       <AdditionalServices />
