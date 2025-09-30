@@ -168,28 +168,25 @@ serve(async (req) => {
               continue;
             }
             
-            // Dias de atraso (com base no pago_ate_data)
-            const pagoAte = contract.pago_ate_data && contract.pago_ate_data !== '0000-00-00' 
-              ? new Date(contract.pago_ate_data) 
-              : null;
-            const daysOverdue = pagoAte ? Math.floor((now.getTime() - pagoAte.getTime()) / (24 * 60 * 60 * 1000)) : 0;
-
-            // 1) BLOQUEADO por atraso >= 30 dias
-            // 2) FINANCEIRO EM ATRASO por atraso >= 20 dias
-            // 3) FINANCEIRO EM ATRASO explícito via status_internet = 'FA'
+            // Verifica se há bloqueio real (flags de bloqueio ou acesso desativado)
             const blockedByFlag = /BLOQ|BLOQUE/.test(statusInternet) 
               || (contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00');
-            if (blockedByFlag || daysOverdue >= 30) {
+            
+            // Verifica se está explicitamente marcado como financeiro em atraso
+            const isFinancialStatus = statusInternet === 'FA';
+            
+            // Só considera problema financeiro se:
+            // 1. Está bloqueado (flag de bloqueio OU acesso desativado) OU
+            // 2. Status explícito de financeiro em atraso (FA)
+            if (blockedByFlag) {
               hasFinancialIssue = true;
-              financialReason = blockedByFlag ? 'bloqueado (flag do contrato)' : 'bloqueado (>30 dias do vencimento)';
+              financialReason = 'bloqueado por inadimplência';
               break;
             }
-
-            if (statusInternet === 'FA' || daysOverdue >= 20) {
+            
+            if (isFinancialStatus) {
               hasFinancialIssue = true;
-              financialReason = statusInternet === 'FA' 
-                ? 'financeiro em atraso (status_internet = FA)'
-                : 'financeiro em atraso (>20 dias do vencimento)';
+              financialReason = 'financeiro em atraso (status FA)';
               break;
             }
           }
