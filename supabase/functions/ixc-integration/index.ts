@@ -837,75 +837,84 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     console.log('CEP recebido:', cleanCep, 'CPF:', cleanCpf);
     
-    // Campos obrigatórios conforme documentação do suporte IXC
+    // Campos obrigatórios conforme documentação oficial do IXC
+    // Ref: https://documenter.getpostman.com/view/40255984/2sAYBbe9Ma
     const form: Record<string, string> = {
-      // OBRIGATÓRIOS BÁSICOS
-      ativo: 'S', // OBRIGATÓRIO
-      tipo_pessoa: customerData.personType || 'F', // OBRIGATÓRIO (F=Física, J=Jurídica)
-      razao: customerData.name, // OBRIGATÓRIO (Nome do cliente)
-      cnpj_cpf: cleanCpf, // OBRIGATÓRIO
-      contribuinte_icms: 'I', // OBRIGATÓRIO (I=Isento, C=Contribuinte, N=Não contribuinte)
-      tipo_assinante: '1', // OBRIGATÓRIO (1=Residencial, 2=Comercial, etc.)
+      // OBRIGATÓRIOS (marcados na documentação)
+      ativo: 'S',
+      tipo_pessoa: customerData.personType || 'F',
+      razao: customerData.name,
+      cnpj_cpf: cleanCpf,
+      contribuinte_icms: 'I',
+      tipo_assinante: '1',
+      cep: cleanCep,
+      endereco: customerData.address || 'Rua Teste',
+      numero: customerData.number || '1200',
+      bairro: customerData.neighborhood || 'Centro',
+      cidade: customerData.cityId || '5564',
+      tipo_localidade: 'U',
+      iss_classificacao_padrao: '00',
       
-      // ENDEREÇO - OBRIGATÓRIOS
-      cep: cleanCep, // OBRIGATÓRIO
-      endereco: customerData.address || 'Rua Teste', // OBRIGATÓRIO
-      numero: customerData.number || '1200', // OBRIGATÓRIO
-      bairro: customerData.neighborhood || 'Centro', // OBRIGATÓRIO
-      cidade: String(customerData.cityId || '5564'), // OBRIGATÓRIO (ID da cidade no IXC)
-      tipo_localidade: 'U', // OBRIGATÓRIO (U=Urbano, R=Rural)
-      
-      // ISS - OBRIGATÓRIO
-      iss_classificacao_padrao: '00', // OBRIGATÓRIO
-      
-      // DADOS ADICIONAIS (RECOMENDADOS)
+      // DADOS ADICIONAIS
       fantasia: customerData.name,
       email: customerData.email || '',
       hotsite_email: customerData.email || '',
-      senha: '1234', // Senha padrão para acesso
+      senha: '1234',
       telefone_celular: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
+      whatsapp: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
       data_nascimento: customerData.birthDate || '',
+      contato: customerData.name,
       
-      // CONFIGURAÇÕES DO SISTEMA
+      // CONFIGURAÇÕES
       acesso_automatico_central: '2',
       participa_cobranca: 'S',
-      id_tipo_cliente: '2',
-      uf: customerData.uf || 'DF',
+      id_tipo_cliente: '0',
+      filial_id: '1',
+      uf: '',
       
       // COBRANÇA
       cep_cob: cleanCep,
       endereco_cob: customerData.address || 'Rua Teste',
       numero_cob: customerData.number || '1200',
       bairro_cob: customerData.neighborhood || 'Centro',
-      cidade_cob: String(customerData.cityId || '5564'),
+      cidade_cob: customerData.cityId || '5564',
       complemento_cob: '',
       referencia_cob: '',
-      uf_cob: customerData.uf || 'DF',
+      uf_cob: '',
       
       // CONTATOS
       fone: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
       telefone_comercial: '',
       ramal: '',
       id_operadora_celular: '',
-      whatsapp: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
-      contato: customerData.name,
       website: '',
       skype: '',
       facebook: '',
       
       // FINANCEIRO
-      cond_pagamento: '',
-      id_conta: '',
+      cond_pagamento: '0',
+      id_conta: '0',
       deb_automatico: '',
       deb_agencia: '',
       deb_conta: '',
       codigo_operacao: '',
       tipo_pessoa_titular_conta: '',
       cnpj_cpf_titular_conta: '',
+      id_vendedor: '0',
+      tabela_preco: '0',
+      num_dias_cob: '0',
       
       // OUTROS
       obs: '',
       alerta: '',
+      ie_identidade: '',
+      complemento: '',
+      referencia: '',
+      id_condominio: '0',
+      bloco: '',
+      apartamento: '',
+      latitude: '',
+      longitude: '',
     };
 
     console.log('Enviando dados do cliente para IXC:', form);
