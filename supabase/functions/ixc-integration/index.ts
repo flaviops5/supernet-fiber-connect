@@ -831,8 +831,14 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     console.log('Criando novo cliente no IXC:', customerData);
     
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
-    
     const cleanCep = customerData.cep.replace(/\D/g, '');
+    
+    // Valida o CEP antes de enviar
+    if (!cleanCep || cleanCep.length !== 8 || cleanCep === '00000000') {
+      throw new Error(`CEP inválido: ${cleanCep}. Deve conter 8 dígitos numéricos.`);
+    }
+    
+    console.log('CEP validado:', cleanCep);
     
     const form: Record<string, string> = {
       razao: customerData.name,
