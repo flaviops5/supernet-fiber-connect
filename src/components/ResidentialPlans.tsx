@@ -195,6 +195,7 @@ const ResidentialPlans = () => {
                     <Button 
                       className="w-full cta-gradient text-white font-bold py-6 text-lg"
                       onClick={() => {
+                        console.log('Button clicked for plan:', plan.name);
                         setSelectedPlan(plan);
                         setShowContractForm(true);
                       }}
