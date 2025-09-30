@@ -45,26 +45,26 @@ export function TestSalesJourney() {
       }
 
       // 2. Chamar o sales-agent com directOrder
-      const orderMessage = `
-PEDIDO DIRETO:
-Nome: ${testData.customerName}
-Email: ${testData.customerEmail}
-Telefone: ${testData.customerPhone}
-CPF: ${testData.customerCpf}
-Data Nascimento: ${testData.customerBirthDate}
-CEP: ${testData.customerCep}
-Endereço: ${testData.customerAddress}
-Plano: ${plans.name}
-Data Instalação: ${testData.appointmentDate}
-Período: ${testData.appointmentPeriod}
-Dia Pagamento: ${testData.paymentDay}
-      `.trim();
+      const orderPayload = {
+        name: testData.customerName,
+        email: testData.customerEmail,
+        phone: testData.customerPhone,
+        cpf: testData.customerCpf,
+        birthDate: testData.customerBirthDate,
+        cep: testData.customerCep,
+        address: testData.customerAddress,
+        plan_id: plans.id,
+        planName: plans.name,
+        appointmentDate: testData.appointmentDate,
+        appointmentPeriod: testData.appointmentPeriod,
+        paymentDay: testData.paymentDay,
+      };
 
       const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
         "sales-agent",
         {
           body: {
-            messages: [{ role: "user", content: orderMessage }],
+            messages: [{ role: "user", content: JSON.stringify(orderPayload) }],
             directOrder: true,
           },
         }
