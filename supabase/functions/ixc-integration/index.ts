@@ -842,34 +842,46 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
     const cleanCep = customerData.cep.replace(/\D/g, '');
     
-    // Validar CEP - não pode ser vazio ou apenas zeros
+    // Validar CEP
     if (!cleanCep || cleanCep === '00000000' || !/^\d{8}$/.test(cleanCep)) {
       throw new Error(`CEP inválido: ${customerData.cep}. O CEP deve conter exatamente 8 dígitos numéricos.`);
     }
     
-    // Converter data de nascimento para formato DD/MM/YYYY se vier no formato ISO (YYYY-MM-DD)
+    // Formatar CPF com máscara XXX.XXX.XXX-XX
+    const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    
+    // Formatar CNPJ se for pessoa jurídica (XX.XXX.XXX/XXXX-XX)
+    const formattedCnpj = customerData.personType === 'J' && cleanCpf.length === 14
+      ? cleanCpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+      : '';
+    
+    // Converter data de nascimento para formato DD/MM/YYYY
     let formattedBirthDate = '';
     if (customerData.birthDate) {
       const dateMatch = customerData.birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (dateMatch) {
-        // Formato ISO: YYYY-MM-DD -> DD/MM/YYYY
         formattedBirthDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
       } else {
-        // Assume que já está no formato correto
         formattedBirthDate = customerData.birthDate;
       }
     }
     
-    console.log('CEP limpo:', cleanCep, 'CPF limpo:', cleanCpf, 'Data nascimento formatada:', formattedBirthDate);
+    const documentField = customerData.personType === 'J' ? formattedCnpj : formattedCpf;
+    
+    console.log('📋 Dados formatados:', {
+      cpf_cnpj: documentField,
+      cep: cleanCep,
+      data_nascimento: formattedBirthDate,
+      tipo_pessoa: customerData.personType
+    });
     
     // Campos obrigatórios conforme documentação oficial do IXC
-    // Ref: https://documenter.getpostman.com/view/40255984/2sAYBbe9Ma
-    const form: Record<string, string> = {
-      // OBRIGATÓRIOS (marcados na documentação)
+    const payload: Record<string, string> = {
+      // OBRIGATÓRIOS
       ativo: 'S',
       tipo_pessoa: customerData.personType || 'F',
       razao: customerData.name,
-      cnpj_cpf: cleanCpf,
+      cnpj_cpf: documentField, // CPF ou CNPJ com máscara
       contribuinte_icms: 'I',
       tipo_assinante: '1',
       cep: cleanCep,
@@ -942,210 +954,31 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       longitude: '',
     };
 
-    console.log('Enviando dados do cliente para IXC:', form);
+    console.log('📤 Enviando dados do cliente para IXC:', payload);
 
     const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, {
-      ...form,
+      ...payload,
       ixcsoft: 'inserir'
     });
 
+    console.log('✅ Resposta do IXC:', JSON.stringify(data, null, 2));
+
     if (!ok) {
-      console.error('Erro ao criar cliente no IXC:', data);
-      throw new Error(`Erro ao criar cliente: ${JSON.stringify(data)}`);
+      console.error('❌ Erro ao inserir cliente no IXC:', data);
+      throw new Error(`Erro ao inserir cliente: ${data?.message || JSON.stringify(data)}`);
     }
 
-    // 1) Tenta extrair ID diretamente da resposta
-    const tryExtractId = (obj: any): string | null => {
-      try {
-        if (!obj || typeof obj !== 'object') return null;
-        const preferredKeys = ['id', 'id_cliente', 'cliente_id', 'insert_id', 'last_insert_id'];
-        for (const k of preferredKeys) {
-          if (obj[k]) return String(obj[k]);
-        }
-        for (const key of Object.keys(obj)) {
-          const val = (obj as any)[key];
-          if (val && typeof val === 'object') {
-            const found = tryExtractId(val);
-            if (found) return found;
-          }
-        }
-      } catch {}
-      return null;
+    // Verificar se houve erro na resposta
+    if (data?.type === 'error') {
+      throw new Error(`Erro do IXC: ${data.message || 'Erro desconhecido ao criar cliente'}`);
+    }
+
+    console.log('✅ Cliente inserido no IXC com sucesso!');
+    return { 
+      success: true,
+      message: 'Cliente inserido com sucesso',
+      response: data
     };
-
-    const extractedId = tryExtractId(data);
-    if (extractedId) {
-      console.log('✅ ID extraído diretamente da resposta do IXC:', extractedId);
-      return { id: extractedId };
-    }
-
-    console.log('📋 Resposta do IXC após criação:', JSON.stringify(data, null, 2));
-
-    // 2) Aguarda para o IXC processar
-    console.log('⏳ Aguardando 3 segundos para o IXC processar...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // 3) Busca pelo CPF e pega o ID MAIS RECENTE (maior ID)
-    console.log('🔍 Buscando cliente pelo CPF (ordenado por ID DESC):', cleanCpf);
-
-    const cpfFormats = [
-      cleanCpf, // 04112287143
-      cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), // 041.122.871-43
-    ];
-
-    let customerId: string | null = null;
-
-    // Busca por CPF com ordem DESC por ID (pega o mais recente)
-    for (const cpfFormat of cpfFormats) {
-      console.log(`Tentando buscar por CPF: ${cpfFormat}`);
-      const searchForm = {
-        qtype: 'cnpj_cpf',
-        query: cpfFormat,
-        oper: '=',
-        page: '1',
-        rp: '10',
-        sortname: 'id',
-        sortorder: 'desc', // IMPORTANTE: ordem decrescente para pegar o mais recente
-      };
-      
-      try {
-        const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
-        console.log(`Resultado da busca com CPF ${cpfFormat}:`, JSON.stringify(searchData, null, 2));
-        
-        if (searchOk && searchData?.registros) {
-          const registros = Array.isArray(searchData.registros) ? searchData.registros : Object.values(searchData.registros);
-          
-          // Busca o cliente com CPF correspondente (já vem ordenado por ID DESC)
-          const match = (registros as any[]).find((r: any) => {
-            const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
-            return customerCpf === cleanCpf;
-          });
-          
-          if (match) {
-            customerId = String(match.id);
-            console.log('✅ Cliente encontrado por CPF! ID:', customerId, 'Nome:', match.razao);
-            break;
-          }
-        }
-      } catch (e) {
-        console.error('Erro na busca por CPF:', e);
-      }
-    }
-
-    // 3) Se ainda não encontrou, buscar por telefone
-    if (!customerId && customerData.phone) {
-      console.log('📱 Tentando buscar por telefone:', customerData.phone);
-      const cleanPhone = customerData.phone.replace(/\D/g, '');
-      const phoneSearchForm = {
-        qtype: 'telefone_celular',
-        query: cleanPhone,
-        oper: 'L',
-        page: '1',
-        rp: '10',
-        sortname: 'id',
-        sortorder: 'desc',
-      };
-      try {
-        const { ok: phoneOk, data: phoneData } = await postIXC(`${baseUrl}/cliente`, auth, phoneSearchForm);
-        console.log('Resultado da busca por telefone:', JSON.stringify(phoneData, null, 2));
-        if (phoneOk && phoneData?.registros) {
-          const registros = Array.isArray(phoneData.registros) ? phoneData.registros : Object.values(phoneData.registros);
-          const matchingCustomer = (registros as any[]).find((r: any) => {
-            const rPhone = String(r.telefone_celular || '').replace(/\D/g, '');
-            const rCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
-            return rPhone === cleanPhone && rCpf === cleanCpf;
-          });
-          if (matchingCustomer) {
-            customerId = String(matchingCustomer.id);
-            console.log('✅ Cliente encontrado por telefone! ID:', customerId);
-          }
-        }
-      } catch (phoneError) {
-        console.error('Erro ao buscar por telefone:', phoneError);
-      }
-    }
-
-    // 4) Se ainda não encontrou, buscar por email
-    if (!customerId && customerData.email) {
-      console.log('📧 Tentando buscar por email:', customerData.email);
-      const emailSearchForm = {
-        qtype: 'email',
-        query: customerData.email,
-        oper: 'L',
-        page: '1',
-        rp: '10',
-        sortname: 'id',
-        sortorder: 'desc',
-      };
-      try {
-        const { ok: emailOk, data: emailData } = await postIXC(`${baseUrl}/cliente`, auth, emailSearchForm);
-        console.log('Resultado da busca por email:', JSON.stringify(emailData, null, 2));
-        if (emailOk && emailData?.registros) {
-          const registros = Array.isArray(emailData.registros) ? emailData.registros : Object.values(emailData.registros);
-          const matchingCustomer = (registros as any[]).find((r: any) => {
-            const rEmail = String(r.email || r.hotsite_email || '').toLowerCase().trim();
-            const rCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
-            return rEmail === customerData.email.toLowerCase().trim() && rCpf === cleanCpf;
-          });
-          if (matchingCustomer) {
-            customerId = String(matchingCustomer.id);
-            console.log('✅ Cliente encontrado por email! ID:', customerId);
-          }
-        }
-      } catch (emailError) {
-        console.error('Erro ao buscar por email:', emailError);
-      }
-    }
-
-    // 5) Se ainda não encontrou, buscar por nome e validar CPF
-    if (!customerId) {
-      console.log('🔍 Tentando buscar por nome:', customerData.name);
-      const nameSearchForm = {
-        qtype: 'razao',
-        query: customerData.name,
-        oper: 'L',
-        page: '1',
-        rp: '50',
-        sortname: 'id',
-        sortorder: 'desc', // Ordem decrescente
-      };
-      try {
-        const { ok: nameOk, data: nameData } = await postIXC(`${baseUrl}/cliente`, auth, nameSearchForm);
-        console.log('Resultado da busca por nome:', JSON.stringify(nameData, null, 2));
-        if (nameOk && nameData?.registros) {
-          const registros = Array.isArray(nameData.registros) ? nameData.registros : Object.values(nameData.registros);
-          const matchingCustomer = (registros as any[]).find((r: any) => String(r.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
-          if (matchingCustomer) {
-            customerId = String(matchingCustomer.id);
-            console.log('✅ Cliente encontrado por nome! ID:', customerId);
-          }
-        }
-      } catch (nameError) {
-        console.error('Erro ao buscar por nome:', nameError);
-      }
-    }
-
-    // 6) Fallback final: busca os últimos 50 clientes criados
-    if (!customerId) {
-      console.log('🔎 Fallback: buscando últimos 50 clientes criados...');
-      try {
-        const lote = await getCustomers(baseUrl, auth, { limit: 50, page: 1, orderBy: 'id', order: 'desc' });
-        const found = (lote || []).find(c => String(c.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
-        if (found) {
-          customerId = String(found.id);
-          console.log('✅ Cliente encontrado nos últimos cadastros! ID:', customerId);
-        }
-      } catch (e) {
-        console.error('Erro ao buscar últimos clientes:', e);
-      }
-    }
-
-    if (!customerId) {
-      throw new Error('Cliente criado no IXC, mas não foi possível recuperar o ID pela busca de CPF. Verifique manualmente no sistema IXC.');
-    }
-
-    console.log('✅ Cliente criado com sucesso! ID:', customerId);
-    return { id: customerId };
 
   } catch (error) {
     console.error('Erro ao criar cliente no IXC:', error);
