@@ -181,17 +181,12 @@ serve(async (req) => {
             // Verifica se acesso foi desativado
             const isAccessDisabled = contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00';
             
-            // Verifica negativação recente (últimos 60 dias)
-            const hasRecentNegativity = contract.data_negativacao && contract.data_negativacao !== '0000-00-00';
-            
-            // PRIORIDADE: Verifica bloqueio/financeiro ANTES de qualquer outra coisa
-            if (isBlockedByStatus || isAccessDisabled || hasRecentNegativity) {
+            // PRIORIDADE: BLOQUEADO ou FINANCEIRO EM ATRASO
+            if (isBlockedByStatus || isAccessDisabled) {
               hasFinancialIssue = true;
               financialReason = isBlockedByStatus 
-                ? `bloqueado por inadimplência (status: ${statusInternet})`
-                : isAccessDisabled
-                  ? 'acesso desativado'
-                  : 'negativado';
+                ? `bloqueado/financeiro (status: ${statusInternet})`
+                : 'acesso desativado';
               break;
             }
           }
