@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Wifi, WifiOff, Activity, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { IXCContractsList } from '@/components/IXCContractsList';
 
 interface IXCCustomer {
   id: string;
@@ -334,6 +335,11 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
+      {/* Lista de Contratos IXC */}
+      <IXCContractsList />
+      
+      <Separator className="my-8" />
+      
       {/* Teste de Integração */}
       <Card>
         <CardHeader>

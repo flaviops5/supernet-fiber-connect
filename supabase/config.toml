@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.sales-agent]
 verify_jwt = false
+
+[functions.ixc-list-contracts]
+verify_jwt = true
