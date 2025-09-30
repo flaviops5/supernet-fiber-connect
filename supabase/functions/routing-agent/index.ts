@@ -96,8 +96,8 @@ serve(async (req) => {
         let customerData: any = null;
         let clientStatus: any = null;
         
-        if (ixcResult?.data?.customers && ixcResult.data.customers.length > 0) {
-          const customer = ixcResult.data.customers[0];
+        if (ixcResult?.success && ixcResult.data && Array.isArray(ixcResult.data) && ixcResult.data.length > 0) {
+          const customer = ixcResult.data[0];
           
           // Get full customer status (online, blocked, etc.)
           console.log('Getting customer status from IXC...');

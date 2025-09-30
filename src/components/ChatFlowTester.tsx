@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, RotateCcw, User, Bot } from 'lucide-react';
 
 interface Message {
-  role: 'client' | 'agent' | 'system';
+  role: 'customer' | 'agent' | 'system';
   content: string;
   timestamp: Date;
   metadata?: any;
@@ -61,7 +61,7 @@ export default function ChatFlowTester() {
     if (!input.trim() || !conversationId) return;
 
     const clientMessage: Message = {
-      role: 'client',
+      role: 'customer',
       content: input,
       timestamp: new Date()
     };
@@ -74,7 +74,7 @@ export default function ChatFlowTester() {
       // Save client message
       await supabase.from('conversation_messages').insert({
         conversation_id: conversationId,
-        sender_type: 'client',
+        sender_type: 'customer',
         sender_name: 'Cliente Teste',
         content: input
       });
@@ -181,15 +181,15 @@ export default function ChatFlowTester() {
                 {messages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`flex ${msg.role === 'client' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.role === 'customer' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`flex gap-2 max-w-[80%] ${
-                        msg.role === 'client' ? 'flex-row-reverse' : 'flex-row'
+                        msg.role === 'customer' ? 'flex-row-reverse' : 'flex-row'
                       }`}
                     >
                       <div className="flex-shrink-0">
-                        {msg.role === 'client' ? (
+                        {msg.role === 'customer' ? (
                           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                             <User className="w-4 h-4 text-primary-foreground" />
                           </div>
@@ -201,7 +201,7 @@ export default function ChatFlowTester() {
                       </div>
                       <div
                         className={`rounded-lg p-3 ${
-                          msg.role === 'client'
+                          msg.role === 'customer'
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}
