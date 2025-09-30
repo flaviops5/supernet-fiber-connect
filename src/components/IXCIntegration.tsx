@@ -38,6 +38,8 @@ const IXCIntegration = () => {
   const [customerStatus, setCustomerStatus] = useState<any>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
+  const [atendimentoSubject, setAtendimentoSubject] = useState('');
+  const [creatingAtendimento, setCreatingAtendimento] = useState(false);
 
   const createTestCustomer = async () => {
     setTestLoading(true);
@@ -255,6 +257,65 @@ const IXCIntegration = () => {
     }
   };
 
+  const createAtendimentoForCustomer = async () => {
+    if (!selectedCustomer) {
+      toast.error('Selecione um cliente primeiro');
+      return;
+    }
+
+    if (!atendimentoSubject.trim()) {
+      toast.error('Digite o assunto do atendimento');
+      return;
+    }
+
+    setCreatingAtendimento(true);
+    
+    try {
+      toast.info('Criando atendimento no IXC...');
+      
+      const { data, error } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createAtendimento',
+          params: {
+            customerId: selectedCustomer.id,
+            atendimentoData: {
+              customerName: selectedCustomer.razao,
+              cpf: selectedCustomer.cnpj_cpf,
+              email: selectedCustomer.email || '',
+              phone: selectedCustomer.telefone_celular || selectedCustomer.telefone_comercial || '',
+              address: `${selectedCustomer.endereco || ''}, ${selectedCustomer.numero || ''} - ${selectedCustomer.bairro || ''}`,
+              cep: selectedCustomer.cep || '',
+              subject: atendimentoSubject,
+              planName: 'Plano Padrão',
+              planSpeed: '300 Mbps',
+              planPrice: 99.90,
+              paymentDay: 10,
+              installationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              installationPeriod: 'manha'
+            }
+          }
+        }
+      });
+
+      if (error) throw error;
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || 'Erro ao criar atendimento no IXC');
+      }
+
+      const atendimentoId = (data as any)?.data?.id || (data as any)?.data?.registro?.id;
+      
+      toast.success(`Atendimento criado com ID: ${atendimentoId}`);
+      setAtendimentoSubject('');
+      
+    } catch (error) {
+      console.error('Erro ao criar atendimento:', error);
+      const errMsg = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(errMsg);
+    } finally {
+      setCreatingAtendimento(false);
+    }
+  };
+
 
   const formatPhone = (phone?: string) => {
     if (!phone) return 'N/A';
@@ -383,6 +444,38 @@ const IXCIntegration = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Criar Atendimento */}
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Criar Atendimento
+                    </h4>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          value={atendimentoSubject}
+                          onChange={(e) => setAtendimentoSubject(e.target.value)}
+                          placeholder="Assunto do atendimento..."
+                          onKeyPress={(e) => e.key === 'Enter' && createAtendimentoForCustomer()}
+                        />
+                      </div>
+                      <Button 
+                        onClick={createAtendimentoForCustomer}
+                        disabled={creatingAtendimento}
+                        size="sm"
+                      >
+                        {creatingAtendimento ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Criando...
+                          </>
+                        ) : (
+                          'Abrir Atendimento'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
                   {/* Informações Básicas */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
                     <div>
