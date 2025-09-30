@@ -927,7 +927,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     uf: ufFromCep || '',
     
     // COBRANÇA
-    cep_cob: formattedCep,
+    cep_cob: cleanCep,
     endereco_cob: customerData.address || 'Rua Teste',
       numero_cob: customerData.number || '1200',
       bairro_cob: customerData.neighborhood || 'Centro',
