@@ -50,111 +50,79 @@ serve(async (req) => {
       return data;
     };
 
-    console.log('Fetching commercial plans from IXC...');
+    console.log('Fetching speed plans from IXC radgrupos...');
 
-    // Prefer explicit IXC endpoint for planos de venda
-    const endpoint = 'vd_contratos';
-    let usedEndpoint = endpoint;
+    // Use radgrupos (Planos de velocidades) which has all info: name, download, upload, value
+    const endpoint = 'radgrupos';
     let found: any[] = [];
 
-    // Try multiple GRID filters to get only active sale plans
-    const baseForm: Record<string, string> = { page: '1', rp: '1000' };
-    const gridAttempts: string[] = [
-      JSON.stringify([{ TB: 'vd_contratos.situacao', OP: '=', P: 'A' }]),
-      JSON.stringify([{ TB: 'vd_contratos.status', OP: '=', P: 'A' }]),
-      JSON.stringify([{ TB: 'vd_contratos.ativo', OP: '=', P: 'S' }]),
-      JSON.stringify([{ TB: 'vd_contratos.ativo_venda', OP: '=', P: 'S' }]),
-      JSON.stringify([{ TB: 'vd_contratos.tipo', OP: '=', P: 'PLANO' }]),
-      JSON.stringify([{ TB: 'vd_contratos.tipo_contrato', OP: '=', P: 'PLANO' }]),
-      JSON.stringify([
-        { TB: 'vd_contratos.situacao', OP: '=', P: 'A' },
-        { TB: 'vd_contratos.tipo', OP: '=', P: 'PLANO' }
-      ]),
-    ];
+    try {
+      const data = await postIXC(endpoint, {
+        page: '1',
+        rp: '1000',
+        sortname: 'radgrupos.grupo',
+        sortorder: 'asc',
+      });
 
-    for (const grid of gridAttempts) {
-      try {
-        const data = await postIXC(endpoint, { ...baseForm, grid_param: grid });
-        const registros = Array.isArray(data?.registros)
-          ? data.registros
-          : (data?.registros ? Object.values(data.registros) : []);
-        if (registros && registros.length > 0) {
-          console.log(`✓ vd_contratos with grid_param returned ${registros.length} records`);
-          found = registros as any[];
-          break;
-        }
-        if (Array.isArray(data?.data) && data.data.length) {
-          console.log(`✓ vd_contratos (data) with grid_param returned ${data.data.length} records`);
-          found = data.data;
-          break;
-        }
-      } catch (e) {
-        console.warn(`vd_contratos grid attempt failed:`, (e as Error)?.message);
-      }
-    }
+      const registros = Array.isArray(data?.registros)
+        ? data.registros
+        : (data?.registros ? Object.values(data.registros) : []);
 
-    // Fallback: no grid filter
-    if (!found.length) {
-      try {
-        const data = await postIXC(endpoint, baseForm);
-        const registros = Array.isArray(data?.registros)
-          ? data.registros
-          : (data?.registros ? Object.values(data.registros) : []);
-        if (registros && registros.length > 0) {
-          console.log(`✓ vd_contratos without grid_param returned ${registros.length} records`);
-          found = registros as any[];
-        } else if (Array.isArray(data?.data) && data.data.length) {
-          console.log(`✓ vd_contratos (data) without grid_param returned ${data.data.length} records`);
-          found = data.data;
-        }
-      } catch (e) {
-        console.warn(`vd_contratos fallback attempt failed:`, (e as Error)?.message);
+      if (registros && registros.length > 0) {
+        console.log(`✓ radgrupos returned ${registros.length} speed plans`);
+        found = registros as any[];
+      } else if (Array.isArray(data?.data) && data.data.length) {
+        console.log(`✓ radgrupos (data) returned ${data.data.length} speed plans`);
+        found = data.data;
       }
+    } catch (e) {
+      console.error('radgrupos fetch failed:', (e as Error)?.message);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Erro ao buscar planos de velocidade via /radgrupos: ${(e as Error)?.message}`,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      );
     }
 
     if (!found.length) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Nenhum plano de venda encontrado via /vd_contratos. Confirme no IXC quais filtros/colunas usar (situacao/status/ativo).',
+          error: 'Nenhum plano de velocidade encontrado via /radgrupos.',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
       );
     }
 
-    // Normalize plan fields to a common shape
+    // Normalize radgrupos fields
     const normalized = found.map((r: any) => {
-      const price = r.valor ?? r.mensalidade ?? r.preco ?? r.valor_mensal ?? null;
-      const down = r.download ?? r.velocidade_download ?? r.vel_down ?? r.vdownload ?? null;
-      const up = r.upload ?? r.velocidade_upload ?? r.vel_up ?? r.vupload ?? null;
-      const descricao = r.descricao ?? r.nome ?? r.plano ?? r.titulo ?? `Plano ${r.id ?? ''}`;
-      const ativo = r.ativo ?? r.status ?? r.situacao ?? null;
+      const price = r.valor_produto ?? r.valor ?? r.mensalidade ?? null;
+      const down = r.download ?? null;
+      const up = r.upload ?? null;
+      const descricao = r.grupo ?? r.nome ?? r.descricao ?? `Plano ${r.id ?? ''}`;
       return {
         id: String(r.id ?? ''),
         descricao: String(descricao ?? ''),
         valor: price !== null ? String(price) : undefined,
         download: down !== null ? String(down) : undefined,
         upload: up !== null ? String(up) : undefined,
-        ativo: ativo !== null ? String(ativo) : undefined,
         raw: r,
       };
     });
 
-    // Filter only active plans if status field exists
-    const activePlans = normalized.filter(p => {
-      if (!p.ativo) return true; // No status field, include all
-      const statusStr = String(p.ativo).toLowerCase();
-      return statusStr === 's' || statusStr === 'sim' || statusStr === 'ativo' || statusStr === 'true' || statusStr === '1';
-    });
+    // Filter plans with download/upload (actual internet plans)
+    const internetPlans = normalized.filter(p => p.download || p.upload);
 
-    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${activePlans.length} active plans (total: ${normalized.length})`);
+    console.log(`IXC radgrupos fetch OK: ${internetPlans.length} internet plans (total: ${normalized.length})`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        contracts: activePlans,
-        total: activePlans.length,
-        endpoint: usedEndpoint,
+        contracts: internetPlans,
+        total: internetPlans.length,
+        endpoint: 'radgrupos',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
