@@ -852,7 +852,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       endereco: customerData.address || 'Rua Teste', // OBRIGATÓRIO
       numero: customerData.number || '1200', // OBRIGATÓRIO
       bairro: customerData.neighborhood || 'Centro', // OBRIGATÓRIO
-      cidade: '1', // OBRIGATÓRIO (ID da cidade no IXC - ajustar conforme necessário)
+      cidade: String(customerData.cityId || '5564'), // OBRIGATÓRIO (ID da cidade no IXC)
       tipo_localidade: 'U', // OBRIGATÓRIO (U=Urbano, R=Rural)
       
       // ISS - OBRIGATÓRIO
@@ -870,17 +870,17 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       acesso_automatico_central: '2',
       participa_cobranca: 'S',
       id_tipo_cliente: '2',
-      uf: '',
+      uf: customerData.uf || 'DF',
       
       // COBRANÇA
       cep_cob: cleanCep,
       endereco_cob: customerData.address || 'Rua Teste',
       numero_cob: customerData.number || '1200',
       bairro_cob: customerData.neighborhood || 'Centro',
-      cidade_cob: '1',
+      cidade_cob: String(customerData.cityId || '5564'),
       complemento_cob: '',
       referencia_cob: '',
-      uf_cob: '',
+      uf_cob: customerData.uf || 'DF',
       
       // CONTATOS
       fone: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
