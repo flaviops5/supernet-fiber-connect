@@ -1062,11 +1062,12 @@ AGENDAMENTO:
       console.log(`  ${key}: ${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value}`);
     }
     
-    // Adiciona data de agendamento se fornecida
-    if (atendimentoData.installationDate) {
-      form.data_agendamento = atendimentoData.installationDate;
-      console.log('📅 Data de agendamento adicionada:', form.data_agendamento);
-    }
+    // Adiciona data de agendamento - usar data futura (3 dias à frente)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 3);
+    const formattedDate = futureDate.toISOString().split('T')[0]; // formato YYYY-MM-DD
+    form.data_agendamento = formattedDate;
+    console.log('📅 Data de agendamento adicionada (3 dias no futuro):', form.data_agendamento);
     
     const url = `${baseUrl}/su_oss_chamado`;
     console.log('🌐 URL completa da requisição:', url);
