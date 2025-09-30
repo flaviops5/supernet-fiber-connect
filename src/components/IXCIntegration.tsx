@@ -37,6 +37,84 @@ const IXCIntegration = () => {
   const [debugInfo, setDebugInfo] = useState<string>('');
   const [customerStatus, setCustomerStatus] = useState<any>(null);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+
+  const createTestCustomer = async () => {
+    setTestLoading(true);
+    
+    try {
+      toast.info('Criando cliente de teste no IXC...');
+      
+      // 1. Criar cliente no IXC
+      const { data: customerData, error: customerError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createCustomer',
+          params: {
+            customerData: {
+              name: 'João da Silva Teste',
+              cpf: '123.456.789-00',
+              email: 'joao.teste@email.com',
+              phone: '(11) 98765-4321',
+              birthDate: '1990-05-15',
+              address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
+              cep: '70630-902'
+            }
+          }
+        }
+      });
+
+      if (customerError) throw customerError;
+
+      const customerId = customerData?.data?.id || customerData?.data?.registro?.id;
+      
+      if (!customerId) {
+        throw new Error('ID do cliente não retornado pelo IXC');
+      }
+
+      toast.success(`Cliente criado no IXC com ID: ${customerId}`);
+
+      // 2. Criar atendimento no IXC
+      toast.info('Criando atendimento no IXC...');
+      
+      const { data: atendimentoData, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createAtendimento',
+          params: {
+            customerId: customerId,
+            atendimentoData: {
+              customerName: 'João da Silva Teste',
+              cpf: '123.456.789-00',
+              email: 'joao.teste@email.com',
+              phone: '(11) 98765-4321',
+              address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
+              cep: '70630-902',
+              planName: 'Plano 300 Mega',
+              planSpeed: '300 Mbps',
+              planPrice: 99.90,
+              paymentDay: 10,
+              installationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              installationPeriod: 'manha'
+            }
+          }
+        }
+      });
+
+      if (atendimentoError) throw atendimentoError;
+
+      const atendimentoId = atendimentoData?.data?.id || atendimentoData?.data?.registro?.id;
+
+      toast.success(`Atendimento criado no IXC com ID: ${atendimentoId}`);
+      
+      setDebugInfo(`Cliente de teste criado com sucesso!\n\nID Cliente IXC: ${customerId}\nID Atendimento IXC: ${atendimentoId}`);
+      
+    } catch (error) {
+      console.error('Erro ao criar cliente de teste:', error);
+      toast.error('Erro ao criar cliente de teste no IXC');
+      setDebugInfo(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setTestLoading(false);
+    }
+  };
 
   const testConnection = async () => {
     setConnectionStatus('testing');
@@ -184,6 +262,40 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
+      {/* Teste de Integração */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Teste de Integração IXC
+          </CardTitle>
+          <CardDescription>
+            Crie um cliente de teste no IXC para validar a integração
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            onClick={createTestCustomer} 
+            disabled={testLoading}
+            className="w-full"
+          >
+            {testLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Criando cliente de teste...
+              </>
+            ) : (
+              'Criar Cliente de Teste no IXC'
+            )}
+          </Button>
+          {debugInfo && (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <pre className="text-sm whitespace-pre-wrap">{debugInfo}</pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Busca de Clientes */}
       <Card>
           <CardHeader>
