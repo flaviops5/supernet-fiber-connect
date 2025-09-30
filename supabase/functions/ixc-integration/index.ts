@@ -150,7 +150,7 @@ serve(async (req) => {
       success: false, 
       error: errorMessage
     }), {
-      status: errorMessage.includes('não configuradas') ? 401 : 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

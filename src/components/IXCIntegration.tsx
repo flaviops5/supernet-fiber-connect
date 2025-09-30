@@ -68,8 +68,11 @@ const IXCIntegration = () => {
       });
 
       if (customerError) throw customerError;
+      if (customerData && (customerData as any).success === false) {
+        throw new Error((customerData as any).error || 'Erro ao criar cliente no IXC');
+      }
 
-      const customerId = customerData?.data?.id || customerData?.data?.registro?.id;
+      const customerId = (customerData as any)?.data?.id || (customerData as any)?.data?.registro?.id;
       
       if (!customerId) {
         throw new Error('ID do cliente não retornado pelo IXC');
@@ -101,11 +104,14 @@ const IXCIntegration = () => {
             }
           }
         }
-      });
-
-      if (atendimentoError) throw atendimentoError;
-
-      const atendimentoId = atendimentoData?.data?.id || atendimentoData?.data?.registro?.id;
+       });
+ 
+       if (atendimentoError) throw atendimentoError;
+       if (atendimentoData && (atendimentoData as any).success === false) {
+         throw new Error((atendimentoData as any).error || 'Erro ao criar atendimento no IXC');
+       }
+ 
+       const atendimentoId = (atendimentoData as any)?.data?.id || (atendimentoData as any)?.data?.registro?.id;
 
       toast.success(`Atendimento criado no IXC com ID: ${atendimentoId}`);
       
@@ -113,8 +119,9 @@ const IXCIntegration = () => {
       
     } catch (error) {
       console.error('Erro ao criar cliente de teste:', error);
-      toast.error('Erro ao criar cliente de teste no IXC');
-      setDebugInfo(`Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      const errMsg = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(errMsg);
+      setDebugInfo(`Erro: ${errMsg}`);
     } finally {
       setTestLoading(false);
     }
