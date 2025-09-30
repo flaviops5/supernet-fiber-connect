@@ -5,10 +5,33 @@ import { Input } from './ui/input';
 import { Bot, Send, MessageCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import confidentWoman from '@/assets/family-internet-v3.jpg';
+import ContractSigning from './ContractSigning';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+}
+
+interface ContractData {
+  appointmentId: string;
+  customerData: {
+    name: string;
+    cpf: string;
+    email: string;
+    phone: string;
+    birthDate: string;
+    address: string;
+    cep: string;
+  };
+  planData: {
+    id: string;
+    name: string;
+    speed: string;
+    price: number;
+  };
+  paymentDay: number;
+  installationDate: string;
+  installationPeriod: string;
 }
 
 export const SalesAgentChat = () => {
@@ -20,6 +43,8 @@ export const SalesAgentChat = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
+  const [contractData, setContractData] = useState<ContractData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll automático para acompanhar a conversa
@@ -60,6 +85,69 @@ export const SalesAgentChat = () => {
         }]);
       }
 
+      // Verifica se o pedido foi criado com sucesso
+      if (data.tool_results) {
+        const orderResult = data.tool_results.find(
+          (result: any) => result.name === 'create_installation_order'
+        );
+        
+        if (orderResult) {
+          const resultContent = JSON.parse(orderResult.content);
+          
+          if (resultContent.success && resultContent.appointment_id) {
+            // Busca os detalhes do appointment criado
+            const { data: appointment, error: appointmentError } = await supabase
+              .from('installation_appointments')
+              .select('*, plans:plan_name(*)')
+              .eq('id', resultContent.appointment_id)
+              .single();
+
+            if (!appointmentError && appointment) {
+              // Busca o plano completo
+              const { data: plan } = await supabase
+                .from('plans')
+                .select('*')
+                .eq('name', appointment.plan_name)
+                .single();
+
+              if (plan) {
+                // Prepara dados para o contrato
+                setContractData({
+                  appointmentId: appointment.id,
+                  customerData: {
+                    name: appointment.customer_name,
+                    cpf: appointment.customer_cpf,
+                    email: appointment.customer_email,
+                    phone: appointment.customer_phone,
+                    birthDate: appointment.customer_birth_date,
+                    address: appointment.customer_address,
+                    cep: appointment.customer_cep,
+                  },
+                  planData: {
+                    id: plan.id,
+                    name: plan.name,
+                    speed: plan.speed,
+                    price: plan.price,
+                  },
+                  paymentDay: appointment.payment_day,
+                  installationDate: appointment.appointment_date,
+                  installationPeriod: appointment.appointment_period,
+                });
+                
+                // Abre o modal de contrato
+                setShowContractModal(true);
+                
+                // Adiciona mensagem informativa
+                setMessages(prev => [...prev, { 
+                  role: 'assistant', 
+                  content: '📄 Perfeito! Agora vamos assinar o contrato digitalmente. Por favor, revise os dados e assine o contrato que acabou de aparecer na tela.' 
+                }]);
+              }
+            }
+          }
+        }
+      }
+
     } catch (error: any) {
       console.error('Erro ao enviar mensagem:', error);
       toast.error('Erro ao processar sua mensagem. Tente novamente.');
@@ -85,8 +173,32 @@ export const SalesAgentChat = () => {
   };
 
   return (
-    <section className="py-16 bg-gradient-subtle">
-      <div className="container mx-auto px-4">
+    <>
+      {contractData && (
+        <ContractSigning
+          isOpen={showContractModal}
+          onClose={() => setShowContractModal(false)}
+          appointmentId={contractData.appointmentId}
+          customerData={{
+            name: contractData.customerData.name,
+            email: contractData.customerData.email,
+            phone: contractData.customerData.phone,
+            cpf: contractData.customerData.cpf,
+            address: contractData.customerData.address,
+            cep: contractData.customerData.cep,
+          }}
+          planData={{
+            name: contractData.planData.name,
+            speed: contractData.planData.speed,
+            price: contractData.planData.price,
+          }}
+          appointmentDate={contractData.installationDate}
+          appointmentPeriod={contractData.installationPeriod}
+        />
+      )}
+      
+      <section className="py-16 bg-gradient-subtle">
+        <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-8">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-4">
@@ -246,5 +358,6 @@ export const SalesAgentChat = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
