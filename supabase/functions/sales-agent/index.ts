@@ -173,33 +173,41 @@ serve(async (req) => {
 
     const systemPrompt = `Você é um agente de vendas virtual da SUPERNET FIBRA, especializado em planos de internet fibra óptica.
 
-SEU OBJETIVO: Vender planos de internet e agendar instalação.
+SEU OBJETIVO: Vender planos de internet e agendar instalação de forma CONVERSACIONAL.
 
 PLANOS DISPONÍVEIS:
 ${plans?.map(p => `- ${p.name}: ${p.speed} por R$ ${p.price}/mês - ${p.description || ''}`).join('\n')}
 
-PROCESSO DE VENDA:
+PROCESSO DE VENDA (CONVERSACIONAL):
 1. Cumprimente o cliente de forma amigável
-2. Pergunte o CEP para verificar cobertura
+2. Pergunte o CEP para verificar cobertura usando a tool check_cep_coverage
 3. Apresente os planos disponíveis na região
 4. Destaque benefícios: fibra óptica, velocidade garantida, suporte 24/7
-5. Colete dados para instalação:
-   - Nome completo
-   - CPF
-   - Email
-   - Telefone/WhatsApp
-   - Data de nascimento
-   - Endereço completo
-   - Dia preferido para vencimento (1-28)
-   - Data preferida para instalação
+5. Após o cliente escolher um plano, colete os dados UM POR VEZ de forma natural:
+   a) Nome completo
+   b) CPF
+   c) Email
+   d) Telefone/WhatsApp
+   e) Data de nascimento
+   f) Endereço completo (rua, número, complemento, bairro)
+   g) Dia preferido para vencimento - IMPORTANTE: Quando perguntar sobre o dia de vencimento, explique:
+      "Disponibilizamos as datas dos dias 01, 05, 10, 15, 20, 25 de cada mês para a escolha do pagamento. A primeira mensalidade sempre será cobrada proporcionalmente ao dia de escolha do pagamento, exemplo: Caso sua internet seja instalada no dia 08 e opte o pagamento para o dia 25, mandaremos um boleto com o proporcional de uso do dia 8 até o dia 25. As demais mensalidades obedecerá o fluxo de 30 dias."
+   h) Data preferida para instalação - IMPORTANTE: Explique que:
+      - NÃO instalamos aos domingos
+      - Aos sábados, instalamos SOMENTE pela MANHÃ (até 11h)
+      - Períodos disponíveis: Manhã (8h-12h) ou Tarde (13h-18h)
+      Pergunte a data e o período desejado
+6. Confirme TODOS os dados com o cliente antes de finalizar
+7. Só use a tool create_installation_order quando tiver TODOS os dados confirmados
 
 IMPORTANTE:
+- Pergunte UMA informação por vez, de forma natural e amigável
+- Aguarde a resposta do cliente antes de pedir a próxima informação
 - Seja consultivo e ajude o cliente a escolher o melhor plano
 - Explique que a instalação é GRATUITA
-- Confirme todos os dados antes de finalizar
 - Use linguagem natural e amigável
 - Não invente informações sobre cobertura
-- Quando tiver todos os dados, confirme com o cliente antes de criar a OS
+- Valide CPF, email e telefone antes de confirmar
 
 CONTEXTO DO USUÁRIO: ${userContext ? JSON.stringify(userContext) : 'Novo cliente'}
 
@@ -236,7 +244,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             type: 'function',
             function: {
               name: 'create_installation_order',
-              description: 'Cria ordem de serviço de instalação no IXC após coletar todos os dados do cliente',
+              description: 'Cria atendimento no IXC após coletar e confirmar todos os dados do cliente',
               parameters: {
                 type: 'object',
                 properties: {
@@ -248,13 +256,14 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
                   customer_address: { type: 'string', description: 'Endereço completo' },
                   customer_cep: { type: 'string', description: 'CEP' },
                   plan_id: { type: 'string', description: 'ID do plano escolhido' },
-                  payment_day: { type: 'number', description: 'Dia do vencimento (1-28)' },
-                  installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' }
+                  payment_day: { type: 'number', description: 'Dia do vencimento (01, 05, 10, 15, 20 ou 25)' },
+                  installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' },
+                  installation_period: { type: 'string', description: 'Período da instalação: manha ou tarde' }
                 },
                 required: [
                   'customer_name', 'customer_cpf', 'customer_email', 
                   'customer_phone', 'customer_birth_date', 'customer_address',
-                  'customer_cep', 'plan_id', 'payment_day', 'installation_date'
+                  'customer_cep', 'plan_id', 'payment_day', 'installation_date', 'installation_period'
                 ]
               }
             }
@@ -335,46 +344,115 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             continue;
           }
 
-          // Cria agendamento
-          const { data: appointment, error } = await supabase
-            .from('installation_appointments')
-            .insert({
-              customer_name: args.customer_name,
-              customer_cpf: args.customer_cpf,
-              customer_email: args.customer_email,
-              customer_phone: args.customer_phone,
-              customer_birth_date: args.customer_birth_date,
-              customer_address: args.customer_address,
-              customer_cep: args.customer_cep,
-              plan_name: plan.name,
-              plan_speed: plan.speed,
-              plan_price: plan.price,
-              payment_day: args.payment_day,
-              appointment_date: args.installation_date,
-              appointment_period: 'manhã',
-              status: 'pendente'
-            })
-            .select()
-            .single();
-
-          if (error) {
-            console.error('Erro ao criar agendamento:', error);
-            toolResults.push({
-              tool_call_id: toolCall.id,
-              role: 'tool',
-              name: functionName,
-              content: JSON.stringify({ success: false, error: error.message })
+          try {
+            // 1. Criar cliente no IXC
+            console.log('Criando cliente no IXC via tool...');
+            const { data: customerResult, error: customerError } = await supabase.functions.invoke('ixc-integration', {
+              body: {
+                action: 'createCustomer',
+                params: {
+                  customerData: {
+                    name: args.customer_name,
+                    cpf: args.customer_cpf,
+                    email: args.customer_email,
+                    phone: args.customer_phone,
+                    birthDate: args.customer_birth_date,
+                    address: args.customer_address,
+                    cep: args.customer_cep
+                  }
+                }
+              }
             });
-          } else {
-            console.log('Agendamento criado:', appointment.id);
+
+            if (customerError) {
+              console.error('Erro ao criar cliente no IXC:', customerError);
+              throw new Error('Erro ao criar cliente no IXC');
+            }
+
+            const customerId = customerResult?.data?.id || customerResult?.data?.registro?.id;
+            console.log('Cliente criado no IXC com ID:', customerId);
+
+            // 2. Criar atendimento no IXC
+            console.log('Criando atendimento no IXC via tool...');
+            const { data: atendimentoResult, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
+              body: {
+                action: 'createAtendimento',
+                params: {
+                  customerId: customerId,
+                  atendimentoData: {
+                    customerName: args.customer_name,
+                    cpf: args.customer_cpf,
+                    email: args.customer_email,
+                    phone: args.customer_phone,
+                    address: args.customer_address,
+                    cep: args.customer_cep,
+                    planName: plan.name,
+                    planSpeed: plan.speed,
+                    planPrice: plan.price,
+                    paymentDay: args.payment_day,
+                    installationDate: args.installation_date,
+                    installationPeriod: args.installation_period
+                  }
+                }
+              }
+            });
+
+            if (atendimentoError) {
+              console.error('Erro ao criar atendimento no IXC:', atendimentoError);
+              throw new Error('Erro ao criar atendimento no IXC');
+            }
+
+            const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
+            console.log('Atendimento criado no IXC com ID:', atendimentoId);
+
+            // 3. Criar registro local
+            const { data: appointment, error } = await supabase
+              .from('installation_appointments')
+              .insert({
+                customer_name: args.customer_name,
+                customer_cpf: args.customer_cpf,
+                customer_email: args.customer_email,
+                customer_phone: args.customer_phone,
+                customer_birth_date: args.customer_birth_date,
+                customer_address: args.customer_address,
+                customer_cep: args.customer_cep,
+                plan_name: plan.name,
+                plan_speed: plan.speed,
+                plan_price: plan.price,
+                payment_day: args.payment_day,
+                appointment_date: args.installation_date,
+                appointment_period: args.installation_period,
+                status: 'pendente',
+                observations: `Cliente IXC ID: ${customerId}, Atendimento IXC ID: ${atendimentoId}`
+              })
+              .select()
+              .single();
+
+            if (error) {
+              console.error('Erro ao criar registro local:', error);
+            }
+
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool',
               name: functionName,
               content: JSON.stringify({ 
                 success: true, 
-                appointment_id: appointment.id,
-                message: 'Ordem de instalação criada com sucesso!'
+                appointment_id: appointment?.id,
+                ixc_customer_id: customerId,
+                ixc_atendimento_id: atendimentoId,
+                message: 'Atendimento criado com sucesso no IXC!'
+              })
+            });
+          } catch (ixcError) {
+            console.error('Erro na criação via tool:', ixcError);
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: 'tool',
+              name: functionName,
+              content: JSON.stringify({ 
+                success: false, 
+                error: ixcError instanceof Error ? ixcError.message : 'Erro ao criar atendimento'
               })
             });
           }
@@ -415,7 +493,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
               type: 'function',
               function: {
                 name: 'create_installation_order',
-                description: 'Cria ordem de serviço de instalação no IXC após coletar todos os dados do cliente',
+                description: 'Cria atendimento no IXC após coletar e confirmar todos os dados do cliente',
                 parameters: {
                   type: 'object',
                   properties: {
@@ -427,13 +505,14 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
                     customer_address: { type: 'string', description: 'Endereço completo' },
                     customer_cep: { type: 'string', description: 'CEP' },
                     plan_id: { type: 'string', description: 'ID do plano escolhido' },
-                    payment_day: { type: 'number', description: 'Dia do vencimento (1-28)' },
-                    installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' }
+                    payment_day: { type: 'number', description: 'Dia do vencimento (01, 05, 10, 15, 20 ou 25)' },
+                    installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' },
+                    installation_period: { type: 'string', description: 'Período da instalação: manha ou tarde' }
                   },
                   required: [
                     'customer_name', 'customer_cpf', 'customer_email', 
                     'customer_phone', 'customer_birth_date', 'customer_address',
-                    'customer_cep', 'plan_id', 'payment_day', 'installation_date'
+                    'customer_cep', 'plan_id', 'payment_day', 'installation_date', 'installation_period'
                   ]
                 }
               }

@@ -1,10 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Bot, Send, MessageCircle, Loader2, Calendar, Clock } from 'lucide-react';
+import { Bot, Send, MessageCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import confidentWoman from '@/assets/family-internet-v3.jpg';
 
@@ -22,121 +20,7 @@ export const SalesAgentChat = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [showScheduler, setShowScheduler] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-  const [formData, setFormData] = useState({
-    name: '',
-    cpf: '',
-    email: '',
-    phone: '',
-    birthDate: '',
-    address: '',
-    cep: '',
-    paymentDay: '10'
-  });
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState<'manha' | 'tarde'>('manha');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const getAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
-    
-    for (let i = 1; i <= 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const dayOfWeek = date.getDay();
-      
-      // Domingo (0) não disponível
-      if (dayOfWeek === 0) continue;
-      
-      dates.push({
-        date: date.toISOString().split('T')[0],
-        dayName: date.toLocaleDateString('pt-BR', { weekday: 'long' }),
-        isSaturday: dayOfWeek === 6
-      });
-    }
-    
-    return dates;
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validações básicas
-    if (!formData.name || !formData.cpf || !formData.email || !formData.phone) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
-      return;
-    }
-    
-    setShowForm(false);
-    setShowScheduler(true);
-    
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: '✅ Dados recebidos! Agora vamos agendar a instalação. Escolha uma data e período disponível:'
-    }]);
-  };
-
-  const handleScheduleSubmit = async () => {
-    if (!selectedDate || !selectedPeriod) {
-      toast.error('Por favor, selecione uma data e período');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('sales-agent', {
-        body: {
-          messages: [{
-            role: 'user',
-            content: JSON.stringify({
-              action: 'create_order',
-              ...formData,
-              plan_id: selectedPlanId,
-              installation_date: selectedDate,
-              installation_period: selectedPeriod
-            })
-          }],
-          directOrder: true
-        }
-      });
-
-      if (error) throw error;
-
-      setShowScheduler(false);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `🎉 Perfeito! Sua instalação foi agendada para ${new Date(selectedDate).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })} no período da ${selectedPeriod}.\n\nEm breve nossa equipe entrará em contato para confirmar. Obrigado por escolher a SUPERNET FIBRA! 🚀`
-      }]);
-      
-      toast.success('✅ Agendamento realizado com sucesso!');
-      
-      // Reset
-      setFormData({
-        name: '', cpf: '', email: '', phone: '', birthDate: '', address: '', cep: '', paymentDay: '10'
-      });
-      setSelectedDate('');
-      setSelectedPeriod('manha');
-      setSelectedPlanId('');
-      
-    } catch (error) {
-      console.error('Erro ao criar agendamento:', error);
-      toast.error('Erro ao processar agendamento. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -169,41 +53,6 @@ export const SalesAgentChat = () => {
           role: 'assistant', 
           content: data.message 
         }]);
-        
-        // Detecta se o usuário escolheu um plano
-        const lastMessage = data.message.toLowerCase();
-        const userMsg = userMessage.toLowerCase();
-        
-        // Verifica se a mensagem menciona escolha de plano
-        if ((lastMessage.includes('escolheu') || lastMessage.includes('ótima escolha') || lastMessage.includes('dados para')) && 
-            (lastMessage.includes('plano') || userMsg.includes('quero') || userMsg.includes('escolho'))) {
-          
-          // Busca planos para identificar qual foi escolhido
-          const { data: plans } = await supabase
-            .from('plans')
-            .select('*')
-            .eq('active', true);
-          
-          if (plans) {
-            // Tenta identificar o plano pela mensagem do usuário ou assistente
-            const selectedPlan = plans.find(p => 
-              userMsg.includes(p.name.toLowerCase()) || 
-              userMsg.includes(p.speed.toLowerCase()) ||
-              lastMessage.includes(p.name.toLowerCase())
-            );
-            
-            if (selectedPlan) {
-              setSelectedPlanId(selectedPlan.id);
-              // Preenche CEP automaticamente se já foi informado
-              const cepMatch = messages.find(m => /\d{5}-?\d{3}/.test(m.content));
-              if (cepMatch) {
-                const cep = cepMatch.content.match(/\d{5}-?\d{3}/)?.[0] || '';
-                setFormData(prev => ({ ...prev, cep: cep.replace('-', '') }));
-              }
-              setShowForm(true);
-            }
-          }
-        }
       }
 
     } catch (error: any) {
@@ -318,246 +167,75 @@ export const SalesAgentChat = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Form */}
-                {showForm && (
-                  <div className="border-t bg-white p-6">
-                    <form onSubmit={handleFormSubmit} className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      <h3 className="font-semibold text-lg mb-4">📋 Dados para Contratação</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Nome Completo *</Label>
-                          <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="cpf">CPF *</Label>
-                          <Input
-                            id="cpf"
-                            value={formData.cpf}
-                            onChange={(e) => setFormData(prev => ({ ...prev, cpf: e.target.value }))}
-                            placeholder="000.000.000-00"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="email">Email *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="phone">WhatsApp *</Label>
-                          <Input
-                            id="phone"
-                            value={formData.phone}
-                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                            placeholder="(11) 99999-9999"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="birthDate">Data de Nascimento</Label>
-                          <Input
-                            id="birthDate"
-                            type="date"
-                            value={formData.birthDate}
-                            onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                          />
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="paymentDay">Dia de Vencimento</Label>
-                          <Input
-                            id="paymentDay"
-                            type="number"
-                            min="1"
-                            max="28"
-                            value={formData.paymentDay}
-                            onChange={(e) => setFormData(prev => ({ ...prev, paymentDay: e.target.value }))}
-                          />
-                        </div>
-                        
-                        <div className="md:col-span-2">
-                          <Label htmlFor="address">Endereço Completo</Label>
-                          <Input
-                            id="address"
-                            value={formData.address}
-                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                            placeholder="Rua, número, complemento, bairro"
-                          />
-                        </div>
-                      </div>
-                      
-                      <Button type="submit" className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
-                        Continuar para Agendamento →
-                      </Button>
-                    </form>
-                  </div>
-                )}
-
-                {/* Scheduler */}
-                {showScheduler && (
-                  <div className="border-t bg-white p-6">
-                    <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
-                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                        <Calendar className="w-5 h-5" />
-                        Agende sua Instalação
-                      </h3>
-                      
-                      <div>
-                        <Label>Escolha o dia</Label>
-                        <RadioGroup value={selectedDate} onValueChange={setSelectedDate}>
-                          <div className="grid grid-cols-1 gap-2 mt-2 max-h-[200px] overflow-y-auto">
-                            {getAvailableDates().map((dateInfo) => (
-                              <div key={dateInfo.date} className="flex items-center space-x-2">
-                                <RadioGroupItem value={dateInfo.date} id={dateInfo.date} />
-                                <Label htmlFor={dateInfo.date} className="flex-1 cursor-pointer">
-                                  {new Date(dateInfo.date + 'T00:00:00').toLocaleDateString('pt-BR', { 
-                                    weekday: 'long', 
-                                    day: '2-digit', 
-                                    month: 'long' 
-                                  })}
-                                  {dateInfo.isSaturday && (
-                                    <span className="ml-2 text-xs text-muted-foreground">(somente manhã até 11h)</span>
-                                  )}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </RadioGroup>
-                      </div>
-                      
-                      {selectedDate && (
-                        <div>
-                          <Label className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Período
-                          </Label>
-                          <RadioGroup value={selectedPeriod} onValueChange={(val) => setSelectedPeriod(val as 'manha' | 'tarde')}>
-                            <div className="flex gap-4 mt-2">
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="manha" id="manha" />
-                                <Label htmlFor="manha" className="cursor-pointer">
-                                  Manhã (8h - 12h)
-                                </Label>
-                              </div>
-                              
-                              {!getAvailableDates().find(d => d.date === selectedDate)?.isSaturday && (
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="tarde" id="tarde" />
-                                  <Label htmlFor="tarde" className="cursor-pointer">
-                                    Tarde (13h - 18h)
-                                  </Label>
-                                </div>
-                              )}
-                            </div>
-                          </RadioGroup>
-                        </div>
+                {/* Input Area */}
+                <div className="border-t bg-white p-6">
+                  <div className="flex gap-3">
+                    <Input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Digite sua mensagem..."
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={sendMessage}
+                      disabled={isLoading || !input.trim()}
+                      className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Send className="w-5 h-5" />
                       )}
-                      
-                      <Button 
-                        onClick={handleScheduleSubmit} 
-                        disabled={!selectedDate || !selectedPeriod || isLoading}
-                        className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Agendando...
-                          </>
-                        ) : (
-                          'Confirmar Agendamento'
-                        )}
-                      </Button>
-                    </div>
+                    </Button>
                   </div>
-                )}
+                </div>
 
-                {/* Input */}
-                {!showForm && !showScheduler && (
-                  <div className="p-4 border-t bg-white">
-                    <div className="flex gap-2">
-                      <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Digite sua mensagem..."
-                        disabled={isLoading}
-                        className="flex-1 border-gray-300 focus:border-primary"
-                      />
-                      <Button
-                        onClick={sendMessage}
-                        disabled={isLoading || !input.trim()}
-                        className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
+                {/* Footer */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-3 border-t">
+                  <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-4 h-4" />
+                      <span>Agente com IA</span>
                     </div>
+                    <div className="h-4 w-px bg-gray-300"></div>
+                    <span>Resposta instantânea</span>
+                    <div className="h-4 w-px bg-gray-300"></div>
+                    <span>Disponível 24/7</span>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Chat Footer */}
-            <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 border-t">
-              <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Atendimento 24/7</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Resposta instantânea</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4" />
-                  <span>Inteligência artificial</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom CTA with Image */}
-        <div className="text-center mt-12">
-          <div className="bg-gradient-subtle rounded-2xl p-8 md:p-12 relative overflow-hidden">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              <div className="text-left">
-                <h3 className="text-2xl md:text-3xl font-bold font-varela uppercase text-foreground mb-4">
-                  Pronto para ter a melhor internet da sua vida?
-                </h3>
-                <p className="text-muted-foreground mb-8">
-                  Milhares de famílias já confiam na SUPERNET FIBRA. 
-                  Seja você também parte dessa revolução digital.
-                </p>
-                <Button
-                  onClick={handleWhatsApp}
-                  size="lg"
-                  className="cta-gradient text-lg px-10 py-6"
-                >
-                  Fale Conosco Agora
-                </Button>
-              </div>
-              <div className="relative">
-                <img
-                  src={confidentWoman}
-                  alt="Família aproveitando internet de alta velocidade em diversos dispositivos"
-                  className="w-full h-80 object-cover rounded-2xl shadow-elegant"
-                />
-              </div>
+        {/* CTA Section */}
+        <div className="mt-12 bg-white rounded-2xl shadow-xl overflow-hidden max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-0">
+            <div className="relative h-64 md:h-auto">
+              <img 
+                src={confidentWoman}
+                alt="Família feliz usando internet"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
+            
+            <div className="p-8 flex flex-col justify-center">
+              <h3 className="text-2xl font-bold mb-4 text-foreground">
+                Prefere falar com um humano?
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Nossa equipe está pronta para atendê-lo pelo WhatsApp. Clique no botão abaixo e fale conosco agora mesmo!
+              </p>
+              <Button 
+                onClick={handleWhatsApp}
+                size="lg"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Falar no WhatsApp
+              </Button>
             </div>
           </div>
         </div>
