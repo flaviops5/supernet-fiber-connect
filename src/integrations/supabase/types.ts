@@ -960,6 +960,7 @@ export type Database = {
           features: Json | null
           id: string
           image_url: string | null
+          ixc_plan_id: string | null
           name: string
           original_price: number | null
           popular: boolean | null
@@ -976,6 +977,7 @@ export type Database = {
           features?: Json | null
           id?: string
           image_url?: string | null
+          ixc_plan_id?: string | null
           name: string
           original_price?: number | null
           popular?: boolean | null
@@ -992,6 +994,7 @@ export type Database = {
           features?: Json | null
           id?: string
           image_url?: string | null
+          ixc_plan_id?: string | null
           name?: string
           original_price?: number | null
           popular?: boolean | null

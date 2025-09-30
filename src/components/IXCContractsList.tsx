@@ -64,6 +64,36 @@ export const IXCContractsList = () => {
     }
   };
 
+  const syncPlans = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-sync-plans', {
+        body: { planIds: [73, 78, 107] }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Planos sincronizados",
+          description: `${data.synced} planos sincronizados com sucesso${data.errors > 0 ? ` (${data.errors} erros)` : ''}.`,
+        });
+        console.log('Sync results:', data.results);
+      } else {
+        throw new Error(data.error || 'Erro ao sincronizar planos');
+      }
+    } catch (error) {
+      console.error('Error syncing plans:', error);
+      toast({
+        title: "Erro ao sincronizar planos",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredContracts = contracts.filter(contract =>
     (contract.descricao?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (contract.download?.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -81,16 +111,28 @@ export const IXCContractsList = () => {
             <Badge variant="secondary">{total} planos</Badge>
           )}
         </div>
-        <Button onClick={loadContracts} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Carregando...
-            </>
-          ) : (
-            "Buscar Planos"
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={syncPlans} disabled={loading} variant="default">
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              "Sincronizar Planos (73, 78, 107)"
+            )}
+          </Button>
+          <Button onClick={loadContracts} disabled={loading} variant="outline">
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              "Buscar Planos"
+            )}
+          </Button>
+        </div>
       </div>
 
       {contracts.length > 0 && (
