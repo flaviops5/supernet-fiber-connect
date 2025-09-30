@@ -1052,7 +1052,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
       endereco: '',
       latitude: '',
       longitude: '',
-      id_wfl_processo: '',
+      
       id_responsavel_tecnico: '',
       data_criacao: '',
       data_ultima_alteracao: '',
@@ -1088,6 +1088,9 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
       longitude_login: ''
     };
     
+    
+    // Regra fixa: sempre que id_assunto = '25', garantir processo 11
+    payload.id_wfl_processo = '11';
     
     console.log('📝 Payload JSON montado (ANTES de enviar):');
     console.log(JSON.stringify(payload, null, 2));
