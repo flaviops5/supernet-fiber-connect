@@ -18,35 +18,19 @@ serve(async (req) => {
       throw new Error('IXC API credentials not configured');
     }
 
-    // Get CPF from request body
+    // Get search parameters from request body
     const body = await req.json().catch(() => ({}));
-    const cpf = body.cpf;
+    
+    console.log('Fetching plans from IXC...');
 
-    console.log('Fetching contracts from IXC...', cpf ? `for CPF: ${cpf}` : 'all contracts');
-
-    // Build request body based on whether CPF is provided
-    const requestBody: any = {
-      page: '1',
-      rp: '100',
-      sortname: 'contratos.id',
-      sortorder: 'desc'
-    };
-
-    // If CPF is provided, add search filter
-    if (cpf) {
-      requestBody.qtype = 'cliente.cnpj_cpf';
-      requestBody.query = cpf;
-      requestBody.oper = '=';
-    }
-
-    const response = await fetch('https://central.supernetfibra.com.br/webservice/v1/contratos', {
-      method: 'POST',
+    // Buscar planos comerciais disponíveis no IXC
+    const response = await fetch('https://central.supernetfibra.com.br/webservice/v1/cliente_tipo', {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Basic ' + btoa(`${ixcUsername}:${ixcPassword}`),
         'ixcsoft': 'listar',
-      },
-      body: JSON.stringify(requestBody)
+      }
     });
 
     if (!response.ok) {
@@ -57,13 +41,13 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log(`IXC API Response:`, JSON.stringify(data, null, 2));
-    console.log(`Found ${data.total || 0} contracts`);
+    console.log(`Found ${data.total || data.registros?.length || 0} plans`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        contracts: data.registros || [],
-        total: data.total || 0,
+        contracts: data.registros || data || [],
+        total: data.total || data.registros?.length || 0,
         rawResponse: data // Debug info
       }),
       { 
