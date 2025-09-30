@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,13 +22,16 @@ export const IXCContractsList = () => {
   const [contracts, setContracts] = useState<IXCContract[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cpfSearch, setCpfSearch] = useState("");
   const [total, setTotal] = useState(0);
   const { toast } = useToast();
 
   const loadContracts = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ixc-list-contracts');
+      const { data, error } = await supabase.functions.invoke('ixc-list-contracts', {
+        body: { cpf: cpfSearch.trim() || undefined }
+      });
 
       if (error) throw error;
 
@@ -42,13 +45,13 @@ export const IXCContractsList = () => {
         if (data.total === 0) {
           toast({
             title: "Nenhum contrato encontrado",
-            description: "A API do IXC não retornou contratos. Verifique se há contratos cadastrados no sistema IXC.",
+            description: cpfSearch ? `Nenhum contrato encontrado para o CPF ${cpfSearch}` : "A API do IXC não retornou contratos.",
             variant: "destructive",
           });
         } else {
           toast({
             title: "Contratos carregados",
-            description: `${data.total} contratos encontrados.`,
+            description: `${data.total} contratos encontrados${cpfSearch ? ` para o CPF ${cpfSearch}` : ''}.`,
           });
         }
       } else {
@@ -79,20 +82,34 @@ export const IXCContractsList = () => {
           <FileText className="w-5 h-5" />
           <h2 className="text-2xl font-bold">Contratos IXC</h2>
           {total > 0 && (
-            <Badge variant="secondary">{total} ativos</Badge>
+            <Badge variant="secondary">{total} encontrados</Badge>
           )}
         </div>
-        <Button onClick={loadContracts} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Carregando...
-            </>
-          ) : (
-            "Buscar Contratos Ativos"
-          )}
-        </Button>
       </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-2 mb-4">
+            <Input
+              placeholder="Digite o CPF (apenas números)"
+              value={cpfSearch}
+              onChange={(e) => setCpfSearch(e.target.value.replace(/\D/g, ''))}
+              maxLength={11}
+              className="flex-1"
+            />
+            <Button onClick={loadContracts} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                "Buscar Contratos"
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {contracts.length > 0 && (
         <div className="relative">
