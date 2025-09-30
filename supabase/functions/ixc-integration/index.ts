@@ -833,24 +833,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
     const cleanCep = customerData.cep.replace(/\D/g, '');
     
-    // Valida o CEP antes de enviar
-    if (!cleanCep || cleanCep.length !== 8 || cleanCep === '00000000') {
-      throw new Error(`CEP inválido: ${cleanCep}. Deve conter 8 dígitos numéricos.`);
-    }
-    
-    console.log('CEP validado:', cleanCep);
-    
-    // Tenta validar CEP no IXC para preencher endereço automaticamente
-    let cepInfo: any = null;
-    try {
-      const { ok, data } = await postIXC(`${baseUrl}/cep`, auth, { cep: cleanCep });
-      if (ok) {
-        cepInfo = data?.data || data?.registro || (Array.isArray(data?.registros) ? data.registros[0] : null);
-        console.log('Validação CEP IXC:', cepInfo);
-      }
-    } catch (e) {
-      console.warn('Validação CEP via IXC falhou:', (e as Error)?.message);
-    }
+    console.log('CEP recebido (sem validação):', cleanCep);
     
     // PASSO 1: Salvar ABA CLIENTE (dados básicos)
     const formCliente: Record<string, string> = {
@@ -927,12 +910,12 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const formEndereco: Record<string, string> = {
       id: customerId,
       cep: cleanCep,
-      endereco: (cepInfo?.logradouro || cepInfo?.endereco || 'Rua Principal'),
-      numero: '1',
-      bairro: (cepInfo?.bairro || 'Centro'),
-      cidade: String(cepInfo?.cidade || cepInfo?.cidade_id || '5564'),
-      uf: String(cepInfo?.uf || '1'),
-      tipo_localidade: 'U',
+      endereco: customerData.address || 'Rua Teste, 123',
+      numero: customerData.number || '123',
+      bairro: customerData.neighborhood || 'Centro',
+      cidade: '5564', // Código da cidade fixo
+      tipo_localidade: 'U', // U = Zona Urbana
+      classificacao_iss: '1', // PADRÃO
     };
 
     console.log('PASSO 2: Salvando ABA ENDEREÇO:', formEndereco);
