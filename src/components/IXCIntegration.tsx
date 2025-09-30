@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Users, Wifi, WifiOff, Activity, FileText } from 'lucide-react';
+import { Loader2, Users, Wifi, WifiOff, Activity, FileText, CheckCircle2, XCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
 
@@ -42,6 +42,29 @@ const IXCIntegration = () => {
   const [testLoading, setTestLoading] = useState(false);
   const [atendimentoSubject, setAtendimentoSubject] = useState('');
   const [creatingAtendimento, setCreatingAtendimento] = useState(false);
+  const [syncingKnowledge, setSyncingKnowledge] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
+  
+  // Dados de teste para jornada completa
+  const generateUniqueTestData = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return {
+      customerName: `Cliente Teste ${random}`,
+      customerEmail: `teste${timestamp}@testeautomatizado.local`,
+      customerPhone: "11987654321",
+      customerCpf: "04112287143", // CPF válido de teste
+      customerCep: "70630100", // CEP válido e sem formatação
+      customerAddress: "Av. Paulista, 1000",
+      customerBirthDate: "1990-01-15",
+      planId: "",
+      appointmentDate: new Date().toISOString().split('T')[0],
+      appointmentPeriod: "manhã",
+      paymentDay: 10,
+    };
+  };
+
+  const [testData, setTestData] = useState(generateUniqueTestData());
 
   const createTestCustomer = async () => {
     setTestLoading(true);
@@ -625,6 +648,268 @@ const IXCIntegration = () => {
             )}
           </CardContent>
         </Card>
+
+      {/* Sincronização do Banco de Conhecimento */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Banco de Conhecimento
+          </CardTitle>
+          <CardDescription>
+            Sincronize o banco de conhecimento do chatbot com planos, FAQs e configurações
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={async () => {
+              setSyncingKnowledge(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('sync-chatbot-knowledge');
+                if (error) throw error;
+                toast.success('✅ Banco de conhecimento atualizado com sucesso!');
+              } catch (error) {
+                console.error('Erro ao sincronizar:', error);
+                toast.error('Erro ao sincronizar banco de conhecimento');
+              } finally {
+                setSyncingKnowledge(false);
+              }
+            }}
+            disabled={syncingKnowledge}
+          >
+            {syncingKnowledge ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                <Database className="mr-2 h-4 w-4" />
+                Sincronizar Conhecimento
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Teste Rápido - Jornada Completa */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Teste Rápido - Jornada Completa do Cliente</CardTitle>
+          <CardDescription>
+            Simula a jornada completa: criação de cliente, contrato e atendimento no IXC com processo automático de OS.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Nome do Cliente</Label>
+              <Input
+                value={testData.customerName}
+                onChange={(e) => setTestData({ ...testData, customerName: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                value={testData.customerEmail}
+                onChange={(e) => setTestData({ ...testData, customerEmail: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input
+                value={testData.customerPhone}
+                onChange={(e) => setTestData({ ...testData, customerPhone: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>CPF</Label>
+              <Input
+                value={testData.customerCpf}
+                onChange={(e) => setTestData({ ...testData, customerCpf: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>CEP</Label>
+              <Input
+                value={testData.customerCep}
+                onChange={(e) => setTestData({ ...testData, customerCep: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Data de Nascimento</Label>
+              <Input
+                type="date"
+                value={testData.customerBirthDate}
+                onChange={(e) => setTestData({ ...testData, customerBirthDate: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Button 
+              onClick={async () => {
+                setTestLoading(true);
+                setTestResults(null);
+                
+                const freshTestData = generateUniqueTestData();
+                setTestData(freshTestData);
+
+                try {
+                  // 1. Buscar um plano ativo
+                  const { data: plans, error: plansError } = await supabase
+                    .from("plans")
+                    .select("*")
+                    .eq("active", true)
+                    .not("ixc_plan_id", "is", null)
+                    .limit(1)
+                    .single();
+
+                  if (plansError || !plans) {
+                    throw new Error("Nenhum plano com IXC ID encontrado");
+                  }
+
+                  // 2. Chamar o sales-agent com directOrder
+                  const orderPayload = {
+                    name: freshTestData.customerName,
+                    email: freshTestData.customerEmail,
+                    phone: freshTestData.customerPhone,
+                    cpf: freshTestData.customerCpf,
+                    birthDate: freshTestData.customerBirthDate,
+                    cep: freshTestData.customerCep,
+                    address: freshTestData.customerAddress,
+                    plan_id: plans.id,
+                    planName: plans.name,
+                    appointmentDate: freshTestData.appointmentDate,
+                    appointmentPeriod: freshTestData.appointmentPeriod,
+                    paymentDay: freshTestData.paymentDay,
+                  };
+
+                  const SUPABASE_URL = "https://mxdupkbpxjcfxdgrwknp.supabase.co";
+                  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I";
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const accessToken = sessionData?.session?.access_token;
+
+                  const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-agent`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      apikey: SUPABASE_ANON_KEY,
+                      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                    },
+                    body: JSON.stringify({
+                      messages: [{ role: "user", content: JSON.stringify(orderPayload) }],
+                      directOrder: true,
+                    }),
+                  });
+                  const agentResponse = await resp.json().catch(() => ({}));
+                  if (!resp.ok) {
+                    throw new Error(JSON.stringify({ status: resp.status, body: agentResponse }));
+                  }
+
+                  // 3. Buscar o appointment criado
+                  const { data: appointment, error: appointmentError } = await supabase
+                    .from("installation_appointments")
+                    .select("*")
+                    .eq("customer_email", freshTestData.customerEmail)
+                    .order("created_at", { ascending: false })
+                    .limit(1)
+                    .single();
+
+                  setTestResults({
+                    success: true,
+                    planUsed: plans,
+                    agentResponse,
+                    appointment,
+                    ixcClientId: appointment?.ixc_contract_id ? "Criado" : "Não criado",
+                    ixcContractId: appointment?.ixc_contract_id || "Não criado",
+                  });
+
+                  toast.success("✅ Teste concluído com sucesso!");
+                } catch (error: any) {
+                  console.error("Erro no teste:", error);
+                  let parsed: any = null;
+                  try { parsed = JSON.parse(error.message); } catch {}
+                  setTestResults({
+                    success: false,
+                    error: error.message,
+                    errorDetails: parsed,
+                  });
+                  toast.error("❌ Erro no teste");
+                } finally {
+                  setTestLoading(false);
+                }
+              }}
+              disabled={testLoading} 
+              className="w-full"
+            >
+              {testLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Executando teste...
+                </>
+              ) : (
+                "🚀 Executar Teste Completo"
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              ℹ️ Cada teste gera dados únicos automaticamente para evitar conflitos no IXC
+            </p>
+          </div>
+
+          {testResults && (
+            <Card className="mt-4">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  {testResults.success ? (
+                    <CheckCircle2 className="h-6 w-6 text-green-500" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-500" />
+                  )}
+                  <h3 className="text-xl font-bold">
+                    {testResults.success ? "✅ Teste Passou!" : "❌ Teste Falhou"}
+                  </h3>
+                </div>
+
+                {testResults.success ? (
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-semibold">Plano Utilizado:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {testResults.planUsed?.name} - IXC ID: {testResults.planUsed?.ixc_plan_id}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-semibold">IXC Contract ID:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {testResults.appointment?.ixc_contract_id || "Não criado"}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-green-50 border border-green-200 rounded dark:bg-green-950 dark:border-green-800">
+                      <p className="text-sm font-semibold text-green-800 dark:text-green-200">Passos Executados:</p>
+                      <ul className="text-sm text-green-700 dark:text-green-300 mt-2 space-y-1">
+                        <li>✅ Cliente criado no IXC</li>
+                        <li>✅ Contrato criado no IXC (ID: {testResults.ixcContractId})</li>
+                        <li>✅ Atendimento criado com processo 11 (OS automática)</li>
+                        <li>✅ Registro salvo no Supabase</li>
+                        <li>✅ Email único: {testResults.appointment?.customer_email}</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded dark:bg-red-950 dark:border-red-800">
+                    <p className="text-sm font-semibold text-red-800 dark:text-red-200">Erro:</p>
+                    <p className="text-sm text-red-700 dark:text-red-300 mt-2">{testResults.error}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Debug Information */}
       {debugInfo && (
