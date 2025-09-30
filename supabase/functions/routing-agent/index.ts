@@ -51,42 +51,33 @@ serve(async (req) => {
 
     console.log('Using routing config:', config.model);
 
+    // Get conversation history to check if we need CPF
+    const { data: messages } = await supabase
+      .from('conversation_messages')
+      .select('content, sender_type')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    const messageCount = messages?.length || 0;
+    console.log('Message count:', messageCount);
+
     // Check if customer is identified
     const { data: conversation } = await supabase
       .from('conversations')
-      .select('customer_cpf, customer_name, customer_email, ixc_client_id')
+      .select('customer_cpf, customer_name, customer_email, ixc_client_id, metadata')
       .eq('id', conversationId)
       .single();
 
     console.log('Conversation data:', conversation);
 
-    // If customer not identified, request CPF
-    if (!conversation?.customer_cpf) {
-      console.log('Customer not identified, checking if message contains CPF');
-      
-      // Extract CPF from message (11 digits, with or without formatting)
-      const cpfMatch = message.match(/\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/);
-      
-      if (!cpfMatch) {
-        console.log('No CPF found in message, requesting identification');
-        return new Response(
-          JSON.stringify({
-            agent: 'identification',
-            message: 'Olá! Para melhor atendê-lo, preciso que informe seu CPF (apenas números ou formato 000.000.000-00).',
-            needsIdentification: true
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-
-      // Clean CPF (remove formatting)
+    // Check if message contains CPF
+    const cpfMatch = message.match(/\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/);
+    
+    // If CPF was provided, identify customer
+    if (cpfMatch && !conversation?.customer_cpf) {
       const cpf = cpfMatch[1].replace(/\D/g, '');
-      console.log('CPF found:', cpf);
+      console.log('CPF found in message:', cpf);
 
-      // Search customer in IXC
       try {
         const { data: ixcResult, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
           body: {
@@ -102,15 +93,34 @@ serve(async (req) => {
 
         console.log('IXC search result:', ixcResult);
 
-        let customerData = null;
-        if (ixcResult?.customers && ixcResult.customers.length > 0) {
-          const customer = ixcResult.customers[0];
+        let customerData: any = null;
+        let clientStatus: any = null;
+        
+        if (ixcResult?.data?.customers && ixcResult.data.customers.length > 0) {
+          const customer = ixcResult.data.customers[0];
+          
+          // Get full customer status (online, blocked, etc.)
+          console.log('Getting customer status from IXC...');
+          const { data: statusResult } = await supabase.functions.invoke('ixc-integration', {
+            body: {
+              action: 'getCustomerStatus',
+              params: { id: customer.id }
+            }
+          });
+
+          console.log('Customer status result:', JSON.stringify(statusResult, null, 2));
+          clientStatus = statusResult?.data || null;
+
           customerData = {
             customer_cpf: cpf,
             customer_name: customer.razao || customer.nome_fantasia || 'Cliente',
             customer_email: customer.email || null,
             customer_phone: customer.telefone_celular || customer.telefone_comercial || null,
-            ixc_client_id: customer.id
+            ixc_client_id: customer.id,
+            metadata: {
+              ...conversation?.metadata,
+              cliente_status: clientStatus
+            }
           };
         } else {
           // Cliente não encontrado no IXC
@@ -119,7 +129,11 @@ serve(async (req) => {
             customer_name: 'Cliente Novo',
             customer_email: null,
             customer_phone: null,
-            ixc_client_id: null
+            ixc_client_id: null,
+            metadata: {
+              ...conversation?.metadata,
+              cliente_novo: true
+            }
           };
         }
 
@@ -134,15 +148,78 @@ serve(async (req) => {
           throw updateError;
         }
 
-        console.log('Customer identified:', customerData);
+        console.log('Customer identified and status verified');
 
-        // Return confirmation message
+        // AUTOMATIC ROUTING BASED ON STATUS
+        if (clientStatus) {
+          const isOnline = clientStatus.online === true || clientStatus.onlineStatus === true;
+          const isBlocked = clientStatus.blocked === true || clientStatus.financiallyBlocked === true;
+
+          console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}`);
+
+          // If blocked/overdue → Financial Support
+          if (isBlocked) {
+            console.log('Client is blocked - routing to financial support');
+            return new Response(
+              JSON.stringify({
+                agent: 'support_financial',
+                message: `Obrigado, ${customerData.customer_name}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para nosso setor financeiro que poderá resolver isso imediatamente.`,
+                customerIdentified: true,
+                customerData,
+                autoRouted: true,
+                routeReason: 'financial_block'
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+
+          // If offline → Technical Support
+          if (!isOnline) {
+            console.log('Client is offline - routing to technical support');
+            return new Response(
+              JSON.stringify({
+                agent: 'support_tech',
+                message: `Obrigado, ${customerData.customer_name}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
+                customerIdentified: true,
+                customerData,
+                autoRouted: true,
+                routeReason: 'offline'
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+
+          // If online and not blocked - confirm and continue with normal routing
+          console.log('Client is online and not blocked - confirming and proceeding');
+          return new Response(
+            JSON.stringify({
+              agent: 'routing',
+              message: `Obrigado, ${customerData.customer_name}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
+              customerIdentified: true,
+              customerData,
+              requiresIntent: true
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // New customer or couldn't verify status - ask how to help
         return new Response(
           JSON.stringify({
-            agent: 'identification',
-            message: `Obrigado, ${customerData.customer_name}! ${customerData.ixc_client_id ? 'Encontrei seu cadastro em nossa base.' : 'Vejo que você ainda não é nosso cliente.'} Como posso ajudá-lo hoje?`,
+            agent: 'routing',
+            message: `Olá! ${customerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`,
             customerIdentified: true,
-            customerData
+            customerData,
+            requiresIntent: true
           }),
           {
             status: 200,
@@ -151,19 +228,56 @@ serve(async (req) => {
         );
       } catch (error) {
         console.error('Error identifying customer:', error);
-        // Continue with routing even if identification fails
+        // Continue with normal flow
       }
     }
 
-    // Get conversation history
-    let conversationHistory: Message[] = [];
-    const { data: messages } = await supabase
-      .from('conversation_messages')
-      .select('content, sender_type')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(10);
+    // If customer not identified yet and has had some conversation, ask for CPF naturally
+    if (!conversation?.customer_cpf && messageCount >= 1) {
+      // Check if we already asked for CPF
+      const alreadyAskedForCPF = messages?.some(m => 
+        m.sender_type === 'agent' && m.content.toLowerCase().includes('cpf')
+      );
 
+      if (!alreadyAskedForCPF) {
+        console.log('Asking for CPF naturally after initial conversation');
+        return new Response(
+          JSON.stringify({
+            agent: 'identification',
+            message: 'Perfeito! Para verificar sua situação, pode me passar seu CPF, por favor?',
+            needsIdentification: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // If this is first message (greeting), respond naturally
+    if (messageCount === 0) {
+      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai'];
+      const isGreeting = greetings.some(g => message.toLowerCase().includes(g));
+      
+      if (isGreeting) {
+        console.log('First message is a greeting - responding naturally');
+        return new Response(
+          JSON.stringify({
+            agent: 'routing',
+            message: 'Olá! Tudo bem? Sou o assistente virtual da SUPERNET FIBRA. Como posso ajudá-lo hoje? 😊',
+            isGreeting: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // Build conversation history for context
+    let conversationHistory: Message[] = [];
     if (messages) {
       conversationHistory = messages.map(msg => ({
         role: msg.sender_type === 'client' ? 'user' : 'assistant',
@@ -177,17 +291,22 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Get customer status from metadata if available
+    const clientStatus = conversation?.metadata?.cliente_status;
+    
     const contextInfo = `
-CONTEXTO ADICIONAL:
-Cliente: ${conversation?.customer_name || 'Não identificado'}
+CONTEXTO DO CLIENTE:
+Nome: ${conversation?.customer_name || 'Não identificado'}
 CPF: ${conversation?.customer_cpf || 'Não informado'}
-Cliente IXC: ${conversation?.ixc_client_id ? 'Sim (ID: ' + conversation.ixc_client_id + ')' : 'Não'}
-${context ? `Departamento: ${context.department || 'não especificado'}` : ''}
+ID IXC: ${conversation?.ixc_client_id || 'N/A'}
+Status Online: ${clientStatus?.online ? 'SIM' : 'NÃO'}
+Bloqueado: ${clientStatus?.blocked ? 'SIM' : 'NÃO'}
+${context ? `Departamento Atual: ${context.department}` : ''}
 
-HISTÓRICO DA CONVERSA:
-${conversationHistory.length > 0 ? conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n') : 'Sem histórico'}
+HISTÓRICO RECENTE:
+${conversationHistory.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n')}
 
-MENSAGEM ATUAL:
+MENSAGEM ATUAL DO CLIENTE:
 "${message}"
 `;
 
