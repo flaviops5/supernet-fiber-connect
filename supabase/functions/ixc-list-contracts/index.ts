@@ -18,9 +18,9 @@ serve(async (req) => {
       throw new Error('IXC API credentials not configured');
     }
 
-    console.log('Fetching active contracts from IXC...');
+    console.log('Fetching all contracts from IXC...');
 
-    // Buscar contratos ativos do IXC
+    // Buscar todos os contratos do IXC (sem filtro específico)
     const response = await fetch('https://central.supernetfibra.com.br/webservice/v1/contratos', {
       method: 'POST',
       headers: {
@@ -29,9 +29,6 @@ serve(async (req) => {
         'ixcsoft': 'listar',
       },
       body: JSON.stringify({
-        qtype: 'contratos.id_situacao_contrato',
-        query: 'A', // A = Ativo
-        oper: '=',
         page: '1',
         rp: '100',
         sortname: 'contratos.id',
@@ -46,13 +43,15 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log(`Found ${data.total || 0} active contracts`);
+    console.log(`IXC API Response:`, JSON.stringify(data, null, 2));
+    console.log(`Found ${data.total || 0} contracts`);
 
     return new Response(
       JSON.stringify({
         success: true,
         contracts: data.registros || [],
-        total: data.total || 0
+        total: data.total || 0,
+        rawResponse: data // Debug info
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

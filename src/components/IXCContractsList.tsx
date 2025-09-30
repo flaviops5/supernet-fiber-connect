@@ -35,10 +35,22 @@ export const IXCContractsList = () => {
       if (data.success) {
         setContracts(data.contracts);
         setTotal(data.total);
-        toast({
-          title: "Contratos carregados",
-          description: `${data.total} contratos ativos encontrados.`,
-        });
+        
+        // Debug logging
+        console.log('IXC Response:', data);
+        
+        if (data.total === 0) {
+          toast({
+            title: "Nenhum contrato encontrado",
+            description: "A API do IXC não retornou contratos. Verifique se há contratos cadastrados no sistema IXC.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Contratos carregados",
+            description: `${data.total} contratos encontrados.`,
+          });
+        }
       } else {
         throw new Error(data.error || 'Erro ao carregar contratos');
       }
