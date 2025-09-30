@@ -1016,77 +1016,92 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
     console.log('📋 Customer ID:', customerId);
     console.log('📋 Dados recebidos:', JSON.stringify(atendimentoData, null, 2));
     
-    const form: Record<string, string> = {
-      // CAMPOS OBRIGATÓRIOS SEGUNDO DOCUMENTAÇÃO IXC
-      tipo: 'C', // C = Cliente (obrigatório)
-      id_cliente: String(customerId), // Obrigatório
-      id_assunto: '25', // Obrigatório - IXC preenche automaticamente setor
-      titulo: `Instalação - ${atendimentoData.planName}`, // Obrigatório
-      id_ticket_setor: '3', // Obrigatório - Setor 3 para instalações (id_assunto 25)
-      prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
-      menssagem: `Nova instalação do plano ${atendimentoData.planName} para ${atendimentoData.customerName}`, // Obrigatório
-      su_status: 'N', // Obrigatório - N = Normal
-      
-      // CAMPOS ADICIONAIS
-      id_filial: '1',
-      origem_endereco: 'C', // C = Cliente
-      
-      // DESCRIÇÃO DETALHADA
-      descricao: `
-DADOS DO CLIENTE:
-- Nome: ${atendimentoData.customerName}
-- CPF: ${atendimentoData.cpf}
-- Email: ${atendimentoData.email}
-- Telefone: ${atendimentoData.phone}
-- Endereço: ${atendimentoData.address}
-- CEP: ${atendimentoData.cep}
-
-PLANO CONTRATADO:
-- Plano: ${atendimentoData.planName}
-- Velocidade: ${atendimentoData.planSpeed}
-- Valor: R$ ${atendimentoData.planPrice}
-- Dia de vencimento: ${atendimentoData.paymentDay}
-
-AGENDAMENTO:
-- Data: ${new Date(atendimentoData.installationDate).toLocaleDateString('pt-BR')}
-- Período: ${atendimentoData.installationPeriod}
-      `.trim(),
-      
-      status: 'A', // A = Aberto
-    };
-    
-    console.log('📝 Formulário montado (ANTES de enviar):');
-    console.log(JSON.stringify(form, null, 2));
-    console.log('📝 Campos do formulário que serão enviados:');
-    for (const [key, value] of Object.entries(form)) {
-      console.log(`  ${key}: ${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value}`);
-    }
-    
     // Adiciona data de agendamento - usar data futura (3 dias à frente)
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 3);
     const formattedDate = futureDate.toISOString().split('T')[0]; // formato YYYY-MM-DD
-    form.data_agendamento = formattedDate;
-    console.log('📅 Data de agendamento adicionada (3 dias no futuro):', form.data_agendamento);
     
-    const url = `${baseUrl}/su_oss_chamado`;
+    // NOVO ENDPOINT: su_ticket com JSON (conforme suporte IXC)
+    const payload = {
+      // CAMPOS OBRIGATÓRIOS
+      tipo: 'C', // C = Cliente (obrigatório)
+      id_cliente: String(customerId), // Obrigatório
+      id_assunto: '25', // Obrigatório - Assunto de instalação
+      titulo: `Instalação - ${atendimentoData.planName}`, // Obrigatório
+      id_ticket_setor: '3', // Obrigatório - Setor 3 para instalações
+      prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
+      menssagem: `Nova instalação do plano ${atendimentoData.planName} para ${atendimentoData.customerName}`, // Obrigatório
+      su_status: 'N', // Obrigatório - N = Normal
+      
+      // CAMPOS OPCIONAIS
+      id_filial: '1',
+      origem_endereco: 'C',
+      data_reservada: formattedDate,
+      status: 'A',
+      
+      // Campos vazios conforme exemplo do suporte
+      id_estrutura: '',
+      protocolo: '',
+      id_circuito: '',
+      id_login: '',
+      id_contrato: '',
+      origem_endereco_estrutura: '',
+      endereco: '',
+      latitude: '',
+      longitude: '',
+      id_wfl_processo: '',
+      id_responsavel_tecnico: '',
+      data_criacao: '',
+      data_ultima_alteracao: '',
+      melhor_horario_reserva: '',
+      id_ticket_origem: '',
+      id_usuarios: '',
+      id_resposta: '',
+      interacao_pendente: '',
+      id_evento_status_processo: '',
+      id_canal_atendimento: '',
+      mensagens_nao_lida_cli: '',
+      mensagens_nao_lida_sup: '',
+      token: '',
+      finalizar_atendimento: '',
+      id_su_diagnostico: '',
+      status_sla: '',
+      origem_cadastro: '',
+      ultima_atualizacao: '',
+      cliente_fone: '',
+      cliente_telefone_comercial: '',
+      cliente_id_operadora_celular: '',
+      cliente_telefone_celular: '',
+      cliente_whatsapp: '',
+      cliente_ramal: '',
+      cliente_email: '',
+      cliente_contato: '',
+      cliente_website: '',
+      cliente_skype: '',
+      cliente_facebook: '',
+      latitude_cli: '',
+      longitude_cli: '',
+      latitude_login: '',
+      longitude_login: ''
+    };
+    
+    
+    console.log('📝 Payload JSON montado (ANTES de enviar):');
+    console.log(JSON.stringify(payload, null, 2));
+    console.log('📅 Data de agendamento:', formattedDate, '(3 dias no futuro)');
+    
+    const url = `${baseUrl}/su_ticket`; // NOVO ENDPOINT
     console.log('🌐 URL completa da requisição:', url);
     console.log('🔐 Authorization header:', auth.substring(0, 30) + '...');
-    
-    const bodyParams = new URLSearchParams(form);
-    console.log('📤 Body da requisição (URLSearchParams):');
-    for (const [key, value] of bodyParams.entries()) {
-      console.log(`  ${key}=${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value}`);
-    }
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json', // JSON ao invés de form-urlencoded
         'ixcsoft': 'inserir',
       },
-      body: bodyParams,
+      body: JSON.stringify(payload), // Envia como JSON
     });
     
     console.log('📥 Status HTTP recebido:', response.status, response.statusText);
