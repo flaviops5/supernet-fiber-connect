@@ -852,131 +852,141 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       console.warn('Validação CEP via IXC falhou:', (e as Error)?.message);
     }
     
-    const form: Record<string, string> = {
+    // PASSO 1: Salvar ABA CLIENTE (dados básicos)
+    const formCliente: Record<string, string> = {
       razao: customerData.name,
       nome_fantasia: customerData.name,
       cnpj_cpf: cleanCpf,
-      cep: cleanCep, // CEP validado
       email: customerData.email,
-      telefone_celular: customerData.phone.replace(/\D/g, ''),
+      tipo_pessoa: 'F',
       ativo: 'S',
+      contribuinte_icms: 'N',
       acesso_automatico_central: '2',
       participa_cobranca: 'S',
-      tipo_assinante: '3', // Pessoa Física (código)
-      id_tipo_cliente: '2', // Cliente Fibra
+      tipo_assinante: '3',
+      id_tipo_cliente: '2',
     };
     
-    // Adiciona data de nascimento se fornecida
     if (customerData.birthDate) {
-      form.data_nascimento = customerData.birthDate;
+      formCliente.data_nascimento = customerData.birthDate;
     }
 
-    // Campos obrigatórios do IXC conforme especificação
-    // ABA CLIENTE
-    form.ativo = 'S'; // Ativo = SIM
-    form.contribuinte_icms = 'N'; // Contribuinte ICMS = Não
-    form.tipo_pessoa = 'F'; // Pessoa Física
-    form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
+    console.log('PASSO 1: Salvando ABA CLIENTE:', formCliente);
     
-    // ABA Endereço - campos obrigatórios
-    form.endereco = (cepInfo?.logradouro || cepInfo?.endereco || 'Rua Principal');
-    form.numero = '1';
-    form.bairro = (cepInfo?.bairro || 'Centro');
-    form.cidade = String(cepInfo?.cidade || cepInfo?.cidade_id || '5564');
-    form.uf = String(cepInfo?.uf || '1');
-    form.tipo_localidade = 'U'; // Zona Urbana
-    form.iss_classificacao_padrao = '99';
-
-    console.log('Enviando dados para criar cliente:', form);
-    console.log('CEP sendo enviado:', cleanCep);
-
-    console.log('Enviando dados para criar cliente:', form);
-    
-    const response = await fetch(`${baseUrl}/cliente`, {
+    const responseCliente = await fetch(`${baseUrl}/cliente`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         'ixcsoft': 'inserir',
       },
-      body: new URLSearchParams(form),
+      body: new URLSearchParams(formCliente),
     });
     
-    if (!response.ok) {
-      const text = await response.text();
-      console.error(`Erro ao criar cliente - HTTP ${response.status}:`, text);
-      throw new Error(`Erro ao criar cliente: ${response.status} - ${text}`);
+    if (!responseCliente.ok) {
+      const text = await responseCliente.text();
+      console.error(`Erro ao criar cliente (ABA CLIENTE) - HTTP ${responseCliente.status}:`, text);
+      throw new Error(`Erro ao criar cliente: ${responseCliente.status} - ${text}`);
     }
     
-    const text = await response.text();
-    console.log('Resposta bruta do IXC (createCustomer):', text);
-
-    // Tenta interpretar a resposta do IXC
-    let parsed: any = null;
+    const textCliente = await responseCliente.text();
+    console.log('Resposta ABA CLIENTE:', textCliente);
+    
+    let parsedCliente: any = null;
     try {
-      parsed = JSON.parse(text);
+      parsedCliente = JSON.parse(textCliente);
     } catch {}
 
-    // Se IXC retornou erro lógico (HTTP 200 com body de erro), propaga a mensagem correta
-    if (parsed && parsed.type === 'error') {
-      throw new Error(parsed.message || 'Erro ao criar cliente no IXC');
+    if (parsedCliente && parsedCliente.type === 'error') {
+      throw new Error(parsedCliente.message || 'Erro ao criar cliente no IXC');
     }
 
-    // Se o IXC devolver o ID diretamente, usa-o
-    const createdId = parsed?.id || parsed?.data?.id || parsed?.registro?.id;
-    if (createdId) {
-      return { id: String(createdId) };
-    }
-
-    // Aguarda um momento para o IXC processar antes de buscar pelo CPF
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Agora busca o cliente recém-criado pelo CPF para obter o ID
+    // Aguarda processamento e busca o ID do cliente recém-criado
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     console.log('Buscando cliente recém-criado pelo CPF:', cleanCpf);
-
+    
+    let customerId: string | null = null;
     try {
       const customers = await searchCustomers(baseUrl, auth, cleanCpf);
       
       if (customers && customers.length > 0) {
         const customer = customers[0];
-        console.log('Cliente encontrado após criação:', customer);
-        return { 
-          success: true,
-          id: customer.id,
-          customer: customer
-        };
+        customerId = String(customer.id);
+        console.log('Cliente encontrado após criação, ID:', customerId);
       }
-      
-      // Se não encontrou pela busca, tenta busca direta
-      console.log('Tentando busca direta no grid do IXC...');
-      const formSearch: Record<string, string> = {
-        qtype: 'cliente.cnpj_cpf',
-        query: cleanCpf,
-        oper: '=',
-        page: '1',
-        rp: '1',
-      };
-      
-      const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, formSearch);
-      if (ok && data?.registros) {
-        const registros = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-        if (registros.length > 0) {
-          const customer = registros[0];
-          console.log('Cliente encontrado por busca direta:', customer);
-          return {
-            success: true,
-            id: customer.id,
-            customer: customer
-          };
-        }
-      }
-      
-      throw new Error('Cliente criado mas não foi possível recuperar o ID. Verifique manualmente no IXC.');
-    } catch (searchError) {
-      console.error('Erro ao buscar cliente após criação:', searchError);
+    } catch (e) {
+      console.error('Erro ao buscar cliente após criação:', e);
+    }
+
+    if (!customerId) {
       throw new Error('Cliente criado mas não foi possível recuperar o ID. Verifique manualmente no IXC.');
     }
+
+    // PASSO 2: Salvar ABA ENDEREÇO
+    const formEndereco: Record<string, string> = {
+      id: customerId,
+      cep: cleanCep,
+      endereco: (cepInfo?.logradouro || cepInfo?.endereco || 'Rua Principal'),
+      numero: '1',
+      bairro: (cepInfo?.bairro || 'Centro'),
+      cidade: String(cepInfo?.cidade || cepInfo?.cidade_id || '5564'),
+      uf: String(cepInfo?.uf || '1'),
+      tipo_localidade: 'U',
+    };
+
+    console.log('PASSO 2: Salvando ABA ENDEREÇO:', formEndereco);
     
+    const responseEndereco = await fetch(`${baseUrl}/cliente`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'alterar',
+      },
+      body: new URLSearchParams(formEndereco),
+    });
+    
+    if (!responseEndereco.ok) {
+      const text = await responseEndereco.text();
+      console.error(`Erro ao atualizar endereço - HTTP ${responseEndereco.status}:`, text);
+    } else {
+      const textEndereco = await responseEndereco.text();
+      console.log('Resposta ABA ENDEREÇO:', textEndereco);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // PASSO 3: Salvar ABA CONTATO
+    const formContato: Record<string, string> = {
+      id: customerId,
+      telefone_celular: customerData.phone.replace(/\D/g, ''),
+      email: customerData.email,
+    };
+
+    console.log('PASSO 3: Salvando ABA CONTATO:', formContato);
+    
+    const responseContato = await fetch(`${baseUrl}/cliente`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'alterar',
+      },
+      body: new URLSearchParams(formContato),
+    });
+    
+    if (!responseContato.ok) {
+      const text = await responseContato.text();
+      console.error(`Erro ao atualizar contato - HTTP ${responseContato.status}:`, text);
+    } else {
+      const textContato = await responseContato.text();
+      console.log('Resposta ABA CONTATO:', textContato);
+    }
+
+    console.log('Cliente criado com sucesso em 3 etapas, ID:', customerId);
+    return { id: customerId };
+
   } catch (error) {
     console.error('Erro ao criar cliente no IXC:', error);
     throw new Error(`Erro ao criar cliente: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
