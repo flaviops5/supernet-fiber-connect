@@ -25,6 +25,7 @@ import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
 import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
+import { TestContractFlow } from '@/components/TestContractFlow';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -114,14 +115,18 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Atividades Recentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Nenhuma atividade recente</p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <TestContractFlow />
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Atividades Recentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Nenhuma atividade recente</p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
