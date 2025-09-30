@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,14 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautif
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
+
+interface IXCPlan {
+  id: string;
+  descricao: string;
+  valor: string;
+  download: string;
+  upload: string;
+}
 
 const iconMap = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
@@ -50,11 +58,57 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
       ...feature,
       order: feature.order ?? index
     })),
-    image_url: plan?.image_url || ""
+    image_url: plan?.image_url || "",
+    ixc_plan_id: plan?.ixc_plan_id || ""
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [ixcPlans, setIxcPlans] = useState<IXCPlan[]>([]);
+  const [loadingIxcPlans, setLoadingIxcPlans] = useState(false);
+  const [selectedIxcPlanId, setSelectedIxcPlanId] = useState(plan?.ixc_plan_id || "");
+
+  useEffect(() => {
+    if (isOpen && !plan?.id) {
+      loadIxcPlans();
+    }
+  }, [isOpen, plan?.id]);
+
+  const loadIxcPlans = async () => {
+    setLoadingIxcPlans(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-list-contracts', {
+        body: { page: 1, rp: 100 }
+      });
+
+      if (error) throw error;
+
+      if (data?.registros) {
+        setIxcPlans(data.registros);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar planos IXC:', error);
+      toast.error('Erro ao carregar planos do IXC');
+    } finally {
+      setLoadingIxcPlans(false);
+    }
+  };
+
+  const handleIxcPlanSelect = (ixcPlanId: string) => {
+    const selectedPlan = ixcPlans.find(p => p.id === ixcPlanId);
+    if (selectedPlan) {
+      setSelectedIxcPlanId(ixcPlanId);
+      setFormData({
+        ...formData,
+        ixc_plan_id: ixcPlanId,
+        name: selectedPlan.descricao,
+        speed: `${selectedPlan.download} Mega`,
+        price: parseFloat(selectedPlan.valor) || 0,
+        originalPrice: parseFloat(selectedPlan.valor) * 1.2 || 0,
+      });
+      toast.success('Plano IXC vinculado! Agora personalize as características visuais.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +136,8 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
         cta_text: validatedData.ctaText,
         display_order: validatedData.displayOrder,
         features: formData.features,
-        image_url: formData.image_url
+        image_url: formData.image_url,
+        ixc_plan_id: formData.ixc_plan_id || null
       };
 
       let error;
@@ -243,6 +298,38 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {!plan?.id && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Vincular Plano do IXC</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="ixc-plan">Selecione um plano do IXC</Label>
+                  <Select 
+                    value={selectedIxcPlanId} 
+                    onValueChange={handleIxcPlanSelect}
+                    disabled={loadingIxcPlans}
+                  >
+                    <SelectTrigger id="ixc-plan">
+                      <SelectValue placeholder={loadingIxcPlans ? "Carregando planos..." : "Selecione um plano IXC"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ixcPlans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.descricao} - {plan.download}MB - R$ {plan.valor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Ao selecionar um plano IXC, os dados base serão preenchidos. Você poderá personalizar a descrição, imagem e características visuais.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Nome do Plano</Label>
@@ -251,6 +338,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Ex: Plano Básico"
+                disabled={!selectedIxcPlanId && !plan?.id}
               />
               {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
             </div>
@@ -262,6 +350,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
                 value={formData.speed}
                 onChange={(e) => setFormData({...formData, speed: e.target.value})}
                 placeholder="Ex: 400 Mega"
+                disabled={!selectedIxcPlanId && !plan?.id}
               />
               {errors.speed && <p className="text-sm text-destructive mt-1">{errors.speed}</p>}
             </div>
@@ -275,6 +364,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
                 value={formData.price}
                 onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
                 placeholder="99.90"
+                disabled={!selectedIxcPlanId && !plan?.id}
               />
               {errors.price && <p className="text-sm text-destructive mt-1">{errors.price}</p>}
             </div>
