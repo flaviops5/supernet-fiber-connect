@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -18,55 +19,125 @@ serve(async (req) => {
       throw new Error('IXC API credentials not configured');
     }
 
-    // Get search parameters from request body
-    const body = await req.json().catch(() => ({}));
-    
-    console.log('Fetching plans from IXC...');
+    // Body is optional for future filters (e.g., only active plans)
+    const _body = await req.json().catch(() => ({} as Record<string, unknown>));
 
-    // Buscar planos comerciais disponíveis no IXC
-    const response = await fetch('https://central.supernetfibra.com.br/webservice/v1/cliente_tipo', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + btoa(`${ixcUsername}:${ixcPassword}`),
-        'ixcsoft': 'listar',
+    const auth = btoa(`${ixcUsername}:${ixcPassword}`);
+    const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
+
+    // Helper to POST with IXC conventions
+    const postIXC = async (endpoint: string, form: Record<string, string>) => {
+      const body = new URLSearchParams(form);
+      const res = await fetch(`${baseUrl}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'ixcsoft': 'listar',
+        },
+        body,
+      });
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch {
+        console.error(`[IXC ${endpoint}] Non-JSON response:`, text);
+        throw new Error(`Invalid response from IXC at /${endpoint}`);
       }
-    });
+      if (!res.ok) {
+        console.error(`[IXC ${endpoint}] HTTP ${res.status}:`, text);
+        throw new Error(data?.message || `HTTP ${res.status}`);
+      }
+      return data;
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('IXC API error:', errorText);
-      throw new Error(`IXC API returned ${response.status}: ${errorText}`);
+    console.log('Fetching commercial plans from IXC...');
+
+    // Try common plan endpoints in order of probability
+    const candidateEndpoints = ['plano', 'internet_plano', 'planos'];
+    let found: any[] = [];
+    let rawResponse: any = null;
+    let usedEndpoint = '';
+
+    for (const ep of candidateEndpoints) {
+      try {
+        const data = await postIXC(ep, {
+          page: '1',
+          rp: '1000',
+          sortname: `${ep}.id`,
+          sortorder: 'asc',
+        });
+        rawResponse = data;
+        // Many IXC installs return { page, total, registros }
+        const registros = Array.isArray(data?.registros)
+          ? data.registros
+          : (data?.registros ? Object.values(data.registros) : []);
+        if (registros && registros.length > 0) {
+          found = registros as any[];
+          usedEndpoint = ep;
+          break;
+        }
+        // Some return { data: [...] }
+        if (Array.isArray(data?.data) && data.data.length) {
+          found = data.data;
+          usedEndpoint = ep;
+          break;
+        }
+        // Some return { type: 'error', message: 'Recurso ... não está disponível!' }
+        if (data?.type === 'error') {
+          console.warn(`[IXC ${ep}] ${data.message}`);
+          continue;
+        }
+      } catch (e) {
+        console.warn(`[IXC ${ep}] attempt failed:`, (e as Error)?.message);
+        continue;
+      }
     }
 
-    const data = await response.json();
-    console.log(`IXC API Response:`, JSON.stringify(data, null, 2));
-    console.log(`Found ${data.total || data.registros?.length || 0} plans`);
+    if (!found.length) {
+      console.error('No plan endpoint returned data.');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Nenhum endpoint de planos do IXC retornou dados. Verifique se o recurso de planos está habilitado (ex.: /plano ou /internet_plano).',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      );
+    }
+
+    // Normalize plan fields to a common shape
+    const normalized = found.map((r: any) => {
+      const price = r.valor ?? r.mensalidade ?? r.preco ?? r.valor_mensal ?? null;
+      const down = r.download ?? r.velocidade_download ?? r.vel_down ?? r.vdownload ?? null;
+      const up = r.upload ?? r.velocidade_upload ?? r.vel_up ?? r.vupload ?? null;
+      const descricao = r.descricao ?? r.nome ?? r.plano ?? r.titulo ?? `Plano ${r.id ?? ''}`;
+      return {
+        id: String(r.id ?? ''),
+        descricao: String(descricao ?? ''),
+        valor: price !== null ? String(price) : undefined,
+        download: down !== null ? String(down) : undefined,
+        upload: up !== null ? String(up) : undefined,
+        raw: r,
+      };
+    });
+
+    console.log(`IXC Plan fetch OK via /${usedEndpoint}: ${normalized.length} items`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        contracts: data.registros || data || [],
-        total: data.total || data.registros?.length || 0,
-        rawResponse: data // Debug info
+        contracts: normalized,
+        total: normalized.length,
+        endpoint: usedEndpoint,
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
 
   } catch (error) {
-    console.error('Error fetching contracts:', error);
+    console.error('Error fetching plans from IXC:', error);
+    const msg = (error as Error)?.message || 'Unknown error';
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
+      JSON.stringify({ success: false, error: msg }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
   }
 });

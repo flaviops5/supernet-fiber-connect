@@ -65,9 +65,10 @@ export const IXCContractsList = () => {
   };
 
   const filteredContracts = contracts.filter(contract =>
-    contract.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.cpf_cnpj?.includes(searchTerm) ||
-    contract.plano?.toLowerCase().includes(searchTerm.toLowerCase())
+    (contract.descricao?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (contract.download?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (contract.upload?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (contract.valor ? String(contract.valor).includes(searchTerm) : false)
   );
 
   return (
