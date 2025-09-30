@@ -799,6 +799,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id: string
+          ixc_contract_id: string | null
           observations: string | null
           payment_day: number
           plan_name: string
@@ -819,6 +820,7 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id?: string
+          ixc_contract_id?: string | null
           observations?: string | null
           payment_day: number
           plan_name: string
@@ -839,6 +841,7 @@ export type Database = {
           customer_name?: string
           customer_phone?: string
           id?: string
+          ixc_contract_id?: string | null
           observations?: string | null
           payment_day?: number
           plan_name?: string
