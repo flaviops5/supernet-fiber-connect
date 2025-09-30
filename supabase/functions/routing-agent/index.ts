@@ -150,52 +150,29 @@ serve(async (req) => {
 
         console.log('Customer identified and status verified');
 
-        // AUTOMATIC ROUTING BASED ON STATUS
+        // ROTEAMENTO SIMPLIFICADO: BLOQUEADO ou FINANCEIRO EM ATRASO → Julia (Financeiro)
         if (clientStatus) {
-          const isOnline = clientStatus.isOnline === true;
           const contracts = clientStatus.contracts || [];
-          const now = new Date();
           
-          // Verifica se há problema financeiro analisando os CONTRATOS ATIVOS
-          let hasFinancialIssue = false;
-          let financialReason = '';
+          // Verifica APENAS: está BLOQUEADO ou FINANCEIRO EM ATRASO?
+          let isBlocked = false;
           
           for (const contract of contracts) {
-            // Ignora contratos cancelados/desistidos
-            const status = String(contract.status || '').toUpperCase();
             const statusInternet = String(contract.status_internet || '').toUpperCase();
-            if (status === 'D' || status === 'C' || statusInternet === 'D' || statusInternet === 'C') {
-              continue;
-            }
-            
-            // Status que indicam bloqueio/problema financeiro no IXC:
-            // CA = Cancelado Automático (bloqueado por inadimplência)
-            // CM = Cancelado Manual
-            // CB = Cancelado por Boleto
-            // FA = Financeiro em Atraso
-            // BLOQ/BLOQUE = Bloqueado explicitamente
-            const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
-            const isBlockedByStatus = financialBlockStatus.includes(statusInternet) 
-              || /BLOQ|BLOQUE/.test(statusInternet);
-            
-            // Verifica se acesso foi desativado
             const isAccessDisabled = contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00';
             
-            // PRIORIDADE: BLOQUEADO ou FINANCEIRO EM ATRASO
-            if (isBlockedByStatus || isAccessDisabled) {
-              hasFinancialIssue = true;
-              financialReason = isBlockedByStatus 
-                ? `bloqueado/financeiro (status: ${statusInternet})`
-                : 'acesso desativado';
+            // Códigos que indicam BLOQUEIO ou FINANCEIRO EM ATRASO
+            const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+            
+            if (financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet) || isAccessDisabled) {
+              isBlocked = true;
               break;
             }
           }
 
-          console.log(`Status: Online=${isOnline}, HasFinancialIssue=${hasFinancialIssue}, Reason=${financialReason}`);
-
-          // If blocked/overdue/financial issue → Financial Support (Julia Martins)
-          if (hasFinancialIssue) {
-            console.log(`Client has financial issue (${financialReason}) - routing to financial support`);
+          // Se está BLOQUEADO ou em ATRASO → Julia (Financeiro)
+          if (isBlocked) {
+            console.log('Cliente BLOQUEADO ou FINANCEIRO EM ATRASO - roteando para Julia (Financeiro)');
             const firstName = customerData.customer_name.split(' ')[0];
             return new Response(
               JSON.stringify({
@@ -204,7 +181,7 @@ serve(async (req) => {
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
-                routeReason: financialReason
+                routeReason: 'blocked_or_overdue'
               }),
               {
                 status: 200,
@@ -213,9 +190,10 @@ serve(async (req) => {
             );
           }
 
-          // If offline → Technical Support
+          // Senão, verifica se está offline → Suporte Técnico
+          const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
-            console.log('Client is offline - routing to technical support');
+            console.log('Cliente offline - roteando para Suporte Técnico');
             const firstName = customerData.customer_name.split(' ')[0];
             return new Response(
               JSON.stringify({
