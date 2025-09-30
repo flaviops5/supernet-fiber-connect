@@ -1022,15 +1022,17 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
     const formattedDate = futureDate.toISOString().split('T')[0]; // formato YYYY-MM-DD
     
     // NOVO ENDPOINT: su_ticket com JSON (conforme suporte IXC)
+    const tituloAssunto = `Instalação - ${atendimentoData.planName}`;
+    
     const payload = {
       // CAMPOS OBRIGATÓRIOS
       tipo: 'C', // C = Cliente (obrigatório)
       id_cliente: String(customerId), // Obrigatório
       id_assunto: '25', // Obrigatório - Assunto de instalação
-      titulo: `Instalação - ${atendimentoData.planName}`, // Obrigatório
+      titulo: tituloAssunto, // Obrigatório
       id_ticket_setor: '3', // Obrigatório - Setor 3 para instalações
       prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
-      menssagem: `Nova instalação do plano ${atendimentoData.planName} para ${atendimentoData.customerName}`, // Obrigatório
+      menssagem: tituloAssunto, // Obrigatório - Igual ao título/assunto
       su_status: 'N', // Obrigatório - N = Normal
       
       // CAMPOS OPCIONAIS
