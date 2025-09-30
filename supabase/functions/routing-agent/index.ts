@@ -168,39 +168,28 @@ serve(async (req) => {
               continue;
             }
             
-            // 1. Verifica se está inadimplente (pago_ate_data no passado)
+            // Dias de atraso (com base no pago_ate_data)
             const pagoAte = contract.pago_ate_data && contract.pago_ate_data !== '0000-00-00' 
               ? new Date(contract.pago_ate_data) 
               : null;
-            if (pagoAte && pagoAte < now) {
+            const daysOverdue = pagoAte ? Math.floor((now.getTime() - pagoAte.getTime()) / (24 * 60 * 60 * 1000)) : 0;
+
+            // 1) BLOQUEADO por atraso >= 30 dias
+            // 2) FINANCEIRO EM ATRASO por atraso >= 20 dias
+            // 3) FINANCEIRO EM ATRASO explícito via status_internet = 'FA'
+            const blockedByFlag = /BLOQ|BLOQUE/.test(statusInternet) 
+              || (contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00');
+            if (blockedByFlag || daysOverdue >= 30) {
               hasFinancialIssue = true;
-              financialReason = 'inadimplente (pago_ate_data vencido)';
+              financialReason = blockedByFlag ? 'bloqueado (flag do contrato)' : 'bloqueado (>30 dias do vencimento)';
               break;
             }
-            
-            // 2. Verifica se status_internet = FA (financeiro em atraso explícito)
-            if (statusInternet === 'FA') {
+
+            if (statusInternet === 'FA' || daysOverdue >= 20) {
               hasFinancialIssue = true;
-              financialReason = 'status_internet = FA';
-              break;
-            }
-            
-            // 3. Verifica redução de velocidade (R = punição por atraso)
-            const statusVelocidade = String(contract.status_velocidade || '').toUpperCase();
-            if (statusVelocidade === 'R') {
-              hasFinancialIssue = true;
-              financialReason = 'velocidade reduzida (status_velocidade = R)';
-              break;
-            }
-            
-            // 4. Verifica última marcação de atraso financeiro recente (últimos 60 dias)
-            const atrasoDate = contract.dt_ult_finan_atraso && contract.dt_ult_finan_atraso !== '0000-00-00'
-              ? new Date(contract.dt_ult_finan_atraso)
-              : null;
-            const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-            if (atrasoDate && atrasoDate > sixtyDaysAgo) {
-              hasFinancialIssue = true;
-              financialReason = 'registro de atraso financeiro recente';
+              financialReason = statusInternet === 'FA' 
+                ? 'financeiro em atraso (status_internet = FA)'
+                : 'financeiro em atraso (>20 dias do vencimento)';
               break;
             }
           }
