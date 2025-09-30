@@ -60,17 +60,27 @@ export function TestSalesJourney() {
         paymentDay: testData.paymentDay,
       };
 
-      const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
-        "sales-agent",
-        {
-          body: {
-            messages: [{ role: "user", content: JSON.stringify(orderPayload) }],
-            directOrder: true,
-          },
-        }
-      );
+      const SUPABASE_URL = "https://mxdupkbpxjcfxdgrwknp.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I";
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-      if (agentError) throw agentError;
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-agent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: JSON.stringify(orderPayload) }],
+          directOrder: true,
+        }),
+      });
+      const agentResponse = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(JSON.stringify({ status: resp.status, body: agentResponse }));
+      }
 
       // 3. Buscar o appointment criado
       const { data: appointment, error: appointmentError } = await supabase
@@ -96,13 +106,18 @@ export function TestSalesJourney() {
       });
     } catch (error: any) {
       console.error("Erro no teste:", error);
+      let parsed: any = null;
+      try { parsed = JSON.parse(error.message); } catch {}
       setResults({
         success: false,
         error: error.message,
+        errorDetails: parsed,
       });
       toast({
         title: "❌ Erro no teste",
-        description: error.message,
+        description: parsed?.body?.error
+          ? `${parsed.body.error} (${parsed.body.error_code || parsed.status})`
+          : error.message,
         variant: "destructive",
       });
     } finally {
@@ -236,6 +251,11 @@ export function TestSalesJourney() {
             <div className="p-4 bg-red-50 border border-red-200 rounded">
               <p className="text-sm font-semibold text-red-800">Erro:</p>
               <p className="text-sm text-red-700 mt-2">{results.error}</p>
+              {results.errorDetails && (
+                <pre className="mt-3 text-xs bg-muted p-3 rounded overflow-auto max-h-60">
+                  {JSON.stringify(results.errorDetails, null, 2)}
+                </pre>
+              )}
             </div>
           )}
         </Card>

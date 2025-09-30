@@ -33,7 +33,7 @@ serve(async (req) => {
       directOrder = true;
     }
     if (!messages?.length || !messages[0]?.content) {
-      return new Response(JSON.stringify({ error: 'Mensagem vazia' }), {
+      return new Response(JSON.stringify({ error: 'Mensagem vazia', error_code: 'empty_message', correlation_id: correlationId }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -42,6 +42,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const correlationId = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    console.log('sales-agent: request start', { correlationId, method: req.method, directOrder, path: new URL(req.url).pathname });
     
     // Se for uma ordem direta do formulário
     if (directOrder) {
@@ -105,7 +107,9 @@ serve(async (req) => {
       if (missing.length) {
         return new Response(JSON.stringify({
           error: 'Campos obrigatórios ausentes',
+          error_code: 'missing_fields',
           missing,
+          correlation_id: correlationId,
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -132,7 +136,7 @@ serve(async (req) => {
         plan = data;
         planLookup = { by: 'name', value: orderData.planName };
       } else {
-        return new Response(JSON.stringify({ error: 'Plano não informado' }), {
+        return new Response(JSON.stringify({ error: 'Plano não informado', error_code: 'plan_missing', correlation_id: correlationId }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -141,7 +145,9 @@ serve(async (req) => {
       if (!plan) {
         return new Response(JSON.stringify({
           error: 'Plano não encontrado',
+          error_code: 'plan_not_found',
           lookup: planLookup,
+          correlation_id: correlationId,
         }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -169,20 +175,31 @@ serve(async (req) => {
         });
 
         if (customerError) {
-          console.error('Erro ao criar cliente no IXC:', customerError);
+          console.error('Erro ao criar cliente no IXC:', { correlationId, customerError });
           return new Response(
-            JSON.stringify({ error: 'IXC: falha ao criar cliente', details: customerError.message || 'Erro desconhecido' }),
+            JSON.stringify({ error: 'IXC: falha ao criar cliente', error_code: 'ixc_invoke_failed', details: customerError.message || 'Erro desconhecido', correlation_id: correlationId }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
           );
         }
 
         const ixcResp: any = (customerResult && (customerResult.data ?? customerResult.response ?? customerResult)) as any;
         if (ixcResp?.type === 'error' || ixcResp?.error) {
-          const msg = ixcResp?.message || ixcResp?.error || 'Erro ao criar cliente no IXC';
-          console.error('IXC retornou erro ao criar cliente:', ixcResp);
+          const msg: string = ixcResp?.message || ixcResp?.error || 'Erro ao criar cliente no IXC';
+          let status = 400;
+          let error_code = 'ixc_error';
+          let existing_customer_id: string | undefined;
+          try {
+            const idMatch = msg.match(/ID:\s*(\d+)/i);
+            if (/hotsite/i.test(msg) && /Cadastrado/i.test(msg)) {
+              status = 409;
+              error_code = 'ixc_duplicate_email';
+              existing_customer_id = idMatch?.[1];
+            }
+          } catch {}
+          console.error('IXC retornou erro ao criar cliente:', { correlationId, ixcResp });
           return new Response(
-            JSON.stringify({ error: 'IXC: falha ao criar cliente', details: msg }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+            JSON.stringify({ error: 'IXC: falha ao criar cliente', error_code, details: msg, existing_customer_id, correlation_id: correlationId }),
+            { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
           );
         }
 
@@ -195,9 +212,9 @@ serve(async (req) => {
         console.log('Cliente criado no IXC com ID:', customerId);
 
         if (!customerId) {
-          console.error('Resposta IXC sem ID do cliente:', ixcResp);
+          console.error('Resposta IXC sem ID do cliente:', { correlationId, ixcResp });
           return new Response(
-            JSON.stringify({ error: 'IXC não retornou ID do cliente', details: 'Verifique os dados enviados (CPF, endereço, etc.)' }),
+            JSON.stringify({ error: 'IXC não retornou ID do cliente', error_code: 'ixc_missing_customer_id', details: 'Verifique os dados enviados (CPF, endereço, etc.)', correlation_id: correlationId }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
           );
         }
@@ -294,6 +311,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: true,
+            correlation_id: correlationId,
             appointment_id: appointment?.id,
             ixc_customer_id: customerId,
             ixc_contract_id: contractId,
@@ -304,11 +322,13 @@ serve(async (req) => {
           },
         );
       } catch (ixcError) {
-        console.error('Erro na integração IXC:', ixcError);
+        console.error('Erro na integração IXC:', { correlationId, error: ixcError });
         return new Response(
           JSON.stringify({
             error: 'Erro ao processar no sistema IXC. Tente novamente ou entre em contato.',
+            error_code: 'ixc_unhandled_exception',
             details: ixcError instanceof Error ? ixcError.message : 'Erro desconhecido',
+            correlation_id: correlationId,
           }),
           {
             status: 500,
