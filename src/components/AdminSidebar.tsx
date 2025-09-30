@@ -35,6 +35,7 @@ import {
   BookOpen,
   Database,
   MessageSquare,
+  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -99,6 +100,12 @@ const siteManagementItems = [
 ];
 
 const systemItems = [
+  {
+    title: "Teste Jornada Cliente",
+    url: "/test-journey",
+    icon: FlaskConical,
+    external: true,
+  },
   {
     title: "Chatbot",
     url: "/admin/chatbot",
@@ -284,13 +291,23 @@ export function AdminSidebar() {
               {systemItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={getNavClasses(item.url)}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    {item.external ? (
+                      <a
+                        href={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </a>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
