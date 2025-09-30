@@ -12,5 +12,14 @@ verify_jwt = false
 [functions.sales-agent]
 verify_jwt = false
 
+[functions.routing-agent]
+verify_jwt = false
+
+[functions.support-tech-agent]
+verify_jwt = false
+
+[functions.support-financial-agent]
+verify_jwt = false
+
 [functions.ixc-list-contracts]
 verify_jwt = true

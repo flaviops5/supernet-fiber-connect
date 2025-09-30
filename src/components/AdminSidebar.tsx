@@ -112,6 +112,11 @@ const systemItems = [
     icon: Bot,
   },
   {
+    title: "Agentes IA",
+    url: "/admin/agents",
+    icon: Bot,
+  },
+  {
     title: "Documentos",
     url: "/admin/documents",
     icon: FolderOpen,
