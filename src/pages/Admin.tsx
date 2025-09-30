@@ -17,7 +17,6 @@ import { PromptGenerator } from "@/components/PromptGenerator";
 import { HeroSettingsForm, HeroSlideForm } from "@/components/HeroForm";
 import { FAQForm } from "@/components/FAQForm";
 import BlogManagementComponent from "@/components/BlogManagement";
-import ChatbotManagement from "@/components/ChatbotManagement";
 import DocumentManagement from "@/components/DocumentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
@@ -2034,7 +2033,6 @@ const Admin = () => {
                 <Route path="/hero" element={<HeroManagement />} />
                 <Route path="/faq" element={<FAQManagement />} />
                 <Route path="/blog" element={<BlogManagementComponent />} />
-                <Route path="/chatbot" element={<ChatbotManagement />} />
                 <Route path="/agents" element={<AgentManagement />} />
                 <Route path="/reviews" element={<ReviewsManagement />} />
                 <Route path="/documents" element={<DocumentManagement />} />

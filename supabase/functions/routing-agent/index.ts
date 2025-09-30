@@ -11,6 +11,13 @@ interface Message {
   content: string;
 }
 
+interface AgentConfig {
+  system_prompt: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,6 +31,21 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get routing agent configuration
+    const { data: config, error: configError } = await supabase
+      .from('agent_configurations')
+      .select('system_prompt, model, temperature, max_tokens')
+      .eq('agent_type', 'routing')
+      .eq('is_active', true)
+      .single();
+
+    if (configError || !config) {
+      console.error('Error loading routing config:', configError);
+      throw new Error('Routing agent configuration not found');
+    }
+
+    console.log('Using routing config:', config.model);
 
     // Get conversation history if conversationId provided
     let conversationHistory: Message[] = [];
@@ -49,33 +71,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const routingPrompt = `Você é um agente de roteamento inteligente. Analise a mensagem do usuário e determine qual agente especializado deve atendê-lo.
-
-AGENTES DISPONÍVEIS:
-1. **sales** - Agente de Vendas
-   - Consultas sobre planos de internet
-   - Preços e promoções
-   - Contratação de serviços
-   - Verificação de cobertura por CEP
-   - Agendamento de instalação
-
-2. **support_tech** - Suporte Técnico N1
-   - Problemas de conexão
-   - Reset de senhas e configurações
-   - Problemas com roteador
-   - Lentidão na internet
-   - Configurações básicas
-   - Dúvidas técnicas gerais
-
-3. **support_financial** - Suporte Financeiro N1
-   - Dúvidas sobre faturas e boletos
-   - Reenvio de 2ª via
-   - Status de pagamento
-   - Informações de contrato
-   - Alteração de vencimento
-   - Comprovantes de pagamento
-   - Atualização de dados cadastrais
-
+    const contextInfo = `
 CONTEXTO ADICIONAL:
 ${context ? `Departamento: ${context.department || 'não especificado'}` : ''}
 ${context?.customer_name ? `Cliente: ${context.customer_name}` : ''}
@@ -85,11 +81,7 @@ ${conversationHistory.length > 0 ? conversationHistory.map(m => `${m.role}: ${m.
 
 MENSAGEM ATUAL:
 "${message}"
-
-IMPORTANTE:
-- Se o cliente já está em atendimento com um agente, mantenha no mesmo agente a menos que peça explicitamente para mudar
-- Se a intenção não for clara, peça esclarecimento ao cliente
-- Responda APENAS com um JSON no formato: {"agent": "sales|support_tech|support_financial|clarify", "confidence": 0-100, "reason": "explicação breve"}`;
+`;
 
     const routingResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -98,12 +90,13 @@ IMPORTANTE:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: config.model,
         messages: [
-          { role: 'system', content: routingPrompt },
-          { role: 'user', content: message }
+          { role: 'system', content: config.system_prompt },
+          { role: 'user', content: contextInfo }
         ],
-        temperature: 0.3,
+        temperature: config.temperature,
+        max_tokens: config.max_tokens,
       }),
     });
 

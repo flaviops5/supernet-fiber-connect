@@ -11,7 +11,6 @@ import Blog from "./pages/Blog";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
-import TestJourney from "./pages/TestJourney";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -38,11 +37,6 @@ const App = () => {
             {/* Admin routes without header/footer */}
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/atendimento" element={<Atendimento />} />
-            <Route path="/test-journey" element={
-              <AuthGuard requiredRoles={['admin', 'editor']}>
-                <TestJourney />
-              </AuthGuard>
-            } />
             
             {/* Public routes with header/footer */}
             <Route path="/*" element={

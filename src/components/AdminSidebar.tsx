@@ -101,17 +101,6 @@ const siteManagementItems = [
 
 const systemItems = [
   {
-    title: "Teste Jornada Cliente",
-    url: "/test-journey",
-    icon: FlaskConical,
-    external: true,
-  },
-  {
-    title: "Chatbot",
-    url: "/admin/chatbot",
-    icon: Bot,
-  },
-  {
     title: "Agentes IA",
     url: "/admin/agents",
     icon: Bot,
@@ -296,23 +285,13 @@ export function AdminSidebar() {
               {systemItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    {item.external ? (
-                      <a
-                        href={item.url}
-                        className={getNavClasses(item.url)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!isCollapsed && <span>{item.title}</span>}
-                      </a>
-                    ) : (
-                      <NavLink
-                        to={item.url}
-                        className={getNavClasses(item.url)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!isCollapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    )}
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
