@@ -1014,7 +1014,72 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       }
     }
 
-    // 4) Se ainda não encontrou, buscar por nome e validar CPF
+    // 3) Se ainda não encontrou, buscar por telefone
+    if (!customerId && customerData.phone) {
+      console.log('📱 Tentando buscar por telefone:', customerData.phone);
+      const cleanPhone = customerData.phone.replace(/\D/g, '');
+      const phoneSearchForm = {
+        qtype: 'telefone_celular',
+        query: cleanPhone,
+        oper: 'L',
+        page: '1',
+        rp: '10',
+        sortname: 'id',
+        sortorder: 'desc',
+      };
+      try {
+        const { ok: phoneOk, data: phoneData } = await postIXC(`${baseUrl}/cliente`, auth, phoneSearchForm);
+        console.log('Resultado da busca por telefone:', JSON.stringify(phoneData, null, 2));
+        if (phoneOk && phoneData?.registros) {
+          const registros = Array.isArray(phoneData.registros) ? phoneData.registros : Object.values(phoneData.registros);
+          const matchingCustomer = (registros as any[]).find((r: any) => {
+            const rPhone = String(r.telefone_celular || '').replace(/\D/g, '');
+            const rCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
+            return rPhone === cleanPhone && rCpf === cleanCpf;
+          });
+          if (matchingCustomer) {
+            customerId = String(matchingCustomer.id);
+            console.log('✅ Cliente encontrado por telefone! ID:', customerId);
+          }
+        }
+      } catch (phoneError) {
+        console.error('Erro ao buscar por telefone:', phoneError);
+      }
+    }
+
+    // 4) Se ainda não encontrou, buscar por email
+    if (!customerId && customerData.email) {
+      console.log('📧 Tentando buscar por email:', customerData.email);
+      const emailSearchForm = {
+        qtype: 'email',
+        query: customerData.email,
+        oper: 'L',
+        page: '1',
+        rp: '10',
+        sortname: 'id',
+        sortorder: 'desc',
+      };
+      try {
+        const { ok: emailOk, data: emailData } = await postIXC(`${baseUrl}/cliente`, auth, emailSearchForm);
+        console.log('Resultado da busca por email:', JSON.stringify(emailData, null, 2));
+        if (emailOk && emailData?.registros) {
+          const registros = Array.isArray(emailData.registros) ? emailData.registros : Object.values(emailData.registros);
+          const matchingCustomer = (registros as any[]).find((r: any) => {
+            const rEmail = String(r.email || r.hotsite_email || '').toLowerCase().trim();
+            const rCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
+            return rEmail === customerData.email.toLowerCase().trim() && rCpf === cleanCpf;
+          });
+          if (matchingCustomer) {
+            customerId = String(matchingCustomer.id);
+            console.log('✅ Cliente encontrado por email! ID:', customerId);
+          }
+        }
+      } catch (emailError) {
+        console.error('Erro ao buscar por email:', emailError);
+      }
+    }
+
+    // 5) Se ainda não encontrou, buscar por nome e validar CPF
     if (!customerId) {
       console.log('🔍 Tentando buscar por nome:', customerData.name);
       const nameSearchForm = {
@@ -1042,7 +1107,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       }
     }
 
-    // 5) Fallback final: busca os últimos 50 clientes criados
+    // 6) Fallback final: busca os últimos 50 clientes criados
     if (!customerId) {
       console.log('🔎 Fallback: buscando últimos 50 clientes criados...');
       try {
