@@ -852,14 +852,15 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       form.data_nascimento = customerData.birthDate;
     }
 
-    // Campos obrigatórios do IXC com inferência e defaults seguros
-    const personType = customerData.personType || (cleanCpf.length === 11 ? 'F' : 'J');
-    const defaultCityId = customerData.cityId || '5564'; // Brasília (ajuste conforme seu IXC)
-
-    // Parse simples do endereço para extrair rua, número e bairro
+    // Campos obrigatórios do IXC conforme especificação
+    // ABA CLIENTE
+    form.ativo = 'S'; // Ativo = SIM
+    form.contribuinte_icms = 'N'; // Contribuinte ICMS = Não
+    form.tipo_pessoa = 'F'; // Tipo de Assinante = Pessoa Física
+    form.tipo_cliente = 'Cliente Fibra'; // Tipo de Cliente = Cliente Fibra
+    
+    // ABA Endereço
     const rawAddress: string = customerData.address || '';
-    const numberMatch = rawAddress.match(/\b\d+\b/);
-    const parsedNumber = customerData.number || (numberMatch ? numberMatch[0] : 'SN');
     const bairroMatch = rawAddress.match(/Bairro\s+([^-,]+)/i);
     const parsedBairro = customerData.neighborhood || (bairroMatch ? bairroMatch[1].trim() : 'Centro');
     const parsedStreet = customerData.street || (rawAddress.split(',')[0] || '').trim();
@@ -867,13 +868,11 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     if (parsedStreet) {
       form.endereco = parsedStreet;
     }
-    form.numero = String(parsedNumber);
+    form.numero = '0'; // Número = sempre 0
     form.bairro = parsedBairro;
-    form.cidade = String(defaultCityId);
-    form.tipo_pessoa = personType; // requerido pelo IXC
-    form.iss_classificacao_padrao = customerData.issClass || '99';
-    form.contribuinte_icms = customerData.icmsContributor || 'N';
-    form.tipo_localidade = customerData.localityType || 'U';
+    form.cidade = '5564'; // Cidade = sempre código 5564
+    form.tipo_localidade = 'U'; // Tipo de localidade = Zona Urbana
+    form.iss_classificacao_padrao = '99';
 
     console.log('Enviando dados para criar cliente:', form);
     
