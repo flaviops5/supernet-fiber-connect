@@ -170,14 +170,36 @@ serve(async (req) => {
 
         if (customerError) {
           console.error('Erro ao criar cliente no IXC:', customerError);
-          throw new Error('Erro ao criar cliente no IXC');
+          return new Response(
+            JSON.stringify({ error: 'IXC: falha ao criar cliente', details: customerError.message || 'Erro desconhecido' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          );
         }
 
-        const customerId = customerResult?.data?.response?.id || customerResult?.data?.id || customerResult?.data?.registro?.id;
+        const ixcResp: any = (customerResult && (customerResult.data ?? customerResult.response ?? customerResult)) as any;
+        if (ixcResp?.type === 'error' || ixcResp?.error) {
+          const msg = ixcResp?.message || ixcResp?.error || 'Erro ao criar cliente no IXC';
+          console.error('IXC retornou erro ao criar cliente:', ixcResp);
+          return new Response(
+            JSON.stringify({ error: 'IXC: falha ao criar cliente', details: msg }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          );
+        }
+
+        const customerId =
+          customerResult?.data?.response?.id ||
+          customerResult?.data?.id ||
+          customerResult?.data?.registro?.id ||
+          ixcResp?.id ||
+          ixcResp?.registro?.id;
         console.log('Cliente criado no IXC com ID:', customerId);
 
         if (!customerId) {
-          throw new Error('ID do cliente não retornado pelo IXC');
+          console.error('Resposta IXC sem ID do cliente:', ixcResp);
+          return new Response(
+            JSON.stringify({ error: 'IXC não retornou ID do cliente', details: 'Verifique os dados enviados (CPF, endereço, etc.)' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          );
         }
 
         // 2. Criar contrato no IXC (vincula o plano ao cliente)
