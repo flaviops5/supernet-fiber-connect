@@ -425,24 +425,13 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       
       // Buscar DIRETAMENTE no radusuarios usando o id_cliente
       try {
+        // Busca primeiro por online = 'S' ou 'SS'
         const formOnline: Record<string, string> = {
-          qtype: 'radusuarios.id',
-          query: '1',
-          oper: '>=',
+          qtype: 'radusuarios.id_cliente',
+          query: String(customerId),
+          oper: '=',
           page: '1',
           rp: '100',
-          grid_param: JSON.stringify([
-            {
-              TB: 'radusuarios.id_cliente',
-              OP: '=',
-              P: String(customerId)
-            },
-            {
-              TB: 'radusuarios.online',
-              OP: '=',
-              P: 'S'
-            }
-          ])
         };
         
         const { ok, data, status: httpStatus } = await postIXC(`${baseUrl}/radusuarios`, auth, formOnline);
@@ -450,18 +439,22 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
         
         if (ok && data?.registros) {
           const users = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-          console.log(`✓ /radusuarios retornou ${users.length} registros online para id_cliente ${customerId}`);
+          console.log(`✓ /radusuarios retornou ${users.length} registros para id_cliente ${customerId}`);
           
-          if (users.length > 0) {
+          // Verifica se algum registro tem online = 'S' ou 'SS'
+          const onlineUser = users.find((u: any) => u.online === 'S' || u.online === 'SS');
+          
+          if (onlineUser) {
             // Encontrou usuário online!
-            const onlineUser = users[0];
             console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2));
             
             onlineStatus = true;
             lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
             pppoeLogin = onlineUser.login || onlineUser.usuario || onlineUser.username || null;
             
-            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Login PPPoE: ${pppoeLogin}, Última conexão: ${lastConnection}`);
+            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Login PPPoE: ${pppoeLogin}, Online: ${onlineUser.online}`);
+          } else {
+            console.log('Cliente não está online (nenhum registro com online=S ou online=SS)');
           }
         }
       } catch (e) {
