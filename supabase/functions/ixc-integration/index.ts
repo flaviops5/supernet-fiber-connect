@@ -830,10 +830,12 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
   try {
     console.log('Criando novo cliente no IXC:', customerData);
     
+    const cleanCpf = customerData.cpf.replace(/\D/g, '');
+    
     const form: Record<string, string> = {
       razao: customerData.name,
       nome_fantasia: customerData.name,
-      cnpj_cpf: customerData.cpf.replace(/\D/g, ''),
+      cnpj_cpf: cleanCpf,
       email: customerData.email,
       telefone_celular: customerData.phone.replace(/\D/g, ''),
       endereco: customerData.address || '',
@@ -849,6 +851,8 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     if (customerData.birthDate) {
       form.data_nascimento = customerData.birthDate;
     }
+    
+    console.log('Enviando dados para criar cliente:', form);
     
     const response = await fetch(`${baseUrl}/cliente`, {
       method: 'POST',
@@ -869,45 +873,54 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const text = await response.text();
     console.log('Resposta bruta do IXC (createCustomer):', text);
     
-    const data = JSON.parse(text);
-    console.log('Resposta parseada do IXC:', JSON.stringify(data, null, 2));
+    // Aguarda um momento para o IXC processar
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Tenta extrair o ID de diferentes estruturas possíveis
-    let customerId = null;
+    // Agora busca o cliente recém-criado pelo CPF para obter o ID
+    console.log('Buscando cliente recém-criado pelo CPF:', cleanCpf);
     
-    // Estrutura 1: { id: "123" }
-    if (data.id) {
-      customerId = data.id;
+    try {
+      const customers = await searchCustomers(baseUrl, auth, cleanCpf);
+      
+      if (customers && customers.length > 0) {
+        const customer = customers[0];
+        console.log('Cliente encontrado após criação:', customer);
+        return { 
+          success: true,
+          id: customer.id,
+          customer: customer
+        };
+      }
+      
+      // Se não encontrou pela busca, tenta busca direta
+      console.log('Tentando busca direta no grid do IXC...');
+      const formSearch: Record<string, string> = {
+        qtype: 'cliente.cnpj_cpf',
+        query: cleanCpf,
+        oper: '=',
+        page: '1',
+        rp: '1',
+      };
+      
+      const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, formSearch);
+      if (ok && data?.registros) {
+        const registros = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+        if (registros.length > 0) {
+          const customer = registros[0];
+          console.log('Cliente encontrado por busca direta:', customer);
+          return {
+            success: true,
+            id: customer.id,
+            customer: customer
+          };
+        }
+      }
+      
+      throw new Error('Cliente criado mas não foi possível recuperar o ID. Verifique manualmente no IXC.');
+    } catch (searchError) {
+      console.error('Erro ao buscar cliente após criação:', searchError);
+      throw new Error('Cliente criado mas não foi possível recuperar o ID. Verifique manualmente no IXC.');
     }
-    // Estrutura 2: { registro: { id: "123" } }
-    else if (data.registro?.id) {
-      customerId = data.registro.id;
-    }
-    // Estrutura 3: { data: { id: "123" } }
-    else if (data.data?.id) {
-      customerId = data.data.id;
-    }
-    // Estrutura 4: { registros: [{ id: "123" }] }
-    else if (data.registros && Array.isArray(data.registros) && data.registros[0]?.id) {
-      customerId = data.registros[0].id;
-    }
-    // Estrutura 5: { type: "success", id: "123" }
-    else if (data.type === 'success' && data.id) {
-      customerId = data.id;
-    }
-    // Estrutura 6: resposta direta com id_cliente
-    else if (data.id_cliente) {
-      customerId = data.id_cliente;
-    }
-    
-    console.log('ID do cliente extraído:', customerId);
-    
-    if (!customerId) {
-      console.error('Estrutura de resposta não reconhecida:', data);
-      throw new Error('ID do cliente não retornado pelo IXC. Estrutura de resposta desconhecida.');
-    }
-    
-    return { ...data, id: customerId };
     
   } catch (error) {
     console.error('Erro ao criar cliente no IXC:', error);
