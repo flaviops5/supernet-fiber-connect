@@ -866,9 +866,11 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.tipo_pessoa = 'F'; // Pessoa Física
     form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
     
-    // ABA Endereço - enviar apenas CEP (já definido) e número fixo
-    // Não enviar endereco, bairro ou cidade; o IXC preencherá após validação do CEP
+    // ABA Endereço - campos obrigatórios
+    form.endereco = 'Rua Principal'; // Endereço genérico
     form.numero = '1';
+    form.bairro = 'Centro'; // Bairro genérico
+    form.cidade = '5564'; // Código da cidade (sempre 5564)
     form.tipo_localidade = 'U'; // Zona Urbana
     form.iss_classificacao_padrao = '99';
 
