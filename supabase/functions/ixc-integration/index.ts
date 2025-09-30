@@ -861,9 +861,11 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       // Se ViaCEP falhar, seguimos sem UF (IXC pode aceitar dependendo da config)
     }
     
+    // Formatar CEP com máscara 00000-000
+    const formattedCep = cleanCep.replace(/(\d{5})(\d{3})/, '$1-$2');
+    
     // Formatar CPF com máscara XXX.XXX.XXX-XX
     const formattedCpf = cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    
     // Formatar CNPJ se for pessoa jurídica (XX.XXX.XXX/XXXX-XX)
     const formattedCnpj = customerData.personType === 'J' && cleanCpf.length === 14
       ? cleanCpf.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
@@ -884,7 +886,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     console.log('📋 Dados formatados:', {
       cpf_cnpj: documentField,
-      cep: cleanCep,
+      cep: formattedCep,
       data_nascimento: formattedBirthDate,
       tipo_pessoa: customerData.personType,
       ufFromCep,
@@ -899,7 +901,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       cnpj_cpf: documentField, // CPF ou CNPJ com máscara
       contribuinte_icms: 'I',
       tipo_assinante: '1',
-      cep: cleanCep,
+      cep: formattedCep,
       endereco: customerData.address || 'Rua Teste',
       numero: customerData.number || '1200',
       bairro: customerData.neighborhood || 'Centro',
@@ -925,7 +927,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     uf: ufFromCep || '',
     
     // COBRANÇA
-    cep_cob: cleanCep,
+    cep_cob: formattedCep,
     endereco_cob: customerData.address || 'Rua Teste',
       numero_cob: customerData.number || '1200',
       bairro_cob: customerData.neighborhood || 'Centro',
