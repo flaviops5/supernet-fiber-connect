@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Bot, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { Label } from './ui/label';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Bot, Send, MessageCircle, Loader2, Calendar, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import confidentWoman from '@/assets/family-internet-v3.jpg';
 
@@ -20,6 +22,21 @@ export const SalesAgentChat = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [formData, setFormData] = useState({
+    name: '',
+    cpf: '',
+    email: '',
+    phone: '',
+    birthDate: '',
+    address: '',
+    cep: '',
+    paymentDay: '10'
+  });
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState<'manha' | 'tarde'>('manha');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -29,6 +46,97 @@ export const SalesAgentChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const getAvailableDates = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 1; i <= 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayOfWeek = date.getDay();
+      
+      // Domingo (0) não disponível
+      if (dayOfWeek === 0) continue;
+      
+      dates.push({
+        date: date.toISOString().split('T')[0],
+        dayName: date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+        isSaturday: dayOfWeek === 6
+      });
+    }
+    
+    return dates;
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validações básicas
+    if (!formData.name || !formData.cpf || !formData.email || !formData.phone) {
+      toast.error('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+    
+    setShowForm(false);
+    setShowScheduler(true);
+    
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: '✅ Dados recebidos! Agora vamos agendar a instalação. Escolha uma data e período disponível:'
+    }]);
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!selectedDate || !selectedPeriod) {
+      toast.error('Por favor, selecione uma data e período');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('sales-agent', {
+        body: {
+          messages: [{
+            role: 'user',
+            content: JSON.stringify({
+              action: 'create_order',
+              ...formData,
+              plan_id: selectedPlanId,
+              installation_date: selectedDate,
+              installation_period: selectedPeriod
+            })
+          }],
+          directOrder: true
+        }
+      });
+
+      if (error) throw error;
+
+      setShowScheduler(false);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `🎉 Perfeito! Sua instalação foi agendada para ${new Date(selectedDate).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })} no período da ${selectedPeriod}.\n\nEm breve nossa equipe entrará em contato para confirmar. Obrigado por escolher a SUPERNET FIBRA! 🚀`
+      }]);
+      
+      toast.success('✅ Agendamento realizado com sucesso!');
+      
+      // Reset
+      setFormData({
+        name: '', cpf: '', email: '', phone: '', birthDate: '', address: '', cep: '', paymentDay: '10'
+      });
+      setSelectedDate('');
+      setSelectedPeriod('manha');
+      setSelectedPlanId('');
+      
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+      toast.error('Erro ao processar agendamento. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -61,21 +169,11 @@ export const SalesAgentChat = () => {
           role: 'assistant', 
           content: data.message 
         }]);
-      }
-
-      // Se houve criação de OS, mostra confirmação
-      if (data.tool_results) {
-        const hasOrderCreation = data.tool_results.some((r: any) => {
-          try {
-            const content = JSON.parse(r.content);
-            return content.success && r.name === 'create_installation_order';
-          } catch {
-            return false;
-          }
-        });
-
-        if (hasOrderCreation) {
-          toast.success('✅ Ordem de instalação criada com sucesso!');
+        
+        // Detecta se o usuário escolheu um plano
+        const lastMessage = data.message.toLowerCase();
+        if ((lastMessage.includes('escolheu') || lastMessage.includes('ótima escolha')) && lastMessage.includes('plano')) {
+          setShowForm(true);
         }
       }
 
@@ -191,26 +289,196 @@ export const SalesAgentChat = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
-                <div className="p-4 border-t bg-white">
-                  <div className="flex gap-2">
-                    <Input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Digite sua mensagem..."
-                      disabled={isLoading}
-                      className="flex-1 border-gray-300 focus:border-primary"
-                    />
-                    <Button
-                      onClick={sendMessage}
-                      disabled={isLoading || !input.trim()}
-                      className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
+                {/* Form */}
+                {showForm && (
+                  <div className="border-t bg-white p-6 max-h-[400px] overflow-y-auto">
+                    <form onSubmit={handleFormSubmit} className="space-y-4">
+                      <h3 className="font-semibold text-lg mb-4">📋 Dados para Contratação</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="name">Nome Completo *</Label>
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="cpf">CPF *</Label>
+                          <Input
+                            id="cpf"
+                            value={formData.cpf}
+                            onChange={(e) => setFormData(prev => ({ ...prev, cpf: e.target.value }))}
+                            placeholder="000.000.000-00"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="email">Email *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="phone">WhatsApp *</Label>
+                          <Input
+                            id="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="(11) 99999-9999"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="birthDate">Data de Nascimento</Label>
+                          <Input
+                            id="birthDate"
+                            type="date"
+                            value={formData.birthDate}
+                            onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="paymentDay">Dia de Vencimento</Label>
+                          <Input
+                            id="paymentDay"
+                            type="number"
+                            min="1"
+                            max="28"
+                            value={formData.paymentDay}
+                            onChange={(e) => setFormData(prev => ({ ...prev, paymentDay: e.target.value }))}
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <Label htmlFor="address">Endereço Completo</Label>
+                          <Input
+                            id="address"
+                            value={formData.address}
+                            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                            placeholder="Rua, número, complemento, bairro"
+                          />
+                        </div>
+                      </div>
+                      
+                      <Button type="submit" className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+                        Continuar para Agendamento →
+                      </Button>
+                    </form>
                   </div>
-                </div>
+                )}
+
+                {/* Scheduler */}
+                {showScheduler && (
+                  <div className="border-t bg-white p-6 max-h-[400px] overflow-y-auto">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <Calendar className="w-5 h-5" />
+                        Agende sua Instalação
+                      </h3>
+                      
+                      <div>
+                        <Label>Escolha o dia</Label>
+                        <RadioGroup value={selectedDate} onValueChange={setSelectedDate}>
+                          <div className="grid grid-cols-1 gap-2 mt-2 max-h-[200px] overflow-y-auto">
+                            {getAvailableDates().map((dateInfo) => (
+                              <div key={dateInfo.date} className="flex items-center space-x-2">
+                                <RadioGroupItem value={dateInfo.date} id={dateInfo.date} />
+                                <Label htmlFor={dateInfo.date} className="flex-1 cursor-pointer">
+                                  {new Date(dateInfo.date + 'T00:00:00').toLocaleDateString('pt-BR', { 
+                                    weekday: 'long', 
+                                    day: '2-digit', 
+                                    month: 'long' 
+                                  })}
+                                  {dateInfo.isSaturday && (
+                                    <span className="ml-2 text-xs text-muted-foreground">(somente manhã até 11h)</span>
+                                  )}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      
+                      {selectedDate && (
+                        <div>
+                          <Label className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Período
+                          </Label>
+                          <RadioGroup value={selectedPeriod} onValueChange={(val) => setSelectedPeriod(val as 'manha' | 'tarde')}>
+                            <div className="flex gap-4 mt-2">
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="manha" id="manha" />
+                                <Label htmlFor="manha" className="cursor-pointer">
+                                  Manhã (8h - 12h)
+                                </Label>
+                              </div>
+                              
+                              {!getAvailableDates().find(d => d.date === selectedDate)?.isSaturday && (
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="tarde" id="tarde" />
+                                  <Label htmlFor="tarde" className="cursor-pointer">
+                                    Tarde (13h - 18h)
+                                  </Label>
+                                </div>
+                              )}
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+                      
+                      <Button 
+                        onClick={handleScheduleSubmit} 
+                        disabled={!selectedDate || !selectedPeriod || isLoading}
+                        className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Agendando...
+                          </>
+                        ) : (
+                          'Confirmar Agendamento'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Input */}
+                {!showForm && !showScheduler && (
+                  <div className="p-4 border-t bg-white">
+                    <div className="flex gap-2">
+                      <Input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Digite sua mensagem..."
+                        disabled={isLoading}
+                        className="flex-1 border-gray-300 focus:border-primary"
+                      />
+                      <Button
+                        onClick={sendMessage}
+                        disabled={isLoading || !input.trim()}
+                        className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

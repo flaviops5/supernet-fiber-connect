@@ -18,16 +18,69 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userContext } = await req.json();
+    const { messages, userContext, directOrder } = await req.json();
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Se for uma ordem direta do formulário
+    if (directOrder) {
+      const orderData = JSON.parse(messages[0].content);
+      const { data: plan } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('id', orderData.plan_id)
+        .single();
+
+      if (!plan) {
+        return new Response(JSON.stringify({ error: 'Plano não encontrado' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: appointment, error } = await supabase
+        .from('installation_appointments')
+        .insert({
+          customer_name: orderData.name,
+          customer_cpf: orderData.cpf,
+          customer_email: orderData.email,
+          customer_phone: orderData.phone,
+          customer_birth_date: orderData.birthDate || new Date().toISOString().split('T')[0],
+          customer_address: orderData.address,
+          customer_cep: orderData.cep,
+          plan_name: plan.name,
+          plan_speed: plan.speed,
+          plan_price: plan.price,
+          payment_day: parseInt(orderData.paymentDay) || 10,
+          appointment_date: orderData.installation_date,
+          appointment_period: orderData.installation_period,
+          status: 'pendente'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar agendamento:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        appointment_id: appointment.id 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Busca planos ativos
     const { data: plans } = await supabase
