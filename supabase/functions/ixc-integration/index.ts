@@ -840,6 +840,18 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     console.log('CEP validado:', cleanCep);
     
+    // Tenta validar CEP no IXC para preencher endereço automaticamente
+    let cepInfo: any = null;
+    try {
+      const { ok, data } = await postIXC(`${baseUrl}/cep`, auth, { cep: cleanCep });
+      if (ok) {
+        cepInfo = data?.data || data?.registro || (Array.isArray(data?.registros) ? data.registros[0] : null);
+        console.log('Validação CEP IXC:', cepInfo);
+      }
+    } catch (e) {
+      console.warn('Validação CEP via IXC falhou:', (e as Error)?.message);
+    }
+    
     const form: Record<string, string> = {
       razao: customerData.name,
       nome_fantasia: customerData.name,
@@ -867,11 +879,11 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
     
     // ABA Endereço - campos obrigatórios
-    form.endereco = 'Rua Principal'; // Endereço genérico
+    form.endereco = (cepInfo?.logradouro || cepInfo?.endereco || 'Rua Principal');
     form.numero = '1';
-    form.bairro = 'Centro'; // Bairro genérico
-    form.cidade = '5564'; // Código da cidade (sempre 5564)
-    form.uf = '1'; // UF (Distrito Federal)
+    form.bairro = (cepInfo?.bairro || 'Centro');
+    form.cidade = String(cepInfo?.cidade || cepInfo?.cidade_id || '5564');
+    form.uf = String(cepInfo?.uf || '1');
     form.tipo_localidade = 'U'; // Zona Urbana
     form.iss_classificacao_padrao = '99';
 
