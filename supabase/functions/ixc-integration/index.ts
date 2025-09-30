@@ -842,7 +842,25 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
     const cleanCep = customerData.cep.replace(/\D/g, '');
     
-    console.log('CEP recebido:', cleanCep, 'CPF:', cleanCpf);
+    // Validar CEP - não pode ser vazio ou apenas zeros
+    if (!cleanCep || cleanCep === '00000000' || !/^\d{8}$/.test(cleanCep)) {
+      throw new Error(`CEP inválido: ${customerData.cep}. O CEP deve conter exatamente 8 dígitos numéricos.`);
+    }
+    
+    // Converter data de nascimento para formato DD/MM/YYYY se vier no formato ISO (YYYY-MM-DD)
+    let formattedBirthDate = '';
+    if (customerData.birthDate) {
+      const dateMatch = customerData.birthDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateMatch) {
+        // Formato ISO: YYYY-MM-DD -> DD/MM/YYYY
+        formattedBirthDate = `${dateMatch[3]}/${dateMatch[2]}/${dateMatch[1]}`;
+      } else {
+        // Assume que já está no formato correto
+        formattedBirthDate = customerData.birthDate;
+      }
+    }
+    
+    console.log('CEP limpo:', cleanCep, 'CPF limpo:', cleanCpf, 'Data nascimento formatada:', formattedBirthDate);
     
     // Campos obrigatórios conforme documentação oficial do IXC
     // Ref: https://documenter.getpostman.com/view/40255984/2sAYBbe9Ma
@@ -869,7 +887,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       senha: '1234',
       telefone_celular: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
       whatsapp: customerData.phone ? customerData.phone.replace(/\D/g, '') : '',
-      data_nascimento: customerData.birthDate || '',
+      data_nascimento: formattedBirthDate,
       contato: customerData.name,
       
       // CONFIGURAÇÕES
