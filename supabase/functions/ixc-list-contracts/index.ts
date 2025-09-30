@@ -54,6 +54,7 @@ serve(async (req) => {
 
     // Try common plan endpoints (varies by IXC install)
     const candidateEndpoints = [
+      'vd_contratos',         // IXC Soft common endpoint for sale contracts/plans
       'plano',
       'internet_plano',
       'planos',
