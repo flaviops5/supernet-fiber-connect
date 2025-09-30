@@ -840,11 +840,11 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       telefone_celular: customerData.phone.replace(/\D/g, ''),
       endereco: customerData.address || '',
       cep: customerData.cep.replace(/\D/g, ''),
-      tipo_cliente: 'F', // Pessoa Física
       ativo: 'S',
-      acesso_automatico_central: 'S',
+      acesso_automatico_central: '2',
       participa_cobranca: 'S',
-      tipo_assinante: 'PF',
+      tipo_assinante: '3', // Pessoa Física (código)
+      id_tipo_cliente: '2', // Cliente Fibra
     };
     
     // Adiciona data de nascimento se fornecida
@@ -856,8 +856,9 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     // ABA CLIENTE
     form.ativo = 'S'; // Ativo = SIM
     form.contribuinte_icms = 'N'; // Contribuinte ICMS = Não
-    form.tipo_pessoa = 'F'; // Tipo de Assinante = Pessoa Física
-    form.tipo_cliente = 'Cliente Fibra'; // Tipo de Cliente = Cliente Fibra
+    form.tipo_pessoa = 'F'; // Pessoa Física
+    form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
+    
     
     // ABA Endereço
     const rawAddress: string = customerData.address || '';
