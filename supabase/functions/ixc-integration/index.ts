@@ -895,13 +895,30 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     const text = await response.text();
     console.log('Resposta bruta do IXC (createCustomer):', text);
-    
-    // Aguarda um momento para o IXC processar
+
+    // Tenta interpretar a resposta do IXC
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {}
+
+    // Se IXC retornou erro lógico (HTTP 200 com body de erro), propaga a mensagem correta
+    if (parsed && parsed.type === 'error') {
+      throw new Error(parsed.message || 'Erro ao criar cliente no IXC');
+    }
+
+    // Se o IXC devolver o ID diretamente, usa-o
+    const createdId = parsed?.id || parsed?.data?.id || parsed?.registro?.id;
+    if (createdId) {
+      return { id: String(createdId) };
+    }
+
+    // Aguarda um momento para o IXC processar antes de buscar pelo CPF
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Agora busca o cliente recém-criado pelo CPF para obter o ID
     console.log('Buscando cliente recém-criado pelo CPF:', cleanCpf);
-    
+
     try {
       const customers = await searchCustomers(baseUrl, auth, cleanCpf);
       
