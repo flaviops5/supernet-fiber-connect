@@ -52,81 +52,71 @@ serve(async (req) => {
 
     console.log('Fetching commercial plans from IXC...');
 
-    // Try common plan endpoints (varies by IXC install)
-    const candidateEndpoints = [
-      'vd_contratos',         // IXC Soft common endpoint for sale contracts/plans
-      'plano',
-      'internet_plano',
-      'planos',
-      'servico_plano',
-      'servico',
-      'servicos',
-      'radplanos',
-      'radperfil',
-      'cliente_tipo',
-      'cliente_tipo_internet',
-      'venda_planos',
-      'planos_venda',
-      'produto',
-      'produtos',
-    ];
+    // Prefer explicit IXC endpoint for planos de venda
+    const endpoint = 'vd_contratos';
+    let usedEndpoint = endpoint;
     let found: any[] = [];
-    let usedEndpoint = '';
 
-    // Keywords from real day-to-day plans to identify the correct endpoint
-    const knownPlanKeywords = ['escolar', 'octo'];
+    // Try multiple GRID filters to get only active sale plans
+    const baseForm: Record<string, string> = { page: '1', rp: '1000' };
+    const gridAttempts: string[] = [
+      JSON.stringify([{ TB: 'vd_contratos.situacao', OP: '=', P: 'A' }]),
+      JSON.stringify([{ TB: 'vd_contratos.status', OP: '=', P: 'A' }]),
+      JSON.stringify([{ TB: 'vd_contratos.ativo', OP: '=', P: 'S' }]),
+      JSON.stringify([{ TB: 'vd_contratos.ativo_venda', OP: '=', P: 'S' }]),
+      JSON.stringify([{ TB: 'vd_contratos.tipo', OP: '=', P: 'PLANO' }]),
+      JSON.stringify([{ TB: 'vd_contratos.tipo_contrato', OP: '=', P: 'PLANO' }]),
+      JSON.stringify([
+        { TB: 'vd_contratos.situacao', OP: '=', P: 'A' },
+        { TB: 'vd_contratos.tipo', OP: '=', P: 'PLANO' }
+      ]),
+    ];
 
-    for (const ep of candidateEndpoints) {
+    for (const grid of gridAttempts) {
       try {
-        const data = await postIXC(ep, {
-          page: '1',
-          rp: '1000',
-        });
-        // Many IXC installs return { page, total, registros }
+        const data = await postIXC(endpoint, { ...baseForm, grid_param: grid });
         const registros = Array.isArray(data?.registros)
           ? data.registros
           : (data?.registros ? Object.values(data.registros) : []);
-        
-        let candidates: any[] = [];
         if (registros && registros.length > 0) {
-          candidates = registros;
-        } else if (Array.isArray(data?.data) && data.data.length) {
-          candidates = data.data;
+          console.log(`✓ vd_contratos with grid_param returned ${registros.length} records`);
+          found = registros as any[];
+          break;
         }
-
-        // Check if this endpoint contains known real plans
-        if (candidates.length > 0) {
-          const hasKnownPlans = candidates.some((r: any) => {
-            const name = String(r.descricao ?? r.nome ?? r.plano ?? r.titulo ?? '').toLowerCase();
-            return knownPlanKeywords.some(kw => name.includes(kw));
-          });
-
-          if (hasKnownPlans) {
-            console.log(`✓ Found real plans at /${ep} (matched: Escolar/Octo)`);
-            found = candidates;
-            usedEndpoint = ep;
-            break;
-          }
-        }
-
-        // Some return { type: 'error', message: 'Recurso ... não está disponível!' }
-        if (data?.type === 'error') {
-          console.warn(`[IXC ${ep}] ${data.message}`);
-          continue;
+        if (Array.isArray(data?.data) && data.data.length) {
+          console.log(`✓ vd_contratos (data) with grid_param returned ${data.data.length} records`);
+          found = data.data;
+          break;
         }
       } catch (e) {
-        console.warn(`[IXC ${ep}] attempt failed:`, (e as Error)?.message);
-        continue;
+        console.warn(`vd_contratos grid attempt failed:`, (e as Error)?.message);
+      }
+    }
+
+    // Fallback: no grid filter
+    if (!found.length) {
+      try {
+        const data = await postIXC(endpoint, baseForm);
+        const registros = Array.isArray(data?.registros)
+          ? data.registros
+          : (data?.registros ? Object.values(data.registros) : []);
+        if (registros && registros.length > 0) {
+          console.log(`✓ vd_contratos without grid_param returned ${registros.length} records`);
+          found = registros as any[];
+        } else if (Array.isArray(data?.data) && data.data.length) {
+          console.log(`✓ vd_contratos (data) without grid_param returned ${data.data.length} records`);
+          found = data.data;
+        }
+      } catch (e) {
+        console.warn(`vd_contratos fallback attempt failed:`, (e as Error)?.message);
       }
     }
 
     if (!found.length) {
-      console.error('No plan endpoint with known plans found.');
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Nenhum endpoint retornou os planos conhecidos (Escolar/Octo). Tentativas: ${candidateEndpoints.join(', ')}. Verifique com o suporte IXC.`,
-          tried: candidateEndpoints,
+          error: 'Nenhum plano de venda encontrado via /vd_contratos. Confirme no IXC quais filtros/colunas usar (situacao/status/ativo).',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
       );
