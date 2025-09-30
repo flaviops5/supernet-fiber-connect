@@ -52,8 +52,23 @@ serve(async (req) => {
 
     console.log('Fetching commercial plans from IXC...');
 
-    // Try common plan endpoints in order of probability
-    const candidateEndpoints = ['plano', 'internet_plano', 'planos'];
+    // Try common plan endpoints (varies by IXC install)
+    const candidateEndpoints = [
+      'plano',
+      'internet_plano',
+      'planos',
+      'servico_plano',
+      'servico',
+      'servicos',
+      'radplanos',
+      'radperfil',
+      'cliente_tipo',
+      'cliente_tipo_internet',
+      'venda_planos',
+      'planos_venda',
+      'produto',
+      'produtos',
+    ];
     let found: any[] = [];
     let rawResponse: any = null;
     let usedEndpoint = '';
@@ -63,8 +78,6 @@ serve(async (req) => {
         const data = await postIXC(ep, {
           page: '1',
           rp: '1000',
-          sortname: `${ep}.id`,
-          sortorder: 'asc',
         });
         rawResponse = data;
         // Many IXC installs return { page, total, registros }
@@ -98,7 +111,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Nenhum endpoint de planos do IXC retornou dados. Verifique se o recurso de planos está habilitado (ex.: /plano ou /internet_plano).',
+          error: `Nenhum endpoint de planos do IXC retornou dados. Tentativas: ${candidateEndpoints.join(', ')}. Verifique com o suporte IXC qual recurso está habilitado para listar planos/comercial.`,
+          tried: candidateEndpoints,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
       );
