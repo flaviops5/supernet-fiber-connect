@@ -880,18 +880,55 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
 
     console.log('Resposta do IXC:', data);
 
-    // Aguardar processamento
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Buscar o cliente recém-criado para obter o ID
-    const createdCustomer = await searchCustomers(baseUrl, auth, cleanCpf);
-    if (!createdCustomer || createdCustomer.length === 0) {
-      throw new Error('Cliente criado mas não encontrado na busca');
+    // Fazer múltiplas tentativas de busca com intervalos crescentes
+    let customerId: string | null = null;
+    const maxAttempts = 5;
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`Tentativa ${attempt}/${maxAttempts} de buscar cliente recém-criado...`);
+      
+      // Aguardar antes da busca (tempo aumenta a cada tentativa)
+      const waitTime = attempt * 1000; // 1s, 2s, 3s, 4s, 5s
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      try {
+        // Tentar buscar por CPF
+        const customersByCpf = await searchCustomers(baseUrl, auth, cleanCpf);
+        if (customersByCpf && customersByCpf.length > 0) {
+          customerId = String(customersByCpf[0].id);
+          console.log(`✅ Cliente encontrado na tentativa ${attempt}! ID:`, customerId);
+          break;
+        }
+        
+        // Se não encontrou por CPF, tentar por nome
+        const customersByName = await searchCustomers(baseUrl, auth, customerData.name);
+        if (customersByName && customersByName.length > 0) {
+          // Verificar se algum tem o CPF correto
+          const matchingCustomer = customersByName.find(c => 
+            c.cnpj_cpf?.replace(/\D/g, '') === cleanCpf
+          );
+          if (matchingCustomer) {
+            customerId = String(matchingCustomer.id);
+            console.log(`✅ Cliente encontrado por nome na tentativa ${attempt}! ID:`, customerId);
+            break;
+          }
+        }
+        
+        console.log(`❌ Cliente não encontrado na tentativa ${attempt}`);
+      } catch (searchError) {
+        console.error(`Erro na tentativa ${attempt}:`, searchError);
+      }
     }
 
-    const customerId = String(createdCustomer[0].id);
-    console.log('Cliente criado com sucesso! ID:', customerId);
-    
+    if (!customerId) {
+      console.warn('⚠️ Cliente criado com sucesso, mas não foi possível recuperar o ID após várias tentativas');
+      return { 
+        id: null,
+        warning: 'Cliente criado mas ID não recuperado. Verifique manualmente no IXC.'
+      };
+    }
+
+    console.log('✅ Cliente criado com sucesso! ID:', customerId);
     return { id: customerId };
 
   } catch (error) {
