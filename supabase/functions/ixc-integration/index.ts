@@ -1012,7 +1012,9 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
 
 async function createAtendimento(baseUrl: string, auth: string, customerId: string, atendimentoData: any): Promise<any> {
   try {
-    console.log('Criando atendimento no IXC:', { customerId, atendimentoData });
+    console.log('========== CRIAR ATENDIMENTO IXC - INÍCIO ==========');
+    console.log('📋 Customer ID:', customerId);
+    console.log('📋 Dados recebidos:', JSON.stringify(atendimentoData, null, 2));
     
     const form: Record<string, string> = {
       // CAMPOS OBRIGATÓRIOS SEGUNDO DOCUMENTAÇÃO IXC
@@ -1053,35 +1055,90 @@ AGENDAMENTO:
       status: 'A', // A = Aberto
     };
     
+    console.log('📝 Formulário montado (ANTES de enviar):');
+    console.log(JSON.stringify(form, null, 2));
+    console.log('📝 Campos do formulário que serão enviados:');
+    for (const [key, value] of Object.entries(form)) {
+      console.log(`  ${key}: ${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value}`);
+    }
+    
     // Adiciona data de agendamento se fornecida
     if (atendimentoData.installationDate) {
       form.data_agendamento = atendimentoData.installationDate;
+      console.log('📅 Data de agendamento adicionada:', form.data_agendamento);
     }
     
-    const response = await fetch(`${baseUrl}/su_oss_chamado`, {
+    const url = `${baseUrl}/su_oss_chamado`;
+    console.log('🌐 URL completa da requisição:', url);
+    console.log('🔐 Authorization header:', auth.substring(0, 30) + '...');
+    
+    const bodyParams = new URLSearchParams(form);
+    console.log('📤 Body da requisição (URLSearchParams):');
+    for (const [key, value] of bodyParams.entries()) {
+      console.log(`  ${key}=${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value}`);
+    }
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         'ixcsoft': 'inserir',
       },
-      body: new URLSearchParams(form),
+      body: bodyParams,
     });
+    
+    console.log('📥 Status HTTP recebido:', response.status, response.statusText);
+    console.log('📥 Headers da resposta:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const text = await response.text();
-      console.error(`Erro ao criar atendimento - HTTP ${response.status}:`, text);
+      console.error('❌ Erro HTTP ao criar atendimento');
+      console.error('Status:', response.status);
+      console.error('Status Text:', response.statusText);
+      console.error('Resposta completa:', text);
       throw new Error(`Erro ao criar atendimento: ${response.status} - ${text}`);
     }
     
     const text = await response.text();
-    console.log('Resposta bruta do IXC (createAtendimento):', text);
+    console.log('📥 Resposta bruta do IXC (texto completo):');
+    console.log(text);
+    console.log('📥 Tamanho da resposta:', text.length, 'caracteres');
     
-    const data = JSON.parse(text);
-    console.log('Resposta parseada do IXC:', JSON.stringify(data, null, 2));
+    let data;
+    try {
+      data = JSON.parse(text);
+      console.log('✅ JSON parseado com sucesso');
+    } catch (parseError) {
+      console.error('❌ ERRO ao fazer parse do JSON');
+      console.error('Erro:', parseError);
+      console.error('Primeiros 500 caracteres da resposta:', text.substring(0, 500));
+      throw new Error(`Resposta inválida do IXC: ${text.substring(0, 200)}`);
+    }
+    
+    console.log('📋 Resposta parseada do IXC (estrutura completa):');
+    console.log(JSON.stringify(data, null, 2));
+    
+    // Verifica se há erro na resposta
+    if (data.type === 'error') {
+      console.error('❌ IXC retornou erro:', data.message);
+      console.error('Detalhes completos:', JSON.stringify(data, null, 2));
+      throw new Error(`IXC: ${data.message}`);
+    }
+    
+    if (data.type === 'success') {
+      console.log('✅ IXC confirmou sucesso:', data.message);
+    }
     
     // Tenta extrair o ID de diferentes estruturas possíveis
     let atendimentoId = null;
+    
+    console.log('🔍 Tentando extrair ID do atendimento...');
+    console.log('  data.id:', data.id);
+    console.log('  data.registro?.id:', data.registro?.id);
+    console.log('  data.data?.id:', data.data?.id);
+    console.log('  data.registros[0]?.id:', data.registros?.[0]?.id);
+    console.log('  data.id_atendimento:', data.id_atendimento);
     
     if (data.id) {
       atendimentoId = data.id;
@@ -1097,16 +1154,24 @@ AGENDAMENTO:
       atendimentoId = data.id_atendimento;
     }
     
-    console.log('ID do atendimento extraído:', atendimentoId);
+    console.log('✅ ID final extraído:', atendimentoId);
     
-    if (!atendimentoId) {
-      console.warn('ID do atendimento não encontrado, mas criação pode ter sido bem-sucedida');
+    if (!atendimentoId && data.type !== 'success') {
+      console.warn('⚠️ ID do atendimento não encontrado e sem confirmação de sucesso do IXC');
     }
+    
+    console.log('========== CRIAR ATENDIMENTO IXC - FIM ==========');
     
     return { ...data, id: atendimentoId };
     
   } catch (error) {
-    console.error('Erro ao criar atendimento no IXC:', error);
+    console.error('========== ERRO NA CRIAÇÃO DO ATENDIMENTO ==========');
+    console.error('Tipo do erro:', error?.constructor?.name);
+    console.error('Mensagem:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    console.error('========== FIM DO ERRO ==========');
     throw new Error(`Erro ao criar atendimento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
