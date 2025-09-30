@@ -880,73 +880,84 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       throw new Error(`Erro ao criar cliente: ${JSON.stringify(data)}`);
     }
 
+    // 1) Tenta extrair ID diretamente da resposta
+    const tryExtractId = (obj: any): string | null => {
+      try {
+        if (!obj || typeof obj !== 'object') return null;
+        const preferredKeys = ['id', 'id_cliente', 'cliente_id', 'insert_id', 'last_insert_id'];
+        for (const k of preferredKeys) {
+          if (obj[k]) return String(obj[k]);
+        }
+        for (const key of Object.keys(obj)) {
+          const val = (obj as any)[key];
+          if (val && typeof val === 'object') {
+            const found = tryExtractId(val);
+            if (found) return found;
+          }
+        }
+      } catch {}
+      return null;
+    };
+
+    const extractedId = tryExtractId(data);
+    if (extractedId) {
+      console.log('✅ ID extraído diretamente da resposta do IXC:', extractedId);
+      return { id: extractedId };
+    }
+
     console.log('📋 Resposta do IXC após criação:', JSON.stringify(data, null, 2));
 
-    // Aguardar para o IXC processar
+    // 2) Aguarda para o IXC processar
     console.log('⏳ Aguardando 3 segundos para o IXC processar...');
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Buscar diretamente usando o endpoint de listagem com filtro por CPF
+    // 3) Busca diretamente usando filtros por CPF com diversos formatos e campos
     console.log('🔍 Buscando cliente pelo CPF:', cleanCpf);
-    
-    // Tentar diferentes formatos de CPF
+
     const cpfFormats = [
-      cleanCpf, // sem formatação: 04112287143
-      cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), // formatado: 041.122.871-43
+      cleanCpf, // 04112287143
+      cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), // 041.122.871-43
     ];
-    
+    const cpfQtypes = ['cliente.cnpj_cpf', 'cnpj_cpf'];
+    const cpfOpers = ['=', 'L'];
+
     let customerId: string | null = null;
-    
-    for (const cpfFormat of cpfFormats) {
-      console.log(`Tentando formato de CPF: ${cpfFormat}`);
-      
-      // Busca direta por CPF usando qtype
-      const searchForm = {
-        qtype: 'cnpj_cpf',
-        query: cpfFormat,
-        oper: '=',
-        page: '1',
-        rp: '10',
-        sortname: 'razao',
-        sortorder: 'asc',
-      };
-      
-      try {
-        const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
-        console.log(`Resultado da busca com CPF ${cpfFormat}:`, JSON.stringify(searchData, null, 2));
-        
-        if (searchOk && searchData?.registros) {
-          const registros = Array.isArray(searchData.registros) 
-            ? searchData.registros 
-            : Object.values(searchData.registros);
-          
-          console.log(`✅ Encontrados ${registros.length} registros`);
-          
-          if (registros.length > 0) {
-            // Verificar se algum tem o CPF correto
-            const matchingCustomer = registros.find((r: any) => {
-              const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
-              return customerCpf === cleanCpf;
-            });
-            
-            if (matchingCustomer) {
-              customerId = String(matchingCustomer.id);
-              console.log(`✅ Cliente encontrado! ID: ${customerId}`, matchingCustomer);
-              break;
-            } else {
-              console.log('❌ Nenhum registro com CPF correspondente');
+
+    outer: for (const cpfFormat of cpfFormats) {
+      for (const qtype of cpfQtypes) {
+        for (const oper of cpfOpers) {
+          console.log(`Tentando buscar por CPF (qtype=${qtype}, oper=${oper}): ${cpfFormat}`);
+          const searchForm = {
+            qtype,
+            query: cpfFormat,
+            oper,
+            page: '1',
+            rp: '20',
+            sortname: 'razao',
+            sortorder: 'asc',
+          };
+          try {
+            const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
+            console.log(`Resultado da busca (qtype=${qtype}, oper=${oper}):`, JSON.stringify(searchData, null, 2));
+            if (searchOk && searchData?.registros) {
+              const registros = Array.isArray(searchData.registros) ? searchData.registros : Object.values(searchData.registros);
+              const match = (registros as any[]).find((r: any) => String(r.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
+              if (match) {
+                customerId = String(match.id);
+                console.log('✅ Cliente encontrado por CPF! ID:', customerId);
+                break outer;
+              }
             }
+          } catch (e) {
+            console.error('Erro na busca por CPF:', e);
           }
         }
-      } catch (searchError) {
-        console.error(`Erro ao buscar com CPF ${cpfFormat}:`, searchError);
       }
     }
-    
-    // Se ainda não encontrou, tentar buscar por nome
+
+    // 4) Se ainda não encontrou, buscar por nome e validar CPF
     if (!customerId) {
       console.log('🔍 Tentando buscar por nome:', customerData.name);
-      
       const nameSearchForm = {
         qtype: 'razao',
         query: customerData.name,
@@ -956,29 +967,37 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
         sortname: 'razao',
         sortorder: 'asc',
       };
-      
       try {
         const { ok: nameOk, data: nameData } = await postIXC(`${baseUrl}/cliente`, auth, nameSearchForm);
         console.log('Resultado da busca por nome:', JSON.stringify(nameData, null, 2));
-        
         if (nameOk && nameData?.registros) {
-          const registros = Array.isArray(nameData.registros) 
-            ? nameData.registros 
-            : Object.values(nameData.registros);
-          
-          // Procurar o cliente com CPF correspondente
-          const matchingCustomer = registros.find((r: any) => {
-            const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
-            return customerCpf === cleanCpf;
-          });
-          
+          const registros = Array.isArray(nameData.registros) ? nameData.registros : Object.values(nameData.registros);
+          const matchingCustomer = (registros as any[]).find((r: any) => String(r.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
           if (matchingCustomer) {
             customerId = String(matchingCustomer.id);
-            console.log(`✅ Cliente encontrado por nome! ID: ${customerId}`);
+            console.log('✅ Cliente encontrado por nome! ID:', customerId);
           }
         }
       } catch (nameError) {
         console.error('Erro ao buscar por nome:', nameError);
+      }
+    }
+
+    // 5) Fallback final: pagina a listagem e filtra por CPF
+    if (!customerId) {
+      console.log('🔎 Fallback: listando clientes por páginas para filtrar por CPF...');
+      for (let page = 1; page <= 5; page++) {
+        try {
+          const lote = await getCustomers(baseUrl, auth, { limit: 200, page, orderBy: 'razao', order: 'asc' });
+          const found = (lote || []).find(c => String(c.cnpj_cpf || '').replace(/\D/g, '') === cleanCpf);
+          if (found) {
+            customerId = String(found.id);
+            console.log(`✅ Cliente encontrado na página ${page}! ID:`, customerId);
+            break;
+          }
+        } catch (e) {
+          console.error(`Erro ao paginar página ${page}:`, e);
+        }
       }
     }
 
