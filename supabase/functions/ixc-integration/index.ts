@@ -871,6 +871,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.numero = '1';
     form.bairro = 'Centro'; // Bairro genérico
     form.cidade = '5564'; // Código da cidade (sempre 5564)
+    form.uf = '1'; // UF (Distrito Federal)
     form.tipo_localidade = 'U'; // Zona Urbana
     form.iss_classificacao_padrao = '99';
 
