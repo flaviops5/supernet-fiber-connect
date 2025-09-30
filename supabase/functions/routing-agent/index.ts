@@ -154,20 +154,22 @@ serve(async (req) => {
         if (clientStatus) {
           const isOnline = clientStatus.online === true || clientStatus.onlineStatus === true;
           const isBlocked = clientStatus.blocked === true || clientStatus.financiallyBlocked === true;
+          const serviceStatus = clientStatus.serviceStatus || '';
+          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO') || serviceStatus.includes('ATRASO') || serviceStatus.includes('BLOQUEADO');
 
-          console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}`);
+          console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}, ServiceStatus=${serviceStatus}, HasFinancialIssue=${hasFinancialIssue}`);
 
-          // If blocked/overdue → Financial Support
-          if (isBlocked) {
-            console.log('Client is blocked - routing to financial support');
+          // If blocked/overdue/financial issue → Financial Support (Julia Martins)
+          if (hasFinancialIssue) {
+            console.log('Client has financial issue - routing to financial support');
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
-                message: `Obrigado, ${customerData.customer_name}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para nosso setor financeiro que poderá resolver isso imediatamente.`,
+                message: `Obrigado, ${customerData.customer_name}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
-                routeReason: 'financial_block'
+                routeReason: 'financial_issue'
               }),
               {
                 status: 200,
