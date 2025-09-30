@@ -155,8 +155,11 @@ serve(async (req) => {
           const isOnline = clientStatus.online === true || clientStatus.onlineStatus === true;
           const isBlocked = clientStatus.blocked === true || clientStatus.financiallyBlocked === true;
           const serviceStatus = clientStatus.serviceStatus || '';
-          // Problema financeiro = bloqueado OU serviceStatus contendo "FINANCEIRO"
-          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO');
+          // IMPORTANTE: BLOQUEADO e FINANCEIRO EM ATRASO sempre são por motivo financeiro
+          // Após vencimento: velocidade reduzida para 4 mega
+          // Após 20 dias: aparece "FINANCEIRO EM ATRASO" no IXC
+          // Após 30 dias: serviço é BLOQUEADO
+          const hasFinancialIssue = isBlocked || serviceStatus.includes('FINANCEIRO') || serviceStatus.includes('ATRASO') || serviceStatus.includes('BLOQUEADO');
 
           console.log(`Status: Online=${isOnline}, Blocked=${isBlocked}, ServiceStatus=${serviceStatus}, HasFinancialIssue=${hasFinancialIssue}`);
 
