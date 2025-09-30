@@ -867,10 +867,47 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     }
     
     const text = await response.text();
-    const data = JSON.parse(text);
+    console.log('Resposta bruta do IXC (createCustomer):', text);
     
-    console.log('Cliente criado com sucesso:', data);
-    return data;
+    const data = JSON.parse(text);
+    console.log('Resposta parseada do IXC:', JSON.stringify(data, null, 2));
+    
+    // Tenta extrair o ID de diferentes estruturas possíveis
+    let customerId = null;
+    
+    // Estrutura 1: { id: "123" }
+    if (data.id) {
+      customerId = data.id;
+    }
+    // Estrutura 2: { registro: { id: "123" } }
+    else if (data.registro?.id) {
+      customerId = data.registro.id;
+    }
+    // Estrutura 3: { data: { id: "123" } }
+    else if (data.data?.id) {
+      customerId = data.data.id;
+    }
+    // Estrutura 4: { registros: [{ id: "123" }] }
+    else if (data.registros && Array.isArray(data.registros) && data.registros[0]?.id) {
+      customerId = data.registros[0].id;
+    }
+    // Estrutura 5: { type: "success", id: "123" }
+    else if (data.type === 'success' && data.id) {
+      customerId = data.id;
+    }
+    // Estrutura 6: resposta direta com id_cliente
+    else if (data.id_cliente) {
+      customerId = data.id_cliente;
+    }
+    
+    console.log('ID do cliente extraído:', customerId);
+    
+    if (!customerId) {
+      console.error('Estrutura de resposta não reconhecida:', data);
+      throw new Error('ID do cliente não retornado pelo IXC. Estrutura de resposta desconhecida.');
+    }
+    
+    return { ...data, id: customerId };
     
   } catch (error) {
     console.error('Erro ao criar cliente no IXC:', error);
@@ -932,10 +969,35 @@ AGENDAMENTO:
     }
     
     const text = await response.text();
-    const data = JSON.parse(text);
+    console.log('Resposta bruta do IXC (createAtendimento):', text);
     
-    console.log('Atendimento criado com sucesso:', data);
-    return data;
+    const data = JSON.parse(text);
+    console.log('Resposta parseada do IXC:', JSON.stringify(data, null, 2));
+    
+    // Tenta extrair o ID de diferentes estruturas possíveis
+    let atendimentoId = null;
+    
+    if (data.id) {
+      atendimentoId = data.id;
+    } else if (data.registro?.id) {
+      atendimentoId = data.registro.id;
+    } else if (data.data?.id) {
+      atendimentoId = data.data.id;
+    } else if (data.registros && Array.isArray(data.registros) && data.registros[0]?.id) {
+      atendimentoId = data.registros[0].id;
+    } else if (data.type === 'success' && data.id) {
+      atendimentoId = data.id;
+    } else if (data.id_atendimento) {
+      atendimentoId = data.id_atendimento;
+    }
+    
+    console.log('ID do atendimento extraído:', atendimentoId);
+    
+    if (!atendimentoId) {
+      console.warn('ID do atendimento não encontrado, mas criação pode ter sido bem-sucedida');
+    }
+    
+    return { ...data, id: atendimentoId };
     
   } catch (error) {
     console.error('Erro ao criar atendimento no IXC:', error);
