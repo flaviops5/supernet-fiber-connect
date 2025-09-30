@@ -127,6 +127,13 @@ serve(async (req) => {
         result = await createAtendimento(baseUrl, auth, params.customerId, params.atendimentoData);
         break;
       
+      case 'createContract':
+        if (!params.customerId || !params.contractData) {
+          throw new Error('ID do cliente e dados do contrato são obrigatórios');
+        }
+        result = await createContract(baseUrl, auth, params.customerId, params.contractData);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -1090,5 +1097,198 @@ AGENDAMENTO:
   } catch (error) {
     console.error('Erro ao criar atendimento no IXC:', error);
     throw new Error(`Erro ao criar atendimento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function createContract(baseUrl: string, auth: string, customerId: string, contractData: any): Promise<any> {
+  try {
+    console.log('📝 Criando contrato no IXC para cliente:', customerId, contractData);
+    
+    // Data atual no formato DD/MM/YYYY
+    const today = new Date();
+    const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    
+    // Campos obrigatórios conforme documentação IXC
+    const payload: Record<string, string> = {
+      // OBRIGATÓRIOS BÁSICOS
+      tipo: 'I', // I = Internet
+      id_cliente: String(customerId),
+      id_vd_contrato: String(contractData.planId), // ID do plano (ixc_plan_id da tabela plans)
+      contrato: contractData.planName || 'Plano Internet',
+      id_tipo_contrato: '10', // Tipo de contrato padrão
+      id_modelo: '1', // Modelo de contrato padrão
+      id_filial: '1', // Filial padrão
+      data: formattedDate, // Data do contrato
+      
+      // DOCUMENTOS E COBRANÇA
+      id_tipo_documento: '502', // Tipo de documento padrão
+      id_carteira_cobranca: '1', // Carteira de cobrança padrão
+      id_vendedor: '1', // Vendedor padrão
+      cc_previsao: 'M', // M = Mensal
+      tipo_cobranca: 'P', // P = Padrão
+      renovacao_automatica: 'S', // S = Sim
+      base_geracao_tipo_doc: 'P', // P = Padrão
+      
+      // BLOQUEIO E AVISOS
+      bloqueio_automatico: 'S', // S = Sim
+      aviso_atraso: 'S', // S = Sim
+      
+      // ENDEREÇO
+      endereco_padrao_cliente: 'S', // S = Usar endereço do cliente
+      
+      // CAMPOS OPCIONAIS (podem ser vazios)
+      descricao_aux_plano_venda: '',
+      assinatura_digital: '',
+      integracao_assinatura_digital: '',
+      liberacao_bloqueio_manual: '',
+      indicacao_contrato_id: '',
+      data_assinatura: '',
+      data_ativacao: '',
+      data_renovacao: '',
+      pago_ate_data: '',
+      status: '',
+      status_internet: '',
+      status_velocidade: '',
+      tipo_produtos_plano: '',
+      motivo_inclusao: '',
+      id_indexador_reajuste: '',
+      url_assinatura_digital: '',
+      token_assinatura_digital: '',
+      comissao: '',
+      gerar_finan_assin_digital_contrato: '',
+      id_contrato_principal: '',
+      num_parcelas_atraso: '',
+      nf_info_adicionais: '',
+      credit_card_recorrente_bandeira_cartao: '',
+      credit_card_recorrente_token: '',
+      ids_contratos_recorrencia: '',
+      tipo_doc_opc: '',
+      tipo_doc_opc2: '',
+      tipo_doc_opc3: '',
+      tipo_doc_opc4: '',
+      id_tipo_doc_ativ: '',
+      id_produto_ativ: '',
+      taxa_instalacao: '',
+      id_cond_pag_ativ: '',
+      id_responsavel: '',
+      id_vendedor_ativ: '',
+      ativacao_numero_parcelas: '',
+      ativacao_vencimentos: '',
+      ativacao_valor_parcela: '',
+      fidelidade: '',
+      data_expiracao: '',
+      desconto_fidelidade: '',
+      id_instalador: '',
+      taxa_improdutiva: '',
+      venc_personalizado: '',
+      com_entrada: '',
+      dia_fixo_vencimento: '',
+      tipo_condicao_pag: '',
+      nao_bloquear_ate: '',
+      nao_avisar_ate: '',
+      desbloqueio_confianca: '',
+      desbloqueio_confianca_ativo: '',
+      restricao_auto_desbloqueio: '',
+      obs: '',
+      nao_susp_parc_ate: '',
+      liberacao_suspensao_parcial: '',
+      utilizando_auto_libera_susp_parc: '',
+      restricao_auto_libera_susp_parcial: '',
+      motivo_restri_auto_libera_parc: '',
+      contrato_suspenso: '',
+      data_inicial_suspensao: '',
+      data_final_suspensao: '',
+      data_acesso_desativado: '',
+      id_responsavel_cancelamento: '',
+      motivo_cancelamento: '',
+      obs_cancelamento: '',
+      data_negativacao: '',
+      id_responsavel_negativacao: '',
+      protocolo_negativacao: '',
+      id_motivo_negativacao: '',
+      obs_negativacao: '',
+      data_desistencia: '',
+      id_responsavel_desistencia: '',
+      motivo_desistencia: '',
+      obs_desistencia: '',
+      obs_contrato: '',
+      alerta_contrato: '',
+      dt_ult_bloq_auto: '',
+      dt_ult_bloq_manual: '',
+      dt_ult_finan_atraso: '',
+      dt_ult_des_bloq_conf: '',
+      dt_ult_liberacao_susp_parc: '',
+      dt_ult_ativacao: '',
+      dt_utl_negativacao: '',
+      dt_ult_desiste: '',
+      data_cadastro_sistema: '',
+      ultima_atualizacao: '',
+      data_retomada_contrato: '',
+      id_condominio: '',
+      condominio_novo: '',
+      bloco: '',
+      bloco_novo: '',
+      apartamento: '',
+      apartamento_novo: '',
+      cep: '',
+      cep_novo: '',
+      endereco: '',
+      endereco_novo: '',
+      numero: '',
+      numero_novo: '',
+      bairro: '',
+      bairro_novo: '',
+      cidade: '',
+      cidade_novo: '',
+      complemento: '',
+      complemento_novo: '',
+      referencia: '',
+      referencia_novo: '',
+      latitude: '',
+      latitude_novo: '',
+      longitude: '',
+      longitude_novo: '',
+      avalista_1: '',
+      avalista_2: '',
+      testemunha_assinatura_digital: '',
+      document_photo: '',
+      selfie_photo: '',
+    };
+
+    console.log('📤 Enviando dados do contrato para IXC:', {
+      id_cliente: payload.id_cliente,
+      id_vd_contrato: payload.id_vd_contrato,
+      contrato: payload.contrato,
+      data: payload.data,
+    });
+
+    const { ok, data } = await postIXC(`${baseUrl}/cliente_contrato`, auth, {
+      ...payload,
+      ixcsoft: 'inserir'
+    });
+
+    console.log('✅ Resposta do IXC (criar contrato):', JSON.stringify(data, null, 2));
+
+    if (!ok) {
+      console.error('❌ Erro ao inserir contrato no IXC:', data);
+      throw new Error(`Erro ao inserir contrato: ${data?.message || JSON.stringify(data)}`);
+    }
+
+    // Verificar se houve erro na resposta
+    if (data?.type === 'error') {
+      throw new Error(`Erro do IXC: ${data.message || 'Erro desconhecido ao criar contrato'}`);
+    }
+
+    console.log('✅ Contrato inserido no IXC com sucesso!');
+    return { 
+      success: true,
+      message: 'Contrato inserido com sucesso',
+      contractId: data.id || data.get_id,
+      response: data
+    };
+
+  } catch (error) {
+    console.error('Erro ao criar contrato no IXC:', error);
+    throw new Error(`Erro ao criar contrato: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
