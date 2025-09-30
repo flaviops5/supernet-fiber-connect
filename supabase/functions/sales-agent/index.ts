@@ -65,14 +65,42 @@ serve(async (req) => {
           throw new Error('Erro ao criar cliente no IXC');
         }
 
-        const customerId = customerResult?.data?.id || customerResult?.data?.registro?.id;
+        const customerId = customerResult?.data?.response?.id || customerResult?.data?.id || customerResult?.data?.registro?.id;
         console.log('Cliente criado no IXC com ID:', customerId);
 
         if (!customerId) {
           throw new Error('ID do cliente não retornado pelo IXC');
         }
 
-        // 2. Criar atendimento no IXC
+        // 2. Criar contrato no IXC (vincula o plano ao cliente)
+        let contractId = null;
+        if (plan.ixc_plan_id) {
+          console.log('Criando contrato no IXC com plano:', plan.ixc_plan_id);
+          const { data: contractResult, error: contractError } = await supabase.functions.invoke('ixc-integration', {
+            body: {
+              action: 'createContract',
+              params: {
+                customerId: customerId,
+                contractData: {
+                  planId: plan.ixc_plan_id,
+                  planName: plan.name
+                }
+              }
+            }
+          });
+
+          if (contractError) {
+            console.error('Erro ao criar contrato no IXC:', contractError);
+            // Não falha aqui, apenas loga o erro e continua
+          } else {
+            contractId = contractResult?.data?.contractId || contractResult?.data?.response?.id;
+            console.log('Contrato criado no IXC com ID:', contractId);
+          }
+        } else {
+          console.log('Plano não possui ixc_plan_id configurado, pulando criação de contrato');
+        }
+
+        // 3. Criar atendimento no IXC
         console.log('Criando atendimento no IXC...');
         const { data: atendimentoResult, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
           body: {
@@ -105,7 +133,7 @@ serve(async (req) => {
         const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
         console.log('Atendimento criado no IXC com ID:', atendimentoId);
 
-        // 3. Criar registro local do agendamento
+        // 4. Criar registro local do agendamento
         const { data: appointment, error } = await supabase
           .from('installation_appointments')
           .insert({
@@ -123,7 +151,8 @@ serve(async (req) => {
             appointment_date: orderData.installation_date,
             appointment_period: orderData.installation_period,
             status: 'pendente',
-            observations: `Cliente IXC ID: ${customerId}, Atendimento IXC ID: ${atendimentoId}`
+            ixc_contract_id: contractId,
+            observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`
           })
           .select()
           .single();
@@ -136,6 +165,7 @@ serve(async (req) => {
           success: true,
           appointment_id: appointment?.id,
           ixc_customer_id: customerId,
+          ixc_contract_id: contractId,
           ixc_atendimento_id: atendimentoId
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
