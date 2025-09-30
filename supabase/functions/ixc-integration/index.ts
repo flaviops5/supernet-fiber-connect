@@ -832,14 +832,14 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     
     const cleanCpf = customerData.cpf.replace(/\D/g, '');
     
+    const cleanCep = customerData.cep.replace(/\D/g, '');
+    
     const form: Record<string, string> = {
       razao: customerData.name,
       nome_fantasia: customerData.name,
       cnpj_cpf: cleanCpf,
       email: customerData.email,
       telefone_celular: customerData.phone.replace(/\D/g, ''),
-      endereco: customerData.address || '',
-      cep: customerData.cep.replace(/\D/g, ''),
       ativo: 'S',
       acesso_automatico_central: '2',
       participa_cobranca: 'S',
@@ -859,7 +859,6 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.tipo_pessoa = 'F'; // Pessoa Física
     form.id_tipo_cliente = '2'; // Tipo de Cliente = Cliente Fibra (código)
     
-    
     // ABA Endereço
     const rawAddress: string = customerData.address || '';
     const bairroMatch = rawAddress.match(/Bairro\s+([^-,]+)/i);
@@ -872,8 +871,12 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
     form.numero = '0'; // Número = sempre 0
     form.bairro = parsedBairro;
     form.cidade = '5564'; // Cidade = sempre código 5564
+    form.cep = cleanCep; // CEP sem formatação, apenas números
     form.tipo_localidade = 'U'; // Tipo de localidade = Zona Urbana
     form.iss_classificacao_padrao = '99';
+
+    console.log('Enviando dados para criar cliente:', form);
+    console.log('CEP sendo enviado:', cleanCep);
 
     console.log('Enviando dados para criar cliente:', form);
     
