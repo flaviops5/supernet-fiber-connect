@@ -25,6 +25,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch agent configuration from database
+    const { data: agentConfig, error: configError } = await supabase
+      .from('agent_configurations')
+      .select('*')
+      .eq('agent_type', 'support_tech')
+      .eq('is_active', true)
+      .single();
+
+    if (configError || !agentConfig) {
+      console.error('Error fetching agent config:', configError);
+      throw new Error('Agent configuration not found');
+    }
+
     // Get conversation history
     let conversationHistory: Message[] = [];
     if (conversationId) {
@@ -52,9 +65,13 @@ serve(async (req) => {
 
     const knowledgeContext = techKnowledge?.map(k => `${k.title}\n${k.content}`).join('\n\n') || '';
 
-    const systemPrompt = `Você é um agente de Suporte Técnico N1 da SUPERNET FIBRA, especializado em resolver problemas técnicos de internet e configurações básicas.
+    // Use system prompt from database configuration
+    const systemPrompt = agentConfig.system_prompt + `
 
-SUAS RESPONSABILIDADES:
+BASE DE CONHECIMENTO:
+${knowledgeContext}
+
+INFORMAÇÕES DO CLIENTE:
 1. **Atendimento Inicial**
    - Receber e registrar chamados técnicos
    - Fazer diagnóstico básico do problema
@@ -87,39 +104,10 @@ SUAS RESPONSABILIDADES:
    - Configurações avançadas
    - Problemas de sinal ou infraestrutura
 
-INFORMAÇÕES DO CLIENTE:
 ${customerData?.name ? `Nome: ${customerData.name}` : 'Não identificado'}
 ${customerData?.phone ? `Telefone: ${customerData.phone}` : ''}
 ${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
-
-BASE DE CONHECIMENTO:
-${knowledgeContext}
-
-DIRETRIZES:
-- Seja empático e paciente
-- Use linguagem simples, evite termos técnicos complexos
-- Sempre confirme se o cliente conseguiu executar cada passo
-- Se o problema persistir após 3 tentativas, escalona para N2
-- Documente todas as tentativas de solução
-- Sempre pergunte se há mais algo em que pode ajudar
-- Informe tempo estimado quando aplicável
-- Se não souber, seja honesto e escalona
-
-CHECKLIST PADRÃO:
-1. Equipamento está ligado? (luzes acesas?)
-2. Cabos conectados corretamente?
-3. Já tentou reiniciar o equipamento?
-4. Problema é só no Wi-Fi ou cabo também?
-5. Quantos dispositivos estão conectados?
-6. Problema começou quando? Algo mudou?
-
-FRASES IMPORTANTES:
-- "Vou ajudá-lo a resolver isso. Vamos começar com algumas verificações básicas."
-- "Isso é normal, vamos tentar [solução]."
-- "Por favor, me confirme quando tiver feito esse passo."
-- "Se isso não resolver, vou abrir um chamado técnico para nosso time especializado."
-
-Mantenha suas respostas objetivas, práticas e fáceis de seguir.`;
+`;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -133,13 +121,14 @@ Mantenha suas respostas objetivas, práticas e fáceis de seguir.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: agentConfig.model,
         messages: [
           { role: 'system', content: systemPrompt },
           ...conversationHistory,
           ...messages
         ],
-        temperature: 0.7,
+        temperature: parseFloat(agentConfig.temperature),
+        max_tokens: agentConfig.max_tokens,
       }),
     });
 

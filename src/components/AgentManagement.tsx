@@ -3,15 +3,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, ShoppingCart, Wrench, DollarSign, Activity, RefreshCw, TestTube2 } from 'lucide-react';
+import { Bot, ShoppingCart, Wrench, DollarSign, Activity, RefreshCw, TestTube2, Settings } from 'lucide-react';
 import OmnichannelChat from './OmnichannelChat';
+import AgentConfigEditor from './AgentConfigEditor';
 
 interface AgentStats {
   totalConversations: number;
   activeConversations: number;
   resolvedToday: number;
+}
+
+interface AgentConfig {
+  id: string;
+  agent_type: string;
+  name: string;
+  description: string;
+  system_prompt: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+  capabilities: string[];
+  is_active: boolean;
 }
 
 const AgentManagement = () => {
@@ -20,13 +35,36 @@ const AgentManagement = () => {
     support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
   });
+  const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
+  const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [showTestChat, setShowTestChat] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadAgentStats();
+    loadAgentConfigs();
   }, []);
+
+  const loadAgentConfigs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('agent_configurations')
+        .select('*');
+
+      if (error) throw error;
+
+      if (data) {
+        const configsMap: Record<string, AgentConfig> = {};
+        data.forEach((config: any) => {
+          configsMap[config.agent_type] = config;
+        });
+        setConfigs(configsMap);
+      }
+    } catch (error) {
+      console.error('Error loading agent configs:', error);
+    }
+  };
 
   const loadAgentStats = async () => {
     try {
@@ -250,25 +288,42 @@ const AgentManagement = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3">Configuração</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between p-2 bg-muted rounded">
-                      <span className="text-muted-foreground">Modelo IA:</span>
-                      <span className="font-medium">Gemini 2.5 Flash</span>
-                    </div>
-                    <div className="flex justify-between p-2 bg-muted rounded">
-                      <span className="text-muted-foreground">Temperature:</span>
-                      <span className="font-medium">0.7</span>
-                    </div>
-                    <div className="flex justify-between p-2 bg-muted rounded">
-                      <span className="text-muted-foreground">Contexto:</span>
-                      <span className="font-medium">Últimas 20 mensagens</span>
-                    </div>
-                    <div className="flex justify-between p-2 bg-muted rounded">
-                      <span className="text-muted-foreground">Base de Conhecimento:</span>
-                      <span className="font-medium">Sincronizada</span>
-                    </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold">Configuração</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingConfig(configs[agent.id])}
+                      className="gap-2"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Editar
+                    </Button>
                   </div>
+                  {configs[agent.id] ? (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between p-2 bg-muted rounded">
+                        <span className="text-muted-foreground">Modelo IA:</span>
+                        <span className="font-medium">{configs[agent.id].model}</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted rounded">
+                        <span className="text-muted-foreground">Temperature:</span>
+                        <span className="font-medium">{configs[agent.id].temperature}</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted rounded">
+                        <span className="text-muted-foreground">Max Tokens:</span>
+                        <span className="font-medium">{configs[agent.id].max_tokens}</span>
+                      </div>
+                      <div className="flex justify-between p-2 bg-muted rounded">
+                        <span className="text-muted-foreground">Status:</span>
+                        <Badge variant={configs[agent.id].is_active ? "default" : "secondary"}>
+                          {configs[agent.id].is_active ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Carregando configuração...</p>
+                  )}
                 </div>
 
                 {agent.id === 'sales' && (
@@ -389,6 +444,19 @@ const AgentManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Config Editor Dialog */}
+      <Dialog open={!!editingConfig} onOpenChange={() => setEditingConfig(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {editingConfig && (
+            <AgentConfigEditor
+              config={editingConfig}
+              onClose={() => setEditingConfig(null)}
+              onSave={loadAgentConfigs}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

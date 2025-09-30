@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_configurations: {
+        Row: {
+          agent_type: string
+          capabilities: Json | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          max_tokens: number
+          model: string
+          name: string
+          system_prompt: string
+          temperature: number
+          updated_at: string
+        }
+        Insert: {
+          agent_type: string
+          capabilities?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model?: string
+          name: string
+          system_prompt: string
+          temperature?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_type?: string
+          capabilities?: Json | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model?: string
+          name?: string
+          system_prompt?: string
+          temperature?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_presence: {
         Row: {
           created_at: string | null
