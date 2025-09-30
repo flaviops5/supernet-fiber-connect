@@ -130,6 +130,11 @@ const systemItems = [
     url: "/admin/ixc-documentation",
     icon: BookOpen,
   },
+  {
+    title: "Testador de Chat",
+    url: "/admin/chat-tester",
+    icon: FlaskConical,
+  },
 ];
 
 const profileItems = [

@@ -21,6 +21,7 @@ import DocumentManagement from "@/components/DocumentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
 import AgentManagement from "@/components/AgentManagement";
+import ChatFlowTester from "@/components/ChatFlowTester";
 import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
@@ -2034,6 +2035,7 @@ const Admin = () => {
                 <Route path="/faq" element={<FAQManagement />} />
                 <Route path="/blog" element={<BlogManagementComponent />} />
                 <Route path="/agents" element={<AgentManagement />} />
+                <Route path="/chat-tester" element={<ChatFlowTester />} />
                 <Route path="/reviews" element={<ReviewsManagement />} />
                 <Route path="/documents" element={<DocumentManagement />} />
                 <Route path="/knowledge" element={<KnowledgeManagement />} />
