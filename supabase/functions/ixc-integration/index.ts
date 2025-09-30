@@ -1023,7 +1023,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
     const form: Record<string, string> = {
       id_cliente: String(customerId),
       id_tipo_problema: '1', // Tipo: Instalação/Novo Cliente
-      assunto: `Instalação - ${atendimentoData.planName}`,
+      assunto: atendimentoData.subject || `Instalação - ${atendimentoData.planName}`,
       descricao: `
 DADOS DO CLIENTE:
 - Nome: ${atendimentoData.customerName}

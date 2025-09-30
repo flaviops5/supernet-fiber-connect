@@ -240,7 +240,7 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
       const timestampHash = btoa(timestamp + contractNumber + customerData.cpf);
 
       // Save signed contract
-      const { error } = await supabase.from('signed_contracts').insert({
+      const { error: contractError } = await supabase.from('signed_contracts').insert({
         appointment_id: appointmentId,
         contract_number: contractNumber,
         contract_pdf_url: '', // Will be generated after upload
@@ -251,11 +251,128 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
         user_agent: userAgent
       });
 
-      if (error) throw error;
+      if (contractError) throw contractError;
 
       toast({
         title: "Contrato Assinado",
-        description: "Contrato assinado digitalmente com sucesso!",
+        description: "Contrato assinado com sucesso! Criando cliente no IXC...",
+        variant: "default",
+      });
+
+      // Create customer in IXC
+      const { data: ixcCustomerData, error: ixcCustomerError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createCustomer',
+          params: {
+            customerData: {
+              name: customerData.name,
+              cpf: customerData.cpf,
+              email: customerData.email,
+              phone: customerData.phone,
+              birthDate: '', // Not captured in current form, could be added
+              address: customerData.address,
+              cep: customerData.cep,
+              cityId: '5564', // Default Brasília
+              neighborhood: '',
+              number: '',
+              personType: 'F'
+            }
+          }
+        }
+      });
+
+      if (ixcCustomerError) {
+        console.error('IXC Customer Error:', ixcCustomerError);
+        toast({
+          title: "Aviso",
+          description: "Contrato assinado, mas houve erro ao criar cliente no IXC. Verifique manualmente.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      if (ixcCustomerData && !(ixcCustomerData as any).success) {
+        console.error('IXC Customer Failed:', ixcCustomerData);
+        toast({
+          title: "Aviso",
+          description: "Contrato assinado, mas houve erro ao criar cliente no IXC. Verifique manualmente.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      const customerId = (ixcCustomerData as any)?.data?.id || (ixcCustomerData as any)?.data?.registro?.id;
+      
+      if (!customerId) {
+        toast({
+          title: "Aviso",
+          description: "Contrato assinado, mas não foi possível obter ID do cliente no IXC. Verifique manualmente.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      toast({
+        title: "Cliente Criado",
+        description: `Cliente criado no IXC com ID: ${customerId}. Abrindo atendimento...`,
+        variant: "default",
+      });
+
+      // Create service ticket in IXC
+      const { data: ixcAtendimentoData, error: ixcAtendimentoError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createAtendimento',
+          params: {
+            customerId: customerId,
+            atendimentoData: {
+              customerName: customerData.name,
+              cpf: customerData.cpf,
+              email: customerData.email,
+              phone: customerData.phone,
+              address: customerData.address,
+              cep: customerData.cep,
+              subject: `Instalação ${planData.name} - ${contractNumber}`,
+              planName: planData.name,
+              planSpeed: planData.speed,
+              planPrice: planData.price,
+              paymentDay: 10,
+              installationDate: appointmentDate,
+              installationPeriod: appointmentPeriod
+            }
+          }
+        }
+      });
+
+      if (ixcAtendimentoError) {
+        console.error('IXC Atendimento Error:', ixcAtendimentoError);
+        toast({
+          title: "Aviso",
+          description: `Cliente criado (ID: ${customerId}), mas houve erro ao abrir atendimento. Abra manualmente no IXC.`,
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      if (ixcAtendimentoData && !(ixcAtendimentoData as any).success) {
+        console.error('IXC Atendimento Failed:', ixcAtendimentoData);
+        toast({
+          title: "Aviso",
+          description: `Cliente criado (ID: ${customerId}), mas houve erro ao abrir atendimento. Abra manualmente no IXC.`,
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      const atendimentoId = (ixcAtendimentoData as any)?.data?.id || (ixcAtendimentoData as any)?.data?.registro?.id;
+
+      toast({
+        title: "Processo Concluído! 🎉",
+        description: `Contrato ${contractNumber} assinado! Cliente IXC: ${customerId}. Atendimento: ${atendimentoId || 'Criado'}`,
         variant: "default",
       });
 
