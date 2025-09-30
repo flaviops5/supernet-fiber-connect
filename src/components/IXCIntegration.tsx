@@ -51,7 +51,6 @@ const IXCIntegration = () => {
     try {
       toast.info('Criando cliente de teste no IXC...');
       
-      // 1. Criar cliente no IXC
       const { data: customerData, error: customerError } = await supabase.functions.invoke('ixc-integration', {
         body: {
           action: 'createCustomer',
@@ -89,51 +88,9 @@ const IXCIntegration = () => {
         throw new Error((customerData as any).error || 'Erro ao criar cliente no IXC');
       }
 
-      const customerId = (customerData as any)?.data?.id || (customerData as any)?.data?.registro?.id;
+      toast.success('Cliente criado no IXC com sucesso!');
       
-      if (!customerId) {
-        setErrorDetails({ error: 'ID não encontrado', data: customerData });
-        throw new Error('ID do cliente não retornado pelo IXC');
-      }
-
-      toast.success(`Cliente criado no IXC com ID: ${customerId}`);
-
-      // 2. Criar atendimento no IXC
-      toast.info('Criando atendimento no IXC...');
-      
-      const { data: atendimentoData, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
-        body: {
-          action: 'createAtendimento',
-          params: {
-            customerId: customerId,
-            atendimentoData: {
-              customerName: 'João da Silva Teste',
-              cpf: '041.122.871-43',
-              email: 'joao.teste@email.com',
-              phone: '(11) 98765-4321',
-              address: 'Rua Teste, 123 - Apto 45 - Bairro Centro',
-              cep: '70630902',
-              planName: 'Plano 300 Mega',
-              planSpeed: '300 Mbps',
-              planPrice: 99.90,
-              paymentDay: 10,
-              installationDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              installationPeriod: 'manha'
-            }
-          }
-        }
-       });
- 
-       if (atendimentoError) throw atendimentoError;
-       if (atendimentoData && (atendimentoData as any).success === false) {
-         throw new Error((atendimentoData as any).error || 'Erro ao criar atendimento no IXC');
-       }
- 
-       const atendimentoId = (atendimentoData as any)?.data?.id || (atendimentoData as any)?.data?.registro?.id;
-
-      toast.success(`Atendimento criado no IXC com ID: ${atendimentoId}`);
-      
-      setDebugInfo(`Cliente de teste criado com sucesso!\n\nID Cliente IXC: ${customerId}\nID Atendimento IXC: ${atendimentoId}`);
+      setDebugInfo(`Cliente de teste criado com sucesso!\n\nResposta completa do IXC:\n${JSON.stringify(customerData, null, 2)}`);
       setErrorDetails(null);
       
     } catch (error) {
