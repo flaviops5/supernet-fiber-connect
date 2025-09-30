@@ -79,13 +79,24 @@ serve(async (req) => {
       throw new Error('Nenhum plano encontrado no IXC');
     }
 
-    // Filtrar pelos IDs solicitados
-    const plansToSync = registros.filter((r: any) => 
-      planIds.includes(Number(r.id)) || planIds.includes(String(r.id))
-    );
+    console.log(`Total de ${registros.length} planos no IXC`);
+    console.log('Primeiros 5 IDs:', registros.slice(0, 5).map((r: any) => ({ id: r.id, tipo: typeof r.id, nome: r.grupo })));
+    console.log('IDs buscados:', planIds);
 
+    // Filtrar pelos IDs solicitados - tentar múltiplos formatos
+    const plansToSync = registros.filter((r: any) => {
+      const rid = r.id;
+      return planIds.includes(Number(rid)) || 
+             planIds.includes(String(rid)) || 
+             planIds.some(pid => String(pid) === String(rid));
+    });
+
+    console.log(`Encontrados ${plansToSync.length} planos para sincronizar`);
+    
     if (plansToSync.length === 0) {
-      throw new Error(`Nenhum dos planos solicitados (${planIds.join(', ')}) foi encontrado no IXC`);
+      // Mostrar todos os IDs disponíveis para debug
+      const allIds = registros.slice(0, 20).map((r: any) => r.id);
+      throw new Error(`Nenhum dos planos solicitados (${planIds.join(', ')}) foi encontrado no IXC. IDs disponíveis (primeiros 20): ${allIds.join(', ')}`);
     }
 
     console.log(`Encontrados ${plansToSync.length} planos para sincronizar`);
