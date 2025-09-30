@@ -343,6 +343,22 @@ const AgentManagement = () => {
                   )}
                 </div>
 
+                {agent.id === 'routing' && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-950 rounded-lg">
+                    <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                      Inteligência Artificial
+                    </h4>
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      Este agente utiliza IA avançada para analisar mensagens e direcionar automaticamente para:
+                    </p>
+                    <ul className="text-sm text-orange-700 dark:text-orange-300 mt-2 space-y-1">
+                      <li>• Vendas - Planos, contratos e instalações</li>
+                      <li>• Suporte Técnico - Problemas de conexão</li>
+                      <li>• Suporte Financeiro - Faturas e pagamentos</li>
+                    </ul>
+                  </div>
+                )}
+
                 {agent.id === 'sales' && (
                   <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                     <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">
@@ -386,81 +402,6 @@ const AgentManagement = () => {
         ))}
       </Tabs>
 
-      {/* System Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5" />
-            Sistema de Roteamento Inteligente
-          </CardTitle>
-          <CardDescription>
-            Como funciona o sistema de agentes especializados
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-primary">1</span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Recepção da Mensagem</h4>
-                <p className="text-sm text-muted-foreground">
-                  O agente de roteamento recebe a mensagem do cliente via site, WhatsApp ou redes sociais.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-primary">2</span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Análise de Intenção</h4>
-                <p className="text-sm text-muted-foreground">
-                  IA analisa o contexto e determina qual agente especializado deve atender (vendas, suporte técnico ou financeiro).
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-primary">3</span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Roteamento Automático</h4>
-                <p className="text-sm text-muted-foreground">
-                  Cliente é transferido para o agente especializado apropriado de forma transparente.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-primary">4</span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Atendimento Especializado</h4>
-                <p className="text-sm text-muted-foreground">
-                  Agente especializado atende com conhecimento específico e acesso às ferramentas necessárias.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-bold text-primary">5</span>
-              </div>
-              <div>
-                <h4 className="font-semibold">Escalonamento Inteligente</h4>
-                <p className="text-sm text-muted-foreground">
-                  Se necessário, o agente IA pode transferir para atendentes humanos com todo o contexto da conversa.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Config Editor Dialog */}
       <Dialog open={!!editingConfig} onOpenChange={() => setEditingConfig(null)}>
