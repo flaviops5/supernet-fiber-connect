@@ -1022,7 +1022,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
       id_cliente: String(customerId), // Obrigatório
       id_assunto: '25', // Obrigatório - IXC preenche automaticamente setor
       titulo: `Instalação - ${atendimentoData.planName}`, // Obrigatório
-      id_ticket_setor: '2', // Obrigatório - Setor do ticket
+      id_ticket_setor: '3', // Obrigatório - Setor 3 para instalações (id_assunto 25)
       prioridade: 'B', // Obrigatório - B = Baixa, N = Normal, A = Alta
       menssagem: `Nova instalação do plano ${atendimentoData.planName} para ${atendimentoData.customerName}`, // Obrigatório
       su_status: 'N', // Obrigatório - N = Normal
