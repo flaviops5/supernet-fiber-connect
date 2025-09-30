@@ -28,6 +28,10 @@ serve(async (req) => {
     
     console.log('Routing Agent - Received message:', message);
     
+    if (!conversationId) {
+      throw new Error('conversationId é obrigatório');
+    }
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -47,22 +51,124 @@ serve(async (req) => {
 
     console.log('Using routing config:', config.model);
 
-    // Get conversation history if conversationId provided
-    let conversationHistory: Message[] = [];
-    if (conversationId) {
-      const { data: messages } = await supabase
-        .from('conversation_messages')
-        .select('content, sender_type')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(10);
+    // Check if customer is identified
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('customer_cpf, customer_name, customer_email, ixc_client_id')
+      .eq('id', conversationId)
+      .single();
 
-      if (messages) {
-        conversationHistory = messages.map(msg => ({
-          role: msg.sender_type === 'client' ? 'user' : 'assistant',
-          content: msg.content
-        }));
+    console.log('Conversation data:', conversation);
+
+    // If customer not identified, request CPF
+    if (!conversation?.customer_cpf) {
+      console.log('Customer not identified, checking if message contains CPF');
+      
+      // Extract CPF from message (11 digits, with or without formatting)
+      const cpfMatch = message.match(/\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/);
+      
+      if (!cpfMatch) {
+        console.log('No CPF found in message, requesting identification');
+        return new Response(
+          JSON.stringify({
+            agent: 'identification',
+            message: 'Olá! Para melhor atendê-lo, preciso que informe seu CPF (apenas números ou formato 000.000.000-00).',
+            needsIdentification: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
+
+      // Clean CPF (remove formatting)
+      const cpf = cpfMatch[1].replace(/\D/g, '');
+      console.log('CPF found:', cpf);
+
+      // Search customer in IXC
+      try {
+        const { data: ixcResult, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
+          body: {
+            action: 'searchCustomers',
+            params: { query: cpf }
+          }
+        });
+
+        if (ixcError) {
+          console.error('Error searching IXC:', ixcError);
+          throw ixcError;
+        }
+
+        console.log('IXC search result:', ixcResult);
+
+        let customerData = null;
+        if (ixcResult?.customers && ixcResult.customers.length > 0) {
+          const customer = ixcResult.customers[0];
+          customerData = {
+            customer_cpf: cpf,
+            customer_name: customer.razao || customer.nome_fantasia || 'Cliente',
+            customer_email: customer.email || null,
+            customer_phone: customer.telefone_celular || customer.telefone_comercial || null,
+            ixc_client_id: customer.id
+          };
+        } else {
+          // Cliente não encontrado no IXC
+          customerData = {
+            customer_cpf: cpf,
+            customer_name: 'Cliente Novo',
+            customer_email: null,
+            customer_phone: null,
+            ixc_client_id: null
+          };
+        }
+
+        // Update conversation with customer data
+        const { error: updateError } = await supabase
+          .from('conversations')
+          .update(customerData)
+          .eq('id', conversationId);
+
+        if (updateError) {
+          console.error('Error updating conversation:', updateError);
+          throw updateError;
+        }
+
+        console.log('Customer identified:', customerData);
+
+        // Return confirmation message
+        return new Response(
+          JSON.stringify({
+            agent: 'identification',
+            message: `Obrigado, ${customerData.customer_name}! ${customerData.ixc_client_id ? 'Encontrei seu cadastro em nossa base.' : 'Vejo que você ainda não é nosso cliente.'} Como posso ajudá-lo hoje?`,
+            customerIdentified: true,
+            customerData
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } catch (error) {
+        console.error('Error identifying customer:', error);
+        // Continue with routing even if identification fails
+      }
+    }
+
+    // Get conversation history
+    let conversationHistory: Message[] = [];
+    const { data: messages } = await supabase
+      .from('conversation_messages')
+      .select('content, sender_type')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(10);
+
+    if (messages) {
+      conversationHistory = messages.map(msg => ({
+        role: msg.sender_type === 'client' ? 'user' : 'assistant',
+        content: msg.content
+      }));
     }
 
     // Call AI Gateway to determine routing
@@ -73,8 +179,10 @@ serve(async (req) => {
 
     const contextInfo = `
 CONTEXTO ADICIONAL:
+Cliente: ${conversation?.customer_name || 'Não identificado'}
+CPF: ${conversation?.customer_cpf || 'Não informado'}
+Cliente IXC: ${conversation?.ixc_client_id ? 'Sim (ID: ' + conversation.ixc_client_id + ')' : 'Não'}
 ${context ? `Departamento: ${context.department || 'não especificado'}` : ''}
-${context?.customer_name ? `Cliente: ${context.customer_name}` : ''}
 
 HISTÓRICO DA CONVERSA:
 ${conversationHistory.length > 0 ? conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n') : 'Sem histórico'}
