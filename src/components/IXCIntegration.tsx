@@ -36,6 +36,7 @@ const IXCIntegration = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<IXCCustomer | null>(null);
   const [lastResponse, setLastResponse] = useState<any>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<any>(null);
   const [customerStatus, setCustomerStatus] = useState<any>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
@@ -44,6 +45,8 @@ const IXCIntegration = () => {
 
   const createTestCustomer = async () => {
     setTestLoading(true);
+    setErrorDetails(null);
+    setDebugInfo('');
     
     try {
       toast.info('Criando cliente de teste no IXC...');
@@ -70,14 +73,26 @@ const IXCIntegration = () => {
         }
       });
 
-      if (customerError) throw customerError;
+      if (customerError) {
+        setErrorDetails({ error: customerError, data: customerData });
+        throw customerError;
+      }
+      
       if (customerData && (customerData as any).success === false) {
+        const errorData = {
+          success: false,
+          error: (customerData as any).error,
+          details: (customerData as any).details,
+          fullResponse: customerData
+        };
+        setErrorDetails(errorData);
         throw new Error((customerData as any).error || 'Erro ao criar cliente no IXC');
       }
 
       const customerId = (customerData as any)?.data?.id || (customerData as any)?.data?.registro?.id;
       
       if (!customerId) {
+        setErrorDetails({ error: 'ID não encontrado', data: customerData });
         throw new Error('ID do cliente não retornado pelo IXC');
       }
 
@@ -119,6 +134,7 @@ const IXCIntegration = () => {
       toast.success(`Atendimento criado no IXC com ID: ${atendimentoId}`);
       
       setDebugInfo(`Cliente de teste criado com sucesso!\n\nID Cliente IXC: ${customerId}\nID Atendimento IXC: ${atendimentoId}`);
+      setErrorDetails(null);
       
     } catch (error) {
       console.error('Erro ao criar cliente de teste:', error);
@@ -370,6 +386,36 @@ const IXCIntegration = () => {
             <div className="mt-4 p-4 bg-muted rounded-lg">
               <pre className="text-sm whitespace-pre-wrap">{debugInfo}</pre>
             </div>
+          )}
+          
+          {errorDetails && (
+            <Card className="mt-4 border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Detalhes do Erro (para enviar ao suporte IXC)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
+                      toast.success('JSON copiado para a área de transferência!');
+                    }}
+                  >
+                    Copiar JSON Completo
+                  </Button>
+                </div>
+                <div className="p-3 bg-muted rounded-lg max-h-96 overflow-auto">
+                  <pre className="text-xs whitespace-pre-wrap font-mono">
+                    {JSON.stringify(errorDetails, null, 2)}
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
