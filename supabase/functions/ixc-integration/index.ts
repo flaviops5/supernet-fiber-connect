@@ -880,87 +880,110 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
       throw new Error(`Erro ao criar cliente: ${JSON.stringify(data)}`);
     }
 
-    console.log('📋 Resposta COMPLETA do IXC após criação:', JSON.stringify(data, null, 2));
+    console.log('📋 Resposta do IXC após criação:', JSON.stringify(data, null, 2));
 
-    // Tentar extrair ID da resposta direta do IXC
+    // Aguardar para o IXC processar
+    console.log('⏳ Aguardando 3 segundos para o IXC processar...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Buscar diretamente usando o endpoint de listagem com filtro por CPF
+    console.log('🔍 Buscando cliente pelo CPF:', cleanCpf);
+    
+    // Tentar diferentes formatos de CPF
+    const cpfFormats = [
+      cleanCpf, // sem formatação: 04112287143
+      cleanCpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'), // formatado: 041.122.871-43
+    ];
+    
     let customerId: string | null = null;
     
-    // Algumas APIs IXC retornam o ID na resposta
-    if (data?.id) {
-      customerId = String(data.id);
-      console.log('✅ ID extraído diretamente da resposta:', customerId);
-      return { id: customerId };
-    }
-    
-    if (data?.registro?.id) {
-      customerId = String(data.registro.id);
-      console.log('✅ ID extraído de data.registro.id:', customerId);
-      return { id: customerId };
-    }
-
-    // Se não conseguiu extrair da resposta, fazer múltiplas tentativas de busca
-    const maxAttempts = 5;
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      console.log(`🔍 Tentativa ${attempt}/${maxAttempts} de buscar cliente recém-criado...`);
+    for (const cpfFormat of cpfFormats) {
+      console.log(`Tentando formato de CPF: ${cpfFormat}`);
       
-      // Aguardar antes da busca (tempo aumenta a cada tentativa)
-      const waitTime = attempt * 2000; // 2s, 4s, 6s, 8s, 10s
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      // Busca direta por CPF usando qtype
+      const searchForm = {
+        qtype: 'cnpj_cpf',
+        query: cpfFormat,
+        oper: '=',
+        page: '1',
+        rp: '10',
+        sortname: 'razao',
+        sortorder: 'asc',
+      };
       
       try {
-        // Tentar buscar por CPF
-        console.log(`Buscando por CPF: ${cleanCpf}`);
-        const customersByCpf = await searchCustomers(baseUrl, auth, cleanCpf);
-        console.log(`Resultado busca por CPF:`, customersByCpf?.length || 0, 'clientes encontrados');
+        const { ok: searchOk, data: searchData } = await postIXC(`${baseUrl}/cliente`, auth, searchForm);
+        console.log(`Resultado da busca com CPF ${cpfFormat}:`, JSON.stringify(searchData, null, 2));
         
-        if (customersByCpf && customersByCpf.length > 0) {
-          customerId = String(customersByCpf[0].id);
-          console.log(`✅ Cliente encontrado por CPF na tentativa ${attempt}! ID:`, customerId);
-          break;
+        if (searchOk && searchData?.registros) {
+          const registros = Array.isArray(searchData.registros) 
+            ? searchData.registros 
+            : Object.values(searchData.registros);
+          
+          console.log(`✅ Encontrados ${registros.length} registros`);
+          
+          if (registros.length > 0) {
+            // Verificar se algum tem o CPF correto
+            const matchingCustomer = registros.find((r: any) => {
+              const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
+              return customerCpf === cleanCpf;
+            });
+            
+            if (matchingCustomer) {
+              customerId = String(matchingCustomer.id);
+              console.log(`✅ Cliente encontrado! ID: ${customerId}`, matchingCustomer);
+              break;
+            } else {
+              console.log('❌ Nenhum registro com CPF correspondente');
+            }
+          }
         }
+      } catch (searchError) {
+        console.error(`Erro ao buscar com CPF ${cpfFormat}:`, searchError);
+      }
+    }
+    
+    // Se ainda não encontrou, tentar buscar por nome
+    if (!customerId) {
+      console.log('🔍 Tentando buscar por nome:', customerData.name);
+      
+      const nameSearchForm = {
+        qtype: 'razao',
+        query: customerData.name,
+        oper: 'L',
+        page: '1',
+        rp: '50',
+        sortname: 'razao',
+        sortorder: 'asc',
+      };
+      
+      try {
+        const { ok: nameOk, data: nameData } = await postIXC(`${baseUrl}/cliente`, auth, nameSearchForm);
+        console.log('Resultado da busca por nome:', JSON.stringify(nameData, null, 2));
         
-        // Se não encontrou por CPF, tentar por nome exato
-        console.log(`Buscando por nome: ${customerData.name}`);
-        const customersByName = await searchCustomers(baseUrl, auth, customerData.name);
-        console.log(`Resultado busca por nome:`, customersByName?.length || 0, 'clientes encontrados');
-        
-        if (customersByName && customersByName.length > 0) {
-          // Verificar se algum tem o CPF correto
-          const matchingCustomer = customersByName.find(c => 
-            c.cnpj_cpf?.replace(/\D/g, '') === cleanCpf
-          );
+        if (nameOk && nameData?.registros) {
+          const registros = Array.isArray(nameData.registros) 
+            ? nameData.registros 
+            : Object.values(nameData.registros);
+          
+          // Procurar o cliente com CPF correspondente
+          const matchingCustomer = registros.find((r: any) => {
+            const customerCpf = String(r.cnpj_cpf || '').replace(/\D/g, '');
+            return customerCpf === cleanCpf;
+          });
+          
           if (matchingCustomer) {
             customerId = String(matchingCustomer.id);
-            console.log(`✅ Cliente encontrado por nome na tentativa ${attempt}! ID:`, customerId);
-            break;
+            console.log(`✅ Cliente encontrado por nome! ID: ${customerId}`);
           }
         }
-        
-        // Como última tentativa, buscar clientes criados hoje
-        if (attempt === maxAttempts) {
-          console.log('🔍 Última tentativa: buscando todos os clientes recentes...');
-          const today = new Date().toISOString().split('T')[0];
-          const allCustomers = await getCustomers(baseUrl, auth, { rp: '50', page: '1' });
-          const recentCustomer = allCustomers.find(c => 
-            c.cnpj_cpf?.replace(/\D/g, '') === cleanCpf &&
-            c.data_cadastro === today
-          );
-          if (recentCustomer) {
-            customerId = String(recentCustomer.id);
-            console.log(`✅ Cliente encontrado na busca geral! ID:`, customerId);
-            break;
-          }
-        }
-        
-        console.log(`❌ Cliente não encontrado na tentativa ${attempt}`);
-      } catch (searchError) {
-        console.error(`Erro na tentativa ${attempt}:`, searchError);
+      } catch (nameError) {
+        console.error('Erro ao buscar por nome:', nameError);
       }
     }
 
     if (!customerId) {
-      throw new Error('ID do cliente não retornado pelo IXC após criação e múltiplas buscas');
+      throw new Error('Cliente criado no IXC, mas não foi possível recuperar o ID pela busca de CPF. Verifique manualmente no sistema IXC.');
     }
 
     console.log('✅ Cliente criado com sucesso! ID:', customerId);
