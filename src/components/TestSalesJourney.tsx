@@ -16,7 +16,7 @@ export function TestSalesJourney() {
     customerName: "João da Silva Teste",
     customerEmail: "joao.teste@email.com",
     customerPhone: "11987654321",
-    customerCpf: "12345678900",
+    customerCpf: "04112287143",
     customerCep: "01310-100",
     customerAddress: "Av. Paulista, 1000",
     customerBirthDate: "1990-01-15",
