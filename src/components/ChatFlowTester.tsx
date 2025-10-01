@@ -130,6 +130,16 @@ export default function ChatFlowTester() {
             ? 'blocked_or_overdue'
             : undefined;
 
+          console.log('Transbordo para Financeiro iniciado', {
+            conversationId,
+            routeReason,
+            hasCustomerData: Boolean(effectiveCustomerData),
+          });
+          toast({
+            title: 'Transferindo para Financeiro',
+            description: 'Chamando Julia Martins...'
+          });
+
           const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
             body: {
               messages: [{ role: 'user', content: input }],
@@ -140,6 +150,8 @@ export default function ChatFlowTester() {
           });
 
           if (finError) throw finError;
+
+          console.log('Resposta da Julia (support-financial-agent):', finData);
 
           const juliaMessage: string = finData?.message || 'Olá! Sou a Julia Martins do setor financeiro da SUPERNET FIBRA. Vou ajudar você agora.';
 
@@ -159,8 +171,18 @@ export default function ChatFlowTester() {
             content: juliaMessage,
             ai_suggestion: true,
           });
-        } catch (e) {
+
+          toast({
+            title: 'Transferido para Financeiro',
+            description: 'Julia assumiu o atendimento.'
+          });
+        } catch (e: any) {
           console.error('Erro no transbordo para Financeiro:', e);
+          toast({
+            title: 'Falha ao transferir para Financeiro',
+            description: e?.message || 'Erro desconhecido ao chamar a Julia.',
+            variant: 'destructive'
+          });
         }
       }
 
