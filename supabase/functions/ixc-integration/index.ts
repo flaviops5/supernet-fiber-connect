@@ -134,6 +134,27 @@ serve(async (req) => {
         result = await createContract(baseUrl, auth, params.customerId, params.contractData);
         break;
       
+      case 'desbloqueioConfianca':
+        if (!params.contractId) {
+          throw new Error('ID do contrato é obrigatório');
+        }
+        result = await desbloqueioConfianca(baseUrl, auth, params.contractId);
+        break;
+      
+      case 'getFinancialTitles':
+        if (!params.customerId) {
+          throw new Error('ID do cliente é obrigatório');
+        }
+        result = await getFinancialTitles(baseUrl, auth, params.customerId);
+        break;
+      
+      case 'getPixQrCode':
+        if (!params.titleId) {
+          throw new Error('ID do título é obrigatório');
+        }
+        result = await getPixQrCode(baseUrl, auth, params.titleId);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -1328,5 +1349,130 @@ async function createContract(baseUrl: string, auth: string, customerId: string,
   } catch (error) {
     console.error('Erro ao criar contrato no IXC:', error);
     throw new Error(`Erro ao criar contrato: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: string) {
+  try {
+    console.log(`🔓 Tentando desbloqueio de confiança para contrato: ${contractId}`);
+    
+    const response = await fetch(`${baseUrl}/desbloqueio_confianca`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+        'ixcsoft': 'inserir'
+      },
+      body: JSON.stringify({
+        id: contractId
+      })
+    });
+
+    const rawText = await response.text();
+    
+    if (!response.ok) {
+      console.error(`❌ Erro HTTP ${response.status}:`, rawText);
+      
+      // Tenta extrair mensagem de erro
+      let errorMessage = `Erro HTTP ${response.status}`;
+      if (rawText.includes('Ocorreu um erro')) {
+        errorMessage = 'IXC não permitiu o desbloqueio - verifique as condições do contrato';
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage,
+        rawError: rawText
+      };
+    }
+
+    // Tenta parsear resposta
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      // Se não for JSON, considera como sucesso se status 200
+      data = { success: true, message: rawText };
+    }
+
+    console.log('✅ Desbloqueio realizado com sucesso:', data);
+    return { success: true, data };
+
+  } catch (error: any) {
+    console.error('Erro ao tentar desbloqueio:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Erro desconhecido ao tentar desbloqueio de confiança'
+    };
+  }
+}
+
+async function getFinancialTitles(baseUrl: string, auth: string, customerId: string) {
+  try {
+    console.log(`💰 Buscando títulos financeiros para cliente: ${customerId}`);
+    
+    const response = await fetch(`${baseUrl}/fn_areceber_lista`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+        'ixcsoft': 'listar'
+      },
+      body: JSON.stringify({
+        qtype: 'fn_areceber.id_cliente',
+        query: customerId,
+        oper: '=',
+        page: '1',
+        rp: '50',
+        sortname: 'fn_areceber.data_vencimento',
+        sortorder: 'desc'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`✓ Encontrados ${data.total || 0} títulos para cliente ${customerId}`);
+    
+    return {
+      titles: data.registros || [],
+      total: data.total || 0
+    };
+  } catch (error: any) {
+    console.error('Erro ao buscar títulos:', error);
+    throw error;
+  }
+}
+
+async function getPixQrCode(baseUrl: string, auth: string, titleId: string) {
+  try {
+    console.log(`🏦 Buscando QR Code PIX para título: ${titleId}`);
+    
+    const response = await fetch(`${baseUrl}/fn_areceber_qrcode?id=${titleId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+        'ixcsoft': 'listar'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`✓ QR Code PIX obtido para título ${titleId}`);
+    
+    return {
+      qrcode: data.qrcode,
+      qrcode_url: data.qrcode_url,
+      qrcode_link: data.qrcode_original_link_pagamento
+    };
+  } catch (error: any) {
+    console.error('Erro ao buscar QR Code PIX:', error);
+    throw error;
   }
 }

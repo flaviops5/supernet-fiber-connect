@@ -17,9 +17,10 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, customerData } = await req.json();
+    const { messages, conversationId, customerData, routeReason } = await req.json();
     
     console.log('Support Financial Agent - Processing request');
+    console.log('Route reason:', routeReason);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -71,6 +72,146 @@ serve(async (req) => {
       .select('*')
       .single();
 
+    // DESBLOQUEIO AUTOMÁTICO se cliente está bloqueado/em atraso
+    let desbloqueioInfo = '';
+    let paymentInfo = '';
+    
+    if (routeReason === 'blocked_or_overdue' && customerData?.ixc_client_id) {
+      console.log('🔓 Cliente bloqueado/em atraso - tentando desbloqueio automático...');
+      
+      try {
+        // Buscar contratos do cliente via IXC
+        const statusResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'getCustomerStatus',
+            params: { id: customerData.ixc_client_id }
+          })
+        });
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          const contracts = statusData.data?.contracts || [];
+          
+          // Encontrar contrato bloqueado/em atraso ativo
+          const blockedContract = contracts.find((c: any) => {
+            const statusInternet = String(c.status_internet || '').toUpperCase();
+            const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+            return financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet);
+          });
+
+          if (blockedContract) {
+            console.log(`📋 Contrato bloqueado encontrado: ${blockedContract.id}`);
+            
+            // Tentar desbloqueio de confiança
+            const unblockResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                action: 'desbloqueioConfianca',
+                params: { contractId: blockedContract.id }
+              })
+            });
+
+            if (unblockResponse.ok) {
+              const unblockData = await unblockResponse.json();
+              
+              if (unblockData.data?.success) {
+                console.log('✅ Desbloqueio bem-sucedido!');
+                
+                // Buscar títulos financeiros pendentes
+                const titlesResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    action: 'getFinancialTitles',
+                    params: { customerId: customerData.ixc_client_id }
+                  })
+                });
+
+                if (titlesResponse.ok) {
+                  const titlesData = await titlesResponse.json();
+                  const titles = titlesData.data?.titles || [];
+                  
+                  if (titles.length > 0) {
+                    console.log(`💰 ${titles.length} título(s) pendente(s) encontrado(s)`);
+                    const firstTitle = titles[0];
+                    
+                    // Buscar QR Code PIX do primeiro título
+                    const pixResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'getPixQrCode',
+                        params: { titleId: firstTitle.id }
+                      })
+                    });
+
+                    if (pixResponse.ok) {
+                      const pixData = await pixResponse.json();
+                      console.log('🏦 QR Code PIX obtido');
+                      
+                      paymentInfo = `
+
+📄 INFORMAÇÕES DE PAGAMENTO (ENVIE AO CLIENTE):
+
+💵 Valor: R$ ${firstTitle.valor}
+📅 Vencimento: ${firstTitle.data_vencimento}
+🔢 Código de Barras: ${firstTitle.codbar || 'Não disponível'}
+
+🏦 PIX COPIA E COLA:
+${pixData.data?.qrcode || 'Não disponível'}
+
+${firstTitle.url_boleto ? `📎 Link do Boleto: ${firstTitle.url_boleto}` : ''}
+${pixData.data?.qrcode_link ? `🔗 Link de Pagamento: ${pixData.data.qrcode_link}` : ''}
+`;
+                    }
+                  }
+                }
+                
+                desbloqueioInfo = `
+✅ DESBLOQUEIO DE CONFIANÇA REALIZADO COM SUCESSO
+
+📋 Contrato liberado: ${blockedContract.id} (${blockedContract.contrato})
+⏰ O cliente agora tem 3 DIAS de serviço normal para regularizar o pagamento
+🌐 Instrua o cliente a testar a navegação IMEDIATAMENTE
+${paymentInfo}
+
+IMPORTANTE: Explique ao cliente que o serviço foi liberado por 3 dias e após esse período, caso não haja pagamento, o bloqueio retornará automaticamente.
+`;
+              } else {
+                console.log('❌ Falha no desbloqueio:', unblockData.data?.error);
+                
+                desbloqueioInfo = `
+❌ TENTATIVA DE DESBLOQUEIO NÃO FOI POSSÍVEL
+
+📋 Contrato: ${blockedContract.id}
+⚠️ Motivo: ${unblockData.data?.error || 'Erro desconhecido'}
+
+O sistema IXC não permitiu a liberação automática. Oriente o cliente a regularizar o pagamento para ter o acesso restabelecido.
+`;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao tentar desbloqueio automático:', error);
+      }
+    }
+
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
@@ -90,6 +231,15 @@ ${customerData?.email ? `E-mail: ${customerData.email}` : ''}
 ${customerData?.phone ? `Telefone: ${customerData.phone}` : ''}
 ${customerData?.cpf ? `CPF: ${customerData.cpf}` : ''}
 ${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
+
+${desbloqueioInfo ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔓 AÇÃO AUTOMÁTICA REALIZADA:
+${desbloqueioInfo}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao cliente. Explique o desbloqueio realizado e forneça os dados de pagamento.
+` : ''}
 `;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
