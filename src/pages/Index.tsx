@@ -6,8 +6,11 @@ import { SalesAgentChat } from '@/components/SalesAgentChat';
 import Testimonials from '@/components/Testimonials';
 import AdditionalServices from '@/components/AdditionalServices';
 import FAQ from '@/components/FAQ';
+import { useScrollToHash } from '@/hooks/useScrollToHash';
 
 const Index = () => {
+  useScrollToHash();
+  
   return (
     <div className="min-h-screen">
       <HeroSection />

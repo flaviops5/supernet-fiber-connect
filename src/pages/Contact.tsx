@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Mail, MapPin, Clock, MessageCircle, Upload, Briefcase } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useScrollToHash } from '@/hooks/useScrollToHash';
 import GoogleMap from '@/components/GoogleMap';
 import contactHero from '@/assets/contact-hero.jpg';
 
 const Contact = () => {
   const { toast } = useToast();
+  useScrollToHash();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -108,6 +110,7 @@ const Contact = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section 
+        id="contato"
         className="relative py-24 bg-gradient-to-r from-primary/20 to-primary/10 overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url(${contactHero})`,

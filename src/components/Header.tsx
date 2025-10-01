@@ -24,7 +24,7 @@ const Header = () => {
 
   const plans = [{
     name: 'Planos Residenciais',
-    href: '/'
+    href: '/#planos-residenciais'
   }, {
     name: 'Planos Empresariais',
     href: '/planos-empresariais'
@@ -36,7 +36,7 @@ const Header = () => {
     href: '/planos-streaming'
   }, {
     name: 'Planos com Telemedicina',
-    href: '/telemedicina'
+    href: '/telemedicina#planos-telemedicina'
   }];
 
   const services = [{
@@ -154,13 +154,13 @@ const Header = () => {
               )}
             </div>
 
-            <Link to="/blog" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/blog#blog" className="text-foreground hover:text-primary transition-colors">
               Blog
             </Link>
-            <Link to="/sobre" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/#sobre" className="text-foreground hover:text-primary transition-colors">
               Sobre
             </Link>
-            <Link to="/contato" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/contato#contato" className="text-foreground hover:text-primary transition-colors">
               Contato
             </Link>
           </nav>
@@ -220,13 +220,13 @@ const Header = () => {
                 </div>
               </div>
 
-              <Link to="/blog" className="block text-foreground hover:text-primary transition-colors">
+              <Link to="/blog#blog" className="block text-foreground hover:text-primary transition-colors">
                 Blog
               </Link>
-              <Link to="/sobre" className="block text-foreground hover:text-primary transition-colors">
+              <Link to="/#sobre" className="block text-foreground hover:text-primary transition-colors">
                 Sobre
               </Link>
-              <Link to="/contato" className="block text-foreground hover:text-primary transition-colors">
+              <Link to="/contato#contato" className="block text-foreground hover:text-primary transition-colors">
                 Contato
               </Link>
               

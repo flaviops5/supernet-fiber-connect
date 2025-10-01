@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useScrollToHash } from '@/hooks/useScrollToHash';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
@@ -11,6 +12,7 @@ import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
 const Telemedicina = () => {
   console.log('Telemedicina page loading...');
   const navigate = useNavigate();
+  useScrollToHash();
   
   const handleWhatsApp = () => {
     window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20contratar!', '_blank');
@@ -278,7 +280,7 @@ const Telemedicina = () => {
       </section>
 
       {/* Plans Section */}
-      <section className="py-16 px-4 bg-gradient-to-br from-muted/30 to-orange/5">
+      <section id="planos-telemedicina" className="py-16 px-4 bg-gradient-to-br from-muted/30 to-orange/5">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase mb-2 text-foreground">
             Planos Que Cabem Dentro do Seu Orçamento

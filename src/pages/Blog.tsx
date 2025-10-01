@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, User, Calendar, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useScrollToHash } from "@/hooks/useScrollToHash";
 
 interface BlogPost {
   id: string;
@@ -37,6 +38,7 @@ const Blog = () => {
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  useScrollToHash();
 
   useEffect(() => {
     fetchPosts();
@@ -92,7 +94,7 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-primary/80 text-white">
+      <section id="blog" className="py-20 bg-gradient-to-r from-primary to-primary/80 text-white">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Blog SUPERNET
