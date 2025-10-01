@@ -29,7 +29,14 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
     mediaUrl: '',
     ctaType: 'none',
     ctaConfig: {},
-    targetFilters: {},
+    targetFilters: {
+      audience: 'all', // all, region, custom
+      regions: [],
+      ceps: [],
+      status: [],
+      plans: [],
+      tags: [],
+    },
   });
 
   const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -191,6 +198,127 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
                 <SelectItem value="nps">Pesquisa NPS</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Público-Alvo */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Público-Alvo</CardTitle>
+          <CardDescription>Escolha para quem enviar a campanha</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Tipo de Público</Label>
+            <Select
+              value={formData.targetFilters.audience}
+              onValueChange={(value) => setFormData({
+                ...formData,
+                targetFilters: { ...formData.targetFilters, audience: value }
+              })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Clientes</SelectItem>
+                <SelectItem value="region">Por Região/CEP</SelectItem>
+                <SelectItem value="custom">Segmentação Customizada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.targetFilters.audience === 'region' && (
+            <div className="space-y-3 pt-2 border-t">
+              <div>
+                <Label htmlFor="regions">Regiões</Label>
+                <Input
+                  id="regions"
+                  placeholder="Ex: Centro, Zona Norte (separar por vírgula)"
+                  onChange={(e) => {
+                    const regions = e.target.value.split(',').map(r => r.trim()).filter(r => r);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, regions }
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="ceps">CEPs Específicos</Label>
+                <Input
+                  id="ceps"
+                  placeholder="Ex: 01310-100, 04567-890 (separar por vírgula)"
+                  onChange={(e) => {
+                    const ceps = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, ceps }
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {formData.targetFilters.audience === 'custom' && (
+            <div className="space-y-3 pt-2 border-t">
+              <div>
+                <Label htmlFor="status">Status do Cliente</Label>
+                <Input
+                  id="status"
+                  placeholder="Ex: ativo, inadimplente (separar por vírgula)"
+                  onChange={(e) => {
+                    const status = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, status }
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="plans">Planos Específicos</Label>
+                <Input
+                  id="plans"
+                  placeholder="Ex: 300 Mega, 500 Mega (separar por vírgula)"
+                  onChange={(e) => {
+                    const plans = e.target.value.split(',').map(p => p.trim()).filter(p => p);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, plans }
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tags">Tags</Label>
+                <Input
+                  id="tags"
+                  placeholder="Ex: vip, novo-cliente (separar por vírgula)"
+                  onChange={(e) => {
+                    const tags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, tags }
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground bg-muted p-3 rounded-md">
+            <p className="font-medium mb-1">💡 Dica:</p>
+            <p>
+              {formData.targetFilters.audience === 'all' && 
+                'Campanha será enviada para todos os clientes cadastrados no IXC.'}
+              {formData.targetFilters.audience === 'region' && 
+                'Filtre clientes por região ou CEP específico.'}
+              {formData.targetFilters.audience === 'custom' && 
+                'Combine múltiplos critérios para segmentar seu público.'}
+            </p>
           </div>
         </CardContent>
       </Card>
