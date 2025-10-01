@@ -269,6 +269,7 @@ const ReviewsManagement = () => {
 
 // Users Management component
 const UsersManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -359,10 +360,34 @@ const UsersManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
-        <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciar Usuários</h1>
+          <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
+        </div>
+        <Button 
+          onClick={() => navigate('/auth')}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar Usuário
+        </Button>
       </div>
+
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Como adicionar novos usuários
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-2">
+          <p>• Clique no botão "Adicionar Usuário" acima para criar uma nova conta</p>
+          <p>• Os novos usuários recebem permissão de "Visualizador" por padrão</p>
+          <p>• Você pode alterar as permissões depois que o usuário criar a conta</p>
+          <p>• Após o cadastro, o usuário receberá um email de confirmação</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
