@@ -227,6 +227,85 @@ export default function ChatFlowTester() {
     "Minha internet está lenta"
   ];
 
+  // Cenários de teste específicos para roteamento
+  const testScenarios = [
+    {
+      name: "OFFLINE + Sem Pendências",
+      description: "Cliente offline, sem dívidas → Técnico",
+      cpf: "111.111.111-11",
+      message: "Minha internet não está funcionando",
+      expectedRoute: "support_tech"
+    },
+    {
+      name: "OFFLINE + Com Pendências",
+      description: "Cliente offline e bloqueado → Financeiro",
+      cpf: "222.222.222-22", 
+      message: "Não consigo mais acessar a internet",
+      expectedRoute: "support_financial"
+    },
+    {
+      name: "ONLINE + Sem Pendências",
+      description: "Cliente online, tudo ok → Cloé analisa",
+      cpf: "333.333.333-33",
+      message: "Meu wifi está lento no quarto",
+      expectedRoute: "routing"
+    },
+    {
+      name: "ONLINE + Com Pendências",
+      description: "Cliente online mas deve pagar → Financeiro",
+      cpf: "444.444.444-44",
+      message: "Quero a segunda via do boleto",
+      expectedRoute: "support_financial"
+    },
+    {
+      name: "Cliente Novo",
+      description: "Não tem cadastro no IXC → Vendas",
+      cpf: "999.999.999-99",
+      message: "Quero contratar internet",
+      expectedRoute: "sales"
+    }
+  ];
+
+  const runScenario = async (scenario: typeof testScenarios[0]) => {
+    if (!conversationId) {
+      toast({
+        title: "Inicie uma conversa primeiro",
+        description: "Clique em 'Nova Conversa' para começar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Limpar mensagens anteriores
+    setMessages([]);
+    setCustomerData(null);
+    setRoutedAgent(null);
+
+    // Primeiro enviar saudação
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setInput("Oi");
+    await sendMessage();
+
+    // Aguardar resposta
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Enviar CPF
+    setInput(scenario.cpf);
+    await sendMessage();
+
+    // Aguardar identificação
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Enviar mensagem do cenário
+    setInput(scenario.message);
+    await sendMessage();
+
+    toast({
+      title: `Cenário: ${scenario.name}`,
+      description: scenario.description,
+    });
+  };
+
   const getAgentBadge = (agent: string) => {
     const variants: Record<string, { label: string; color: string }> = {
       sales: { label: 'Vicente (Vendas)', color: 'bg-green-500' },
@@ -414,15 +493,36 @@ export default function ChatFlowTester() {
             </div>
           )}
 
+          {/* Test Scenarios */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Cenários de Teste:</p>
+            <div className="space-y-2">
+              {testScenarios.map((scenario, idx) => (
+                <Button
+                  key={idx}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left h-auto py-2"
+                  onClick={() => runScenario(scenario)}
+                  disabled={!conversationId || isLoading}
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-medium text-xs">{scenario.name}</span>
+                    <span className="text-xs text-muted-foreground">{scenario.description}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Instructions */}
           <div className="mt-4 p-3 bg-muted rounded text-xs space-y-2">
-            <p className="font-medium">Como testar:</p>
+            <p className="font-medium">Como usar:</p>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-              <li>Inicie uma nova conversa</li>
-              <li>Envie "Oi" para saudação</li>
-              <li>Envie "Estou sem internet"</li>
-              <li>Informe um CPF válido</li>
-              <li>Observe o roteamento automático</li>
+              <li>Clique em "Nova Conversa"</li>
+              <li>Escolha um cenário de teste</li>
+              <li>Aguarde o fluxo completo</li>
+              <li>Verifique o roteamento correto</li>
             </ol>
           </div>
         </CardContent>

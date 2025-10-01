@@ -78,6 +78,260 @@ serve(async (req) => {
       const cpf = cpfMatch[1].replace(/\D/g, '');
       console.log('CPF found in message:', cpf);
 
+      // MOCK DATA FOR TESTING - Check if it's a test CPF
+      const isTestCPF = ['11111111111', '22222222222', '33333333333', '44444444444', '99999999999'].includes(cpf);
+      
+      if (isTestCPF) {
+        console.log('🧪 TEST CPF detected - using mock data');
+        
+        let mockCustomerData: any;
+        let mockClientStatus: any;
+
+        switch (cpf) {
+          case '11111111111': // OFFLINE + Sem Pendências → Técnico
+            mockClientStatus = {
+              isOnline: false,
+              contracts: [{
+                status_internet: 'A', // Ativo
+                data_acesso_desativado: null
+              }]
+            };
+            mockCustomerData = {
+              customer_cpf: cpf,
+              customer_name: 'Cliente Teste Offline',
+              customer_email: 'offline@teste.com',
+              customer_phone: '(11) 91111-1111',
+              ixc_client_id: 'TEST_OFFLINE_001',
+              metadata: {
+                ...conversation?.metadata,
+                cliente_status: mockClientStatus
+              }
+            };
+            break;
+
+          case '22222222222': // OFFLINE + Com Pendências → Financeiro
+            mockClientStatus = {
+              isOnline: false,
+              contracts: [{
+                status_internet: 'CA', // Cancelado por Atraso
+                data_acesso_desativado: '2025-09-15'
+              }]
+            };
+            mockCustomerData = {
+              customer_cpf: cpf,
+              customer_name: 'Cliente Teste Bloqueado',
+              customer_email: 'bloqueado@teste.com',
+              customer_phone: '(11) 92222-2222',
+              ixc_client_id: 'TEST_BLOCKED_002',
+              metadata: {
+                ...conversation?.metadata,
+                cliente_status: mockClientStatus
+              }
+            };
+            break;
+
+          case '33333333333': // ONLINE + Sem Pendências → Cloé analisa
+            mockClientStatus = {
+              isOnline: true,
+              contracts: [{
+                status_internet: 'A', // Ativo
+                data_acesso_desativado: null
+              }]
+            };
+            mockCustomerData = {
+              customer_cpf: cpf,
+              customer_name: 'Cliente Teste Online',
+              customer_email: 'online@teste.com',
+              customer_phone: '(11) 93333-3333',
+              ixc_client_id: 'TEST_ONLINE_003',
+              metadata: {
+                ...conversation?.metadata,
+                cliente_status: mockClientStatus
+              }
+            };
+            break;
+
+          case '44444444444': // ONLINE + Com Pendências → Financeiro
+            mockClientStatus = {
+              isOnline: true,
+              contracts: [{
+                status_internet: 'FA', // Financeiro em Atraso
+                data_acesso_desativado: null
+              }]
+            };
+            mockCustomerData = {
+              customer_cpf: cpf,
+              customer_name: 'Cliente Teste Devedor',
+              customer_email: 'devedor@teste.com',
+              customer_phone: '(11) 94444-4444',
+              ixc_client_id: 'TEST_DEBTOR_004',
+              metadata: {
+                ...conversation?.metadata,
+                cliente_status: mockClientStatus
+              }
+            };
+            break;
+
+          case '99999999999': // Cliente Novo (não existe no IXC)
+            mockClientStatus = null;
+            mockCustomerData = {
+              customer_cpf: cpf,
+              customer_name: 'Cliente Novo Teste',
+              customer_email: null,
+              customer_phone: null,
+              ixc_client_id: null,
+              metadata: {
+                ...conversation?.metadata,
+                cliente_novo: true
+              }
+            };
+            break;
+
+          default:
+            mockCustomerData = null;
+            mockClientStatus = null;
+        }
+
+        if (mockCustomerData) {
+          // Update conversation with mock data
+          const { error: updateError } = await supabase
+            .from('conversations')
+            .update(mockCustomerData)
+            .eq('id', conversationId);
+
+          if (updateError) {
+            console.error('Error updating conversation with mock data:', updateError);
+          } else {
+            console.log('✅ Mock customer data updated');
+          }
+
+          const clientStatus = mockClientStatus;
+
+          // Same routing logic as real customers
+          if (clientStatus) {
+            const contracts = clientStatus.contracts || [];
+            let isBlocked = false;
+            
+            for (const contract of contracts) {
+              const statusInternet = String(contract.status_internet || '').toUpperCase();
+              const isAccessDisabled = contract.data_acesso_desativado && contract.data_acesso_desativado !== '0000-00-00';
+              const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+              
+              if (financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet) || isAccessDisabled) {
+                isBlocked = true;
+                break;
+              }
+            }
+
+            if (isBlocked) {
+              console.log('🧪 MOCK: Cliente BLOQUEADO - roteando para Julia (Financeiro)');
+              const firstName = mockCustomerData.customer_name.split(' ')[0];
+
+              let financialMessage: string | undefined = undefined;
+              try {
+                const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
+                  body: {
+                    messages: [{ role: 'user', content: message }],
+                    conversationId,
+                    customerData: mockCustomerData,
+                    routeReason: 'blocked_or_overdue',
+                  },
+                });
+                
+                if (finError) {
+                  console.error('🔴 ERRO ao chamar support-financial-agent:', finError);
+                } else if (finData?.message) {
+                  financialMessage = finData.message as string;
+                  
+                  await supabase
+                    .from('conversation_messages')
+                    .insert({
+                      conversation_id: conversationId,
+                      sender_type: 'agent',
+                      sender_name: 'Julia Martins (Financeiro)',
+                      content: financialMessage,
+                      ai_suggestion: true,
+                    });
+                }
+              } catch (e) {
+                console.error('💥 EXCEÇÃO ao chamar support-financial-agent:', e);
+              }
+
+              const finalMessage = financialMessage || 
+                `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`;
+              
+              return new Response(
+                JSON.stringify({
+                  agent: 'support_financial',
+                  message: finalMessage,
+                  customerIdentified: true,
+                  customerData: mockCustomerData,
+                  autoRouted: true,
+                  routeReason: 'blocked_or_overdue',
+                  juliaResponse: !!financialMessage,
+                }),
+                {
+                  status: 200,
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+              );
+            }
+
+            const isOnline = clientStatus.isOnline === true;
+            if (!isOnline) {
+              console.log('🧪 MOCK: Cliente offline - roteando para Suporte Técnico');
+              const firstName = mockCustomerData.customer_name.split(' ')[0];
+              return new Response(
+                JSON.stringify({
+                  agent: 'support_tech',
+                  message: `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
+                  customerIdentified: true,
+                  customerData: mockCustomerData,
+                  autoRouted: true,
+                  routeReason: 'offline'
+                }),
+                {
+                  status: 200,
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+              );
+            }
+
+            console.log('🧪 MOCK: Cliente online e não bloqueado - confirmando');
+            const firstName = mockCustomerData.customer_name.split(' ')[0];
+            return new Response(
+              JSON.stringify({
+                agent: 'routing',
+                message: `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
+                customerIdentified: true,
+                customerData: mockCustomerData,
+                requiresIntent: true
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+
+          // New customer
+          return new Response(
+            JSON.stringify({
+              agent: 'routing',
+              message: `Olá! ${mockCustomerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`,
+              customerIdentified: true,
+              customerData: mockCustomerData,
+              requiresIntent: true
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+
+      // REAL IXC INTEGRATION (only if not a test CPF)
       try {
         const { data: ixcResult, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
           body: {
