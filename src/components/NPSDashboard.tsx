@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,6 +48,7 @@ interface NPSResponse {
 }
 
 export function NPSDashboard() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState<NPSStats[]>([]);
   const [detractors, setDetractors] = useState<NPSResponse[]>([]);
@@ -178,7 +180,7 @@ export function NPSDashboard() {
             Acompanhe a satisfação e lealdade dos clientes
           </p>
         </div>
-        <Button onClick={() => window.location.href = '/admin?section=campanhas&create=nps'}>
+        <Button onClick={() => navigate('/admin/campaigns')}>
           Nova Pesquisa NPS
         </Button>
       </div>
