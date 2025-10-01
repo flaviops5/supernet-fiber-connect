@@ -177,7 +177,14 @@ serve(async (req) => {
 
             // Server-side handoff: call Julia (support-financial-agent) immediately
             let financialMessage: string | undefined = undefined;
+            console.log('🔵 ANTES de chamar support-financial-agent');
             try {
+              console.log('🟡 Invocando support-financial-agent com:', {
+                conversationId,
+                hasSupabase: !!supabase,
+                hasCustomerData: !!customerData
+              });
+              
               const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
                 body: {
                   messages: [{ role: 'user', content: message }],
@@ -186,10 +193,18 @@ serve(async (req) => {
                   routeReason: 'blocked_or_overdue',
                 },
               });
+              
+              console.log('🟢 Resposta do support-financial-agent:', { 
+                finData, 
+                finError,
+                hasMessage: !!finData?.message 
+              });
+              
               if (finError) {
-                console.error('Erro ao chamar support-financial-agent:', finError);
+                console.error('🔴 ERRO ao chamar support-financial-agent:', finError);
               } else if (finData?.message) {
                 financialMessage = finData.message as string;
+                console.log('✅ Mensagem da Julia recebida:', financialMessage.substring(0, 50) + '...');
 
                 // Persist Julia's message server-side so it appears in timelines
                 await supabase.from('conversation_messages').insert({
@@ -199,11 +214,17 @@ serve(async (req) => {
                   content: financialMessage,
                   ai_suggestion: true,
                 });
+                console.log('✅ Mensagem da Julia persistida no DB');
+              } else {
+                console.warn('⚠️ support-financial-agent retornou sem mensagem');
               }
             } catch (e) {
-              console.error('Exceção ao chamar support-financial-agent:', e);
+              console.error('💥 EXCEÇÃO ao chamar support-financial-agent:', e);
+              console.error('💥 Tipo de erro:', typeof e);
+              console.error('💥 Stack trace:', e instanceof Error ? e.stack : 'N/A');
             }
 
+            console.log('🔵 Retornando resposta com financialMessage:', !!financialMessage);
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
