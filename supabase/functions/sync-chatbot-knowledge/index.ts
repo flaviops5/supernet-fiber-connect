@@ -44,11 +44,11 @@ serve(async (req) => {
 
     if (settingsError) console.error('Settings error:', settingsError);
 
-    // 4. Limpar knowledge base existente de vendas e documentação IXC
+    // 4. Limpar knowledge base existente de vendas, serviços e documentação IXC
     await supabase
       .from('knowledge_base')
       .delete()
-      .in('category', ['planos', 'vendas', 'empresa', 'faq', 'ixc-api']);
+      .in('category', ['planos', 'vendas', 'empresa', 'faq', 'ixc-api', 'servicos_adicionais']);
 
     // 5. Criar conteúdo sobre planos (disponível para sales)
     const plansContent = plans?.map(plan => {
@@ -219,13 +219,136 @@ Telefone: ${systemSettings?.company_phone || '(11) 99999-9999'}
       is_active: true
     };
 
-    // 10. Inserir tudo na knowledge base
+    // 10. Criar informações sobre Automação Residencial
+    const automacaoInfo = {
+      title: 'Automação Residencial SUPERNET',
+      category: 'servicos_adicionais',
+      content_type: 'servico',
+      agent_type: null, // Disponível para todos
+      content: `
+AUTOMAÇÃO RESIDENCIAL - SUPERNET FIBRA
+
+DESCRIÇÃO:
+Sistema completo de automação residencial que permite controlar sua casa de forma inteligente através de aplicativo, voz ou automações programadas.
+
+CARACTERÍSTICAS:
+- Controle de iluminação (liga/desliga, intensidade, cores)
+- Controle de temperatura (ar-condicionado, aquecedores)
+- Segurança (câmeras, alarmes, fechaduras inteligentes)
+- Entretenimento (TV, som, cortinas motorizadas)
+- Eficiência energética (monitoramento de consumo)
+
+REQUISITOS:
+- Internet de alta velocidade (recomendado 100Mbps ou superior)
+- Rede Wi-Fi estável em toda residência
+- Dispositivos compatíveis (lâmpadas smart, tomadas inteligentes, etc.)
+
+PREÇOS:
+- Pacote Básico: R$ 499 (3 dispositivos)
+- Pacote Intermediário: R$ 899 (8 dispositivos)
+- Pacote Completo: R$ 1.499 (15 dispositivos)
+- Instalação: R$ 199
+- Mensalidade de manutenção: R$ 49/mês (opcional)
+
+BENEFÍCIOS:
+- Economia de energia até 30%
+- Conforto e praticidade
+- Segurança reforçada
+- Controle remoto via app
+- Integração com assistentes de voz (Alexa, Google)
+
+INSTALAÇÃO:
+- Agendamento em até 48h
+- Instalação profissional em 4-6 horas
+- Treinamento de uso incluído
+- Garantia de 12 meses
+
+COMPATIBILIDADE:
+Trabalhamos com marcas: Tuya, Sonoff, Philips Hue, Intelbras, Geonav
+
+MAIS INFORMAÇÕES:
+Acesse: /automacao-residencial
+      `.trim(),
+      tags: ['automacao', 'smart-home', 'casa-inteligente', 'servico'],
+      is_active: true
+    };
+
+    // 11. Criar informações sobre Telemedicina
+    const telemedicinaInfo = {
+      title: 'Telemedicina SUPERNET',
+      category: 'servicos_adicionais',
+      content_type: 'servico',
+      agent_type: null, // Disponível para todos
+      content: `
+TELEMEDICINA - SUPERNET FIBRA
+
+DESCRIÇÃO:
+Serviço de telemedicina com consultas médicas online, disponível 24h por dia, 7 dias por semana, com médicos credenciados pelo CRM.
+
+MODALIDADES DE ATENDIMENTO:
+- Consultas por vídeo (mais comum)
+- Consultas por telefone
+- Chat médico para dúvidas rápidas
+
+ESPECIALIDADES DISPONÍVEIS:
+- Clínico Geral
+- Pediatria
+- Ginecologia
+- Dermatologia
+- Psicologia
+- Nutrição
+- Cardiologia
+- E outras especialidades sob demanda
+
+PLANOS DISPONÍVEIS:
+- Individual: R$ 49,90/mês (consultas ilimitadas)
+- Familiar (até 4 pessoas): R$ 129,90/mês
+- Corporativo: Consultar valores
+
+BENEFÍCIOS:
+- Atendimento 24h/7 dias
+- Sem filas de espera
+- Receitas digitais válidas
+- Atestados médicos
+- Encaminhamentos para especialistas
+- Histórico médico digital
+- Economia de tempo e dinheiro
+
+REQUISITOS:
+- Internet estável (recomendado 10Mbps ou superior)
+- Dispositivo com câmera (celular, tablet ou computador)
+- Documentos: RG, CPF e Cartão SUS
+
+COMO FUNCIONA:
+1. Contrate o plano
+2. Baixe o aplicativo ou acesse o site
+3. Agende ou solicite consulta imediata
+4. Seja atendido por médico credenciado
+5. Receba prescrições e orientações
+
+IMPORTANTE:
+- Não substitui emergências (ligar 192)
+- Médicos credenciados pelo CRM
+- Consultas gravadas para segurança
+- Privacidade garantida (LGPD)
+- Prescrições válidas em todo território nacional
+
+MAIS INFORMAÇÕES:
+Acesse: /telemedicina
+      `.trim(),
+      tags: ['telemedicina', 'saude', 'consulta-online', 'servico'],
+      is_active: true
+    };
+
+    // 12. Inserir tudo na knowledge base
     const allContent = [
       ...plansContent,
       salesSummary,
       ...faqsContent,
       companyInfo,
-      ixcTicketDoc
+      ixcTicketDoc,
+      automacaoInfo,
+      telemedicinaInfo
     ];
 
     const { error: insertError } = await supabase
@@ -245,7 +368,8 @@ Telefone: ${systemSettings?.company_phone || '(11) 99999-9999'}
           faqs: faqsContent.length,
           vendas: 1,
           empresa: 1,
-          ixc_api: 1
+          ixc_api: 1,
+          servicos_adicionais: 2
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
