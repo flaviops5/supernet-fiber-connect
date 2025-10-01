@@ -153,18 +153,11 @@ const Telemedicina = () => {
 
               {/* CTA */}
               <div className="flex justify-center lg:justify-start">
-                <div className="relative w-full max-w-xs group">
-                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                       style={{ 
-                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                         backgroundSize: '200% 100%',
-                         animation: 'border-beam 2s linear infinite'
-                       }}>
-                  </div>
+                <div className="relative w-full max-w-xs comet-border">
                   <Button
                     onClick={handleConsultar}
                     size="lg"
-                    className="relative w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+                    className="relative w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6 z-10"
                   >
                     Consultar
                   </Button>
@@ -330,17 +323,10 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                       style={{ 
-                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                         backgroundSize: '200% 100%',
-                         animation: 'border-beam 2s linear infinite'
-                       }}>
-                  </div>
+                <div className="relative comet-border">
                   <Button
                     onClick={handleConsultar}
-                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5 z-10"
                   >
                     Consultar
                   </Button>
@@ -395,17 +381,10 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                       style={{ 
-                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                         backgroundSize: '200% 100%',
-                         animation: 'border-beam 2s linear infinite'
-                       }}>
-                  </div>
+                <div className="relative comet-border">
                   <Button
                     onClick={handleConsultar}
-                    className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6"
+                    className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 z-10"
                   >
                     Consultar
                   </Button>
@@ -461,17 +440,10 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative group">
-                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                       style={{ 
-                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                         backgroundSize: '200% 100%',
-                         animation: 'border-beam 2s linear infinite'
-                       }}>
-                  </div>
+                <div className="relative comet-border">
                   <Button
                     onClick={handleConsultar}
-                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5 z-10"
                   >
                     Consultar
                   </Button>
@@ -580,18 +552,11 @@ const Telemedicina = () => {
               Ainda tem dúvidas?{' '}
               <span className="text-primary">Fale conosco.</span>
             </h3>
-            <div className="relative w-full max-w-xs group">
-              <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                   style={{ 
-                     background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                     backgroundSize: '200% 100%',
-                     animation: 'border-beam 2s linear infinite'
-                   }}>
-              </div>
+            <div className="relative w-full max-w-xs comet-border">
               <Button
                 onClick={handleConsultar}
                 size="lg"
-                className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+                className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6 z-10"
               >
                 Consultar
               </Button>
@@ -615,18 +580,11 @@ const Telemedicina = () => {
           </p>
           
           <div className="flex flex-col items-center gap-4">
-            <div className="relative w-full max-w-xs group">
-              <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
-                   style={{ 
-                     background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
-                     backgroundSize: '200% 100%',
-                     animation: 'border-beam 2s linear infinite'
-                   }}>
-              </div>
+            <div className="relative w-full max-w-xs comet-border">
               <Button
                 onClick={handleConsultar}
                 size="lg"
-                className="relative w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+                className="relative w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6 z-10"
               >
                 Consultar
               </Button>

@@ -187,4 +187,37 @@
   .service-card {
     @apply transform transition-all duration-300 hover:scale-105 hover:shadow-xl;
   }
+  
+  /* Comet border animation */
+  @keyframes comet-border {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .comet-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      transparent 45%,
+      rgba(255, 255, 255, 0.8) 50%, 
+      rgba(255, 255, 255, 0.4) 52%,
+      transparent 55%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: comet-border 2.5s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
 }
