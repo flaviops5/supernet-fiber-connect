@@ -29,6 +29,7 @@ import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
+import { AddUserForm } from '@/components/AddUserForm';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -366,7 +367,7 @@ const UsersManagement = () => {
           <p className="text-muted-foreground">Gerencie usuários e permissões do sistema</p>
         </div>
         <Button 
-          onClick={() => navigate('/auth')}
+          onClick={() => navigate('/admin/add-user')}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
@@ -2055,6 +2056,7 @@ const Admin = () => {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/users" element={<UsersManagement />} />
+                <Route path="/add-user" element={<AddUserForm />} />
                 <Route path="/plans" element={<PlansManagement />} />
                 <Route path="/coverage" element={<AdminCoverageManagement />} />
                 <Route path="/hero" element={<HeroManagement />} />
