@@ -22,6 +22,7 @@ import {
   CreditCard,
   MapPin,
   FileText,
+  Megaphone,
   Star,
   User,
   Settings,
@@ -140,6 +141,11 @@ const systemItems = [
     title: "Templates de Notificação",
     url: "/admin/notification-templates",
     icon: FileText,
+  },
+  {
+    title: "Campanhas",
+    url: "/admin/campaigns",
+    icon: Megaphone,
   },
   {
     title: "Testador de Chat",

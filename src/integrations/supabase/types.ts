@@ -226,6 +226,264 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_content: {
+        Row: {
+          campaign_id: string
+          content_text: string | null
+          created_at: string
+          cta_config: Json | null
+          cta_type: Database["public"]["Enums"]["campaign_cta_type"]
+          id: string
+          media_type: string | null
+          media_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          content_text?: string | null
+          created_at?: string
+          cta_config?: Json | null
+          cta_type?: Database["public"]["Enums"]["campaign_cta_type"]
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          content_text?: string | null
+          created_at?: string
+          cta_config?: Json | null
+          cta_type?: Database["public"]["Enums"]["campaign_cta_type"]
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_content_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_recipients: {
+        Row: {
+          call_status: Database["public"]["Enums"]["recipient_status"] | null
+          campaign_id: string
+          clicked_at: string | null
+          conversation_id: string | null
+          created_at: string
+          customer_data: Json | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          delivered_at: string | null
+          email_status: Database["public"]["Enums"]["recipient_status"] | null
+          error_message: string | null
+          id: string
+          ixc_client_id: string | null
+          opened_at: string | null
+          replied_at: string | null
+          response_text: string | null
+          sent_at: string | null
+          sms_status: Database["public"]["Enums"]["recipient_status"] | null
+          updated_at: string
+          whatsapp_status:
+            | Database["public"]["Enums"]["recipient_status"]
+            | null
+        }
+        Insert: {
+          call_status?: Database["public"]["Enums"]["recipient_status"] | null
+          campaign_id: string
+          clicked_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          customer_data?: Json | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          delivered_at?: string | null
+          email_status?: Database["public"]["Enums"]["recipient_status"] | null
+          error_message?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
+          response_text?: string | null
+          sent_at?: string | null
+          sms_status?: Database["public"]["Enums"]["recipient_status"] | null
+          updated_at?: string
+          whatsapp_status?:
+            | Database["public"]["Enums"]["recipient_status"]
+            | null
+        }
+        Update: {
+          call_status?: Database["public"]["Enums"]["recipient_status"] | null
+          campaign_id?: string
+          clicked_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          customer_data?: Json | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          delivered_at?: string | null
+          email_status?: Database["public"]["Enums"]["recipient_status"] | null
+          error_message?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
+          response_text?: string | null
+          sent_at?: string | null
+          sms_status?: Database["public"]["Enums"]["recipient_status"] | null
+          updated_at?: string
+          whatsapp_status?:
+            | Database["public"]["Enums"]["recipient_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_recipients_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_stats: {
+        Row: {
+          campaign_id: string
+          click_rate: number | null
+          created_at: string
+          delivery_rate: number | null
+          id: string
+          open_rate: number | null
+          reply_rate: number | null
+          total_clicked: number | null
+          total_delivered: number | null
+          total_failed: number | null
+          total_opened: number | null
+          total_recipients: number | null
+          total_replied: number | null
+          total_sent: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          click_rate?: number | null
+          created_at?: string
+          delivery_rate?: number | null
+          id?: string
+          open_rate?: number | null
+          reply_rate?: number | null
+          total_clicked?: number | null
+          total_delivered?: number | null
+          total_failed?: number | null
+          total_opened?: number | null
+          total_recipients?: number | null
+          total_replied?: number | null
+          total_sent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          click_rate?: number | null
+          created_at?: string
+          delivery_rate?: number | null
+          id?: string
+          open_rate?: number | null
+          reply_rate?: number | null
+          total_clicked?: number | null
+          total_delivered?: number | null
+          total_failed?: number | null
+          total_opened?: number | null
+          total_recipients?: number | null
+          total_replied?: number | null
+          total_sent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          channels: Database["public"]["Enums"]["campaign_channel"][]
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          scheduled_at: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          target_filters: Json | null
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at: string
+        }
+        Insert: {
+          channels?: Database["public"]["Enums"]["campaign_channel"][]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_filters?: Json | null
+          type: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Update: {
+          channels?: Database["public"]["Enums"]["campaign_channel"][]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_filters?: Json | null
+          type?: Database["public"]["Enums"]["campaign_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       cep_coverage: {
         Row: {
           available: boolean
@@ -1557,6 +1815,21 @@ export type Database = {
         | "financeiro"
         | "administrativo"
       agent_status: "online" | "busy" | "away" | "offline"
+      campaign_channel: "whatsapp" | "sms" | "email" | "call"
+      campaign_cta_type:
+        | "none"
+        | "reply"
+        | "contact_support"
+        | "contact_agent"
+        | "link"
+      campaign_status:
+        | "draft"
+        | "scheduled"
+        | "running"
+        | "completed"
+        | "paused"
+        | "cancelled"
+      campaign_type: "marketing" | "alert" | "commemorative" | "network_outage"
       conversation_channel:
         | "whatsapp"
         | "facebook"
@@ -1569,6 +1842,14 @@ export type Database = {
         | "paused"
         | "resolved"
         | "transferred"
+      recipient_status:
+        | "pending"
+        | "sent"
+        | "delivered"
+        | "failed"
+        | "opened"
+        | "clicked"
+        | "replied"
       user_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -1705,6 +1986,23 @@ export const Constants = {
         "administrativo",
       ],
       agent_status: ["online", "busy", "away", "offline"],
+      campaign_channel: ["whatsapp", "sms", "email", "call"],
+      campaign_cta_type: [
+        "none",
+        "reply",
+        "contact_support",
+        "contact_agent",
+        "link",
+      ],
+      campaign_status: [
+        "draft",
+        "scheduled",
+        "running",
+        "completed",
+        "paused",
+        "cancelled",
+      ],
+      campaign_type: ["marketing", "alert", "commemorative", "network_outage"],
       conversation_channel: [
         "whatsapp",
         "facebook",
@@ -1718,6 +2016,15 @@ export const Constants = {
         "paused",
         "resolved",
         "transferred",
+      ],
+      recipient_status: [
+        "pending",
+        "sent",
+        "delivered",
+        "failed",
+        "opened",
+        "clicked",
+        "replied",
       ],
       user_role: ["admin", "editor", "viewer"],
     },

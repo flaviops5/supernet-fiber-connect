@@ -30,6 +30,7 @@ import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
 import { NotificationTemplates } from '@/components/NotificationTemplates';
+import { CampaignManagement } from '@/components/CampaignManagement';
 import { AddUserForm } from '@/components/AddUserForm';
 import { toast } from "sonner";
 
@@ -2072,7 +2073,8 @@ const Admin = () => {
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
                 <Route path="/ixc-documentation" element={<IXCDocumentationManager />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
-                <Route path="/notification-templates" element={<NotificationTemplates />} />
+            <Route path="/notification-templates" element={<NotificationTemplates />} />
+            <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>
