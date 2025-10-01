@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play } from "lucide-react";
+import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play, MessageSquare, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -23,6 +24,9 @@ interface Notification {
   sent_at: string | null;
   created_at: string;
   error_message: string | null;
+  whatsapp_message: string | null;
+  email_subject: string | null;
+  email_message: string | null;
 }
 
 const PRESET_DAYS = [5, 10, 15, 20, 25, 30];
@@ -377,6 +381,7 @@ export const PaymentNotifications = () => {
                     <TableHead>Alerta</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Criado</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,6 +405,52 @@ export const PaymentNotifications = () => {
                       <TableCell>{getStatusBadge(notification.status)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Ver Mensagens
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Mensagens de Notificação</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6">
+                              <div>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                                  <MessageSquare className="h-4 w-4" />
+                                  Mensagem WhatsApp
+                                </h3>
+                                <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap">
+                                  {notification.whatsapp_message || 'Mensagem não gerada'}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                                  <Mail className="h-4 w-4" />
+                                  Email - Assunto
+                                </h3>
+                                <div className="bg-muted p-4 rounded-lg">
+                                  {notification.email_subject || 'Assunto não gerado'}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h3 className="font-semibold mb-2">Email - Preview (HTML)</h3>
+                                <div className="border rounded-lg p-4 bg-white">
+                                  {notification.email_message ? (
+                                    <div dangerouslySetInnerHTML={{ __html: notification.email_message }} />
+                                  ) : (
+                                    'Mensagem não gerada'
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   ))}

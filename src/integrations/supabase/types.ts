@@ -1028,6 +1028,8 @@ export type Database = {
           customer_phone: string | null
           days_before_due: number
           due_date: string
+          email_message: string | null
+          email_subject: string | null
           error_message: string | null
           id: string
           ixc_client_id: string
@@ -1037,6 +1039,7 @@ export type Database = {
           sent_at: string | null
           status: string
           updated_at: string
+          whatsapp_message: string | null
         }
         Insert: {
           amount: number
@@ -1045,6 +1048,8 @@ export type Database = {
           customer_phone?: string | null
           days_before_due: number
           due_date: string
+          email_message?: string | null
+          email_subject?: string | null
           error_message?: string | null
           id?: string
           ixc_client_id: string
@@ -1054,6 +1059,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           updated_at?: string
+          whatsapp_message?: string | null
         }
         Update: {
           amount?: number
@@ -1062,6 +1068,8 @@ export type Database = {
           customer_phone?: string | null
           days_before_due?: number
           due_date?: string
+          email_message?: string | null
+          email_subject?: string | null
           error_message?: string | null
           id?: string
           ixc_client_id?: string
@@ -1071,6 +1079,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           updated_at?: string
+          whatsapp_message?: string | null
         }
         Relationships: []
       }

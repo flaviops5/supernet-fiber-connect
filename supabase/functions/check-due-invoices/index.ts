@@ -128,16 +128,83 @@ serve(async (req) => {
 
         const customer = customerData?.data?.registros?.[0] || customerData?.registros?.[0];
         
+        const customerName = customer?.razao || title.cliente_nome || 'Cliente';
+        const amount = parseFloat(title.valor || title.valor_total || 0);
+        const formattedAmount = amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const formattedDate = new Date(dueDateStr).toLocaleDateString('pt-BR');
+        
+        // Template de mensagem WhatsApp
+        const whatsappMessage = daysBeforeDue === 10
+          ? `Olá ${customerName}! 🔔\n\nEste é um lembrete de que sua fatura no valor de ${formattedAmount} vencerá em *10 dias* (${formattedDate}).\n\nPara evitar interrupção do serviço, realize o pagamento até a data de vencimento.\n\n*SUPERNET FIBRA* - Internet de qualidade! 🚀`
+          : `⚠️ *Aviso Importante* ⚠️\n\nOlá ${customerName}!\n\nSua fatura de ${formattedAmount} vence *AMANHÃ* (${formattedDate}).\n\n⏰ Para evitar a suspensão do serviço, efetue o pagamento hoje!\n\n*SUPERNET FIBRA* - Estamos aqui para você! 💙`;
+        
+        // Template de email (subject e body)
+        const emailSubject = daysBeforeDue === 10
+          ? `Lembrete: Sua fatura vence em 10 dias - ${formattedDate}`
+          : `⚠️ Última chamada: Fatura vence amanhã - ${formattedDate}`;
+        
+        const emailMessage = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #ef4444 0%, #fb7185 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .alert { background: ${daysBeforeDue === 1 ? '#fef2f2' : '#eff6ff'}; border-left: 4px solid ${daysBeforeDue === 1 ? '#ef4444' : '#3b82f6'}; padding: 15px; margin: 20px 0; }
+    .button { display: inline-block; background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    .footer { text-align: center; color: #6b7280; margin-top: 30px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>SUPERNET FIBRA</h1>
+      <p>${daysBeforeDue === 10 ? 'Lembrete de Pagamento' : '⚠️ Aviso Urgente'}</p>
+    </div>
+    <div class="content">
+      <p>Olá, <strong>${customerName}</strong>!</p>
+      
+      <div class="alert">
+        <p><strong>${daysBeforeDue === 10 ? '📅 Sua fatura vencerá em 10 dias' : '⏰ Sua fatura vence AMANHÃ'}</strong></p>
+        <p style="font-size: 18px; margin: 10px 0;">Valor: <strong>${formattedAmount}</strong></p>
+        <p>Data de vencimento: <strong>${formattedDate}</strong></p>
+      </div>
+      
+      <p>${daysBeforeDue === 10 
+        ? 'Este é um lembrete amigável para que você possa se organizar e realizar o pagamento até a data de vencimento.'
+        : 'Para evitar a suspensão do seu serviço de internet, realize o pagamento <strong>hoje mesmo</strong>.'
+      }</p>
+      
+      <p>Caso já tenha efetuado o pagamento, por favor desconsidere este aviso.</p>
+      
+      <div style="text-align: center;">
+        <a href="https://wa.me/5561999999999" class="button">Falar com Suporte no WhatsApp</a>
+      </div>
+      
+      <div class="footer">
+        <p>SUPERNET FIBRA - Internet de Alta Velocidade</p>
+        <p>📞 (61) 99999-9999 | 📧 contato@supernetfibra.com.br</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+        
         notificationsToCreate.push({
           ixc_title_id: String(title.id || title.idtitulo),
           ixc_client_id: String(title.id_cliente || title.cliente_id),
-          customer_name: customer?.razao || title.cliente_nome || 'Cliente',
+          customer_name: customerName,
           customer_phone: customer?.celular || customer?.telefone || null,
           due_date: dueDateStr,
-          amount: parseFloat(title.valor || title.valor_total || 0),
+          amount,
           days_before_due: daysBeforeDue,
           notification_type: 'whatsapp',
           status: testMode ? 'pending' : 'pending',
+          whatsapp_message: whatsappMessage,
+          email_subject: emailSubject,
+          email_message: emailMessage,
           metadata: {
             title_number: title.numero || title.titulo,
             barcode: title.codigo_barras || null,
