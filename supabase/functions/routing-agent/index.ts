@@ -249,40 +249,19 @@ serve(async (req) => {
       }
     }
 
-    // If customer not identified yet and has had some conversation, ask for CPF naturally
-    if (!conversation?.customer_cpf && messageCount >= 1) {
-      // Check if we already asked for CPF
-      const alreadyAskedForCPF = messages?.some(m => 
-        m.sender_type === 'agent' && m.content.toLowerCase().includes('cpf')
-      );
-
-      if (!alreadyAskedForCPF) {
-        console.log('Asking for CPF naturally after initial conversation');
-        return new Response(
-          JSON.stringify({
-            agent: 'identification',
-            message: 'Perfeito! Para verificar sua situação, pode me passar seu CPF, por favor?',
-            needsIdentification: true
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-    }
+    // Don't ask for CPF too early - let the AI routing decide first
 
     // If this is first message (greeting), respond naturally
     if (messageCount === 0) {
-      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai'];
-      const isGreeting = greetings.some(g => message.toLowerCase().includes(g));
+      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai', 'opa'];
+      const isGreeting = greetings.some(g => message.toLowerCase().trim().includes(g));
       
-      if (isGreeting) {
-        console.log('First message is a greeting - responding naturally');
+      if (isGreeting || message.trim().length < 15) {
+        console.log('First message is a greeting - Cloé introduces herself');
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: 'Olá! Tudo bem? Meu nome é Cloé. Como posso ajudá-lo hoje? 😊',
+            message: 'Olá! Tudo bem? 😊\n\nMeu nome é **Cloé**, sou a assistente virtual da SUPERNET FIBRA!\n\nEstou aqui para ajudar você com:\n🛒 **Contratar planos**\n🔧 **Suporte técnico**\n💰 **Questões financeiras**\n\nComo posso ajudá-lo hoje?',
             isGreeting: true
           }),
           {
@@ -390,17 +369,40 @@ MENSAGEM ATUAL DO CLIENTE:
       );
     }
 
+    // Check if we need CPF for this agent
+    const needsCPF = decision.agent === 'support_tech' || decision.agent === 'support_financial';
+    
+    // If agent needs CPF and customer not identified, ask for it
+    if (needsCPF && !conversation?.customer_cpf) {
+      console.log(`Agent ${decision.agent} needs CPF - asking for identification`);
+      return new Response(
+        JSON.stringify({
+          agent: 'identification',
+          message: `Perfeito! Vou direcionar você para ${
+            decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
+            'a Julia Martins do Financeiro'
+          }.\n\nPara que eu possa verificar sua situação, pode me passar seu CPF, por favor?`,
+          needsIdentification: true,
+          targetAgent: decision.agent
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     // Return routing decision
     return new Response(
       JSON.stringify({
         agent: decision.agent,
         confidence: decision.confidence,
         reason: decision.reason,
-        message: `Transferindo você para ${
-          decision.agent === 'sales' ? 'o Vicente, do setor de Vendas' :
+        message: `Perfeito! Transferindo você para ${
+          decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
           decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
           'a Julia Martins, do Financeiro'
-        }. Um momento, por favor...`
+        }. Um momento! ⏳`
       }),
       {
         status: 200,
