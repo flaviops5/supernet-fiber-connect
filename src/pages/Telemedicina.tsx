@@ -153,13 +153,16 @@ const Telemedicina = () => {
 
               {/* CTA */}
               <div className="flex justify-center lg:justify-start">
-                <Button
-                  onClick={handleConsultar}
-                  size="lg"
-                  className="w-full max-w-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
-                >
-                  Consultar
-                </Button>
+                <div className="relative w-full max-w-xs">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                  <Button
+                    onClick={handleConsultar}
+                    size="lg"
+                    className="relative w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+                  >
+                    Consultar
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -321,12 +324,15 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <Button
-                  onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
-                >
-                  Consultar
-                </Button>
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                  <Button
+                    onClick={handleConsultar}
+                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                  >
+                    Consultar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -377,12 +383,15 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <Button
-                  onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold py-7 animate-glow-rotate"
-                >
-                  Consultar
-                </Button>
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                  <Button
+                    onClick={handleConsultar}
+                    className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6"
+                  >
+                    Consultar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -434,12 +443,15 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <Button
-                  onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
-                >
-                  Consultar
-                </Button>
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                  <Button
+                    onClick={handleConsultar}
+                    className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                  >
+                    Consultar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -544,13 +556,16 @@ const Telemedicina = () => {
               Ainda tem dúvidas?{' '}
               <span className="text-primary">Fale conosco.</span>
             </h3>
-            <Button
-              onClick={handleConsultar}
-              size="lg"
-              className="w-full max-w-md bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-7 animate-glow-rotate"
-            >
-              Consultar
-            </Button>
+            <div className="relative w-full max-w-xs">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+              <Button
+                onClick={handleConsultar}
+                size="lg"
+                className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+              >
+                Consultar
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -570,13 +585,16 @@ const Telemedicina = () => {
           </p>
           
           <div className="flex flex-col items-center gap-4">
-            <Button
-              onClick={handleConsultar}
-              size="lg"
-              className="w-full max-w-md bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
-            >
-              Consultar
-            </Button>
+            <div className="relative w-full max-w-xs">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+              <Button
+                onClick={handleConsultar}
+                size="lg"
+                className="relative w-full bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+              >
+                Consultar
+              </Button>
+            </div>
             
             <div className="text-center">
               <p className="text-primary-foreground/90 text-sm">
