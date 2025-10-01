@@ -148,6 +148,11 @@ const systemItems = [
     icon: Megaphone,
   },
   {
+    title: "Dashboard NPS",
+    url: "/admin/nps-dashboard",
+    icon: Star,
+  },
+  {
     title: "Testador de Chat",
     url: "/admin/chat-tester",
     icon: FlaskConical,

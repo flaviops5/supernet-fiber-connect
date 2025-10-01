@@ -86,6 +86,7 @@ export function CampaignManagement() {
       alert: { label: 'Alerta', color: 'bg-yellow-500' },
       commemorative: { label: 'Comemorativa', color: 'bg-purple-500' },
       network_outage: { label: 'Queda de Rede', color: 'bg-red-500' },
+      nps: { label: 'NPS', color: 'bg-green-500' },
     };
     const config = typeConfig[type as keyof typeof typeConfig] || typeConfig.marketing;
     return <Badge className={config.color}>{config.label}</Badge>;

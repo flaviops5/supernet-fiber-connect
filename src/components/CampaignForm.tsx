@@ -188,6 +188,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
                 <SelectItem value="alert">Alerta</SelectItem>
                 <SelectItem value="commemorative">Comemorativa</SelectItem>
                 <SelectItem value="network_outage">Queda de Rede</SelectItem>
+                <SelectItem value="nps">Pesquisa NPS</SelectItem>
               </SelectContent>
             </Select>
           </div>

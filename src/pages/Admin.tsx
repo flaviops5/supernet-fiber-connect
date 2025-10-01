@@ -31,6 +31,7 @@ import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
 import { NotificationTemplates } from '@/components/NotificationTemplates';
 import { CampaignManagement } from '@/components/CampaignManagement';
+import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { toast } from "sonner";
 
@@ -2075,6 +2076,7 @@ const Admin = () => {
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
             <Route path="/notification-templates" element={<NotificationTemplates />} />
             <Route path="/campaigns" element={<CampaignManagement />} />
+            <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

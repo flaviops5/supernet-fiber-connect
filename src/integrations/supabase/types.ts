@@ -1317,6 +1317,192 @@ export type Database = {
         }
         Relationships: []
       }
+      nps_history: {
+        Row: {
+          created_at: string
+          detractors_count: number
+          id: string
+          neutrals_count: number
+          nps_score: number
+          period_end: string
+          period_start: string
+          previous_score: number | null
+          promoters_count: number
+          total_responses: number
+          trend: string | null
+        }
+        Insert: {
+          created_at?: string
+          detractors_count: number
+          id?: string
+          neutrals_count: number
+          nps_score: number
+          period_end: string
+          period_start: string
+          previous_score?: number | null
+          promoters_count: number
+          total_responses: number
+          trend?: string | null
+        }
+        Update: {
+          created_at?: string
+          detractors_count?: number
+          id?: string
+          neutrals_count?: number
+          nps_score?: number
+          period_end?: string
+          period_start?: string
+          previous_score?: number | null
+          promoters_count?: number
+          total_responses?: number
+          trend?: string | null
+        }
+        Relationships: []
+      }
+      nps_responses: {
+        Row: {
+          campaign_id: string
+          category: string
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          feedback: string | null
+          follow_up_completed: boolean | null
+          follow_up_conversation_id: string | null
+          follow_up_needed: boolean | null
+          follow_up_notes: string | null
+          id: string
+          ixc_client_id: string | null
+          recipient_id: string
+          responded_at: string
+          response_channel: string | null
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          category: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          feedback?: string | null
+          follow_up_completed?: boolean | null
+          follow_up_conversation_id?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          recipient_id: string
+          responded_at?: string
+          response_channel?: string | null
+          score: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          category?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          feedback?: string | null
+          follow_up_completed?: boolean | null
+          follow_up_conversation_id?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          recipient_id?: string
+          responded_at?: string
+          response_channel?: string | null
+          score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_follow_up_conversation_id_fkey"
+            columns: ["follow_up_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_responses_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nps_stats: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          detractors_percentage: number | null
+          follow_ups_completed: number | null
+          follow_ups_needed: number | null
+          id: string
+          neutrals_percentage: number | null
+          nps_score: number | null
+          promoters_percentage: number | null
+          total_detractors: number | null
+          total_neutrals: number | null
+          total_promoters: number | null
+          total_responses: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          detractors_percentage?: number | null
+          follow_ups_completed?: number | null
+          follow_ups_needed?: number | null
+          id?: string
+          neutrals_percentage?: number | null
+          nps_score?: number | null
+          promoters_percentage?: number | null
+          total_detractors?: number | null
+          total_neutrals?: number | null
+          total_promoters?: number | null
+          total_responses?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          detractors_percentage?: number | null
+          follow_ups_completed?: number | null
+          follow_ups_needed?: number | null
+          id?: string
+          neutrals_percentage?: number | null
+          nps_score?: number | null
+          promoters_percentage?: number | null
+          total_detractors?: number | null
+          total_neutrals?: number | null
+          total_promoters?: number | null
+          total_responses?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_stats_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: true
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_notifications: {
         Row: {
           amount: number
@@ -1759,6 +1945,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_nps_category: {
+        Args: { score: number }
+        Returns: string
+      }
       check_rate_limit: {
         Args: {
           action_type_param: string
@@ -1829,7 +2019,12 @@ export type Database = {
         | "completed"
         | "paused"
         | "cancelled"
-      campaign_type: "marketing" | "alert" | "commemorative" | "network_outage"
+      campaign_type:
+        | "marketing"
+        | "alert"
+        | "commemorative"
+        | "network_outage"
+        | "nps"
       conversation_channel:
         | "whatsapp"
         | "facebook"
@@ -2002,7 +2197,13 @@ export const Constants = {
         "paused",
         "cancelled",
       ],
-      campaign_type: ["marketing", "alert", "commemorative", "network_outage"],
+      campaign_type: [
+        "marketing",
+        "alert",
+        "commemorative",
+        "network_outage",
+        "nps",
+      ],
       conversation_channel: [
         "whatsapp",
         "facebook",
