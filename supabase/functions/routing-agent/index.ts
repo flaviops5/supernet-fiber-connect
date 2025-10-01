@@ -207,14 +207,22 @@ serve(async (req) => {
                 console.log('✅ Mensagem da Julia recebida:', financialMessage.substring(0, 50) + '...');
 
                 // Persist Julia's message server-side so it appears in timelines
-                await supabase.from('conversation_messages').insert({
-                  conversation_id: conversationId,
-                  sender_type: 'agent',
-                  sender_name: 'Julia Martins (Financeiro)',
-                  content: financialMessage,
-                  ai_suggestion: true,
-                });
-                console.log('✅ Mensagem da Julia persistida no DB');
+                const { data: insertResult, error: insertError } = await supabase
+                  .from('conversation_messages')
+                  .insert({
+                    conversation_id: conversationId,
+                    sender_type: 'agent',
+                    sender_name: 'Julia Martins (Financeiro)',
+                    content: financialMessage,
+                    ai_suggestion: true,
+                  })
+                  .select();
+                
+                if (insertError) {
+                  console.error('❌ ERRO ao persistir mensagem da Julia:', insertError);
+                } else {
+                  console.log('✅ Mensagem da Julia persistida no DB:', insertResult);
+                }
               } else {
                 console.warn('⚠️ support-financial-agent retornou sem mensagem');
               }
@@ -224,16 +232,24 @@ serve(async (req) => {
               console.error('💥 Stack trace:', e instanceof Error ? e.stack : 'N/A');
             }
 
-            console.log('🔵 Retornando resposta com financialMessage:', !!financialMessage);
+            // Se Julia respondeu, usa a mensagem dela como principal
+            const finalMessage = financialMessage || 
+              `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`;
+            
+            console.log('🔵 Retornando resposta:', {
+              hasFinancialMessage: !!financialMessage,
+              messageLength: finalMessage.length
+            });
+            
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
-                message: `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`,
+                message: finalMessage,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
                 routeReason: 'blocked_or_overdue',
-                financialMessage,
+                juliaResponse: !!financialMessage, // Flag indicando se veio da Julia
               }),
               {
                 status: 200,

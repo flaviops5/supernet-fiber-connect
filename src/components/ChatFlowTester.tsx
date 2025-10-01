@@ -92,16 +92,6 @@ export default function ChatFlowTester() {
 
       console.log('Routing response:', data);
 
-      // Add agent response
-      const agentMessage: Message = {
-        role: 'agent',
-        content: data.message || 'Processando...',
-        timestamp: new Date(),
-        metadata: data
-      };
-
-      setMessages(prev => [...prev, agentMessage]);
-
       // Update customer data if identified
       if (data.customerIdentified && data.customerData) {
         setCustomerData(data.customerData);
@@ -112,34 +102,44 @@ export default function ChatFlowTester() {
         setRoutedAgent(data.agent);
       }
 
-      // Save routing agent message
-      await supabase.from('conversation_messages').insert({
-        conversation_id: conversationId,
-        sender_type: 'agent',
-        sender_name: 'Sistema',
-        content: data.message || 'Processando...',
-        metadata: data
-      });
-
-      // If routing already returned Julia's message from server, show and persist it
-      if (data.financialMessage) {
-        const juliaMessage: string = data.financialMessage;
-        setMessages(prev => [...prev, {
+      // Se Julia já respondeu pelo server (juliaResponse = true), 
+      // a mensagem já vem completa em data.message
+      if (data.juliaResponse) {
+        console.log('✅ Julia respondeu pelo servidor - mensagem já incluída');
+        const juliaMessage: Message = {
           role: 'agent',
-          content: juliaMessage,
+          content: data.message,
           timestamp: new Date(),
           metadata: { agent: 'support_financial' }
-        }]);
+        };
+        setMessages(prev => [...prev, juliaMessage]);
+        setRoutedAgent('support_financial');
+        toast({ 
+          title: 'Transferido para Financeiro', 
+          description: 'Julia assumiu o atendimento.' 
+        });
+        return;
+      }
+
+      // Caso normal: adiciona mensagem do routing agent
+      const agentMessage: Message = {
+        role: 'agent',
+        content: data.message || 'Processando...',
+        timestamp: new Date(),
+        metadata: data
+      };
+
+      setMessages(prev => [...prev, agentMessage]);
+
+      // Save routing agent message (apenas se não foi Julia)
+      if (data.agent !== 'support_financial') {
         await supabase.from('conversation_messages').insert({
           conversation_id: conversationId,
           sender_type: 'agent',
-          sender_name: 'Julia Martins (Financeiro)',
-          content: juliaMessage,
-          ai_suggestion: true,
+          sender_name: 'Sistema',
+          content: data.message || 'Processando...',
+          metadata: data
         });
-        setRoutedAgent('support_financial');
-        toast({ title: 'Transferido para Financeiro', description: 'Julia assumiu o atendimento.' });
-        return;
       }
 
       // If routed to Financeiro, auto-transfer to Julia and let her reply
