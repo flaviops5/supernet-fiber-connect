@@ -63,7 +63,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
 
       if (data) {
         setMessages(data.map(msg => ({
-          role: msg.sender_type === 'client' ? 'user' : 'assistant',
+          role: msg.sender_type === 'customer' ? 'user' : 'assistant',
           content: msg.content,
           timestamp: new Date(msg.created_at)
         })));
@@ -159,24 +159,24 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Save messages to database if conversationId exists
-      if (conversationId) {
-        await supabase.from('conversation_messages').insert([
-          {
-            conversation_id: conversationId,
-            sender_type: 'client',
-            sender_name: customerData?.name || 'Cliente',
-            content: input
-          },
-          {
-            conversation_id: conversationId,
-            sender_type: 'agent',
-            sender_name: `Agente IA - ${targetAgent}`,
-            content: agentData.message,
-            ai_suggestion: true
-          }
-        ]);
-      }
+    // Save messages to database if conversationId exists
+    if (conversationId) {
+      await supabase.from('conversation_messages').insert([
+        {
+          conversation_id: conversationId,
+          sender_type: 'customer',
+          sender_name: customerData?.name || 'Cliente',
+          content: input
+        },
+        {
+          conversation_id: conversationId,
+          sender_type: 'agent',
+          sender_name: `Agente IA - ${targetAgent}`,
+          content: agentData.message,
+          ai_suggestion: true
+        }
+      ]);
+    }
 
     } catch (error: any) {
       console.error('Error sending message:', error);
