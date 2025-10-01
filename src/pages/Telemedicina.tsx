@@ -14,12 +14,8 @@ const Telemedicina = () => {
   const navigate = useNavigate();
   useScrollToHash();
   
-  const handleWhatsApp = () => {
-    window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20contratar!', '_blank');
-  };
-
-  const handleLogin = () => {
-    navigate('/auth');
+  const handleConsultar = () => {
+    window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20consultar!', '_blank');
   };
 
   const features = [
@@ -156,23 +152,13 @@ const Telemedicina = () => {
               </div>
 
               {/* CTA */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              <div className="flex justify-center lg:justify-start">
                 <Button
-                  onClick={handleWhatsApp}
+                  onClick={handleConsultar}
                   size="lg"
                   className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
                 >
-                  <Phone className="mr-2 h-5 w-5" />
-                  Fale com nosso time
-                </Button>
-                
-                <Button
-                  onClick={handleLogin}
-                  size="lg"
-                  className="bg-white text-primary border-2 border-white hover:bg-primary hover:text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6 font-semibold"
-                >
-                  <LogIn className="mr-2 h-5 w-5" />
-                  LOGIN
+                  Consultar
                 </Button>
               </div>
             </div>
@@ -336,11 +322,10 @@ const Telemedicina = () => {
                 </Accordion>
                 
                 <Button
-                  onClick={handleWhatsApp}
+                  onClick={handleConsultar}
                   className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
                 >
-                  <Phone className="mr-2 h-4 w-4" />
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -393,11 +378,10 @@ const Telemedicina = () => {
                 </Accordion>
                 
                 <Button
-                  onClick={handleWhatsApp}
+                  onClick={handleConsultar}
                   className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
                 >
-                  <Phone className="mr-2 h-5 w-5" />
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -451,11 +435,10 @@ const Telemedicina = () => {
                 </Accordion>
                 
                 <Button
-                  onClick={handleWhatsApp}
+                  onClick={handleConsultar}
                   className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
                 >
-                  <Phone className="mr-2 h-4 w-4" />
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -561,14 +544,13 @@ const Telemedicina = () => {
               Ainda tem dúvidas?{' '}
               <span className="text-primary">Fale conosco.</span>
             </h3>
-            <div className="flex justify-center gap-6">
-              <button onClick={handleWhatsApp} className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105">
-                <MessageCircle className="w-6 h-6 text-white" />
-              </button>
-              <button onClick={() => window.open('tel:+556135475886', '_self')} className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105">
-                <Phone className="w-6 h-6 text-white" />
-              </button>
-            </div>
+            <Button
+              onClick={handleConsultar}
+              size="lg"
+              className="bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
+            >
+              Consultar
+            </Button>
           </div>
         </div>
       </section>
@@ -587,17 +569,16 @@ const Telemedicina = () => {
             Tenha acesso a consultas médicas 24 horas por dia, 7 dias por semana, com médicos qualificados e experientes.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col items-center gap-4">
             <Button
-              onClick={handleWhatsApp}
+              onClick={handleConsultar}
               size="lg"
               className="bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
             >
-              <Phone className="mr-2 h-5 w-5" />
-              Fale Conosco Agora
+              Consultar
             </Button>
             
-            <div className="text-center sm:text-left">
+            <div className="text-center">
               <p className="text-primary-foreground/90 text-sm">
                 Resposta em até <strong>5 minutos</strong>
               </p>
