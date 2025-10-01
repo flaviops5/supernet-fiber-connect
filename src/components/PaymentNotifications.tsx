@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play } from "lucide-react";
@@ -23,11 +25,14 @@ interface Notification {
   error_message: string | null;
 }
 
+const PRESET_DAYS = [5, 10, 15, 20, 25, 30];
+
 export const PaymentNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [testDate, setTestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const { toast } = useToast();
 
   const fetchNotifications = async () => {
@@ -76,13 +81,13 @@ export const PaymentNotifications = () => {
     };
   }, []);
 
-  const handleCheckInvoices = async (testMode: boolean = false) => {
+  const handleCheckInvoices = async (testMode: boolean = false, customDate?: string) => {
     setChecking(true);
     try {
       const { data, error } = await supabase.functions.invoke('check-due-invoices', {
         body: { 
           testMode,
-          testDate: testMode ? testDate : undefined
+          testDate: testMode ? (customDate || testDate) : undefined
         }
       });
 
@@ -104,6 +109,74 @@ export const PaymentNotifications = () => {
     } finally {
       setChecking(false);
     }
+  };
+
+  const handleCheckPresetDays = async () => {
+    if (selectedDays.length === 0) {
+      toast({
+        title: "Selecione ao menos um dia",
+        description: "Escolha os dias de vencimento que deseja verificar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setChecking(true);
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    
+    let totalCreated = 0;
+    let total10Days = 0;
+    let total1Day = 0;
+
+    try {
+      for (const day of selectedDays) {
+        const testDateForDay = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const { data, error } = await supabase.functions.invoke('check-due-invoices', {
+          body: { 
+            testMode: true,
+            testDate: testDateForDay
+          }
+        });
+
+        if (error) throw error;
+        
+        totalCreated += data.notificationsCreated || 0;
+        total10Days += data.results.created10Days || 0;
+        total1Day += data.results.created1Day || 0;
+      }
+
+      toast({
+        title: "Verificação concluída!",
+        description: `${totalCreated} notificações criadas. 10 dias: ${total10Days}, 1 dia: ${total1Day}`,
+      });
+
+      fetchNotifications();
+    } catch (error: any) {
+      console.error('Erro ao verificar faturas:', error);
+      toast({
+        title: "Erro ao verificar faturas",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort((a, b) => a - b)
+    );
+  };
+
+  const toggleAllDays = () => {
+    setSelectedDays(prev => 
+      prev.length === PRESET_DAYS.length ? [] : [...PRESET_DAYS]
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -194,10 +267,10 @@ export const PaymentNotifications = () => {
             Verificar Faturas
           </CardTitle>
           <CardDescription>
-            Execute manualmente a verificação ou teste com uma data específica
+            Execute manualmente a verificação ou teste com datas específicas
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="flex gap-4">
             <Button
               onClick={() => handleCheckInvoices(false)}
@@ -208,29 +281,72 @@ export const PaymentNotifications = () => {
             </Button>
           </div>
 
-          <div className="border-t pt-4">
-            <p className="text-sm text-muted-foreground mb-3">
-              Modo de teste: simule a verificação para uma data específica
-            </p>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={testDate}
-                onChange={(e) => setTestDate(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                onClick={() => handleCheckInvoices(true)}
-                disabled={checking}
-                variant="outline"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Testar com esta Data
-              </Button>
+          <div className="border-t pt-4 space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-3">
+                Buscar por dias de vencimento predefinidos
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="select-all"
+                    checked={selectedDays.length === PRESET_DAYS.length}
+                    onCheckedChange={toggleAllDays}
+                  />
+                  <Label htmlFor="select-all" className="font-medium cursor-pointer">
+                    Selecionar todos
+                  </Label>
+                </div>
+                <div className="grid grid-cols-3 gap-3 ml-6">
+                  {PRESET_DAYS.map(day => (
+                    <div key={day} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`day-${day}`}
+                        checked={selectedDays.includes(day)}
+                        onCheckedChange={() => toggleDay(day)}
+                      />
+                      <Label htmlFor={`day-${day}`} className="cursor-pointer">
+                        Dia {String(day).padStart(2, '0')}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleCheckPresetDays}
+                  disabled={checking || selectedDays.length === 0}
+                  variant="default"
+                  className="w-full"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Verificar Dias Selecionados ({selectedDays.length})
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Buscará faturas que vencem 10 e 1 dia após a data selecionada
-            </p>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">
+                Ou buscar por data específica
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={testDate}
+                  onChange={(e) => setTestDate(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => handleCheckInvoices(true)}
+                  disabled={checking}
+                  variant="outline"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Testar Data
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Buscará faturas que vencem 10 e 1 dia após a data selecionada
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
