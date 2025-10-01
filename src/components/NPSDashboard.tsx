@@ -171,11 +171,16 @@ export function NPSDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard NPS</h1>
-        <p className="text-muted-foreground mt-1">
-          Acompanhe a satisfação e lealdade dos clientes
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard NPS</h1>
+          <p className="text-muted-foreground mt-1">
+            Acompanhe a satisfação e lealdade dos clientes
+          </p>
+        </div>
+        <Button onClick={() => window.location.href = '/admin?section=campanhas&create=nps'}>
+          Nova Pesquisa NPS
+        </Button>
       </div>
 
       {/* Overall Stats */}
