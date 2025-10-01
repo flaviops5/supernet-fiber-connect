@@ -274,13 +274,8 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
     const aiData = await aiResponse.json();
     const assistantMessage = aiData.choices[0].message.content as string;
 
-    // Guarantee Julia's identification on first response
-    const intro = 'Olá! Sou a Julia Martins do setor financeiro da SUPERNET FIBRA.';
-    const needsIntro = !assistantMessage.slice(0, 160).toLowerCase().includes('julia');
-    const finalMessage = needsIntro ? `${intro}\n\n${assistantMessage}` : assistantMessage;
-
     return new Response(
-      JSON.stringify({ message: finalMessage }),
+      JSON.stringify({ message: assistantMessage }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
