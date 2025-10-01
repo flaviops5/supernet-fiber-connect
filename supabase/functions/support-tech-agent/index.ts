@@ -56,11 +56,12 @@ serve(async (req) => {
       }
     }
 
-    // Get technical knowledge base
+    // Get technical knowledge base (specific to support_tech or shared)
     const { data: techKnowledge } = await supabase
       .from('knowledge_base')
       .select('title, content')
       .in('category', ['suporte_tecnico', 'configuracoes', 'troubleshooting'])
+      .or('agent_type.eq.support_tech,agent_type.is.null')
       .eq('is_active', true);
 
     const knowledgeContext = techKnowledge?.map(k => `${k.title}\n${k.content}`).join('\n\n') || '';

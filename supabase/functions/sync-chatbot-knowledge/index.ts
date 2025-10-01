@@ -50,7 +50,7 @@ serve(async (req) => {
       .delete()
       .in('category', ['planos', 'vendas', 'empresa', 'faq', 'ixc-api']);
 
-    // 5. Criar conteúdo sobre planos
+    // 5. Criar conteúdo sobre planos (disponível para sales)
     const plansContent = plans?.map(plan => {
       const features = Array.isArray(plan.features) 
         ? plan.features.map((f: any) => `- ${f.text || f}`).join('\n')
@@ -60,6 +60,7 @@ serve(async (req) => {
         title: `Plano ${plan.name}`,
         category: 'planos',
         content_type: 'plano',
+        agent_type: 'sales',
         content: `
 PLANO: ${plan.name}
 VELOCIDADE: ${plan.speed}
@@ -79,11 +80,12 @@ CALL TO ACTION: ${plan.cta_text || 'Contratar Agora'}
       };
     }) || [];
 
-    // 6. Criar resumo de vendas
+    // 6. Criar resumo de vendas (disponível para sales)
     const salesSummary = {
       title: 'Informações de Vendas - SUPERNET FIBRA',
       category: 'vendas',
       content_type: 'processo',
+      agent_type: 'sales',
       content: `
 PROCESSO DE VENDAS SUPERNET FIBRA
 
@@ -116,21 +118,23 @@ OBJEÇÕES COMUNS:
       is_active: true
     };
 
-    // 7. Criar FAQs no knowledge base
+    // 7. Criar FAQs no knowledge base (disponível para todos - agent_type null)
     const faqsContent = faqs?.map(faq => ({
       title: faq.question,
       category: 'faq',
       content_type: 'faq',
+      agent_type: null, // Disponível para todos os agentes
       content: `PERGUNTA: ${faq.question}\n\nRESPOSTA: ${faq.answer}`,
       tags: ['faq', 'duvida'],
       is_active: true
     })) || [];
 
-    // 8. Informações da empresa
+    // 8. Informações da empresa (disponível para todos - agent_type null)
     const companyInfo = {
       title: 'Sobre a SUPERNET FIBRA',
       category: 'empresa',
       content_type: 'institucional',
+      agent_type: null, // Disponível para todos os agentes
       content: `
 SUPERNET FIBRA
 
@@ -148,11 +152,12 @@ Telefone: ${systemSettings?.company_phone || '(11) 99999-9999'}
       is_active: true
     };
 
-    // 9. Documentação da API IXC - Criar Atendimento/Ticket
+    // 9. Documentação da API IXC - Criar Atendimento/Ticket (disponível para support_tech)
     const ixcTicketDoc = {
       title: 'IXC API - Criar Atendimento/Ticket (su_ticket)',
       category: 'ixc-api',
       content_type: 'document',
+      agent_type: 'support_tech',
       content: `
 # Criação de Atendimento/Ticket no IXC
 

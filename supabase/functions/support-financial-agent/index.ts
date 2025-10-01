@@ -57,11 +57,12 @@ serve(async (req) => {
       }
     }
 
-    // Get financial knowledge base
+    // Get financial knowledge base (specific to support_financial or shared)
     const { data: financialKnowledge } = await supabase
       .from('knowledge_base')
       .select('title, content')
       .in('category', ['financeiro', 'cobranca', 'pagamento'])
+      .or('agent_type.eq.support_financial,agent_type.is.null')
       .eq('is_active', true);
 
     const knowledgeContext = financialKnowledge?.map(k => `${k.title}\n${k.content}`).join('\n\n') || '';

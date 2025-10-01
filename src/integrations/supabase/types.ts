@@ -953,6 +953,7 @@ export type Database = {
       }
       knowledge_base: {
         Row: {
+          agent_type: string | null
           category: string
           content: string
           content_type: string
@@ -966,6 +967,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agent_type?: string | null
           category: string
           content: string
           content_type: string
@@ -979,6 +981,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agent_type?: string | null
           category?: string
           content?: string
           content_type?: string
