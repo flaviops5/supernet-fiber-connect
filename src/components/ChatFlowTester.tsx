@@ -112,7 +112,7 @@ export default function ChatFlowTester() {
         setRoutedAgent(data.agent);
       }
 
-      // Save agent message
+      // Save routing agent message
       await supabase.from('conversation_messages').insert({
         conversation_id: conversationId,
         sender_type: 'agent',
@@ -120,6 +120,49 @@ export default function ChatFlowTester() {
         content: data.message || 'Processando...',
         metadata: data
       });
+
+      // If routed to Financeiro, auto-transfer to Julia and let her reply
+      if (data.agent === 'support_financial') {
+        try {
+          const effectiveCustomerData = data.customerData || customerData;
+          const reasonText = String(data.reason || '').toLowerCase();
+          const routeReason = reasonText.includes('bloquead') || reasonText.includes('atraso')
+            ? 'blocked_or_overdue'
+            : undefined;
+
+          const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
+            body: {
+              messages: [{ role: 'user', content: input }],
+              conversationId,
+              customerData: effectiveCustomerData,
+              routeReason,
+            },
+          });
+
+          if (finError) throw finError;
+
+          const juliaMessage: string = finData?.message || 'Olá! Sou a Julia Martins do setor financeiro da SUPERNET FIBRA. Vou ajudar você agora.';
+
+          // Append Julia's message to the tester UI
+          setMessages(prev => [...prev, {
+            role: 'agent',
+            content: juliaMessage,
+            timestamp: new Date(),
+            metadata: { agent: 'support_financial' }
+          }]);
+
+          // Persist Julia's answer
+          await supabase.from('conversation_messages').insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Julia Martins (Financeiro)',
+            content: juliaMessage,
+            ai_suggestion: true,
+          });
+        } catch (e) {
+          console.error('Erro no transbordo para Financeiro:', e);
+        }
+      }
 
     } catch (error: any) {
       console.error('Error sending message:', error);
