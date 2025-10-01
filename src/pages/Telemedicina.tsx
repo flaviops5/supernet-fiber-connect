@@ -153,8 +153,14 @@ const Telemedicina = () => {
 
               {/* CTA */}
               <div className="flex justify-center lg:justify-start">
-                <div className="relative w-full max-w-xs">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                <div className="relative w-full max-w-xs group">
+                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                       style={{ 
+                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                         backgroundSize: '200% 100%',
+                         animation: 'border-beam 2s linear infinite'
+                       }}>
+                  </div>
                   <Button
                     onClick={handleConsultar}
                     size="lg"
@@ -324,8 +330,14 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                       style={{ 
+                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                         backgroundSize: '200% 100%',
+                         animation: 'border-beam 2s linear infinite'
+                       }}>
+                  </div>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
@@ -383,8 +395,14 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                       style={{ 
+                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                         backgroundSize: '200% 100%',
+                         animation: 'border-beam 2s linear infinite'
+                       }}>
+                  </div>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6"
@@ -443,8 +461,14 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                       style={{ 
+                         background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                         backgroundSize: '200% 100%',
+                         animation: 'border-beam 2s linear infinite'
+                       }}>
+                  </div>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
@@ -556,8 +580,14 @@ const Telemedicina = () => {
               Ainda tem dúvidas?{' '}
               <span className="text-primary">Fale conosco.</span>
             </h3>
-            <div className="relative w-full max-w-xs">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+            <div className="relative w-full max-w-xs group">
+              <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                   style={{ 
+                     background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                     backgroundSize: '200% 100%',
+                     animation: 'border-beam 2s linear infinite'
+                   }}>
+              </div>
               <Button
                 onClick={handleConsultar}
                 size="lg"
@@ -585,8 +615,14 @@ const Telemedicina = () => {
           </p>
           
           <div className="flex flex-col items-center gap-4">
-            <div className="relative w-full max-w-xs">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 via-primary to-orange-500 rounded-lg opacity-75 animate-border-glow blur" style={{ backgroundSize: '200% 200%' }}></div>
+            <div className="relative w-full max-w-xs group">
+              <div className="absolute -inset-1 rounded-lg opacity-75 blur-sm" 
+                   style={{ 
+                     background: 'linear-gradient(90deg, transparent, transparent, white, transparent, transparent)',
+                     backgroundSize: '200% 100%',
+                     animation: 'border-beam 2s linear infinite'
+                   }}>
+              </div>
               <Button
                 onClick={handleConsultar}
                 size="lg"
