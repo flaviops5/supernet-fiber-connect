@@ -410,6 +410,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
           { role: 'system', content: systemPrompt },
           ...messages
         ],
+        modalities: ['text', 'image'],
         tools: [
           {
             type: 'function',

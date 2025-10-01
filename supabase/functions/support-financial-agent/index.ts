@@ -261,6 +261,7 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
           ...conversationHistory,
           ...messages
         ],
+        modalities: ['text', 'image'],
         temperature: parseFloat(agentConfig.temperature),
         max_tokens: agentConfig.max_tokens,
       }),

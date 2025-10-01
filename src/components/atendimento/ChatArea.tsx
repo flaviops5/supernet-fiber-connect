@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { MediaUpload } from '@/components/MediaUpload';
 
 interface Message {
   id: string;
@@ -27,6 +28,7 @@ export default function ChatArea({ conversationId }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function ChatArea({ conversationId }: Props) {
   };
 
   const handleSendMessage = async () => {
-    if (!conversationId || !newMessage.trim()) return;
+    if (!conversationId || (!newMessage.trim() && !attachedImage)) return;
 
     setLoading(true);
     try {
@@ -97,6 +99,10 @@ export default function ChatArea({ conversationId }: Props) {
         .eq('user_id', user.id)
         .single();
 
+      const messageContent = attachedImage 
+        ? `${newMessage.trim()} [Imagem anexada: ${attachedImage.substring(0, 50)}...]`
+        : newMessage.trim();
+
       const { error } = await supabase
         .from('conversation_messages')
         .insert({
@@ -104,7 +110,7 @@ export default function ChatArea({ conversationId }: Props) {
           sender_type: 'agent',
           sender_id: user.id,
           sender_name: profile?.name || 'Agente',
-          content: newMessage.trim()
+          content: messageContent
         });
 
       if (error) throw error;
@@ -121,6 +127,7 @@ export default function ChatArea({ conversationId }: Props) {
         .eq('status', 'waiting');
 
       setNewMessage('');
+      setAttachedImage(null);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -195,10 +202,32 @@ export default function ChatArea({ conversationId }: Props) {
       </CardContent>
 
       <div className="border-t p-4">
-        <div className="flex gap-2">
-          <Button size="icon" variant="outline">
-            <Paperclip className="h-4 w-4" />
-          </Button>
+        {attachedImage && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={attachedImage} 
+              alt="Imagem anexada" 
+              className="max-w-xs rounded-lg border"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+              onClick={() => setAttachedImage(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+        
+        <div className="flex gap-2 items-end">
+          <MediaUpload
+            onAudioTranscribed={(text) => {
+              setNewMessage(prev => prev + (prev ? ' ' : '') + text);
+            }}
+            onImageSelected={setAttachedImage}
+            disabled={loading}
+          />
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -208,14 +237,14 @@ export default function ChatArea({ conversationId }: Props) {
                 handleSendMessage();
               }
             }}
-            placeholder="Digite sua mensagem..."
-            className="min-h-[60px] resize-none"
+            placeholder="Digite ou grave sua mensagem..."
+            className="min-h-[60px] resize-none flex-1"
             disabled={loading}
           />
           <Button
             size="icon"
             onClick={handleSendMessage}
-            disabled={loading || !newMessage.trim()}
+            disabled={loading || (!newMessage.trim() && !attachedImage)}
           >
             <Send className="h-4 w-4" />
           </Button>

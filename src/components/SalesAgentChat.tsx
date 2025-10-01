@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Bot, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { Bot, Send, MessageCircle, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import confidentWoman from '@/assets/family-internet-v3.jpg';
 import ContractSigning from './ContractSigning';
+import { MediaUpload } from './MediaUpload';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -45,6 +46,7 @@ export const SalesAgentChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [contractData, setContractData] = useState<ContractData | null>(null);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll automático para acompanhar a conversa
@@ -53,21 +55,38 @@ export const SalesAgentChat = () => {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !attachedImage) || isLoading) return;
 
     const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
 
+    // Prepara o conteúdo da mensagem (texto + imagem se houver)
+    const messageContent: any = attachedImage 
+      ? [
+          { type: 'text', text: userMessage || 'Veja a imagem anexada' },
+          { type: 'image_url', image_url: { url: attachedImage } }
+        ]
+      : userMessage;
+
     // Adiciona mensagem do usuário
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [...prev, { 
+      role: 'user', 
+      content: attachedImage ? `${userMessage} [Imagem anexada]` : userMessage
+    }]);
+    
+    // Limpa imagem anexada
+    setAttachedImage(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('sales-agent', {
         body: {
           messages: [
-            ...messages,
-            { role: 'user', content: userMessage }
+            ...messages.map(m => ({ 
+              role: m.role, 
+              content: m.content 
+            })),
+            { role: 'user', content: messageContent }
           ],
           userContext: {
             timestamp: new Date().toISOString()
@@ -286,18 +305,43 @@ export const SalesAgentChat = () => {
 
                 {/* Input Area */}
                 <div className="border-t bg-white p-6">
-                  <div className="flex gap-3">
+                  {attachedImage && (
+                    <div className="mb-3 relative inline-block">
+                      <img 
+                        src={attachedImage} 
+                        alt="Imagem anexada" 
+                        className="max-w-xs rounded-lg border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => setAttachedImage(null)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3 items-end">
+                    <MediaUpload
+                      onAudioTranscribed={(text) => {
+                        setInput(prev => prev + (prev ? ' ' : '') + text);
+                      }}
+                      onImageSelected={setAttachedImage}
+                      disabled={isLoading}
+                    />
                     <Input
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Digite sua mensagem..."
+                      placeholder="Digite ou grave sua mensagem..."
                       disabled={isLoading}
                       className="flex-1"
                     />
                     <Button 
                       onClick={sendMessage}
-                      disabled={isLoading || !input.trim()}
+                      disabled={isLoading || (!input.trim() && !attachedImage)}
                       className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
                     >
                       {isLoading ? (

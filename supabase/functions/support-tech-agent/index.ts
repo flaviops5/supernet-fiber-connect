@@ -130,6 +130,7 @@ ${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
           ...conversationHistory,
           ...messages
         ],
+        modalities: ['text', 'image'],
         temperature: parseFloat(agentConfig.temperature),
         max_tokens: agentConfig.max_tokens,
       }),
