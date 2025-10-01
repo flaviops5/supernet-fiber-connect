@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.voice-to-text]
 verify_jwt = false
+
+[functions.ixc-count-clients]
+verify_jwt = false

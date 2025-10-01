@@ -39,6 +39,8 @@ const AgentManagement = () => {
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [countingClients, setCountingClients] = useState(false);
+  const [ixcClientCount, setIxcClientCount] = useState<any>(null);
   const [showTestChat, setShowTestChat] = useState(false);
   const { toast } = useToast();
 
@@ -122,6 +124,31 @@ const AgentManagement = () => {
     }
   };
 
+  const countIxcClients = async () => {
+    setCountingClients(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-count-clients');
+      
+      if (error) throw error;
+      
+      setIxcClientCount(data);
+      
+      toast({
+        title: 'Clientes contados no IXC',
+        description: `Total: ${data.total_clientes} clientes encontrados`,
+      });
+    } catch (error: any) {
+      console.error('Error counting IXC clients:', error);
+      toast({
+        title: 'Erro ao contar clientes',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setCountingClients(false);
+    }
+  };
+
   const agents = [
     {
       id: 'routing',
@@ -192,6 +219,15 @@ const AgentManagement = () => {
         </div>
         <div className="flex gap-2">
           <Button
+            onClick={countIxcClients}
+            variant="outline"
+            disabled={countingClients}
+            className="gap-2"
+          >
+            <Activity className="w-4 h-4" />
+            {countingClients ? 'Contando...' : 'Contar Clientes IXC'}
+          </Button>
+          <Button
             onClick={() => setShowTestChat(!showTestChat)}
             variant="outline"
             className="gap-2"
@@ -223,6 +259,45 @@ const AgentManagement = () => {
           </CardHeader>
           <CardContent>
             <OmnichannelChat />
+          </CardContent>
+        </Card>
+      )}
+
+      {ixcClientCount && (
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Contagem de Clientes IXC
+            </CardTitle>
+            <CardDescription>
+              Total de clientes cadastrados no sistema IXC
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Total de Clientes</p>
+                <p className="text-3xl font-bold text-primary">{ixcClientCount.total_clientes}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Clientes Ativos</p>
+                <p className="text-3xl font-bold text-green-600">{ixcClientCount.detalhes?.ativos || 0}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Clientes Inativos</p>
+                <p className="text-3xl font-bold text-gray-600">{ixcClientCount.detalhes?.inativos || 0}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Clientes Bloqueados</p>
+                <p className="text-3xl font-bold text-red-600">{ixcClientCount.detalhes?.bloqueados || 0}</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs text-muted-foreground">
+                Páginas consultadas: {ixcClientCount.paginas_consultadas || 0}
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
