@@ -953,48 +953,64 @@ export type Database = {
       }
       knowledge_base: {
         Row: {
-          agent_type: string | null
+          agent_types: string[] | null
           category: string
           content: string
           content_type: string
           created_at: string
           created_by: string | null
+          display_order: number
           id: string
           is_active: boolean | null
+          is_folder: boolean
+          parent_id: string | null
           source_document_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
         }
         Insert: {
-          agent_type?: string | null
+          agent_types?: string[] | null
           category: string
           content: string
           content_type: string
           created_at?: string
           created_by?: string | null
+          display_order?: number
           id?: string
           is_active?: boolean | null
+          is_folder?: boolean
+          parent_id?: string | null
           source_document_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
         }
         Update: {
-          agent_type?: string | null
+          agent_types?: string[] | null
           category?: string
           content?: string
           content_type?: string
           created_at?: string
           created_by?: string | null
+          display_order?: number
           id?: string
           is_active?: boolean | null
+          is_folder?: boolean
+          parent_id?: string | null
           source_document_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "knowledge_base_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_base"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "knowledge_base_source_document_id_fkey"
             columns: ["source_document_id"]

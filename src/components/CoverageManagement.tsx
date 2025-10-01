@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trash2, Plus, Edit, MapPin } from 'lucide-react';
@@ -355,21 +356,21 @@ const CoverageManagement = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge 
+                          variant={area.active ? "default" : "secondary"}
+                          className="cursor-pointer"
+                          onClick={() => toggleAreaActive(area.id, area.active)}
+                        >
+                          {area.active ? 'Ativa' : 'Inativa'}
+                        </Badge>
+                        
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditArea(area)}
                         >
                           <Edit className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleAreaActive(area.id, area.active)}
-                        >
-                          {area.active ? 'Desativar' : 'Ativar'}
                         </Button>
 
                         <Button
@@ -380,14 +381,6 @@ const CoverageManagement = () => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                        
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          area.active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {area.active ? 'Ativa' : 'Inativa'}
-                        </span>
                       </div>
                     </div>
                   ))}
