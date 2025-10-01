@@ -156,7 +156,7 @@ const Telemedicina = () => {
                 <Button
                   onClick={handleConsultar}
                   size="lg"
-                  className="w-full max-w-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
+                  className="w-full max-w-[280px] bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-8 py-5 animate-glow-rotate"
                 >
                   Consultar
                 </Button>

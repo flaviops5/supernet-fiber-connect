@@ -187,4 +187,22 @@
   .service-card {
     @apply transform transition-all duration-300 hover:scale-105 hover:shadow-xl;
   }
+  
+  /* Glow rotate animation */
+  @keyframes glow-rotate {
+    0%, 100% {
+      box-shadow: 0 0 21px 7px rgba(251, 146, 60, 0.8),
+                  0 0 42px 14px rgba(251, 146, 60, 0.4),
+                  inset 0 0 14px rgba(251, 146, 60, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 28px 10px rgba(251, 146, 60, 1),
+                  0 0 56px 21px rgba(251, 146, 60, 0.6),
+                  inset 0 0 21px rgba(251, 146, 60, 0.5);
+    }
+  }
+  
+  .animate-glow-rotate {
+    animation: glow-rotate 4s ease-in-out infinite;
+  }
 }
