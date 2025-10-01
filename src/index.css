@@ -225,45 +225,46 @@
   @keyframes border-top {
     0%, 100% { transform: translateX(-100%); opacity: 0; }
     1% { opacity: 1; }
-    24% { transform: translateX(100%); opacity: 1; }
-    25% { opacity: 0; }
+    23% { transform: translateX(calc(100% + 10px)); opacity: 1; }
+    24% { opacity: 0; }
   }
   
   @keyframes border-right {
     0%, 24%, 100% { transform: translateY(-100%); opacity: 0; }
     25% { opacity: 1; }
-    49% { transform: translateY(100%); opacity: 1; }
-    50% { opacity: 0; }
+    48% { transform: translateY(calc(100% + 10px)); opacity: 1; }
+    49% { opacity: 0; }
   }
   
   @keyframes border-bottom {
-    0%, 49%, 100% { transform: translateX(100%); opacity: 0; }
+    0%, 49%, 100% { transform: translateX(calc(100% + 10px)); opacity: 0; }
     50% { opacity: 1; }
-    74% { transform: translateX(-100%); opacity: 1; }
-    75% { opacity: 0; }
+    73% { transform: translateX(-100%); opacity: 1; }
+    74% { opacity: 0; }
   }
   
   @keyframes border-left {
-    0%, 74% { transform: translateY(100%); opacity: 0; }
+    0%, 74% { transform: translateY(calc(100% + 10px)); opacity: 0; }
     75% { opacity: 1; }
-    99% { transform: translateY(-100%); opacity: 1; }
-    100% { opacity: 0; }
+    98% { transform: translateY(-100%); opacity: 1; }
+    99% { opacity: 0; }
   }
   
   .comet-border::before {
     content: '';
     position: absolute;
-    top: -2px;
+    top: -3px;
     left: 0;
-    width: 80px;
-    height: 2px;
+    width: 100px;
+    height: 3px;
     background: linear-gradient(90deg, 
       transparent 0%,
-      rgba(255, 255, 255, 0.3) 40%,
-      rgba(255, 255, 255, 0.8) 80%,
+      rgba(255, 255, 255, 0.4) 30%,
+      rgba(255, 255, 255, 1) 80%,
       white 100%
     );
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.7);
+    border-radius: 0 2px 2px 0;
     animation: border-top 3s linear infinite;
     pointer-events: none;
     z-index: 10;
@@ -273,16 +274,17 @@
     content: '';
     position: absolute;
     top: 0;
-    right: -2px;
-    width: 2px;
-    height: 80px;
+    right: -3px;
+    width: 3px;
+    height: 100px;
     background: linear-gradient(180deg, 
       transparent 0%,
-      rgba(255, 255, 255, 0.3) 40%,
-      rgba(255, 255, 255, 0.8) 80%,
+      rgba(255, 255, 255, 0.4) 30%,
+      rgba(255, 255, 255, 1) 80%,
       white 100%
     );
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 2px 2px;
     animation: border-right 3s linear infinite;
     pointer-events: none;
     z-index: 10;
@@ -290,17 +292,18 @@
   
   .comet-border > .comet-bottom {
     position: absolute;
-    bottom: -2px;
+    bottom: -3px;
     right: 0;
-    width: 80px;
-    height: 2px;
+    width: 100px;
+    height: 3px;
     background: linear-gradient(90deg, 
       white 0%,
-      rgba(255, 255, 255, 0.8) 20%,
-      rgba(255, 255, 255, 0.3) 60%,
+      rgba(255, 255, 255, 1) 20%,
+      rgba(255, 255, 255, 0.4) 70%,
       transparent 100%
     );
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.7);
+    border-radius: 2px 0 0 2px;
     animation: border-bottom 3s linear infinite;
     pointer-events: none;
     z-index: 10;
@@ -309,16 +312,17 @@
   .comet-border > .comet-left {
     position: absolute;
     bottom: 0;
-    left: -2px;
-    width: 2px;
-    height: 80px;
+    left: -3px;
+    width: 3px;
+    height: 100px;
     background: linear-gradient(180deg, 
       white 0%,
-      rgba(255, 255, 255, 0.8) 20%,
-      rgba(255, 255, 255, 0.3) 60%,
+      rgba(255, 255, 255, 1) 20%,
+      rgba(255, 255, 255, 0.4) 70%,
       transparent 100%
     );
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 1), 0 0 25px rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 2px 0;
     animation: border-left 3s linear infinite;
     pointer-events: none;
     z-index: 10;
