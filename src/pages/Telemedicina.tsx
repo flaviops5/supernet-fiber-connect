@@ -7,6 +7,7 @@ import { useScrollToHash } from '@/hooks/useScrollToHash';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
+import TelemedicinaAgentWidget from '@/components/TelemedicinaAgentWidget';
 
 
 const Telemedicina = () => {
@@ -589,6 +590,9 @@ const Telemedicina = () => {
           </div>
         </div>
       </section>
+
+      {/* Agent Widget */}
+      <TelemedicinaAgentWidget />
     </div>
   );
 };

@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.automacao-agent]
 verify_jwt = false
+
+[functions.telemedicina-agent]
+verify_jwt = false
