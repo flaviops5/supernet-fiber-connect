@@ -7,6 +7,7 @@ import { TestimonialsProvider } from "./contexts/TestimonialsContext";
 import Index from "./pages/Index";
 import Contact from "./pages/Contact";
 import Telemedicina from "./pages/Telemedicina";
+import Automacao from "./pages/Automacao";
 import Blog from "./pages/Blog";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
@@ -47,6 +48,7 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/contato" element={<Contact />} />
                     <Route path="/telemedicina" element={<Telemedicina />} />
+                    <Route path="/automacao-residencial" element={<Automacao />} />
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
