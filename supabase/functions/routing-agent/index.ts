@@ -443,12 +443,12 @@ MENSAGEM ATUAL DO CLIENTE:
       };
     }
 
-    // If clarification needed, return message asking for more info
+    // If clarification needed, return message from AI (no hardcoded menus)
     if (decision.agent === 'clarify' || decision.confidence < 60) {
       return new Response(
         JSON.stringify({
           agent: 'clarify',
-          message: 'Para que eu possa direcionar você ao setor correto, poderia me informar se sua dúvida é sobre:\n\n🛒 **Vendas** - Contratar planos, preços, cobertura\n🔧 **Suporte Técnico** - Problemas de conexão, configurações\n💰 **Financeiro** - Faturas, pagamentos, boletos',
+          message: decision.message || 'Para te ajudar melhor, pode me contar um pouco mais sobre o que você precisa?',
           confidence: decision.confidence,
           reason: decision.reason
         }),
