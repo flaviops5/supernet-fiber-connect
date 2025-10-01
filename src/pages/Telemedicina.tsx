@@ -156,7 +156,7 @@ const Telemedicina = () => {
                 <Button
                   onClick={handleConsultar}
                   size="lg"
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-6"
+                  className="w-full max-w-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
                 >
                   Consultar
                 </Button>
@@ -323,7 +323,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
                 >
                   Consultar
                 </Button>
@@ -379,7 +379,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg py-3"
+                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold py-7 animate-glow-rotate"
                 >
                   Consultar
                 </Button>
@@ -436,7 +436,7 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base py-3"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
                 >
                   Consultar
                 </Button>
@@ -547,7 +547,7 @@ const Telemedicina = () => {
             <Button
               onClick={handleConsultar}
               size="lg"
-              className="bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
+              className="w-full max-w-md bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-7 animate-glow-rotate"
             >
               Consultar
             </Button>
@@ -573,7 +573,7 @@ const Telemedicina = () => {
             <Button
               onClick={handleConsultar}
               size="lg"
-              className="bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg px-8 py-3"
+              className="w-full max-w-md bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
             >
               Consultar
             </Button>
