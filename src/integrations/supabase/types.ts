@@ -1020,6 +1020,60 @@ export type Database = {
           },
         ]
       }
+      payment_notifications: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          days_before_due: number
+          due_date: string
+          error_message: string | null
+          id: string
+          ixc_client_id: string
+          ixc_title_id: string
+          metadata: Json | null
+          notification_type: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_name: string
+          customer_phone?: string | null
+          days_before_due: number
+          due_date: string
+          error_message?: string | null
+          id?: string
+          ixc_client_id: string
+          ixc_title_id: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          days_before_due?: number
+          due_date?: string
+          error_message?: string | null
+          id?: string
+          ixc_client_id?: string
+          ixc_title_id?: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           active: boolean

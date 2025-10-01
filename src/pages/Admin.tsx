@@ -28,6 +28,7 @@ import IXCIntegration from '@/components/IXCIntegration';
 import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
+import { PaymentNotifications } from '@/components/PaymentNotifications';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -2042,6 +2043,7 @@ const Admin = () => {
                 <Route path="/corporate-ai" element={<CorporateAI />} />
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
                 <Route path="/ixc-documentation" element={<IXCDocumentationManager />} />
+                <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

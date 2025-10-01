@@ -1,0 +1,311 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface Notification {
+  id: string;
+  customer_name: string;
+  customer_phone: string | null;
+  due_date: string;
+  amount: number;
+  days_before_due: number;
+  status: 'pending' | 'sent' | 'failed' | 'cancelled';
+  sent_at: string | null;
+  created_at: string;
+  error_message: string | null;
+}
+
+export const PaymentNotifications = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checking, setChecking] = useState(false);
+  const [testDate, setTestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const { toast } = useToast();
+
+  const fetchNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payment_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setNotifications((data || []) as Notification[]);
+    } catch (error: any) {
+      console.error('Erro ao buscar notificações:', error);
+      toast({
+        title: "Erro ao carregar notificações",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Realtime updates
+    const channel = supabase
+      .channel('payment_notifications_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'payment_notifications'
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleCheckInvoices = async (testMode: boolean = false) => {
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-due-invoices', {
+        body: { 
+          testMode,
+          testDate: testMode ? testDate : undefined
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: testMode ? "Teste executado com sucesso!" : "Verificação concluída!",
+        description: `${data.notificationsCreated} notificações criadas. 10 dias: ${data.results.created10Days}, 1 dia: ${data.results.created1Day}`,
+      });
+
+      fetchNotifications();
+    } catch (error: any) {
+      console.error('Erro ao verificar faturas:', error);
+      toast({
+        title: "Erro ao verificar faturas",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      pending: { variant: "outline" as const, icon: Clock, label: "Pendente" },
+      sent: { variant: "default" as const, icon: CheckCircle, label: "Enviado" },
+      failed: { variant: "destructive" as const, icon: XCircle, label: "Falhou" },
+      cancelled: { variant: "secondary" as const, icon: XCircle, label: "Cancelado" }
+    };
+
+    const config = variants[status as keyof typeof variants] || variants.pending;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant={config.variant} className="flex items-center gap-1">
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const stats = {
+    pending: notifications.filter(n => n.status === 'pending').length,
+    sent: notifications.filter(n => n.status === 'sent').length,
+    failed: notifications.filter(n => n.status === 'failed').length,
+    total: notifications.length
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            <Bell className="h-8 w-8" />
+            Notificações de Vencimento
+          </h2>
+          <p className="text-muted-foreground mt-1">
+            Alertas automáticos 10 e 1 dia antes do vencimento
+          </p>
+        </div>
+        <Button onClick={fetchNotifications} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Atualizar
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-500">{stats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Enviados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">{stats.sent}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Falharam</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">{stats.failed}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Test Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="h-5 w-5" />
+            Verificar Faturas
+          </CardTitle>
+          <CardDescription>
+            Execute manualmente a verificação ou teste com uma data específica
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-4">
+            <Button
+              onClick={() => handleCheckInvoices(false)}
+              disabled={checking}
+              className="flex-1"
+            >
+              {checking ? "Verificando..." : "Verificar Agora (Produção)"}
+            </Button>
+          </div>
+
+          <div className="border-t pt-4">
+            <p className="text-sm text-muted-foreground mb-3">
+              Modo de teste: simule a verificação para uma data específica
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={testDate}
+                onChange={(e) => setTestDate(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => handleCheckInvoices(true)}
+                disabled={checking}
+                variant="outline"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Testar com esta Data
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Buscará faturas que vencem 10 e 1 dia após a data selecionada
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notifications Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Notificações</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Carregando notificações...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma notificação encontrada. Execute uma verificação para criar notificações.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Alerta</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notifications.map((notification) => (
+                    <TableRow key={notification.id}>
+                      <TableCell className="font-medium">
+                        {notification.customer_name}
+                      </TableCell>
+                      <TableCell>{notification.customer_phone || '-'}</TableCell>
+                      <TableCell>
+                        {format(new Date(notification.due_date), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        R$ {notification.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {notification.days_before_due} dias antes
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(notification.status)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(notification.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Info Card */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-sm">ℹ️ Como funciona</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm space-y-2">
+          <p>• O sistema verifica faturas diariamente e cria notificações para vencimentos em 10 e 1 dia</p>
+          <p>• As notificações ficam com status "Pendente" até a integração WhatsApp ser implementada</p>
+          <p>• Use o modo de teste para simular verificações sem enviar notificações reais</p>
+          <p>• Configure um Cron Job para executar automaticamente: <code className="bg-white px-1 rounded">0 9 * * *</code> (diariamente às 9h)</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

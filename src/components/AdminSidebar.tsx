@@ -36,6 +36,7 @@ import {
   Database,
   MessageSquare,
   FlaskConical,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -129,6 +130,11 @@ const systemItems = [
     title: "Documentação IXC",
     url: "/admin/ixc-documentation",
     icon: BookOpen,
+  },
+  {
+    title: "Notificações Pagamento",
+    url: "/admin/payment-notifications",
+    icon: Bell,
   },
   {
     title: "Testador de Chat",

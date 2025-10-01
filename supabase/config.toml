@@ -1,5 +1,8 @@
 project_id = "mxdupkbpxjcfxdgrwknp"
 
+[functions.check-due-invoices]
+verify_jwt = false
+
 [functions.process-contract]
 verify_jwt = false
 
