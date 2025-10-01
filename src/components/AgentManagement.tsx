@@ -40,7 +40,9 @@ const AgentManagement = () => {
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [countingClients, setCountingClients] = useState(false);
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
   const [ixcClientCount, setIxcClientCount] = useState<any>(null);
+  const [revenueStats, setRevenueStats] = useState<any>(null);
   const [showTestChat, setShowTestChat] = useState(false);
   const { toast } = useToast();
 
@@ -149,6 +151,31 @@ const AgentManagement = () => {
     }
   };
 
+  const loadRevenueStats = async () => {
+    setLoadingRevenue(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-revenue-stats');
+      
+      if (error) throw error;
+      
+      setRevenueStats(data);
+      
+      toast({
+        title: 'Receita calculada',
+        description: `MRR: R$ ${data.mrr.toFixed(2)} | Contratos ativos: ${data.activeContracts}`,
+      });
+    } catch (error: any) {
+      console.error('Error loading revenue stats:', error);
+      toast({
+        title: 'Erro ao calcular receita',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingRevenue(false);
+    }
+  };
+
   const agents = [
     {
       id: 'routing',
@@ -228,6 +255,15 @@ const AgentManagement = () => {
             {countingClients ? 'Contando...' : 'Contar Clientes IXC'}
           </Button>
           <Button
+            onClick={loadRevenueStats}
+            variant="outline"
+            disabled={loadingRevenue}
+            className="gap-2"
+          >
+            <DollarSign className="w-4 h-4" />
+            {loadingRevenue ? 'Calculando...' : 'Ver Receita'}
+          </Button>
+          <Button
             onClick={() => setShowTestChat(!showTestChat)}
             variant="outline"
             className="gap-2"
@@ -297,6 +333,94 @@ const AgentManagement = () => {
               <p className="text-xs text-muted-foreground">
                 Páginas consultadas: {ixcClientCount.paginas_consultadas || 0}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {revenueStats && (
+        <Card className="border-green-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Estatísticas de Receita IXC
+            </CardTitle>
+            <CardDescription>
+              Análise financeira baseada nos contratos ativos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              {/* Principais métricas */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">MRR (Receita Mensal)</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    R$ {revenueStats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">ARR (Receita Anual)</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    R$ {revenueStats.arr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    R$ {revenueStats.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Contratos Ativos</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {revenueStats.activeContracts}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status dos contratos */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold mb-3">Status dos Contratos</h4>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Ativos</span>
+                    <span className="font-bold text-green-700">{revenueStats.activeContracts}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Bloqueados</span>
+                    <span className="font-bold text-red-700">{revenueStats.blockedContracts}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-muted-foreground">Inativos</span>
+                    <span className="font-bold text-gray-700">{revenueStats.inactiveContracts}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top 5 planos por receita */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold mb-3">Top 5 Planos por Receita</h4>
+                <div className="space-y-2">
+                  {Object.entries(revenueStats.revenueByPlan).slice(0, 5).map(([plano, data]: [string, any]) => (
+                    <div key={plano} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{plano}</p>
+                        <p className="text-xs text-muted-foreground">{data.count} contratos</p>
+                      </div>
+                      <p className="text-sm font-bold">
+                        R$ {data.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Total de contratos processados: {revenueStats.totalContracts} | Páginas: {revenueStats.pagesProcessed}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

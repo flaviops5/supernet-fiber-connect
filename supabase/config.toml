@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.ixc-count-clients]
 verify_jwt = false
+
+[functions.ixc-revenue-stats]
+verify_jwt = false
