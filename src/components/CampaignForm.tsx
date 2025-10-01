@@ -36,6 +36,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
       status: [],
       plans: [],
       tags: [],
+      ppoes: [],
     },
   });
 
@@ -305,6 +306,23 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
                     });
                   }}
                 />
+              </div>
+              <div>
+                <Label htmlFor="ppoes">PPOEs dos Clientes</Label>
+                <Input
+                  id="ppoes"
+                  placeholder="Ex: cliente1@pppoe, cliente2@pppoe (separar por vírgula)"
+                  onChange={(e) => {
+                    const ppoes = e.target.value.split(',').map(p => p.trim()).filter(p => p);
+                    setFormData({
+                      ...formData,
+                      targetFilters: { ...formData.targetFilters, ppoes }
+                    });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Identifique clientes específicos pelos seus logins PPOE
+                </p>
               </div>
             </div>
           )}
