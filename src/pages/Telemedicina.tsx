@@ -153,7 +153,9 @@ const Telemedicina = () => {
 
               {/* CTA */}
               <div className="flex justify-center lg:justify-start">
-                <div className="relative w-full max-w-xs comet-border">
+                <div className="relative w-full max-w-xs comet-border overflow-hidden">
+                  <span className="comet-bottom"></span>
+                  <span className="comet-left"></span>
                   <Button
                     onClick={handleConsultar}
                     size="lg"
@@ -323,7 +325,9 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative comet-border">
+                <div className="relative comet-border overflow-hidden">
+                  <span className="comet-bottom"></span>
+                  <span className="comet-left"></span>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5 z-10"
@@ -381,7 +385,9 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative comet-border">
+                <div className="relative comet-border overflow-hidden">
+                  <span className="comet-bottom"></span>
+                  <span className="comet-left"></span>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 z-10"
@@ -440,7 +446,9 @@ const Telemedicina = () => {
                   </AccordionItem>
                 </Accordion>
                 
-                <div className="relative comet-border">
+                <div className="relative comet-border overflow-hidden">
+                  <span className="comet-bottom"></span>
+                  <span className="comet-left"></span>
                   <Button
                     onClick={handleConsultar}
                     className="relative w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5 z-10"
@@ -552,7 +560,9 @@ const Telemedicina = () => {
               Ainda tem dúvidas?{' '}
               <span className="text-primary">Fale conosco.</span>
             </h3>
-            <div className="relative w-full max-w-xs comet-border">
+            <div className="relative w-full max-w-xs comet-border overflow-hidden">
+              <span className="comet-bottom"></span>
+              <span className="comet-left"></span>
               <Button
                 onClick={handleConsultar}
                 size="lg"
@@ -580,7 +590,9 @@ const Telemedicina = () => {
           </p>
           
           <div className="flex flex-col items-center gap-4">
-            <div className="relative w-full max-w-xs comet-border">
+            <div className="relative w-full max-w-xs comet-border overflow-hidden">
+              <span className="comet-bottom"></span>
+              <span className="comet-left"></span>
               <Button
                 onClick={handleConsultar}
                 size="lg"
