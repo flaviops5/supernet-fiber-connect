@@ -62,7 +62,8 @@ serve(async (req) => {
       throw new Error(`Erro IXC: ${ixcError.message}`);
     }
 
-    const titles = ixcResponse?.registros || [];
+    // A resposta vem em { success, data: { registros, total } }
+    const titles = ixcResponse?.data?.registros || ixcResponse?.registros || [];
     console.log(`📊 Total de títulos encontrados: ${titles.length}`);
 
     const notificationsToCreate = [];
@@ -125,7 +126,7 @@ serve(async (req) => {
           }
         });
 
-        const customer = customerData?.registros?.[0];
+        const customer = customerData?.data?.registros?.[0] || customerData?.registros?.[0];
         
         notificationsToCreate.push({
           ixc_title_id: String(title.id || title.idtitulo),
