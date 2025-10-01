@@ -253,15 +253,15 @@ serve(async (req) => {
 
     // If this is first message (greeting), respond naturally
     if (messageCount === 0) {
-      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai', 'opa'];
-      const isGreeting = greetings.some(g => message.toLowerCase().trim().includes(g));
+      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai'];
+      const isGreeting = greetings.some(g => message.toLowerCase().includes(g));
       
-      if (isGreeting || message.trim().length < 15) {
-        console.log('First message is a greeting - Cloé introduces herself');
+      if (isGreeting) {
+        console.log('First message is a greeting - responding naturally');
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: 'Olá! Tudo bem? 😊\n\nMeu nome é **Cloé**, sou a assistente virtual da SUPERNET FIBRA!\n\nEstou aqui para ajudar você com:\n🛒 **Contratar planos**\n🔧 **Suporte técnico**\n💰 **Questões financeiras**\n\nComo posso ajudá-lo hoje?',
+            message: 'Olá! Tudo bem? Meu nome é Cloé. Como posso ajudá-lo hoje? 😊',
             isGreeting: true
           }),
           {
