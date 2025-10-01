@@ -272,11 +272,33 @@ serve(async (req) => {
       }
     }
 
+    // Handle first user turn saved before routing call (no agent messages persisted yet)
+    if (messageCount === 1) {
+      const hasAgentMessage = messages?.some((m: any) => m.sender_type === 'agent');
+      const userMsgs = messages?.filter((m: any) => m.sender_type === 'client' || m.sender_type === 'customer') || [];
+      const greetings = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hey', 'eae', 'e ai', 'opa'];
+      const isGreeting = greetings.some(g => message.toLowerCase().includes(g));
+      if (!hasAgentMessage && userMsgs.length === 1 && isGreeting) {
+        console.log('First turn greeting after persisted customer message - Cloé introduces herself as atendente');
+        return new Response(
+          JSON.stringify({
+            agent: 'routing',
+            message: 'Olá! Tudo bem? Meu nome é Cloé, atendente da SUPERNET FIBRA. Como posso ajudar hoje? 😊',
+            isGreeting: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
     // Build conversation history for context
     let conversationHistory: Message[] = [];
     if (messages) {
       conversationHistory = messages.map(msg => ({
-        role: msg.sender_type === 'client' ? 'user' : 'assistant',
+        role: (msg.sender_type === 'client' || msg.sender_type === 'customer') ? 'user' : 'assistant',
         content: msg.content
       }));
     }
