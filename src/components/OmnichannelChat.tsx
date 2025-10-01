@@ -44,7 +44,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
       // Initial greeting
       setMessages([{
         role: 'assistant',
-        content: 'Olá! Sou o assistente virtual da SUPERNET FIBRA. Como posso ajudá-lo hoje?\n\n🛒 **Vendas** - Contratar planos, consultar preços\n🔧 **Suporte Técnico** - Problemas de conexão\n💰 **Financeiro** - Boletos, pagamentos',
+        content: 'Olá! Tudo bem? Meu nome é Cloé, atendente da SUPERNET FIBRA. Como posso ajudar hoje?\n\n🛒 Vendas — Contratar planos, consultar preços\n🔧 Suporte Técnico — Problemas de conexão\n💰 Financeiro — Boletos e pagamentos',
         agent: 'routing',
         timestamp: new Date()
       }]);
@@ -231,7 +231,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
           <div className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-white" />
             <div>
-              <h3 className="font-semibold text-white">Assistente Virtual SUPERNET</h3>
+              <h3 className="font-semibold text-white">Atendimento SUPERNET — Cloé</h3>
               <p className="text-xs text-white/80">
                 {currentAgent === 'routing' ? 'Determinando melhor atendimento...' :
                  currentAgent === 'sales' ? 'Setor de Vendas' :
