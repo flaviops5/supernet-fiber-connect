@@ -279,16 +279,50 @@ serve(async (req) => {
 
             const isOnline = clientStatus.isOnline === true;
             if (!isOnline) {
-              console.log('🧪 MOCK: Cliente offline - roteando para Suporte Técnico');
+              console.log('🧪 MOCK: Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
               const firstName = mockCustomerData.customer_name.split(' ')[0];
+
+              let techMessage: string | undefined = undefined;
+              try {
+                const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
+                  body: {
+                    messages: [{ role: 'user', content: message }],
+                    conversationId,
+                    customerData: mockCustomerData,
+                  },
+                });
+                
+                if (techError) {
+                  console.error('🔴 ERRO ao chamar support-tech-agent:', techError);
+                } else if (techData?.message) {
+                  techMessage = techData.message as string;
+                  
+                  await supabase
+                    .from('conversation_messages')
+                    .insert({
+                      conversation_id: conversationId,
+                      sender_type: 'agent',
+                      sender_name: 'Luan Silva (Suporte Técnico N1)',
+                      content: techMessage,
+                      ai_suggestion: true,
+                    });
+                }
+              } catch (e) {
+                console.error('💥 EXCEÇÃO ao chamar support-tech-agent:', e);
+              }
+
+              const finalMessage = techMessage || 
+                `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!`;
+              
               return new Response(
                 JSON.stringify({
                   agent: 'support_tech',
-                  message: `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
+                  message: finalMessage,
                   customerIdentified: true,
                   customerData: mockCustomerData,
                   autoRouted: true,
-                  routeReason: 'offline'
+                  routeReason: 'offline',
+                  luanResponse: !!techMessage,
                 }),
                 {
                   status: 200,
@@ -512,19 +546,86 @@ serve(async (req) => {
             );
           }
 
-          // Senão, verifica se está offline → Suporte Técnico
+          // Senão, verifica se está offline → Suporte Técnico (Luan)
           const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
-            console.log('Cliente offline - roteando para Suporte Técnico');
+            console.log('Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
             const firstName = customerData.customer_name.split(' ')[0];
+
+            // Server-side handoff: call Luan (support-tech-agent) immediately
+            let techMessage: string | undefined = undefined;
+            console.log('🔵 ANTES de chamar support-tech-agent');
+            try {
+              console.log('🟡 Invocando support-tech-agent com:', {
+                conversationId,
+                hasSupabase: !!supabase,
+                hasCustomerData: !!customerData
+              });
+              
+              const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
+                body: {
+                  messages: [{ role: 'user', content: message }],
+                  conversationId,
+                  customerData,
+                },
+              });
+              
+              console.log('🟢 Resposta do support-tech-agent:', { 
+                techData, 
+                techError,
+                hasMessage: !!techData?.message 
+              });
+              
+              if (techError) {
+                console.error('🔴 ERRO ao chamar support-tech-agent:', techError);
+              } else if (techData?.message) {
+                techMessage = techData.message as string;
+                console.log('✅ Mensagem do Luan recebida:', techMessage.substring(0, 50) + '...');
+
+                // Persist Luan's message server-side so it appears in timelines
+                const { data: insertResult, error: insertError } = await supabase
+                  .from('conversation_messages')
+                  .insert({
+                    conversation_id: conversationId,
+                    sender_type: 'agent',
+                    sender_name: 'Luan Silva (Suporte Técnico N1)',
+                    content: techMessage,
+                    ai_suggestion: true,
+                  })
+                  .select();
+                
+                if (insertError) {
+                  console.error('❌ ERRO ao persistir mensagem do Luan:', insertError);
+                } else {
+                  console.log('✅ Mensagem do Luan persistida no DB:', insertResult);
+                }
+              } else {
+                console.warn('⚠️ support-tech-agent retornou sem mensagem');
+              }
+            } catch (e) {
+              console.error('💥 EXCEÇÃO ao chamar support-tech-agent:', e);
+              console.error('💥 Tipo de erro:', typeof e);
+              console.error('💥 Stack trace:', e instanceof Error ? e.stack : 'N/A');
+            }
+
+            // Se Luan respondeu, usa a mensagem dele como principal
+            const finalMessage = techMessage || 
+              `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!`;
+            
+            console.log('🔵 Retornando resposta:', {
+              hasTechMessage: !!techMessage,
+              messageLength: finalMessage.length
+            });
+            
             return new Response(
               JSON.stringify({
                 agent: 'support_tech',
-                message: `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para nosso suporte técnico que já vai resolver!`,
+                message: finalMessage,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
-                routeReason: 'offline'
+                routeReason: 'offline',
+                luanResponse: !!techMessage, // Flag indicando se veio do Luan
               }),
               {
                 status: 200,
