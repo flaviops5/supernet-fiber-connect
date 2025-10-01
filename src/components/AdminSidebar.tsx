@@ -137,6 +137,11 @@ const systemItems = [
     icon: Bell,
   },
   {
+    title: "Templates de Notificação",
+    url: "/admin/notification-templates",
+    icon: FileText,
+  },
+  {
     title: "Testador de Chat",
     url: "/admin/chat-tester",
     icon: FlaskConical,

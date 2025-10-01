@@ -1020,6 +1020,45 @@ export type Database = {
           },
         ]
       }
+      notification_templates: {
+        Row: {
+          created_at: string
+          days_before_due: number
+          description: string | null
+          email_body_template: string
+          email_subject_template: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          whatsapp_template: string
+        }
+        Insert: {
+          created_at?: string
+          days_before_due: number
+          description?: string | null
+          email_body_template: string
+          email_subject_template: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          whatsapp_template: string
+        }
+        Update: {
+          created_at?: string
+          days_before_due?: number
+          description?: string | null
+          email_body_template?: string
+          email_subject_template?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          whatsapp_template?: string
+        }
+        Relationships: []
+      }
       payment_notifications: {
         Row: {
           amount: number
