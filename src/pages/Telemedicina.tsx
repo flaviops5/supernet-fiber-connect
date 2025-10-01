@@ -153,17 +153,13 @@ const Telemedicina = () => {
 
               {/* CTA */}
               <div className="flex justify-center lg:justify-start">
-                <div className="relative w-full max-w-xs comet-border overflow-hidden">
-                  <span className="comet-bottom"></span>
-                  <span className="comet-left"></span>
-                  <Button
-                    onClick={handleConsultar}
-                    size="lg"
-                    className="relative w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6 z-10"
-                  >
-                    Consultar
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleConsultar}
+                  size="lg"
+                  className="w-full max-w-md bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
+                >
+                  Consultar
+                </Button>
               </div>
             </div>
 
@@ -327,9 +323,9 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
                 >
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -383,9 +379,9 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6"
+                  className="w-full bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold py-7 animate-glow-rotate"
                 >
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -440,9 +436,9 @@ const Telemedicina = () => {
                 
                 <Button
                   onClick={handleConsultar}
-                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base font-bold py-5"
+                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold py-6 animate-glow-rotate"
                 >
-                  Contratar Agora
+                  Consultar
                 </Button>
               </CardContent>
             </Card>
@@ -551,9 +547,9 @@ const Telemedicina = () => {
             <Button
               onClick={handleConsultar}
               size="lg"
-              className="w-full max-w-xs bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+              className="w-full max-w-md bg-gradient-to-r from-primary to-orange hover:from-primary/90 hover:to-orange/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-7 animate-glow-rotate"
             >
-              Fale Conosco
+              Consultar
             </Button>
           </div>
         </div>
@@ -577,9 +573,9 @@ const Telemedicina = () => {
             <Button
               onClick={handleConsultar}
               size="lg"
-              className="w-full max-w-xs bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-10 py-6"
+              className="w-full max-w-md bg-gradient-to-r from-orange to-orange/80 hover:from-orange/90 hover:to-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-xl font-bold px-12 py-8 animate-glow-rotate"
             >
-              Fale Conosco Agora
+              Consultar
             </Button>
             
             <div className="text-center">
