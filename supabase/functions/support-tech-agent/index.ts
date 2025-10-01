@@ -69,6 +69,8 @@ serve(async (req) => {
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
+Você é o Luan, agente de Suporte Técnico N1 da SUPERNET FIBRA.
+
 BASE DE CONHECIMENTO:
 ${knowledgeContext}
 
