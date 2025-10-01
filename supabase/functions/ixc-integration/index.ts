@@ -142,10 +142,8 @@ serve(async (req) => {
         break;
       
       case 'getFinancialTitles':
-        if (!params.customerId) {
-          throw new Error('ID do cliente é obrigatório');
-        }
-        result = await getFinancialTitles(baseUrl, auth, params.customerId);
+        // Aceita tanto busca por cliente quanto por data de vencimento
+        result = await getFinancialTitles(baseUrl, auth, params);
         break;
       
       case 'getPixQrCode':
@@ -1407,37 +1405,78 @@ async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: s
   }
 }
 
-async function getFinancialTitles(baseUrl: string, auth: string, customerId: string) {
+async function getFinancialTitles(baseUrl: string, auth: string, params: any) {
   try {
-    console.log(`💰 Buscando títulos financeiros para cliente: ${customerId}`);
+    // Se customerId for fornecido, busca por cliente
+    if (params.customerId) {
+      console.log(`💰 Buscando títulos financeiros para cliente: ${params.customerId}`);
+      
+      const response = await fetch(`${baseUrl}/fn_areceber_lista`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          'ixcsoft': 'listar'
+        },
+        body: JSON.stringify({
+          qtype: 'fn_areceber.id_cliente',
+          query: params.customerId,
+          oper: '=',
+          page: '1',
+          rp: '50',
+          sortname: 'fn_areceber.data_vencimento',
+          sortorder: 'desc'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✓ Encontrados ${data.total || 0} títulos para cliente ${params.customerId}`);
+      
+      return {
+        registros: data.registros || [],
+        total: data.total || 0
+      };
+    }
     
-    const response = await fetch(`${baseUrl}/fn_areceber_lista`, {
+    // Se não, busca por data de vencimento ou outros parâmetros
+    console.log(`💰 Buscando títulos financeiros com parâmetros:`, params);
+    
+    const requestBody: any = {
+      page: params.page || '1',
+      rp: params.rp || '1000',
+      sortname: params.sortname || 'fn_areceber.data_vencimento',
+      sortorder: params.sortorder || 'asc'
+    };
+    
+    if (params.qtype) requestBody.qtype = params.qtype;
+    if (params.query) requestBody.query = params.query;
+    if (params.oper) requestBody.oper = params.oper;
+    
+    const response = await fetch(`${baseUrl}/fn_areceber`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'ixcsoft': 'listar'
       },
-      body: JSON.stringify({
-        qtype: 'fn_areceber.id_cliente',
-        query: customerId,
-        oper: '=',
-        page: '1',
-        rp: '50',
-        sortname: 'fn_areceber.data_vencimento',
-        sortorder: 'desc'
-      })
+      body: new URLSearchParams(requestBody)
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`HTTP ${response.status}: ${errorText}`);
       throw new Error(`HTTP ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`✓ Encontrados ${data.total || 0} títulos para cliente ${customerId}`);
+    console.log(`✓ Encontrados ${data.total || 0} títulos financeiros`);
     
     return {
-      titles: data.registros || [],
+      registros: data.registros || [],
       total: data.total || 0
     };
   } catch (error: any) {
