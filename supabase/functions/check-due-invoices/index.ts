@@ -128,7 +128,13 @@ serve(async (req) => {
 
         const customer = customerData?.data?.registros?.[0] || customerData?.registros?.[0];
         
-        const customerName = customer?.razao || title.cliente_nome || 'Cliente';
+        const fullName = customer?.razao || title.cliente_nome || 'Cliente';
+        // Pegar apenas primeiro e segundo nome
+        const nameParts = fullName.trim().split(' ');
+        const customerName = nameParts.length > 1 
+          ? `${nameParts[0]} ${nameParts[1]}`
+          : nameParts[0];
+        
         const amount = parseFloat(title.valor || title.valor_total || 0);
         const formattedAmount = amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const formattedDate = new Date(dueDateStr).toLocaleDateString('pt-BR');
