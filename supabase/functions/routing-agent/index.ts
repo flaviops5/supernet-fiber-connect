@@ -226,6 +226,9 @@ serve(async (req) => {
             if (isBlocked) {
               console.log('🧪 MOCK: Cliente BLOQUEADO - roteando para Julia (Financeiro)');
               const firstName = mockCustomerData.customer_name.split(' ')[0];
+              
+              // Generate protocol
+              const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
               let financialMessage: string | undefined = undefined;
               try {
@@ -257,13 +260,15 @@ serve(async (req) => {
                 console.error('💥 EXCEÇÃO ao chamar support-financial-agent:', e);
               }
 
-              const finalMessage = financialMessage || 
-                `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`;
+              const finalMessage = financialMessage ? 
+                `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
+                `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
               
               return new Response(
                 JSON.stringify({
                   agent: 'support_financial',
                   message: finalMessage,
+                  protocol,
                   customerIdentified: true,
                   customerData: mockCustomerData,
                   autoRouted: true,
@@ -281,6 +286,9 @@ serve(async (req) => {
             if (!isOnline) {
               console.log('🧪 MOCK: Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
               const firstName = mockCustomerData.customer_name.split(' ')[0];
+              
+              // Generate protocol
+              const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
               let techMessage: string | undefined = undefined;
               try {
@@ -311,13 +319,15 @@ serve(async (req) => {
                 console.error('💥 EXCEÇÃO ao chamar support-tech-agent:', e);
               }
 
-              const finalMessage = techMessage || 
-                `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!`;
+              const finalMessage = techMessage ? 
+                `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
+                `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
               
               return new Response(
                 JSON.stringify({
                   agent: 'support_tech',
                   message: finalMessage,
+                  protocol,
                   customerIdentified: true,
                   customerData: mockCustomerData,
                   autoRouted: true,
@@ -462,6 +472,9 @@ serve(async (req) => {
           if (isBlocked) {
             console.log('Cliente BLOQUEADO ou FINANCEIRO EM ATRASO - roteando para Julia (Financeiro)');
             const firstName = customerData.customer_name.split(' ')[0];
+            
+            // Generate protocol
+            const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
             // Server-side handoff: call Julia (support-financial-agent) immediately
             let financialMessage: string | undefined = undefined;
@@ -521,18 +534,21 @@ serve(async (req) => {
             }
 
             // Se Julia respondeu, usa a mensagem dela como principal
-            const finalMessage = financialMessage || 
-              `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.`;
+            const finalMessage = financialMessage ? 
+              `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
+              `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
             
             console.log('🔵 Retornando resposta:', {
               hasFinancialMessage: !!financialMessage,
-              messageLength: finalMessage.length
+              messageLength: finalMessage.length,
+              protocol
             });
             
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
                 message: finalMessage,
+                protocol,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
@@ -551,6 +567,9 @@ serve(async (req) => {
           if (!isOnline) {
             console.log('Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
             const firstName = customerData.customer_name.split(' ')[0];
+            
+            // Generate protocol
+            const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
             // Server-side handoff: call Luan (support-tech-agent) immediately
             let techMessage: string | undefined = undefined;
@@ -609,18 +628,21 @@ serve(async (req) => {
             }
 
             // Se Luan respondeu, usa a mensagem dele como principal
-            const finalMessage = techMessage || 
-              `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!`;
+            const finalMessage = techMessage ? 
+              `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
+              `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
             
             console.log('🔵 Retornando resposta:', {
               hasTechMessage: !!techMessage,
-              messageLength: finalMessage.length
+              messageLength: finalMessage.length,
+              protocol
             });
             
             return new Response(
               JSON.stringify({
                 agent: 'support_tech',
                 message: finalMessage,
+                protocol,
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
@@ -706,7 +728,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: 'Olá! Tudo bem? Meu nome é Cloé, atendente da SUPERNET FIBRA. Como posso ajudar hoje? 😊',
+            message: 'Olá! Tudo bem? Meu nome é Cloé. Como posso ajudar hoje? 😊',
             isGreeting: true
           }),
           {
@@ -838,6 +860,9 @@ MENSAGEM ATUAL DO CLIENTE:
     }
 
     // Return routing decision, with server-side handoff if already identified for Financeiro
+    // Generate protocol for all transfers
+    const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    
     let financialMessage: string | undefined = undefined;
     if (decision.agent === 'support_financial' && conversation?.customer_cpf) {
       try {
@@ -871,16 +896,19 @@ MENSAGEM ATUAL DO CLIENTE:
       }
     }
 
+    const transferMessage = `Perfeito! Transferindo você para ${
+      decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
+      decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
+      'a Julia Martins, do Financeiro'
+    }. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+
     return new Response(
       JSON.stringify({
         agent: decision.agent,
         confidence: decision.confidence,
         reason: decision.reason,
-        message: `Perfeito! Transferindo você para ${
-          decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
-          decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
-          'a Julia Martins, do Financeiro'
-        }. Um momento! ⏳`,
+        message: transferMessage,
+        protocol,
         financialMessage,
       }),
       {
