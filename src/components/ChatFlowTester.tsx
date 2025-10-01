@@ -121,6 +121,27 @@ export default function ChatFlowTester() {
         metadata: data
       });
 
+      // If routing already returned Julia's message from server, show and persist it
+      if (data.financialMessage) {
+        const juliaMessage: string = data.financialMessage;
+        setMessages(prev => [...prev, {
+          role: 'agent',
+          content: juliaMessage,
+          timestamp: new Date(),
+          metadata: { agent: 'support_financial' }
+        }]);
+        await supabase.from('conversation_messages').insert({
+          conversation_id: conversationId,
+          sender_type: 'agent',
+          sender_name: 'Julia Martins (Financeiro)',
+          content: juliaMessage,
+          ai_suggestion: true,
+        });
+        setRoutedAgent('support_financial');
+        toast({ title: 'Transferido para Financeiro', description: 'Julia assumiu o atendimento.' });
+        return;
+      }
+
       // If routed to Financeiro, auto-transfer to Julia and let her reply
       if (data.agent === 'support_financial') {
         try {

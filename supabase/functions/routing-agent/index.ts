@@ -174,6 +174,36 @@ serve(async (req) => {
           if (isBlocked) {
             console.log('Cliente BLOQUEADO ou FINANCEIRO EM ATRASO - roteando para Julia (Financeiro)');
             const firstName = customerData.customer_name.split(' ')[0];
+
+            // Server-side handoff: call Julia (support-financial-agent) immediately
+            let financialMessage: string | undefined = undefined;
+            try {
+              const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
+                body: {
+                  messages: [{ role: 'user', content: message }],
+                  conversationId,
+                  customerData,
+                  routeReason: 'blocked_or_overdue',
+                },
+              });
+              if (finError) {
+                console.error('Erro ao chamar support-financial-agent:', finError);
+              } else if (finData?.message) {
+                financialMessage = finData.message as string;
+
+                // Persist Julia's message server-side so it appears in timelines
+                await supabase.from('conversation_messages').insert({
+                  conversation_id: conversationId,
+                  sender_type: 'agent',
+                  sender_name: 'Julia Martins (Financeiro)',
+                  content: financialMessage,
+                  ai_suggestion: true,
+                });
+              }
+            } catch (e) {
+              console.error('Exceção ao chamar support-financial-agent:', e);
+            }
+
             return new Response(
               JSON.stringify({
                 agent: 'support_financial',
@@ -181,7 +211,8 @@ serve(async (req) => {
                 customerIdentified: true,
                 customerData,
                 autoRouted: true,
-                routeReason: 'blocked_or_overdue'
+                routeReason: 'blocked_or_overdue',
+                financialMessage,
               }),
               {
                 status: 200,
@@ -414,7 +445,40 @@ MENSAGEM ATUAL DO CLIENTE:
       );
     }
 
-    // Return routing decision
+    // Return routing decision, with server-side handoff if already identified for Financeiro
+    let financialMessage: string | undefined = undefined;
+    if (decision.agent === 'support_financial' && conversation?.customer_cpf) {
+      try {
+        const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
+          body: {
+            messages: [{ role: 'user', content: message }],
+            conversationId,
+            customerData: {
+              customer_cpf: conversation.customer_cpf,
+              customer_name: conversation.customer_name,
+              customer_email: conversation.customer_email,
+              ixc_client_id: conversation.ixc_client_id,
+              metadata: conversation.metadata,
+            },
+          },
+        });
+        if (finError) {
+          console.error('Erro ao chamar support-financial-agent (decision path):', finError);
+        } else if (finData?.message) {
+          financialMessage = finData.message as string;
+          await supabase.from('conversation_messages').insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Julia Martins (Financeiro)',
+            content: financialMessage,
+            ai_suggestion: true,
+          });
+        }
+      } catch (e) {
+        console.error('Exceção ao chamar support-financial-agent (decision path):', e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         agent: decision.agent,
@@ -424,7 +488,8 @@ MENSAGEM ATUAL DO CLIENTE:
           decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
           decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
           'a Julia Martins, do Financeiro'
-        }. Um momento! ⏳`
+        }. Um momento! ⏳`,
+        financialMessage,
       }),
       {
         status: 200,
