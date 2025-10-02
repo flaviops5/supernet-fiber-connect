@@ -1092,6 +1092,30 @@ export type Database = {
           },
         ]
       }
+      email_settings: {
+        Row: {
+          created_at: string
+          default_from_email: string
+          default_from_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_from_email?: string
+          default_from_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_from_email?: string
+          default_from_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_html: string
