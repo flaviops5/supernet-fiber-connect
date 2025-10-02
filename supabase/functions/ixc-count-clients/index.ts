@@ -38,10 +38,57 @@ serve(async (req) => {
     console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
     console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
 
+    // Primeiro, buscar usuários online no radusuarios
+    const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
+    console.log(`Buscando usuários online em: ${apiUrlRadusuarios}`);
+
+    const onlineLogins = new Set<string>();
+
+    try {
+      const formRad = new URLSearchParams({
+        qtype: 'radusuarios.id',
+        query: '1',
+        oper: '>=',
+        page: '1',
+        rp: '10000',
+        sortname: 'radusuarios.id',
+        sortorder: 'desc',
+      });
+
+      const radResponse = await fetch(apiUrlRadusuarios, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'ixcsoft': 'listar',
+        },
+        body: formRad,
+      });
+
+      if (radResponse.ok) {
+        const radData = await radResponse.json();
+        const radRegistrosRaw = radData?.registros;
+        const radRegistros: any[] = Array.isArray(radRegistrosRaw)
+          ? radRegistrosRaw
+          : (radRegistrosRaw ? Object.values(radRegistrosRaw) : []);
+
+        // Adicionar logins online ao Set
+        radRegistros.forEach((rad: any) => {
+          if (rad.login) {
+            onlineLogins.add(String(rad.login).toLowerCase().trim());
+          }
+        });
+
+        console.log(`Encontrados ${onlineLogins.size} logins online no radusuarios`);
+      }
+    } catch (error) {
+      console.warn('Erro ao buscar radusuarios, continuando sem dados de login online:', error);
+    }
+
     let page = 1;
     let totalClients = 0;
     let hasMorePages = true;
-    const clientsPerPage = 1000; // Máximo permitido pela API
+    const clientsPerPage = 1000;
 
     const clientDetails = {
       online: 0,
@@ -51,7 +98,7 @@ serve(async (req) => {
       total: 0,
     };
 
-    // Buscar contratos ao invés de clientes diretamente
+    // Buscar contratos
     const apiUrlContratos = `https://${IXC_BASE_HOST}/webservice/v1/cliente_contrato`;
     console.log(`Buscando contratos em: ${apiUrlContratos}`);
 
@@ -86,7 +133,7 @@ serve(async (req) => {
 
       const data = await response.json();
 
-      // Normaliza registros: pode vir como array ou objeto com índices
+      // Normaliza registros
       const registrosRaw = data?.registros;
       const registros: any[] = Array.isArray(registrosRaw)
         ? registrosRaw
@@ -99,14 +146,14 @@ serve(async (req) => {
 
       totalClients += registros.length;
 
-      // Analisar status dos contratos usando campos reais do IXC
+      // Analisar status dos contratos
       registros.forEach((contrato: any) => {
         clientDetails.total++;
 
-        // Campo status_internet é o principal indicador
         const statusInternet = String(contrato.status_internet ?? '').toUpperCase();
+        const login = String(contrato.login ?? '').toLowerCase().trim();
         
-        // Verificar bloqueio: CA, CM, CB, FA indicam bloqueio
+        // Verificar bloqueio: CA, CM, CB
         if (['CA', 'CM', 'CB'].includes(statusInternet)) {
           clientDetails.bloqueados++;
         }
@@ -114,21 +161,12 @@ serve(async (req) => {
         else if (statusInternet === 'FA') {
           clientDetails.pendencia_financeira++;
         }
-        // A = Ativo (pode estar online ou offline)
+        // A = Ativo - verificar se está online no radusuarios
         else if (statusInternet === 'A') {
-          // Verificar se tem data de último bloqueio recente ou se tem conexão ativa
-          const ultimoBloqueio = contrato.dt_ult_bloq_auto || contrato.dt_ult_bloq_manual;
-          const ultimoDesbloqueio = contrato.dt_ult_des_bloq_conf;
-          
-          // Se tem desbloqueio mais recente que bloqueio, considera online
-          if (ultimoDesbloqueio && (!ultimoBloqueio || ultimoDesbloqueio > ultimoBloqueio)) {
+          if (login && onlineLogins.has(login)) {
             clientDetails.online++;
-          } else if (ultimoBloqueio && (!ultimoDesbloqueio || ultimoBloqueio > ultimoDesbloqueio)) {
-            // Tem bloqueio mais recente, mas status é A, então está offline
-            clientDetails.offline++;
           } else {
-            // Sem informação de bloqueio/desbloqueio, assume online se ativo
-            clientDetails.online++;
+            clientDetails.offline++;
           }
         }
         // Outros status consideram offline
