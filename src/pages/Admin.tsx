@@ -2073,7 +2073,6 @@ const Admin = () => {
                 <Route path="/knowledge" element={<KnowledgeManagement />} />
                 <Route path="/corporate-ai" element={<CorporateAI />} />
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
-                <Route path="/ixc-documentation" element={<IXCDocumentationManager />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />

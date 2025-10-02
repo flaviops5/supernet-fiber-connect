@@ -134,11 +134,6 @@ const systemItems = [
     icon: Database,
   },
   {
-    title: "Documentação IXC",
-    url: "/admin/ixc-documentation",
-    icon: BookOpen,
-  },
-  {
     title: "Notificações Pagamento",
     url: "/admin/payment-notifications",
     icon: Bell,

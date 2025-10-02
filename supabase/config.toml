@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.ixc-financial-analytics]
 verify_jwt = false
+
+[functions.sync-ixc-documentation]
+verify_jwt = true

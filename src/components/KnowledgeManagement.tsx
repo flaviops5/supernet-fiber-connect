@@ -342,6 +342,10 @@ const KnowledgeManagement = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button onClick={syncIXCDocumentation} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Sincronizar IXC
+          </Button>
           <Button onClick={openNewFolderDialog} variant="outline" size="sm">
             <FolderPlus className="h-4 w-4 mr-2" />
             Nova Pasta
