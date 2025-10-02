@@ -34,29 +34,30 @@ serve(async (req) => {
 
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
-    console.log('Buscando apenas dados do radusuarios...');
+    console.log('Buscando apenas sessões ativas (online) no radusuarios...');
     console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
     console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
 
-    // Buscar apenas radusuarios
+    // Buscar apenas radusuarios com sessões ATIVAS (acctstoptime vazio/null = online)
     const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
-    console.log(`Buscando usuários no radusuarios: ${apiUrlRadusuarios}`);
+    console.log(`Buscando sessões ativas no radusuarios: ${apiUrlRadusuarios}`);
 
     let page = 1;
     let hasMorePages = true;
     const itemsPerPage = 1000;
-    const allRadUsers: any[] = [];
+    const onlineLogins = new Set<string>();
+    const allSessions: any[] = [];
 
     while (hasMorePages) {
       console.log(`Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
 
       const formRad = new URLSearchParams({
-        qtype: 'radusuarios.id',
-        query: '1',
-        oper: '>=',
+        qtype: 'radusuarios.acctstoptime',
+        query: '',
+        oper: 'is_null',
         page: String(page),
         rp: String(itemsPerPage),
-        sortname: 'radusuarios.id',
+        sortname: 'radusuarios.acctstarttime',
         sortorder: 'desc',
       });
 
@@ -87,8 +88,16 @@ serve(async (req) => {
         break;
       }
 
-      allRadUsers.push(...radRegistros);
-      console.log(`Página ${page}: ${radRegistros.length} registros encontrados`);
+      // Adicionar logins únicos ao Set (sessões ativas = online)
+      radRegistros.forEach((rad: any) => {
+        if (rad.login) {
+          const normalizedLogin = String(rad.login).toLowerCase().trim();
+          onlineLogins.add(normalizedLogin);
+        }
+        allSessions.push(rad);
+      });
+
+      console.log(`Página ${page}: ${radRegistros.length} sessões ativas encontradas`);
 
       // Verificar se há mais páginas
       const totalNaResposta = Number(radData?.total ?? 0);
@@ -99,32 +108,20 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Total de registros radusuarios: ${allRadUsers.length}`);
+    console.log(`Total de sessões ativas: ${allSessions.length}`);
+    console.log(`Total de logins únicos online: ${onlineLogins.size}`);
+    console.log('Primeiros 10 logins online:', Array.from(onlineLogins).slice(0, 10));
 
-    // Analisar dados
+    // Log de exemplo de sessão ativa
+    if (allSessions.length > 0) {
+      console.log('Exemplo de sessão ativa:', JSON.stringify(allSessions[0], null, 2));
+    }
+
     const clientDetails = {
-      online: 0,
-      offline: 0,
-      total: allRadUsers.length,
+      online: onlineLogins.size,
+      offline: 0, // Não temos como calcular offline sem cliente_contrato
+      total: onlineLogins.size,
     };
-
-    // Contar online (acctstoptime vazio ou null) e offline
-    allRadUsers.forEach((rad: any) => {
-      const login = String(rad.login ?? '').toLowerCase().trim();
-      const acctstoptime = rad.acctstoptime;
-      
-      // Log para verificar estrutura
-      if (allRadUsers.indexOf(rad) < 5) {
-        console.log('Exemplo de registro radusuarios:', JSON.stringify(rad, null, 2));
-      }
-      
-      // Se acctstoptime está vazio ou null, usuário está online
-      if (!acctstoptime || acctstoptime === '' || acctstoptime === null) {
-        clientDetails.online++;
-      } else {
-        clientDetails.offline++;
-      }
-    });
 
     console.log(`Resumo final:`, clientDetails);
 
