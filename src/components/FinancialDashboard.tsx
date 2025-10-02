@@ -14,7 +14,6 @@ import {
   AlertTriangle,
   BarChart3,
   Calendar,
-  FileText,
   Loader2
 } from "lucide-react";
 import {
@@ -211,7 +210,7 @@ export const FinancialDashboard = () => {
         <div className="space-y-6">
           {/* Revenue Stats Card */}
           {revenueStats && (
-            <Card className="mb-6 border-primary/20">
+            <Card className="border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
@@ -250,10 +249,10 @@ export const FinancialDashboard = () => {
             </Card>
           )}
 
-          {analytics && (
-            <>
-              {/* Métricas Principais */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+           {analytics && (
+             <>
+               {/* Métricas Principais */}
+               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">MRR</CardTitle>
@@ -458,20 +457,21 @@ export const FinancialDashboard = () => {
                             Churn: {plan.churn.toFixed(1)}%
                           </Badge>
                           <p className="text-sm font-bold">{formatCurrency(plan.receita)}</p>
-                        </div>
-                      </div>
+                         </div>
+                       </div>
                      ))}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
+
             <TabsContent value="projections" className="space-y-4">
               <CashFlowProjections />
             </TabsContent>
           </Tabs>
         </Card>
-          </>
-        )}
+        </>
+      )}
         </div>
       )}
     </div>
