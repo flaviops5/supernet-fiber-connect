@@ -1221,23 +1221,13 @@ const SettingsManagement = () => {
       </div>
 
       <Tabs defaultValue="company" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="company">Identidade Visual</TabsTrigger>
-          <TabsTrigger value="cep">CEP e Cobertura</TabsTrigger>
-          <TabsTrigger value="ixc">Integração IXC</TabsTrigger>
           <TabsTrigger value="smtp">SMTP</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company" className="space-y-4">
           <CompanySettingsForm />
-        </TabsContent>
-
-        <TabsContent value="cep" className="space-y-4">
-          <CepManagement />
-        </TabsContent>
-
-        <TabsContent value="ixc" className="space-y-4">
-          <IXCIntegration />
         </TabsContent>
 
         <TabsContent value="smtp" className="space-y-4">
