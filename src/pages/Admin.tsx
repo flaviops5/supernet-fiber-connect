@@ -26,7 +26,7 @@ import ChatFlowTester from "@/components/ChatFlowTester";
 import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
-import { IXCDocumentationManager } from '@/components/IXCDocumentationManager';
+
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';

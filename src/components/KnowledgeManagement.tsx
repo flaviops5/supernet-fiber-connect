@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, FolderPlus } from 'lucide-react';
+import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, FolderPlus, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -94,6 +94,36 @@ const KnowledgeManagement = () => {
 
   const getCurrentItems = () => {
     return allItems.filter(item => item.parent_id === currentFolderId);
+  };
+
+  const syncIXCDocumentation = async () => {
+    try {
+      setLoading(true);
+      toast({
+        title: "Sincronizando documentação IXC",
+        description: "Buscando e processando endpoints da API...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('sync-ixc-documentation');
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Sincronização concluída",
+        description: `${data.itemsProcessed} itens da documentação IXC foram atualizados`,
+      });
+
+      loadKnowledgeItems();
+    } catch (error: any) {
+      console.error('Error syncing IXC docs:', error);
+      toast({
+        title: "Erro ao sincronizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFilteredItems = () => {
