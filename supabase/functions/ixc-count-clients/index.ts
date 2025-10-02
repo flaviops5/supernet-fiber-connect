@@ -75,11 +75,18 @@ serve(async (req) => {
         // Adicionar logins online ao Set
         radRegistros.forEach((rad: any) => {
           if (rad.login) {
-            onlineLogins.add(String(rad.login).toLowerCase().trim());
+            const normalizedLogin = String(rad.login).toLowerCase().trim();
+            onlineLogins.add(normalizedLogin);
+            
+            // Log para verificar logins específicos
+            if (normalizedLogin.includes('373.028.841-53') || normalizedLogin.includes('37302884153')) {
+              console.log('Login online encontrado no radusuarios relacionado ao CPF:', rad);
+            }
           }
         });
 
         console.log(`Encontrados ${onlineLogins.size} logins online no radusuarios`);
+        console.log('Primeiros 10 logins online:', Array.from(onlineLogins).slice(0, 10));
       }
     } catch (error) {
       console.warn('Erro ao buscar radusuarios, continuando sem dados de login online:', error);
@@ -149,6 +156,18 @@ serve(async (req) => {
         clientDetails.total++;
 
         const login = String(contrato.login ?? '').toLowerCase().trim();
+        const cpf = String(contrato.cpf_cnpj ?? '').replace(/[^\d]/g, '');
+        
+        // Log específico para o CPF solicitado
+        if (cpf === '37302884153') {
+          console.log('=== CLIENTE CPF 373.028.841-53 ENCONTRADO ===');
+          console.log('Login:', login);
+          console.log('Status Internet:', contrato.status_internet);
+          console.log('Nome:', contrato.razao);
+          console.log('Está no radusuarios?', onlineLogins.has(login));
+          console.log('Dados completos:', JSON.stringify(contrato, null, 2));
+          console.log('===========================================');
+        }
         
         // Se o login está no radusuarios, está online, senão offline
         if (login && onlineLogins.has(login)) {
