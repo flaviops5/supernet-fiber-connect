@@ -32,6 +32,7 @@ import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
 import { NotificationTemplates } from '@/components/NotificationTemplates';
+import { EmailTemplateManagement } from '@/components/EmailTemplateManagement';
 import { CampaignManagement } from '@/components/CampaignManagement';
 import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
@@ -1813,6 +1814,7 @@ const Admin = () => {
                 <Route path="/ixc-documentation" element={<Navigate to="/admin/knowledge" replace />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
+                <Route path="/email-templates" element={<EmailTemplateManagement />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />

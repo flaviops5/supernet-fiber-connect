@@ -138,6 +138,11 @@ const financialItems = [
     url: "/admin/notification-templates",
     icon: FileText,
   },
+  {
+    title: "Templates de Email",
+    url: "/admin/email-templates",
+    icon: FileText,
+  },
 ];
 
 const siteManagementItems = [
