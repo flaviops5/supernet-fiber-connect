@@ -99,33 +99,34 @@ serve(async (req) => {
 
     console.log(`Total de registros radusuarios carregados: ${allRadUsers.length}`);
 
-    // Agrupar por login e manter apenas a ÚLTIMA sessão por login
-    const latestByLogin = new Map<string, any>();
-    const parseDate = (val: string | undefined) => {
-      if (!val) return 0;
-      // Normaliza "YYYY-MM-DD HH:mm:ss" para ISO simples
-      const iso = val.includes('T') ? val : val.replace(' ', 'T');
-      const t = Date.parse(iso);
-      return isNaN(t) ? 0 : t;
-    };
+    // Primeiro, vamos ver quais campos realmente existem
+    if (allRadUsers.length > 0) {
+      console.log('Campos disponíveis no primeiro registro:', Object.keys(allRadUsers[0]));
+      console.log('Exemplo de registro completo:', JSON.stringify(allRadUsers[0], null, 2));
+    }
 
+    // Agrupar por login e pegar apenas o registro mais recente de cada login
+    const latestByLogin = new Map<string, any>();
+    
     for (const rad of allRadUsers) {
       const login = String(rad.login ?? '').toLowerCase().trim();
       if (!login) continue;
+      
       const current = latestByLogin.get(login);
-      const thisTs = parseDate(rad.acctstarttime || rad.ultima_atualizacao);
-      const currentTs = current ? parseDate(current.acctstarttime || current.ultima_atualizacao) : -1;
-      if (!current || thisTs >= currentTs) {
+      if (!current) {
         latestByLogin.set(login, rad);
       }
     }
 
-    // Classificar por online/offline a partir da ÚLTIMA sessão
+    // Classificar por online/offline usando o campo 'online' do IXC
     let online = 0;
     let offline = 0;
-    for (const [, last] of latestByLogin) {
-      const stop = last.acctstoptime;
-      if (stop === null || stop === undefined || String(stop).trim() === '') {
+    
+    for (const [login, rad] of latestByLogin) {
+      // O IXC usa o campo 'online' com valores 'S', 'SS', 'N', etc.
+      const onlineStatus = String(rad.online || '').toUpperCase();
+      
+      if (onlineStatus === 'S' || onlineStatus === 'SS') {
         online++;
       } else {
         offline++;
@@ -138,8 +139,12 @@ serve(async (req) => {
       total: latestByLogin.size,
     };
 
-    console.log('Amostra de última sessão por login (até 5):', Array.from(latestByLogin.entries()).slice(0,5).map(([l, r]) => ({ login: l, acctstarttime: r.acctstarttime, acctstoptime: r.acctstoptime })));
-    console.log('Resumo final (radusuarios somente):', clientDetails);
+    console.log('Amostra de status (até 5):', Array.from(latestByLogin.entries()).slice(0,5).map(([l, r]) => ({ 
+      login: l, 
+      online: r.online,
+      ultima_atualizacao: r.ultima_atualizacao 
+    })));
+    console.log('Resumo final:', clientDetails);
 
     return new Response(
       JSON.stringify({
