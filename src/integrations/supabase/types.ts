@@ -666,6 +666,11 @@ export type Database = {
       company_settings: {
         Row: {
           address: string | null
+          auth_background_color: string | null
+          auth_gradient_from: string | null
+          auth_gradient_to: string | null
+          auth_subtitle: string | null
+          auth_title: string | null
           company_name: string
           created_at: string | null
           email: string | null
@@ -674,10 +679,16 @@ export type Database = {
           phone: string | null
           primary_color: string | null
           secondary_color: string | null
+          signup_enabled: boolean | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
+          auth_background_color?: string | null
+          auth_gradient_from?: string | null
+          auth_gradient_to?: string | null
+          auth_subtitle?: string | null
+          auth_title?: string | null
           company_name?: string
           created_at?: string | null
           email?: string | null
@@ -686,10 +697,16 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          signup_enabled?: boolean | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
+          auth_background_color?: string | null
+          auth_gradient_from?: string | null
+          auth_gradient_to?: string | null
+          auth_subtitle?: string | null
+          auth_title?: string | null
           company_name?: string
           created_at?: string | null
           email?: string | null
@@ -698,6 +715,7 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           secondary_color?: string | null
+          signup_enabled?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
