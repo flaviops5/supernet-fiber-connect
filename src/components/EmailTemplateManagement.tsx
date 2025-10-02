@@ -11,6 +11,8 @@ import { Plus, Edit, Trash2, Eye, Mail } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmailTestSender } from './EmailTestSender';
 
 interface EmailTemplate {
   id: string;
@@ -167,14 +169,23 @@ export function EmailTemplateManagement() {
           <h2 className="text-2xl font-bold">Templates de Email</h2>
           <p className="text-muted-foreground">Gerencie os templates de email com formatação HTML</p>
         </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Template
-            </Button>
-          </DialogTrigger>
+      </div>
+
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList>
+          <TabsTrigger value="templates">Gerenciar Templates</TabsTrigger>
+          <TabsTrigger value="test">Testar Envio</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="templates" className="space-y-6 mt-6">
+          <div className="flex justify-end">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Template
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedTemplate ? 'Editar' : 'Novo'} Template</DialogTitle>
@@ -377,6 +388,12 @@ export function EmailTemplateManagement() {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="test" className="mt-6">
+          <EmailTestSender />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
