@@ -59,12 +59,27 @@ serve(async (req) => {
     // Get technical knowledge base (specific to support_tech or shared)
     const { data: techKnowledge } = await supabase
       .from('knowledge_base')
-      .select('title, content')
-      .in('category', ['suporte_tecnico', 'configuracoes', 'troubleshooting'])
+      .select('title, content, category')
+      .in('category', ['suporte_tecnico', 'configuracoes', 'troubleshooting', 'ixc_endpoints'])
       .or('agent_type.eq.support_tech,agent_type.is.null')
       .eq('is_active', true);
 
-    const knowledgeContext = techKnowledge?.map(k => `${k.title}\n${k.content}`).join('\n\n') || '';
+    const knowledgeContext = techKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
+    
+    const ixcToolsNote = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 FERRAMENTAS IXC DISPONÍVEIS:
+Você tem acesso a documentação completa de ferramentas IXC na base de conhecimento (categoria: ixc_endpoints).
+Consulte os fluxos de troubleshooting e os endpoints disponíveis para:
+- Reiniciar modems remotamente
+- Limpar endereços MAC
+- Verificar status de conexão
+- Outras operações técnicas
+
+IMPORTANTE: Siga os fluxos documentados para resolver problemas de forma eficiente.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
 
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
@@ -73,6 +88,8 @@ Você é o Luan, agente de Suporte Técnico N1.
 
 BASE DE CONHECIMENTO:
 ${knowledgeContext}
+
+${ixcToolsNote}
 
 INFORMAÇÕES DO CLIENTE:
 1. **Atendimento Inicial**

@@ -49,6 +49,15 @@ serve(async (req) => {
       throw new Error('Routing agent configuration not found');
     }
 
+    // Get relevant knowledge base
+    const { data: knowledge } = await supabase
+      .from('knowledge_base')
+      .select('title, content, category')
+      .or('category.eq.routing,category.eq.ixc_endpoints,category.eq.geral')
+      .eq('is_active', true);
+
+    const knowledgeContext = knowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
+
     console.log('Using routing config:', config.model);
 
     // Get conversation history to check if we need CPF

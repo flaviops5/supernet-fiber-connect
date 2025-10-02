@@ -60,12 +60,27 @@ serve(async (req) => {
     // Get financial knowledge base (specific to support_financial or shared)
     const { data: financialKnowledge } = await supabase
       .from('knowledge_base')
-      .select('title, content')
-      .in('category', ['financeiro', 'cobranca', 'pagamento'])
+      .select('title, content, category')
+      .in('category', ['financeiro', 'cobranca', 'pagamento', 'ixc_endpoints'])
       .or('agent_type.eq.support_financial,agent_type.is.null')
       .eq('is_active', true);
 
-    const knowledgeContext = financialKnowledge?.map(k => `${k.title}\n${k.content}`).join('\n\n') || '';
+    const knowledgeContext = financialKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
+    
+    const ixcToolsNote = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 FERRAMENTAS IXC DISPONÍVEIS:
+Você tem acesso a documentação de ferramentas IXC na base de conhecimento (categoria: ixc_endpoints).
+Consulte os fluxos documentados para operações como:
+- Desbloqueio de confiança (automático)
+- Consulta de títulos financeiros
+- Geração de PIX e boletos
+- Outras operações financeiras
+
+IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando necessário.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
 
     // Get system settings for company info
     const { data: settings } = await supabase
@@ -224,6 +239,8 @@ INFORMAÇÕES DA EMPRESA:
 
 BASE DE CONHECIMENTO:
 ${knowledgeContext}
+
+${ixcToolsNote}
 
 INFORMAÇÕES DO CLIENTE:
 
