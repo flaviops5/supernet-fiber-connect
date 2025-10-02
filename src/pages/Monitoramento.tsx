@@ -106,16 +106,16 @@ export default function Monitoramento() {
 
               <Card className="border-green-500/20 hover:border-green-500/40 transition-all">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Clientes Online</CardTitle>
                   <UserCheck className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-500">
-                    {clientCount.detalhes?.ativos || 0}
+                    {clientCount.detalhes?.online || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.ativos || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
+                      ? `${(((clientCount.detalhes?.online || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -124,16 +124,16 @@ export default function Monitoramento() {
 
               <Card className="border-orange-500/20 hover:border-orange-500/40 transition-all">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Inativos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Clientes Offline</CardTitle>
                   <UserX className="h-4 w-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-500">
-                    {clientCount.detalhes?.inativos || 0}
+                    {clientCount.detalhes?.offline || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.inativos || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
+                      ? `${(((clientCount.detalhes?.offline || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -142,7 +142,7 @@ export default function Monitoramento() {
 
               <Card className="border-red-500/20 hover:border-red-500/40 transition-all">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes Bloqueados</CardTitle>
+                  <CardTitle className="text-sm font-medium">Bloqueados</CardTitle>
                   <Shield className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
@@ -152,6 +152,29 @@ export default function Monitoramento() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
                       ? `${(((clientCount.detalhes?.bloqueados || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
+                      : '0% da base'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Second Row - Pendências */}
+          {clientCount && (
+            <div className="grid gap-6 md:grid-cols-1">
+              <Card className="border-yellow-500/20 hover:border-yellow-500/40 transition-all">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendência Financeira</CardTitle>
+                  <Activity className="h-4 w-4 text-yellow-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-yellow-500">
+                    {clientCount.detalhes?.pendencia_financeira || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
+                      ? `${(((clientCount.detalhes?.pendencia_financeira || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>

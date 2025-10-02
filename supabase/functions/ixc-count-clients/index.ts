@@ -44,25 +44,31 @@ serve(async (req) => {
     const clientsPerPage = 1000; // Máximo permitido pela API
 
     const clientDetails = {
-      ativos: 0,
-      inativos: 0,
+      online: 0,
+      offline: 0,
       bloqueados: 0,
+      pendencia_financeira: 0,
       total: 0,
     };
 
-    while (hasMorePages) {
-      const apiUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente`;
-      console.log(`Consultando: ${apiUrl} (page=${page}, rp=${clientsPerPage})`);
+    // Buscar contratos ao invés de clientes diretamente
+    const apiUrlContratos = `https://${IXC_BASE_HOST}/webservice/v1/cliente_contrato`;
+    console.log(`Buscando contratos em: ${apiUrlContratos}`);
 
-      // Muitas instalações IXC exigem POST com header "ixcsoft: listar"
+    while (hasMorePages) {
+      console.log(`Consultando contratos: página ${page}, limite ${clientsPerPage}`);
+
       const form = new URLSearchParams({
+        qtype: 'cliente_contrato.id',
+        query: '1',
+        oper: '>=',
         page: String(page),
         rp: String(clientsPerPage),
-        sortname: 'cliente.id',
-        sortorder: 'asc',
+        sortname: 'cliente_contrato.id',
+        sortorder: 'desc',
       });
 
-      const response = await fetch(apiUrl, {
+      const response = await fetch(apiUrlContratos, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -75,7 +81,7 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Erro na API IXC:', response.status, errorText);
-        throw new Error(`Erro ao buscar clientes no IXC: ${response.status}`);
+        throw new Error(`Erro ao buscar contratos no IXC: ${response.status}`);
       }
 
       const data = await response.json();
@@ -93,24 +99,48 @@ serve(async (req) => {
 
       totalClients += registros.length;
 
-      // Analisar status dos clientes
-      registros.forEach((cliente: any) => {
-        const ativoFlag = String(cliente.ativo ?? '').toUpperCase();
-        if (ativoFlag === 'S' || ativoFlag === 'SIM' || ativoFlag === '1') {
-          clientDetails.ativos++;
-        } else {
-          clientDetails.inativos++;
-        }
+      // Analisar status dos contratos usando campos reais do IXC
+      registros.forEach((contrato: any) => {
+        clientDetails.total++;
 
-        const statusInternet = String(cliente.status_internet ?? '').toUpperCase();
-        if (statusInternet && ['CA', 'CM', 'CB', 'FA'].includes(statusInternet)) {
+        // Campo status_internet é o principal indicador
+        const statusInternet = String(contrato.status_internet ?? '').toUpperCase();
+        
+        // Verificar bloqueio: CA, CM, CB, FA indicam bloqueio
+        if (['CA', 'CM', 'CB'].includes(statusInternet)) {
           clientDetails.bloqueados++;
+        }
+        // FA = Financeiro em Atraso (pendência financeira)
+        else if (statusInternet === 'FA') {
+          clientDetails.pendencia_financeira++;
+        }
+        // A = Ativo (pode estar online ou offline)
+        else if (statusInternet === 'A') {
+          // Verificar se tem data de último bloqueio recente ou se tem conexão ativa
+          const ultimoBloqueio = contrato.dt_ult_bloq_auto || contrato.dt_ult_bloq_manual;
+          const ultimoDesbloqueio = contrato.dt_ult_des_bloq_conf;
+          
+          // Se tem desbloqueio mais recente que bloqueio, considera online
+          if (ultimoDesbloqueio && (!ultimoBloqueio || ultimoDesbloqueio > ultimoBloqueio)) {
+            clientDetails.online++;
+          } else if (ultimoBloqueio && (!ultimoDesbloqueio || ultimoBloqueio > ultimoDesbloqueio)) {
+            // Tem bloqueio mais recente, mas status é A, então está offline
+            clientDetails.offline++;
+          } else {
+            // Sem informação de bloqueio/desbloqueio, assume online se ativo
+            clientDetails.online++;
+          }
+        }
+        // Outros status consideram offline
+        else {
+          clientDetails.offline++;
         }
       });
 
-      console.log(`Página ${page}: ${registros.length} clientes encontrados`);
+      console.log(`Página ${page}: ${registros.length} contratos encontrados`);
+      console.log(`Status até agora:`, clientDetails);
 
-      // Verificar se há mais páginas (quando a página volta com menos que o limite)
+      // Verificar se há mais páginas
       const totalNaResposta = Number(data?.total ?? 0);
       if (registros.length < clientsPerPage || (totalNaResposta && page * clientsPerPage >= totalNaResposta)) {
         hasMorePages = false;
@@ -119,16 +149,15 @@ serve(async (req) => {
       }
     }
 
-    clientDetails.total = totalClients;
-
-    console.log(`Total de clientes encontrados: ${totalClients}`);
+    console.log(`Total de contratos encontrados: ${totalClients}`);
+    console.log(`Resumo final:`, clientDetails);
 
     return new Response(
       JSON.stringify({
         success: true,
-        total_clientes: totalClients,
+        total_clientes: clientDetails.total,
         detalhes: clientDetails,
-        paginas_consultadas: page,
+        paginas_consultadas: page - 1,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
