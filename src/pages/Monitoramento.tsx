@@ -25,7 +25,7 @@ export default function Monitoramento() {
         setClientCount(data);
         toast({
           title: "Contagem concluída",
-          description: `Total de ${data.totalClients} clientes encontrados`,
+          description: `Total de ${data.total_clientes || 0} clientes encontrados`,
         });
       } else {
         throw new Error(data?.error || 'Erro ao contar clientes');
@@ -96,7 +96,7 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">
-                    {clientCount.totalClients}
+                    {clientCount.total_clientes || clientCount.detalhes?.total || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Base completa de clientes
@@ -111,11 +111,11 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-500">
-                    {clientCount.activeClients}
+                    {clientCount.detalhes?.ativos || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {clientCount.totalClients > 0 
-                      ? `${((clientCount.activeClients / clientCount.totalClients) * 100).toFixed(1)}% da base`
+                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
+                      ? `${(((clientCount.detalhes?.ativos || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -129,11 +129,11 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-500">
-                    {clientCount.inactiveClients}
+                    {clientCount.detalhes?.inativos || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {clientCount.totalClients > 0 
-                      ? `${((clientCount.inactiveClients / clientCount.totalClients) * 100).toFixed(1)}% da base`
+                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
+                      ? `${(((clientCount.detalhes?.inativos || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -147,11 +147,11 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-red-500">
-                    {clientCount.blockedClients}
+                    {clientCount.detalhes?.bloqueados || 0}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {clientCount.totalClients > 0 
-                      ? `${((clientCount.blockedClients / clientCount.totalClients) * 100).toFixed(1)}% da base`
+                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
+                      ? `${(((clientCount.detalhes?.bloqueados || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -161,7 +161,7 @@ export default function Monitoramento() {
           )}
 
           {/* Details Card */}
-          {clientCount && clientCount.details && (
+          {clientCount && clientCount.detalhes && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -169,15 +169,15 @@ export default function Monitoramento() {
                   Detalhes por Status
                 </CardTitle>
                 <CardDescription>
-                  Última atualização: {new Date().toLocaleString('pt-BR')}
+                  Última atualização: {new Date().toLocaleString('pt-BR')} • {clientCount.paginas_consultadas} página(s) consultada(s)
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(clientCount.details).map(([status, count]: [string, any]) => (
+                  {Object.entries(clientCount.detalhes).map(([status, count]: [string, any]) => (
                     <div key={status} className="flex items-center justify-between p-4 rounded-lg border bg-card">
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline">{status}</Badge>
+                        <Badge variant="outline" className="capitalize">{status}</Badge>
                         <span className="text-sm text-muted-foreground">
                           {count} cliente{count !== 1 ? 's' : ''}
                         </span>
