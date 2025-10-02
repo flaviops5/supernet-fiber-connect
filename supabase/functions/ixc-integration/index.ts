@@ -75,8 +75,18 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL não configurado');
     }
 
+    // Normalize IXC base: strip protocol and any path (we only need the host)
+    const normalizeBase = (raw: string) => {
+      const trimmed = String(raw).trim();
+      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
+      const host = noProtocol.split('/')[0];
+      return host;
+    };
+    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
+
     const auth = btoa(`${username}:${password}`);
-    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
+    const baseUrl = `https://${IXC_BASE_HOST}/webservice/v1`;
+    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE, 'normalized:', IXC_BASE_HOST);
 
     let result: any = null;
 

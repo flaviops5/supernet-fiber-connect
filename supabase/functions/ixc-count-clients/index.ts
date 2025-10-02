@@ -23,10 +23,20 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL não configurado');
     }
 
+    // Normalize IXC base: strip protocol and any path (we only need the host)
+    const normalizeBase = (raw: string) => {
+      const trimmed = raw.trim();
+      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
+      const host = noProtocol.split('/')[0];
+      return host;
+    };
+    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
+
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
     console.log('Buscando clientes no IXC...');
-    console.log('IXC_API_BASE_URL:', IXC_API_BASE);
+    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
+    console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
 
     let page = 1;
     let totalClients = 0;
@@ -41,7 +51,7 @@ serve(async (req) => {
     };
 
     while (hasMorePages) {
-      const apiUrl = `https://${IXC_API_BASE}/webservice/v1/cliente`;
+      const apiUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente`;
       console.log(`Consultando: ${apiUrl} (page=${page}, rp=${clientsPerPage})`);
 
       // Muitas instalações IXC exigem POST com header "ixcsoft: listar"
