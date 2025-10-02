@@ -663,6 +663,45 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_name: string
+          created_at: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contract_templates: {
         Row: {
           created_at: string

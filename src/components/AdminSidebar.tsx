@@ -27,7 +27,6 @@ import {
   User,
   Settings,
   LogOut,
-  Menu,
   Bot,
   Monitor,
   HelpCircle,
@@ -41,6 +40,11 @@ import {
   DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface CompanySettings {
+  company_name: string;
+  logo_url?: string;
+}
 
 interface UserProfile {
   name: string;
@@ -66,6 +70,73 @@ const menuItems = [
     title: "Usuários",
     url: "/admin/users",
     icon: Users,
+  },
+];
+
+const marketingItems = [
+  {
+    title: "Campanhas",
+    url: "/admin/campaigns",
+    icon: Megaphone,
+  },
+  {
+    title: "Dashboard NPS",
+    url: "/admin/nps-dashboard",
+    icon: Star,
+  },
+];
+
+const documentationItems = [
+  {
+    title: "Documentos",
+    url: "/admin/documents",
+    icon: FolderOpen,
+  },
+  {
+    title: "Base de Conhecimento",
+    url: "/admin/knowledge",
+    icon: BookOpen,
+  },
+];
+
+const agentsItems = [
+  {
+    title: "Agentes IA",
+    url: "/admin/agents",
+    icon: Bot,
+  },
+  {
+    title: "IA Corporativa",
+    url: "/admin/corporate-ai",
+    icon: Brain,
+  },
+  {
+    title: "Integração IXC",
+    url: "/admin/ixc-integration",
+    icon: Database,
+  },
+  {
+    title: "Testador de Chat",
+    url: "/admin/chat-tester",
+    icon: FlaskConical,
+  },
+];
+
+const financialItems = [
+  {
+    title: "Dashboard Financeiro",
+    url: "/admin/financial",
+    icon: DollarSign,
+  },
+  {
+    title: "Notificações Pagamento",
+    url: "/admin/payment-notifications",
+    icon: Bell,
+  },
+  {
+    title: "Templates de Notificação",
+    url: "/admin/notification-templates",
+    icon: FileText,
   },
 ];
 
@@ -102,64 +173,6 @@ const siteManagementItems = [
   },
 ];
 
-const systemItems = [
-  {
-    title: "Dashboard Financeiro",
-    url: "/admin/financial",
-    icon: DollarSign,
-  },
-  {
-    title: "Agentes IA",
-    url: "/admin/agents",
-    icon: Bot,
-  },
-  {
-    title: "Documentos",
-    url: "/admin/documents",
-    icon: FolderOpen,
-  },
-  {
-    title: "Base de Conhecimento",
-    url: "/admin/knowledge",
-    icon: BookOpen,
-  },
-  {
-    title: "IA Corporativa",
-    url: "/admin/corporate-ai",
-    icon: Brain,
-  },
-  {
-    title: "Integração IXC",
-    url: "/admin/ixc-integration",
-    icon: Database,
-  },
-  {
-    title: "Notificações Pagamento",
-    url: "/admin/payment-notifications",
-    icon: Bell,
-  },
-  {
-    title: "Templates de Notificação",
-    url: "/admin/notification-templates",
-    icon: FileText,
-  },
-  {
-    title: "Campanhas",
-    url: "/admin/campaigns",
-    icon: Megaphone,
-  },
-  {
-    title: "Dashboard NPS",
-    url: "/admin/nps-dashboard",
-    icon: Star,
-  },
-  {
-    title: "Testador de Chat",
-    url: "/admin/chat-tester",
-    icon: FlaskConical,
-  },
-];
-
 const profileItems = [
   {
     title: "Meu Perfil",
@@ -178,12 +191,14 @@ export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const currentPath = location.pathname;
 
   const isCollapsed = state === "collapsed";
 
   useEffect(() => {
-    const loadUserProfile = async () => {
+    const loadData = async () => {
+      // Load user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
@@ -205,9 +220,20 @@ export function AdminSidebar() {
           });
         }
       }
+
+      // Load company settings
+      const { data: settings } = await supabase
+        .from('company_settings')
+        .select('company_name, logo_url')
+        .limit(1)
+        .single();
+
+      if (settings) {
+        setCompanySettings(settings);
+      }
     };
 
-    loadUserProfile();
+    loadData();
   }, []);
 
   const handleLogout = async () => {
@@ -240,13 +266,21 @@ export function AdminSidebar() {
     <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-            <Menu className="h-4 w-4 text-primary-foreground" />
-          </div>
-          {!isCollapsed && (
+          {companySettings?.logo_url ? (
+            <img 
+              src={companySettings.logo_url} 
+              alt={companySettings.company_name}
+              className={isCollapsed ? "h-8 w-8 object-contain" : "h-10 w-auto max-w-[180px] object-contain"}
+            />
+          ) : (
+            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
+              <Monitor className="h-4 w-4 text-primary-foreground" />
+            </div>
+          )}
+          {!isCollapsed && !companySettings?.logo_url && (
             <div>
               <h2 className="font-semibold text-lg">Admin Panel</h2>
-              <p className="text-sm text-muted-foreground">Supernet</p>
+              <p className="text-sm text-muted-foreground">{companySettings?.company_name || 'Supernet'}</p>
             </div>
           )}
         </div>
@@ -286,10 +320,10 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Gerencia Site</SidebarGroupLabel>
+          <SidebarGroupLabel>Marketing</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {siteManagementItems.map((item) => (
+              {marketingItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -307,10 +341,73 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupLabel>Documentação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {systemItems.map((item) => (
+              {documentationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Agentes</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {agentsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Financeiro</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {financialItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gerenciar Site</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {siteManagementItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
