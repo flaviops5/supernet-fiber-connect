@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle, MessageSquare } from "lucide-react";
+import { FinancialDashboard } from "@/components/FinancialDashboard";
 import { InstructionsCard } from "@/components/InstructionsCard";
 import { GoogleReviews } from "@/components/GoogleReviews";
 import { useTestimonials } from "@/contexts/TestimonialsContext";
@@ -2074,9 +2075,10 @@ const Admin = () => {
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
                 <Route path="/ixc-documentation" element={<IXCDocumentationManager />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
-            <Route path="/notification-templates" element={<NotificationTemplates />} />
-            <Route path="/campaigns" element={<CampaignManagement />} />
-            <Route path="/nps-dashboard" element={<NPSDashboard />} />
+                <Route path="/notification-templates" element={<NotificationTemplates />} />
+                <Route path="/campaigns" element={<CampaignManagement />} />
+                <Route path="/nps-dashboard" element={<NPSDashboard />} />
+                <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

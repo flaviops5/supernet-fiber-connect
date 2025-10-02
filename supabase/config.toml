@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.ixc-revenue-stats]
 verify_jwt = false
+
+[functions.ixc-financial-analytics]
+verify_jwt = false

@@ -38,6 +38,7 @@ import {
   MessageSquare,
   FlaskConical,
   Bell,
+  DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,6 +103,11 @@ const siteManagementItems = [
 ];
 
 const systemItems = [
+  {
+    title: "Dashboard Financeiro",
+    url: "/admin/financial",
+    icon: DollarSign,
+  },
   {
     title: "Agentes IA",
     url: "/admin/agents",
