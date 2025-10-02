@@ -23,7 +23,10 @@ serve(async (req) => {
     
     console.log('Buscando clientes no IXC...');
 
-    // Buscar clientes ativos no IXC
+    // Buscar clientes ativos no IXC usando a URL correta
+    // A URL da API é o domínio sem o "https://" e terminando em .com.br
+    const IXC_API_BASE = 'supernetfibra.ixcsoft.com.br';
+    
     // Usando paginação para buscar todos os clientes
     let page = 1;
     let totalClients = 0;
@@ -38,16 +41,16 @@ serve(async (req) => {
     };
 
     while (hasMorePages) {
-      const response = await fetch(
-        `https://supernetfibra.ixcsoft.com.br/webservice/v1/cliente?page=${page}&rp=${clientsPerPage}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const apiUrl = `https://${IXC_API_BASE}/webservice/v1/cliente?page=${page}&rp=${clientsPerPage}`;
+      console.log(`Consultando: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) {
         const errorText = await response.text();

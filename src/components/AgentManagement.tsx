@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, ShoppingCart, Wrench, DollarSign, Activity, RefreshCw, TestTube2, Settings } from 'lucide-react';
+import { Bot, ShoppingCart, Wrench, DollarSign, RefreshCw, TestTube2, Settings } from 'lucide-react';
 import OmnichannelChat from './OmnichannelChat';
 import AgentConfigEditor from './AgentConfigEditor';
 
@@ -39,10 +39,6 @@ const AgentManagement = () => {
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [countingClients, setCountingClients] = useState(false);
-  const [loadingRevenue, setLoadingRevenue] = useState(false);
-  const [ixcClientCount, setIxcClientCount] = useState<any>(null);
-  const [revenueStats, setRevenueStats] = useState<any>(null);
   const [showTestChat, setShowTestChat] = useState(false);
   const { toast } = useToast();
 
@@ -99,7 +95,7 @@ const AgentManagement = () => {
         setStats(statsByDept);
       }
     } catch (error) {
-      console.error('Error loading agent stats:', error);
+      console.error('Error loading stats:', error);
     }
   };
 
@@ -126,69 +122,19 @@ const AgentManagement = () => {
     }
   };
 
-  const countIxcClients = async () => {
-    setCountingClients(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ixc-count-clients');
-      
-      if (error) throw error;
-      
-      setIxcClientCount(data);
-      
-      toast({
-        title: 'Clientes contados no IXC',
-        description: `Total: ${data.total_clientes} clientes encontrados`,
-      });
-    } catch (error: any) {
-      console.error('Error counting IXC clients:', error);
-      toast({
-        title: 'Erro ao contar clientes',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setCountingClients(false);
-    }
-  };
-
-  const loadRevenueStats = async () => {
-    setLoadingRevenue(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ixc-revenue-stats');
-      
-      if (error) throw error;
-      
-      setRevenueStats(data);
-      
-      toast({
-        title: 'Receita calculada',
-        description: `MRR: R$ ${data.mrr.toFixed(2)} | Contratos ativos: ${data.activeContracts}`,
-      });
-    } catch (error: any) {
-      console.error('Error loading revenue stats:', error);
-      toast({
-        title: 'Erro ao calcular receita',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingRevenue(false);
-    }
-  };
-
   const agents = [
     {
       id: 'routing',
       name: 'Agente de Roteamento',
       icon: Bot,
       color: 'bg-orange-500',
-      description: 'Analisa mensagens e direciona para o agente especializado correto',
+      description: 'Primeiro contato e direcionamento inteligente',
       capabilities: [
-        'Análise de intenção com IA',
-        'Classificação automática de solicitações',
-        'Roteamento inteligente para departamentos',
-        'Detecção de contexto da conversa',
-        'Solicita esclarecimento quando necessário'
+        'Identificação de intenção do cliente',
+        'Roteamento automático para agente especializado',
+        'Coleta de dados do cliente (nome, CPF, telefone)',
+        'Verificação de cobertura por CEP',
+        'Encaminhamento baseado na necessidade',
       ]
     },
     {
@@ -196,41 +142,44 @@ const AgentManagement = () => {
       name: 'Agente de Vendas',
       icon: ShoppingCart,
       color: 'bg-green-500',
-      description: 'Responsável por consultas de planos, vendas e contratações',
+      description: 'Especialista em contratação e planos',
       capabilities: [
-        'Consultar planos disponíveis',
-        'Verificar cobertura por CEP',
-        'Agendar instalações',
-        'Criar contratos automaticamente',
-        'Integração com IXC'
+        'Consulta de disponibilidade por CEP',
+        'Apresentação de planos disponíveis',
+        'Explicação detalhada de cada plano',
+        'Criação de proposta comercial',
+        'Agendamento de instalação',
+        'Criação de contratos no IXC',
       ]
     },
     {
       id: 'support_tech',
-      name: 'Suporte Técnico N1',
+      name: 'Suporte Técnico',
       icon: Wrench,
       color: 'bg-blue-500',
-      description: 'Atendimento técnico inicial e diagnóstico de problemas',
+      description: 'Resolução de problemas técnicos',
       capabilities: [
-        'Diagnóstico básico de conexão',
-        'Reset de senhas e configurações',
-        'Orientação sobre roteador',
-        'Resolução de problemas simples',
-        'Escalonamento para N2/N3 quando necessário'
+        'Diagnóstico de problemas de conexão',
+        'Verificação de status do cliente no IXC',
+        'Análise de velocidade e qualidade',
+        'Orientações para troubleshooting',
+        'Abertura de ordem de serviço',
+        'Escalação para técnico presencial',
       ]
     },
     {
       id: 'support_financial',
-      name: 'Suporte Financeiro N1',
+      name: 'Suporte Financeiro',
       icon: DollarSign,
-      color: 'bg-purple-500',
-      description: 'Atendimento financeiro, cobranças e pagamentos',
+      color: 'bg-yellow-500',
+      description: 'Gestão de pagamentos e inadimplência',
       capabilities: [
-        'Reenvio de boletos e faturas',
-        'Consultar status de pagamento',
-        'Informações de contrato',
-        'Comprovantes de pagamento',
-        'Atualização de dados cadastrais'
+        'Consulta de faturas em aberto',
+        'Geração de segunda via de boleto',
+        'Criação de código PIX para pagamento',
+        'Negociação de débitos',
+        'Desbloqueio automático após pagamento',
+        'Orientações sobre formas de pagamento',
       ]
     }
   ];
@@ -245,24 +194,6 @@ const AgentManagement = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={countIxcClients}
-            variant="outline"
-            disabled={countingClients}
-            className="gap-2"
-          >
-            <Activity className="w-4 h-4" />
-            {countingClients ? 'Contando...' : 'Contar Clientes IXC'}
-          </Button>
-          <Button
-            onClick={loadRevenueStats}
-            variant="outline"
-            disabled={loadingRevenue}
-            className="gap-2"
-          >
-            <DollarSign className="w-4 h-4" />
-            {loadingRevenue ? 'Calculando...' : 'Ver Receita'}
-          </Button>
           <Button
             onClick={() => setShowTestChat(!showTestChat)}
             variant="outline"
@@ -299,317 +230,133 @@ const AgentManagement = () => {
         </Card>
       )}
 
-      {ixcClientCount && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Contagem de Clientes IXC
-            </CardTitle>
-            <CardDescription>
-              Total de clientes cadastrados no sistema IXC
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+      {/* Agent Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {agents.map(agent => (
+          <Card key={agent.id} className="relative overflow-hidden">
+            <div className={`absolute top-0 left-0 right-0 h-1 ${agent.color}`} />
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <agent.icon className={`w-8 h-8 ${agent.color.replace('bg-', 'text-')}`} />
+                <Badge variant="outline">{stats[agent.id]?.activeConversations || 0} ativos</Badge>
+              </div>
+              <CardTitle className="text-lg mt-2">{agent.name}</CardTitle>
+              <CardDescription>{agent.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Total de Clientes</p>
-                <p className="text-3xl font-bold text-primary">{ixcClientCount.total_clientes}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Clientes Ativos</p>
-                <p className="text-3xl font-bold text-green-600">{ixcClientCount.detalhes?.ativos || 0}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Clientes Inativos</p>
-                <p className="text-3xl font-bold text-gray-600">{ixcClientCount.detalhes?.inativos || 0}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Clientes Bloqueados</p>
-                <p className="text-3xl font-bold text-red-600">{ixcClientCount.detalhes?.bloqueados || 0}</p>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Páginas consultadas: {ixcClientCount.paginas_consultadas || 0}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {revenueStats && (
-        <Card className="border-green-500">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Estatísticas de Receita IXC
-            </CardTitle>
-            <CardDescription>
-              Análise financeira baseada nos contratos ativos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6">
-              {/* Principais métricas */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">MRR (Receita Mensal)</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    R$ {revenueStats.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total de conversas</span>
+                  <span className="font-medium">{stats[agent.id]?.totalConversations || 0}</span>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">ARR (Receita Anual)</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    R$ {revenueStats.arr.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Resolvidas hoje</span>
+                  <span className="font-medium">{stats[agent.id]?.resolvedToday || 0}</span>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Ticket Médio</p>
-                  <p className="text-3xl font-bold text-purple-600">
-                    R$ {revenueStats.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Contratos Ativos</p>
-                  <p className="text-3xl font-bold text-orange-600">
-                    {revenueStats.activeContracts}
-                  </p>
-                </div>
+              <Button
+                variant="ghost"
+                className="w-full mt-2"
+                onClick={() => {
+                  const config = configs[agent.id];
+                  if (config) {
+                    setEditingConfig(config);
+                  }
+                }}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar
+              </Button>
               </div>
-
-              {/* Status dos contratos */}
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold mb-3">Status dos Contratos</h4>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Ativos</span>
-                    <span className="font-bold text-green-700">{revenueStats.activeContracts}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Bloqueados</span>
-                    <span className="font-bold text-red-700">{revenueStats.blockedContracts}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-muted-foreground">Inativos</span>
-                    <span className="font-bold text-gray-700">{revenueStats.inactiveContracts}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Top 5 planos por receita */}
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold mb-3">Top 5 Planos por Receita</h4>
-                <div className="space-y-2">
-                  {Object.entries(revenueStats.revenueByPlan).slice(0, 5).map(([plano, data]: [string, any]) => (
-                    <div key={plano} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{plano}</p>
-                        <p className="text-xs text-muted-foreground">{data.count} contratos</p>
-                      </div>
-                      <p className="text-sm font-bold">
-                        R$ {data.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <p className="text-xs text-muted-foreground">
-                  Total de contratos processados: {revenueStats.totalContracts} | Páginas: {revenueStats.pagesProcessed}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Agent Statistics */}
-      <div className="grid gap-4 md:grid-cols-4">
-        {agents.map(agent => {
-          const AgentIcon = agent.icon;
-          const agentStats = stats[agent.id];
-          
-          return (
-            <Card key={agent.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{agent.name}</CardTitle>
-                <div className={`p-2 rounded-full ${agent.color}`}>
-                  <AgentIcon className="h-4 w-4 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total:</span>
-                    <span className="font-bold">{agentStats.totalConversations}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Ativas:</span>
-                    <span className="font-bold text-green-600">{agentStats.activeConversations}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Resolvidas Hoje:</span>
-                    <span className="font-bold text-blue-600">{agentStats.resolvedToday}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Agent Details */}
-      <Tabs defaultValue="routing" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="routing">Roteamento</TabsTrigger>
-          <TabsTrigger value="sales">Vendas</TabsTrigger>
-          <TabsTrigger value="support_tech">Suporte Técnico</TabsTrigger>
-          <TabsTrigger value="support_financial">Suporte Financeiro</TabsTrigger>
-        </TabsList>
+      {/* Agent Details Tabs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalhes dos Agentes</CardTitle>
+          <CardDescription>
+            Capacidades e configurações de cada agente especializado
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={agents[0].id}>
+            <TabsList className="grid w-full grid-cols-4">
+              {agents.map(agent => (
+                <TabsTrigger key={agent.id} value={agent.id}>
+                  <agent.icon className="w-4 h-4 mr-2" />
+                  {agent.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-        {agents.map(agent => (
-          <TabsContent key={agent.id} value={agent.id} className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-lg ${agent.color}`}>
-                    {React.createElement(agent.icon, { className: 'w-6 h-6 text-white' })}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle>{agent.name}</CardTitle>
-                    <CardDescription className="mt-2">
-                      {agent.description}
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline" className="gap-1">
-                    <Activity className="w-3 h-3" />
-                    Ativo
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            {agents.map(agent => (
+              <TabsContent key={agent.id} value={agent.id} className="space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-3">Capacidades</h3>
+                  <h3 className="font-semibold mb-2">Capacidades:</h3>
                   <ul className="space-y-2">
                     {agent.capabilities.map((capability, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm">
-                        <span className="text-green-500 mt-0.5">✓</span>
+                        <Badge variant="outline" className="mt-0.5">
+                          {index + 1}
+                        </Badge>
                         <span>{capability}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">Configuração</h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingConfig(configs[agent.id])}
-                      className="gap-2"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Editar
-                    </Button>
-                  </div>
-                  {configs[agent.id] ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between p-2 bg-muted rounded">
-                        <span className="text-muted-foreground">Modelo IA:</span>
-                        <span className="font-medium">{configs[agent.id].model}</span>
+                {configs[agent.id] && (
+                  <div className="mt-4 p-4 border rounded-lg space-y-2">
+                    <h4 className="font-semibold">Configuração Atual:</h4>
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Modelo:</span>
+                        <span className="font-mono">{configs[agent.id].model}</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-muted rounded">
-                        <span className="text-muted-foreground">Temperature:</span>
-                        <span className="font-medium">{configs[agent.id].temperature}</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Temperatura:</span>
+                        <span>{configs[agent.id].temperature}</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-muted rounded">
+                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Max Tokens:</span>
-                        <span className="font-medium">{configs[agent.id].max_tokens}</span>
+                        <span>{configs[agent.id].max_tokens}</span>
                       </div>
-                      <div className="flex justify-between p-2 bg-muted rounded">
+                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Status:</span>
-                        <Badge variant={configs[agent.id].is_active ? "default" : "secondary"}>
+                        <Badge variant={configs[agent.id].is_active ? 'default' : 'secondary'}>
                           {configs[agent.id].is_active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Carregando configuração...</p>
-                  )}
-                </div>
-
-                {agent.id === 'routing' && (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-950 rounded-lg">
-                    <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                      Inteligência Artificial
-                    </h4>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
-                      Este agente utiliza IA avançada para analisar mensagens e direcionar automaticamente para:
-                    </p>
-                    <ul className="text-sm text-orange-700 dark:text-orange-300 mt-2 space-y-1">
-                      <li>• Vendas - Planos, contratos e instalações</li>
-                      <li>• Suporte Técnico - Problemas de conexão</li>
-                      <li>• Suporte Financeiro - Faturas e pagamentos</li>
-                    </ul>
                   </div>
                 )}
-
-                {agent.id === 'sales' && (
-                  <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                    <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                      Integração IXC
-                    </h4>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      Este agente está integrado com o sistema IXC e pode criar automaticamente:
-                    </p>
-                    <ul className="text-sm text-green-700 dark:text-green-300 mt-2 space-y-1">
-                      <li>• Clientes no IXC</li>
-                      <li>• Contratos de serviço</li>
-                      <li>• Atendimentos com OS automática</li>
-                    </ul>
-                  </div>
-                )}
-
-                {agent.id === 'support_tech' && (
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                      Protocolo de Atendimento
-                    </h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Segue checklist padrão de diagnóstico e escalona automaticamente para N2/N3 quando necessário.
-                    </p>
-                  </div>
-                )}
-
-                {agent.id === 'support_financial' && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-950 rounded-lg">
-                    <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                      Segurança Financeira
-                    </h4>
-                    <p className="text-sm text-purple-700 dark:text-purple-300">
-                      NUNCA solicita senhas ou dados bancários. Confirma identidade antes de fornecer informações sensíveis.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
-
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Config Editor Dialog */}
-      <Dialog open={!!editingConfig} onOpenChange={() => setEditingConfig(null)}>
+      <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {editingConfig && (
             <AgentConfigEditor
               config={editingConfig}
-              onClose={() => setEditingConfig(null)}
-              onSave={loadAgentConfigs}
+              onSave={(updatedConfig) => {
+                setConfigs(prev => ({
+                  ...prev,
+                  [updatedConfig.agent_type]: updatedConfig
+                }));
+                setEditingConfig(null);
+                loadAgentConfigs();
+                toast({
+                  title: 'Configuração salva',
+                  description: 'As configurações do agente foram atualizadas.',
+                });
+              }}
+              onCancel={() => setEditingConfig(null)}
             />
           )}
         </DialogContent>

@@ -120,6 +120,11 @@ const agentsItems = [
     url: "/admin/chat-tester",
     icon: FlaskConical,
   },
+  {
+    title: "Monitoramento IXC",
+    url: "/admin/monitoramento",
+    icon: Monitor,
+  },
 ];
 
 const financialItems = [

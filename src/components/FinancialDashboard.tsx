@@ -72,7 +72,9 @@ const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'
 
 export const FinancialDashboard = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
   const [analytics, setAnalytics] = useState<FinancialAnalytics | null>(null);
+  const [revenueStats, setRevenueStats] = useState<any>(null);
   const { toast } = useToast();
 
   const fetchAnalytics = async () => {
@@ -100,6 +102,34 @@ export const FinancialDashboard = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRevenueStats = async () => {
+    setLoadingRevenue(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-revenue-stats');
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        setRevenueStats(data);
+        toast({
+          title: "Receita carregada",
+          description: "Estatísticas de receita carregadas com sucesso",
+        });
+      } else {
+        throw new Error(data?.error || 'Erro ao carregar receita');
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar receita:', error);
+      toast({
+        title: "Erro ao carregar receita",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingRevenue(false);
     }
   };
 
@@ -135,22 +165,42 @@ export const FinancialDashboard = () => {
           <h1 className="text-3xl font-bold">Dashboard Financeiro</h1>
           <p className="text-muted-foreground">Análise completa de receitas e inadimplência</p>
         </div>
-        <Button onClick={fetchAnalytics} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Carregando...
-            </>
-          ) : (
-            <>
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Atualizar Dados
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={loadRevenueStats} 
+            disabled={loadingRevenue}
+            variant="outline"
+            className="gap-2"
+          >
+            {loadingRevenue ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              <>
+                <DollarSign className="h-4 w-4" />
+                Ver Receita IXC
+              </>
+            )}
+          </Button>
+          <Button onClick={fetchAnalytics} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              <>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Atualizar Dados
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {!analytics ? (
+      {!analytics && !revenueStats ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
@@ -158,9 +208,52 @@ export const FinancialDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <>
-          {/* Métricas Principais */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-6">
+          {/* Revenue Stats Card */}
+          {revenueStats && (
+            <Card className="mb-6 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Estatísticas de Receita IXC
+                </CardTitle>
+                <CardDescription>
+                  Receita mensal e contratos ativos do IXC
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Receita Total Mensal</p>
+                    <p className="text-2xl font-bold text-green-500">
+                      {new Intl.NumberFormat('pt-BR', { 
+                        style: 'currency', 
+                        currency: 'BRL' 
+                      }).format(revenueStats.totalMonthlyRevenue)}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Contratos Ativos</p>
+                    <p className="text-2xl font-bold">{revenueStats.activeContracts}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Ticket Médio</p>
+                    <p className="text-2xl font-bold">
+                      {new Intl.NumberFormat('pt-BR', { 
+                        style: 'currency', 
+                        currency: 'BRL' 
+                      }).format(revenueStats.averageTicket)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {analytics && (
+            <>
+              {/* Métricas Principais */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">MRR</CardTitle>
@@ -367,17 +460,19 @@ export const FinancialDashboard = () => {
                           <p className="text-sm font-bold">{formatCurrency(plan.receita)}</p>
                         </div>
                       </div>
-                    ))}
+                     ))}
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="projections" className="space-y-4">
               <CashFlowProjections />
             </TabsContent>
           </Tabs>
-        </>
+        </Card>
+          </>
+        )}
+        </div>
       )}
     </div>
   );
