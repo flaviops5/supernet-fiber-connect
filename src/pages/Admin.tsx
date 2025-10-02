@@ -27,6 +27,7 @@ import CepManagement from '@/components/CepManagement';
 import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
 import { CompanySettingsForm } from '@/components/CompanySettingsForm';
+import { SMTPSettings } from '@/components/SMTPSettings';
 
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
@@ -1261,19 +1262,7 @@ const SettingsManagement = () => {
         </TabsContent>
 
         <TabsContent value="smtp" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações SMTP</CardTitle>
-              <CardDescription>
-                Configure o servidor SMTP para envio de emails
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Configurações SMTP disponíveis na tabela system_settings do banco de dados.
-              </p>
-            </CardContent>
-          </Card>
+          <SMTPSettings />
         </TabsContent>
       </Tabs>
     </div>
