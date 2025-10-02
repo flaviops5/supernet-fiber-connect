@@ -88,7 +88,7 @@ export default function Monitoramento() {
 
           {/* Stats Cards */}
           {clientCount && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-3">
               <Card className="border-primary/20 hover:border-primary/40 transition-all">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
@@ -134,47 +134,6 @@ export default function Monitoramento() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
                       ? `${(((clientCount.detalhes?.offline || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
-                      : '0% da base'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-red-500/20 hover:border-red-500/40 transition-all">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Bloqueados</CardTitle>
-                  <Shield className="h-4 w-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-red-500">
-                    {clientCount.detalhes?.bloqueados || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.bloqueados || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
-                      : '0% da base'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Second Row - Pendências */}
-          {clientCount && (
-            <div className="grid gap-6 md:grid-cols-1">
-              <Card className="border-yellow-500/20 hover:border-yellow-500/40 transition-all">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pendência Financeira</CardTitle>
-                  <Activity className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-yellow-500">
-                    {clientCount.detalhes?.pendencia_financeira || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.pendencia_financeira || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>

@@ -93,8 +93,6 @@ serve(async (req) => {
     const clientDetails = {
       online: 0,
       offline: 0,
-      bloqueados: 0,
-      pendencia_financeira: 0,
       total: 0,
     };
 
@@ -146,31 +144,16 @@ serve(async (req) => {
 
       totalClients += registros.length;
 
-      // Analisar status dos contratos
+      // Analisar contratos - classificar apenas por online/offline
       registros.forEach((contrato: any) => {
         clientDetails.total++;
 
-        const statusInternet = String(contrato.status_internet ?? '').toUpperCase();
         const login = String(contrato.login ?? '').toLowerCase().trim();
         
-        // Verificar bloqueio: CA, CM, CB
-        if (['CA', 'CM', 'CB'].includes(statusInternet)) {
-          clientDetails.bloqueados++;
-        }
-        // FA = Financeiro em Atraso (pendência financeira)
-        else if (statusInternet === 'FA') {
-          clientDetails.pendencia_financeira++;
-        }
-        // A = Ativo - verificar se está online no radusuarios
-        else if (statusInternet === 'A') {
-          if (login && onlineLogins.has(login)) {
-            clientDetails.online++;
-          } else {
-            clientDetails.offline++;
-          }
-        }
-        // Outros status consideram offline
-        else {
+        // Se o login está no radusuarios, está online, senão offline
+        if (login && onlineLogins.has(login)) {
+          clientDetails.online++;
+        } else {
           clientDetails.offline++;
         }
       });
