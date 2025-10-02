@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/AuthGuard";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -2073,6 +2073,8 @@ const Admin = () => {
                 <Route path="/knowledge" element={<KnowledgeManagement />} />
                 <Route path="/corporate-ai" element={<CorporateAI />} />
                 <Route path="/ixc-integration" element={<IXCIntegration />} />
+                {/* Redirect old IXC documentation route to knowledge base */}
+                <Route path="/ixc-documentation" element={<Navigate to="/admin/knowledge" replace />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />
