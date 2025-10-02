@@ -262,7 +262,7 @@ serve(async (req) => {
 
               const finalMessage = financialMessage ? 
                 `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-                `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+                `📋 *Protocolo de Atendimento:* ${protocol}`;
               
               return new Response(
                 JSON.stringify({
@@ -321,7 +321,7 @@ serve(async (req) => {
 
               const finalMessage = techMessage ? 
                 `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-                `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+                `📋 *Protocolo de Atendimento:* ${protocol}`;
               
               return new Response(
                 JSON.stringify({
@@ -534,9 +534,10 @@ serve(async (req) => {
             }
 
             // Se Julia respondeu, usa a mensagem dela como principal
+            // Se não, apenas informa o protocolo (Julia deve responder através da edge function)
             const finalMessage = financialMessage ? 
               `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-              `Obrigado, ${firstName}! Identifiquei que há uma pendência financeira em sua conta. Vou transferir você para a Julia Martins do setor financeiro que poderá resolver isso imediatamente.\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              `📋 *Protocolo de Atendimento:* ${protocol}`;
             
             console.log('🔵 Retornando resposta:', {
               hasFinancialMessage: !!financialMessage,
@@ -628,9 +629,10 @@ serve(async (req) => {
             }
 
             // Se Luan respondeu, usa a mensagem dele como principal
+            // Se não, apenas informa o protocolo (Luan deve responder através da edge function)
             const finalMessage = techMessage ? 
               `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-              `Obrigado, ${firstName}! Já verificando aqui... percebi que sua conexão está offline. Vou transferir você para o Luan Silva do suporte técnico que já vai resolver!\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              `📋 *Protocolo de Atendimento:* ${protocol}`;
             
             console.log('🔵 Retornando resposta:', {
               hasTechMessage: !!techMessage,
@@ -845,10 +847,7 @@ MENSAGEM ATUAL DO CLIENTE:
       return new Response(
         JSON.stringify({
           agent: 'identification',
-          message: `Perfeito! Vou direcionar você para ${
-            decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
-            'a Julia Martins do Financeiro'
-          }.\n\nPara que eu possa verificar sua situação, pode me passar seu CPF, por favor?`,
+          message: 'Para verificar sua situação, preciso do seu CPF, por favor.',
           needsIdentification: true,
           targetAgent: decision.agent
         }),
