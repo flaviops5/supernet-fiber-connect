@@ -1221,13 +1221,42 @@ const SettingsManagement = () => {
       </div>
 
       <Tabs defaultValue="company" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="company">Identidade Visual</TabsTrigger>
+          <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="smtp">SMTP</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company" className="space-y-4">
           <CompanySettingsForm />
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações de SEO</CardTitle>
+              <CardDescription>
+                Configure meta tags, títulos e descrições para otimização de busca
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Título do Site</label>
+                  <Input placeholder="SUPERNET FIBRA - Internet de Alta Velocidade" className="mt-2" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Meta Description</label>
+                  <Input placeholder="Internet fibra óptica de alta velocidade..." className="mt-2" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Palavras-chave</label>
+                  <Input placeholder="internet, fibra óptica, banda larga..." className="mt-2" />
+                </div>
+                <Button>Salvar Configurações SEO</Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="smtp" className="space-y-4">
