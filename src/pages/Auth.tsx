@@ -27,9 +27,19 @@ const Auth = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  type Brand = {
+    logo_url: string | null;
+    auth_title: string;
+    auth_subtitle: string;
+    auth_gradient_from: string;
+    auth_gradient_to: string;
+    signup_enabled: boolean;
+  };
+  const [brand, setBrand] = useState<Brand | null>(null);
 
   useEffect(() => {
     // Set up auth state listener
@@ -53,6 +63,17 @@ const Auth = () => {
         navigate('/admin');
       }
     });
+
+    // Load brand settings
+    const loadBrand = async () => {
+      const { data } = await supabase
+        .from('company_settings')
+        .select('logo_url, auth_title, auth_subtitle, auth_gradient_from, auth_gradient_to, signup_enabled')
+        .limit(1)
+        .single();
+      if (data) setBrand(data as Brand);
+    };
+    loadBrand();
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -197,7 +218,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/90 to-orange/30 flex">
+    <div
+      className="min-h-screen flex"
+      style={{
+        backgroundImage: `linear-gradient(to bottom right, ${brand?.auth_gradient_from || '#6d28d9'}, ${brand?.auth_gradient_to || '#fb7185'})`,
+      }}
+    >
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 right-20 w-40 h-40 bg-orange/10 rounded-full blur-3xl" />
