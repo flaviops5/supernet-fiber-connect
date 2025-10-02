@@ -49,7 +49,7 @@ serve(async (req) => {
     while (hasMorePages) {
       console.log(`Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
 
-      const formRad = new URLSearchParams({
+      const bodyRad = JSON.stringify({
         qtype: 'radusuarios.id',
         query: '1',
         oper: '>=',
@@ -63,10 +63,10 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           'ixcsoft': 'listar',
         },
-        body: formRad,
+        body: bodyRad,
       });
 
       if (!radResponse.ok) {
