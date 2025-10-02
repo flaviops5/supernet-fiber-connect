@@ -1219,7 +1219,43 @@ const SettingsManagement = () => {
           Gerencie as configurações da empresa e do sistema
         </p>
       </div>
-      <CompanySettingsForm />
+
+      <Tabs defaultValue="company" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="company">Identidade Visual</TabsTrigger>
+          <TabsTrigger value="cep">CEP e Cobertura</TabsTrigger>
+          <TabsTrigger value="ixc">Integração IXC</TabsTrigger>
+          <TabsTrigger value="smtp">SMTP</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="company" className="space-y-4">
+          <CompanySettingsForm />
+        </TabsContent>
+
+        <TabsContent value="cep" className="space-y-4">
+          <CepManagement />
+        </TabsContent>
+
+        <TabsContent value="ixc" className="space-y-4">
+          <IXCIntegration />
+        </TabsContent>
+
+        <TabsContent value="smtp" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações SMTP</CardTitle>
+              <CardDescription>
+                Configure o servidor SMTP para envio de emails
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Configurações SMTP disponíveis na tabela system_settings do banco de dados.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
