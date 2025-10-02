@@ -34,23 +34,28 @@ serve(async (req) => {
 
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
-    console.log('Buscando clientes no IXC...');
+    console.log('Buscando apenas dados do radusuarios...');
     console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
     console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
 
-    // Primeiro, buscar usuários online no radusuarios
+    // Buscar apenas radusuarios
     const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
-    console.log(`Buscando usuários online em: ${apiUrlRadusuarios}`);
+    console.log(`Buscando usuários no radusuarios: ${apiUrlRadusuarios}`);
 
-    const onlineLogins = new Set<string>();
+    let page = 1;
+    let hasMorePages = true;
+    const itemsPerPage = 1000;
+    const allRadUsers: any[] = [];
 
-    try {
+    while (hasMorePages) {
+      console.log(`Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
+
       const formRad = new URLSearchParams({
         qtype: 'radusuarios.id',
         query: '1',
         oper: '>=',
-        page: '1',
-        rp: '10000',
+        page: String(page),
+        rp: String(itemsPerPage),
         sortname: 'radusuarios.id',
         sortorder: 'desc',
       });
@@ -65,131 +70,62 @@ serve(async (req) => {
         body: formRad,
       });
 
-      if (radResponse.ok) {
-        const radData = await radResponse.json();
-        const radRegistrosRaw = radData?.registros;
-        const radRegistros: any[] = Array.isArray(radRegistrosRaw)
-          ? radRegistrosRaw
-          : (radRegistrosRaw ? Object.values(radRegistrosRaw) : []);
-
-        // Adicionar logins online ao Set
-        radRegistros.forEach((rad: any) => {
-          if (rad.login) {
-            const normalizedLogin = String(rad.login).toLowerCase().trim();
-            onlineLogins.add(normalizedLogin);
-            
-            // Log para verificar logins específicos
-            if (normalizedLogin.includes('373.028.841-53') || normalizedLogin.includes('37302884153')) {
-              console.log('Login online encontrado no radusuarios relacionado ao CPF:', rad);
-            }
-          }
-        });
-
-        console.log(`Encontrados ${onlineLogins.size} logins online no radusuarios`);
-        console.log('Primeiros 10 logins online:', Array.from(onlineLogins).slice(0, 10));
-      }
-    } catch (error) {
-      console.warn('Erro ao buscar radusuarios, continuando sem dados de login online:', error);
-    }
-
-    let page = 1;
-    let totalClients = 0;
-    let hasMorePages = true;
-    const clientsPerPage = 1000;
-
-    const clientDetails = {
-      online: 0,
-      offline: 0,
-      total: 0,
-    };
-
-    // Buscar contratos
-    const apiUrlContratos = `https://${IXC_BASE_HOST}/webservice/v1/cliente_contrato`;
-    console.log(`Buscando contratos em: ${apiUrlContratos}`);
-
-    while (hasMorePages) {
-      console.log(`Consultando contratos: página ${page}, limite ${clientsPerPage}`);
-
-      const form = new URLSearchParams({
-        qtype: 'cliente_contrato.id',
-        query: '1',
-        oper: '>=',
-        page: String(page),
-        rp: String(clientsPerPage),
-        sortname: 'cliente_contrato.id',
-        sortorder: 'desc',
-      });
-
-      const response = await fetch(apiUrlContratos, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'ixcsoft': 'listar',
-        },
-        body: form,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Erro na API IXC:', response.status, errorText);
-        throw new Error(`Erro ao buscar contratos no IXC: ${response.status}`);
+      if (!radResponse.ok) {
+        const errorText = await radResponse.text();
+        console.error('Erro na API IXC radusuarios:', radResponse.status, errorText);
+        throw new Error(`Erro ao buscar radusuarios no IXC: ${radResponse.status}`);
       }
 
-      const data = await response.json();
+      const radData = await radResponse.json();
+      const radRegistrosRaw = radData?.registros;
+      const radRegistros: any[] = Array.isArray(radRegistrosRaw)
+        ? radRegistrosRaw
+        : (radRegistrosRaw ? Object.values(radRegistrosRaw) : []);
 
-      // Normaliza registros
-      const registrosRaw = data?.registros;
-      const registros: any[] = Array.isArray(registrosRaw)
-        ? registrosRaw
-        : (registrosRaw ? Object.values(registrosRaw) : []);
-
-      if (!registros || registros.length === 0) {
+      if (!radRegistros || radRegistros.length === 0) {
         hasMorePages = false;
         break;
       }
 
-      totalClients += registros.length;
-
-      // Analisar contratos - classificar apenas por online/offline
-      registros.forEach((contrato: any) => {
-        clientDetails.total++;
-
-        const login = String(contrato.login ?? '').toLowerCase().trim();
-        const cpf = String(contrato.cpf_cnpj ?? '').replace(/[^\d]/g, '');
-        
-        // Log específico para o CPF solicitado
-        if (cpf === '37302884153') {
-          console.log('=== CLIENTE CPF 373.028.841-53 ENCONTRADO ===');
-          console.log('Login:', login);
-          console.log('Status Internet:', contrato.status_internet);
-          console.log('Nome:', contrato.razao);
-          console.log('Está no radusuarios?', onlineLogins.has(login));
-          console.log('Dados completos:', JSON.stringify(contrato, null, 2));
-          console.log('===========================================');
-        }
-        
-        // Se o login está no radusuarios, está online, senão offline
-        if (login && onlineLogins.has(login)) {
-          clientDetails.online++;
-        } else {
-          clientDetails.offline++;
-        }
-      });
-
-      console.log(`Página ${page}: ${registros.length} contratos encontrados`);
-      console.log(`Status até agora:`, clientDetails);
+      allRadUsers.push(...radRegistros);
+      console.log(`Página ${page}: ${radRegistros.length} registros encontrados`);
 
       // Verificar se há mais páginas
-      const totalNaResposta = Number(data?.total ?? 0);
-      if (registros.length < clientsPerPage || (totalNaResposta && page * clientsPerPage >= totalNaResposta)) {
+      const totalNaResposta = Number(radData?.total ?? 0);
+      if (radRegistros.length < itemsPerPage || (totalNaResposta && page * itemsPerPage >= totalNaResposta)) {
         hasMorePages = false;
       } else {
         page++;
       }
     }
 
-    console.log(`Total de contratos encontrados: ${totalClients}`);
+    console.log(`Total de registros radusuarios: ${allRadUsers.length}`);
+
+    // Analisar dados
+    const clientDetails = {
+      online: 0,
+      offline: 0,
+      total: allRadUsers.length,
+    };
+
+    // Contar online (acctstoptime vazio ou null) e offline
+    allRadUsers.forEach((rad: any) => {
+      const login = String(rad.login ?? '').toLowerCase().trim();
+      const acctstoptime = rad.acctstoptime;
+      
+      // Log para verificar estrutura
+      if (allRadUsers.indexOf(rad) < 5) {
+        console.log('Exemplo de registro radusuarios:', JSON.stringify(rad, null, 2));
+      }
+      
+      // Se acctstoptime está vazio ou null, usuário está online
+      if (!acctstoptime || acctstoptime === '' || acctstoptime === null) {
+        clientDetails.online++;
+      } else {
+        clientDetails.offline++;
+      }
+    });
+
     console.log(`Resumo final:`, clientDetails);
 
     return new Response(
