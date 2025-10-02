@@ -13,9 +13,14 @@ serve(async (req) => {
   try {
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
     
     if (!IXC_USERNAME || !IXC_PASSWORD) {
       throw new Error('Credenciais IXC não configuradas');
+    }
+
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL não configurado');
     }
 
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
@@ -40,7 +45,7 @@ serve(async (req) => {
 
     while (hasMorePages) {
       const response = await fetch(
-        `https://supernetfibra.ixcsoft.com.br/webservice/v1/cliente_contrato?page=${page}&rp=${contractsPerPage}`,
+        `https://${IXC_API_BASE}/webservice/v1/cliente_contrato?page=${page}&rp=${contractsPerPage}`,
         {
           method: 'GET',
           headers: {

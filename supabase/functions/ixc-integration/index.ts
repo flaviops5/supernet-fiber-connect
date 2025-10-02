@@ -65,13 +65,18 @@ serve(async (req) => {
     
     const username = Deno.env.get('IXC_API_USERNAME');
     const password = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
     
     if (!username || !password) {
       throw new Error('Credenciais do IXC não configuradas');
     }
 
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL não configurado');
+    }
+
     const auth = btoa(`${username}:${password}`);
-    const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
+    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
 
     let result: any = null;
 

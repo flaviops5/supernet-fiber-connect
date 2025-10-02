@@ -13,19 +13,20 @@ serve(async (req) => {
   try {
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
     
     if (!IXC_USERNAME || !IXC_PASSWORD) {
       throw new Error('Credenciais IXC não configuradas');
+    }
+
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL não configurado');
     }
 
     // Criar token de autenticação Base64
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
     
     console.log('Buscando clientes no IXC...');
-
-    // Buscar clientes ativos no IXC usando a URL correta
-    // A URL da API é o domínio sem o "https://" e terminando em .com.br
-    const IXC_API_BASE = 'supernetfibra.ixcsoft.com.br';
     
     // Usando paginação para buscar todos os clientes
     let page = 1;

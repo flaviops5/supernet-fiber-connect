@@ -14,9 +14,14 @@ serve(async (req) => {
   try {
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
 
     if (!ixcUsername || !ixcPassword) {
       throw new Error('IXC API credentials not configured');
+    }
+
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL not configured');
     }
 
     const bodyJson = await req.json().catch(() => ({} as Record<string, unknown>));
@@ -26,7 +31,7 @@ serve(async (req) => {
     const search = typeof (bodyJson as any).search === 'string' ? String((bodyJson as any).search) : '';
 
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
-    const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
+    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
 
     // Helper to POST with IXC conventions
     const postIXC = async (endpoint: string, form: Record<string, string>) => {

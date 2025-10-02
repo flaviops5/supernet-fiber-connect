@@ -29,13 +29,18 @@ serve(async (req) => {
     // Credenciais IXC
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
 
     if (!ixcUsername || !ixcPassword) {
       throw new Error('Credenciais IXC não configuradas');
     }
 
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL não configurado');
+    }
+
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
-    const baseUrl = 'https://central.supernetfibra.com.br/webservice/v1';
+    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
 
     // Buscar TODOS os planos do IXC com paginação
     console.log('🔄 Iniciando busca paginada de planos...');
