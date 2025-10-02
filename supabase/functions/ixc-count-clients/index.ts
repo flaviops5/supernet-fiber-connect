@@ -13,8 +13,8 @@ serve(async (req) => {
   try {
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
-    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
-    
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL'); // ex: central.supernetfibra.com.br
+
     if (!IXC_USERNAME || !IXC_PASSWORD) {
       throw new Error('Credenciais IXC não configuradas');
     }
@@ -23,34 +23,43 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL não configurado');
     }
 
-    // Criar token de autenticação Base64
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
-    
+
     console.log('Buscando clientes no IXC...');
-    
-    // Usando paginação para buscar todos os clientes
+    console.log('IXC_API_BASE_URL:', IXC_API_BASE);
+
     let page = 1;
     let totalClients = 0;
     let hasMorePages = true;
     const clientsPerPage = 1000; // Máximo permitido pela API
-    
+
     const clientDetails = {
       ativos: 0,
       inativos: 0,
       bloqueados: 0,
-      total: 0
+      total: 0,
     };
 
     while (hasMorePages) {
-      const apiUrl = `https://${IXC_API_BASE}/webservice/v1/cliente?page=${page}&rp=${clientsPerPage}`;
-      console.log(`Consultando: ${apiUrl}`);
-      
+      const apiUrl = `https://${IXC_API_BASE}/webservice/v1/cliente`;
+      console.log(`Consultando: ${apiUrl} (page=${page}, rp=${clientsPerPage})`);
+
+      // Muitas instalações IXC exigem POST com header "ixcsoft: listar"
+      const form = new URLSearchParams({
+        page: String(page),
+        rp: String(clientsPerPage),
+        sortname: 'cliente.id',
+        sortorder: 'asc',
+      });
+
       const response = await fetch(apiUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'ixcsoft': 'listar',
         },
+        body: form,
       });
 
       if (!response.ok) {
@@ -60,33 +69,40 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      
-      if (!data.registros || data.registros.length === 0) {
+
+      // Normaliza registros: pode vir como array ou objeto com índices
+      const registrosRaw = data?.registros;
+      const registros: any[] = Array.isArray(registrosRaw)
+        ? registrosRaw
+        : (registrosRaw ? Object.values(registrosRaw) : []);
+
+      if (!registros || registros.length === 0) {
         hasMorePages = false;
         break;
       }
 
-      // Contar clientes desta página
-      totalClients += data.registros.length;
-      
+      totalClients += registros.length;
+
       // Analisar status dos clientes
-      data.registros.forEach((cliente: any) => {
-        if (cliente.ativo === 'S') {
+      registros.forEach((cliente: any) => {
+        const ativoFlag = String(cliente.ativo ?? '').toUpperCase();
+        if (ativoFlag === 'S' || ativoFlag === 'SIM' || ativoFlag === '1') {
           clientDetails.ativos++;
         } else {
           clientDetails.inativos++;
         }
-        
-        // Verificar se tem algum contrato bloqueado
-        if (cliente.status_internet && ['CA', 'CM', 'CB', 'FA'].includes(cliente.status_internet)) {
+
+        const statusInternet = String(cliente.status_internet ?? '').toUpperCase();
+        if (statusInternet && ['CA', 'CM', 'CB', 'FA'].includes(statusInternet)) {
           clientDetails.bloqueados++;
         }
       });
 
-      console.log(`Página ${page}: ${data.registros.length} clientes encontrados`);
-      
-      // Verificar se há mais páginas
-      if (data.registros.length < clientsPerPage) {
+      console.log(`Página ${page}: ${registros.length} clientes encontrados`);
+
+      // Verificar se há mais páginas (quando a página volta com menos que o limite)
+      const totalNaResposta = Number(data?.total ?? 0);
+      if (registros.length < clientsPerPage || (totalNaResposta && page * clientsPerPage >= totalNaResposta)) {
         hasMorePages = false;
       } else {
         page++;
@@ -102,25 +118,15 @@ serve(async (req) => {
         success: true,
         total_clientes: totalClients,
         detalhes: clientDetails,
-        paginas_consultadas: page
+        paginas_consultadas: page,
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error: any) {
     console.error('Erro ao contar clientes IXC:', error);
     return new Response(
-      JSON.stringify({
-        error: error.message,
-        success: false
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: error.message, success: false }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
