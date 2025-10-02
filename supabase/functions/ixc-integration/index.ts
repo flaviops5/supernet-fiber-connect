@@ -153,6 +153,20 @@ serve(async (req) => {
         result = await getPixQrCode(baseUrl, auth, params.titleId);
         break;
       
+      case 'restartModem':
+        if (!params.customerId) {
+          throw new Error('ID do cliente é obrigatório');
+        }
+        result = await restartModem(baseUrl, auth, params.customerId);
+        break;
+      
+      case 'cleanMac':
+        if (!params.radiusUserId) {
+          throw new Error('ID do radusuario é obrigatório');
+        }
+        result = await cleanMac(baseUrl, auth, params.radiusUserId);
+        break;
+      
       default:
         throw new Error(`Ação não suportada: ${action}`);
     }
@@ -1513,5 +1527,68 @@ async function getPixQrCode(baseUrl: string, auth: string, titleId: string) {
   } catch (error: any) {
     console.error('Erro ao buscar QR Code PIX:', error);
     throw error;
+  }
+}
+
+async function restartModem(baseUrl: string, auth: string, customerId: string): Promise<any> {
+  try {
+    console.log(`🔄 Reiniciando modem do cliente: ${customerId}`);
+    
+    // Endpoint para desconectar clientes (força reconexão do modem)
+    const form: Record<string, string> = {
+      id_cliente: String(customerId)
+    };
+    
+    const { ok, data, status } = await postIXC(
+      `${baseUrl}/desconectar_clientes`,
+      auth,
+      form
+    );
+    
+    console.log(`Resposta do IXC (restartModem):`, JSON.stringify(data, null, 2));
+    
+    if (!ok) {
+      throw new Error(`Erro ao reiniciar modem: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
+    }
+    
+    return {
+      success: true,
+      message: 'Modem reiniciado com sucesso',
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Erro ao reiniciar modem:', error);
+    throw new Error(`Erro ao reiniciar modem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+}
+
+async function cleanMac(baseUrl: string, auth: string, radiusUserId: string): Promise<any> {
+  try {
+    console.log(`🧹 Limpando MAC do radusuario: ${radiusUserId}`);
+    
+    // Endpoint para limpar registro de MAC do radusuarios
+    // O endpoint radusuarios_<id> sugere que é uma ação DELETE ou UPDATE
+    const form: Record<string, string> = {};
+    
+    const { ok, data, status } = await postIXC(
+      `${baseUrl}/radusuarios_${radiusUserId}`,
+      auth,
+      form
+    );
+    
+    console.log(`Resposta do IXC (cleanMac):`, JSON.stringify(data, null, 2));
+    
+    if (!ok) {
+      throw new Error(`Erro ao limpar MAC: ${status} - ${data?.message ?? 'Erro desconhecido'}`);
+    }
+    
+    return {
+      success: true,
+      message: 'MAC limpo com sucesso',
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Erro ao limpar MAC:', error);
+    throw new Error(`Erro ao limpar MAC: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
 }
