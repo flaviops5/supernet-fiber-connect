@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CashFlowProjections } from "./CashFlowProjections";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -373,107 +374,7 @@ export const FinancialDashboard = () => {
             </TabsContent>
 
             <TabsContent value="projections" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Projeção MRR</CardTitle>
-                    <CardDescription>Próximo mês (crescimento 5% - churn atual)</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">MRR Atual</p>
-                        <p className="text-2xl font-bold">{formatCurrency(analytics.mrr)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">MRR Projetado</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(analytics.projectedMRR)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Variação</p>
-                        <p className={`text-xl font-bold ${analytics.projectedMRR > analytics.mrr ? 'text-green-600' : 'text-red-600'}`}>
-                          {analytics.projectedMRR > analytics.mrr ? '+' : ''}{formatCurrency(analytics.projectedMRR - analytics.mrr)}
-                          {' '}({((analytics.projectedMRR / analytics.mrr - 1) * 100).toFixed(2)}%)
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Projeção ARR</CardTitle>
-                    <CardDescription>Receita anualizada projetada</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">ARR Atual</p>
-                        <p className="text-2xl font-bold">{formatCurrency(analytics.arr)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">ARR Projetado</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(analytics.projectedARR)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Variação</p>
-                        <p className={`text-xl font-bold ${analytics.projectedARR > analytics.arr ? 'text-green-600' : 'text-red-600'}`}>
-                          {analytics.projectedARR > analytics.arr ? '+' : ''}{formatCurrency(analytics.projectedARR - analytics.arr)}
-                          {' '}({((analytics.projectedARR / analytics.arr - 1) * 100).toFixed(2)}%)
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Insights e Recomendações</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {analytics.overdueRate > 5 && (
-                      <div className="flex items-start gap-3 p-3 border border-destructive/50 rounded-lg bg-destructive/5">
-                        <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm">Alta Taxa de Inadimplência</p>
-                          <p className="text-sm text-muted-foreground">
-                            Taxa de {analytics.overdueRate.toFixed(2)}% está acima do ideal. Considere:
-                            campanhas de cobrança, revisão de políticas de crédito.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {analytics.churnRate > 5 && (
-                      <div className="flex items-start gap-3 p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
-                        <TrendingDown className="h-5 w-5 text-yellow-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm">Churn Elevado</p>
-                          <p className="text-sm text-muted-foreground">
-                            {analytics.churnRate.toFixed(2)}% de cancelamentos. Analise os motivos e implemente
-                            estratégias de retenção.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {analytics.projectedMRR > analytics.mrr && (
-                      <div className="flex items-start gap-3 p-3 border border-green-500/50 rounded-lg bg-green-500/5">
-                        <TrendingUp className="h-5 w-5 text-green-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm">Projeção Positiva</p>
-                          <p className="text-sm text-muted-foreground">
-                            Crescimento projetado de {((analytics.projectedMRR / analytics.mrr - 1) * 100).toFixed(2)}%.
-                            Mantenha o foco em aquisição de novos clientes.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <CashFlowProjections />
             </TabsContent>
           </Tabs>
         </>

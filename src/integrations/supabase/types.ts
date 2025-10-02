@@ -484,6 +484,51 @@ export type Database = {
           },
         ]
       }
+      cash_flow_projections: {
+        Row: {
+          accumulated_cash_flow: number
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          projected_cash_flow: number
+          projected_churn_rate: number | null
+          projected_costs: number
+          projected_new_clients: number | null
+          projected_revenue: number
+          projection_date: string
+          scenario: string
+          updated_at: string | null
+        }
+        Insert: {
+          accumulated_cash_flow: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          projected_cash_flow: number
+          projected_churn_rate?: number | null
+          projected_costs: number
+          projected_new_clients?: number | null
+          projected_revenue: number
+          projection_date: string
+          scenario: string
+          updated_at?: string | null
+        }
+        Update: {
+          accumulated_cash_flow?: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          projected_cash_flow?: number
+          projected_churn_rate?: number | null
+          projected_costs?: number
+          projected_new_clients?: number | null
+          projected_revenue?: number
+          projection_date?: string
+          scenario?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cep_coverage: {
         Row: {
           available: boolean
@@ -1599,6 +1644,48 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      projection_settings: {
+        Row: {
+          created_at: string | null
+          fixed_costs: number | null
+          id: string
+          optimistic_churn_reduction: number | null
+          optimistic_revenue_growth: number | null
+          pessimistic_churn_increase: number | null
+          pessimistic_revenue_decline: number | null
+          projection_months: number | null
+          updated_at: string | null
+          updated_by: string | null
+          variable_cost_percentage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          fixed_costs?: number | null
+          id?: string
+          optimistic_churn_reduction?: number | null
+          optimistic_revenue_growth?: number | null
+          pessimistic_churn_increase?: number | null
+          pessimistic_revenue_decline?: number | null
+          projection_months?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          variable_cost_percentage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          fixed_costs?: number | null
+          id?: string
+          optimistic_churn_reduction?: number | null
+          optimistic_revenue_growth?: number | null
+          pessimistic_churn_increase?: number | null
+          pessimistic_revenue_decline?: number | null
+          projection_months?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          variable_cost_percentage?: number | null
         }
         Relationships: []
       }
