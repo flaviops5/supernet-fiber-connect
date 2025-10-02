@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const LOCAWEB_API_TOKEN = Deno.env.get("LOCAWEB_API_TOKEN");
-const LOCAWEB_API_URL = "https://api.locaweb.com.br/v1/messages";
+const LOCAWEB_API_URL = "https://api.smtplw.com.br/v1/messages";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -13,7 +13,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string | string[];
-  from: string;
+  from?: string;
   subject?: string;
   body?: string;
   cc?: string | string[];
@@ -48,6 +48,23 @@ const handler = async (req: Request): Promise<Response> => {
     
     let finalSubject = emailData.subject || "";
     let finalBody = emailData.body || "";
+    let finalFrom = emailData.from;
+
+    // Se não houver 'from', buscar das configurações
+    if (!finalFrom) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { data: emailSettings } = await supabase
+        .from('email_settings')
+        .select('default_from_email, default_from_name')
+        .single();
+
+      if (emailSettings) {
+        finalFrom = `${emailSettings.default_from_name} <${emailSettings.default_from_email}>`;
+      } else {
+        finalFrom = "noreply@supernet.com.br"; // fallback
+      }
+    }
 
     // Se um template foi especificado, buscar e processar
     if (emailData.template_slug) {
@@ -74,24 +91,25 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Template processado com sucesso");
     }
 
-    if (!finalSubject || !finalBody) {
-      throw new Error("Assunto e corpo do email são obrigatórios");
+    if (!finalSubject || !finalBody || !finalFrom) {
+      throw new Error("Assunto, corpo e remetente do email são obrigatórios");
     }
 
     console.log("Enviando email via Locaweb:", {
       to: emailData.to,
+      from: finalFrom,
       subject: finalSubject,
     });
 
     const response = await fetch(LOCAWEB_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOCAWEB_API_TOKEN}`,
+        "x-auth-token": LOCAWEB_API_TOKEN,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         to: Array.isArray(emailData.to) ? emailData.to : [emailData.to],
-        from: emailData.from,
+        from: finalFrom,
         subject: finalSubject,
         body: finalBody,
         ...(emailData.cc && { cc: Array.isArray(emailData.cc) ? emailData.cc : [emailData.cc] }),
