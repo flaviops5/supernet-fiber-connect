@@ -469,7 +469,6 @@ export const FinancialDashboard = () => {
               <CashFlowProjections />
             </TabsContent>
           </Tabs>
-        </Card>
         </>
       )}
         </div>

@@ -344,11 +344,8 @@ const AgentManagement = () => {
           {editingConfig && (
             <AgentConfigEditor
               config={editingConfig}
-              onSave={(updatedConfig) => {
-                setConfigs(prev => ({
-                  ...prev,
-                  [updatedConfig.agent_type]: updatedConfig
-                }));
+              onClose={() => setEditingConfig(null)}
+              onSave={() => {
                 setEditingConfig(null);
                 loadAgentConfigs();
                 toast({
@@ -356,7 +353,6 @@ const AgentManagement = () => {
                   description: 'As configurações do agente foram atualizadas.',
                 });
               }}
-              onCancel={() => setEditingConfig(null)}
             />
           )}
         </DialogContent>
