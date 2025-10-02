@@ -34,30 +34,28 @@ serve(async (req) => {
 
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
-    console.log('Buscando apenas sessões ativas (online) no radusuarios...');
+    console.log('Focando apenas no radusuarios para detectar online/offline por última sessão.');
     console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
     console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
 
-    // Buscar apenas radusuarios com sessões ATIVAS (acctstoptime vazio/null = online)
     const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
-    console.log(`Buscando sessões ativas no radusuarios: ${apiUrlRadusuarios}`);
+    console.log(`Buscando radusuarios em: ${apiUrlRadusuarios}`);
 
     let page = 1;
     let hasMorePages = true;
     const itemsPerPage = 1000;
-    const onlineLogins = new Set<string>();
-    const allSessions: any[] = [];
+    const allRadUsers: any[] = [];
 
     while (hasMorePages) {
       console.log(`Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
 
       const formRad = new URLSearchParams({
-        qtype: 'radusuarios.acctstoptime',
-        query: '',
-        oper: 'is_null',
+        qtype: 'radusuarios.id',
+        query: '1',
+        oper: '>=',
         page: String(page),
         rp: String(itemsPerPage),
-        sortname: 'radusuarios.acctstarttime',
+        sortname: 'radusuarios.id',
         sortorder: 'desc',
       });
 
@@ -88,18 +86,9 @@ serve(async (req) => {
         break;
       }
 
-      // Adicionar logins únicos ao Set (sessões ativas = online)
-      radRegistros.forEach((rad: any) => {
-        if (rad.login) {
-          const normalizedLogin = String(rad.login).toLowerCase().trim();
-          onlineLogins.add(normalizedLogin);
-        }
-        allSessions.push(rad);
-      });
+      allRadUsers.push(...radRegistros);
+      console.log(`Página ${page}: ${radRegistros.length} registros encontrados`);
 
-      console.log(`Página ${page}: ${radRegistros.length} sessões ativas encontradas`);
-
-      // Verificar se há mais páginas
       const totalNaResposta = Number(radData?.total ?? 0);
       if (radRegistros.length < itemsPerPage || (totalNaResposta && page * itemsPerPage >= totalNaResposta)) {
         hasMorePages = false;
@@ -108,22 +97,49 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Total de sessões ativas: ${allSessions.length}`);
-    console.log(`Total de logins únicos online: ${onlineLogins.size}`);
-    console.log('Primeiros 10 logins online:', Array.from(onlineLogins).slice(0, 10));
+    console.log(`Total de registros radusuarios carregados: ${allRadUsers.length}`);
 
-    // Log de exemplo de sessão ativa
-    if (allSessions.length > 0) {
-      console.log('Exemplo de sessão ativa:', JSON.stringify(allSessions[0], null, 2));
+    // Agrupar por login e manter apenas a ÚLTIMA sessão por login
+    const latestByLogin = new Map<string, any>();
+    const parseDate = (val: string | undefined) => {
+      if (!val) return 0;
+      // Normaliza "YYYY-MM-DD HH:mm:ss" para ISO simples
+      const iso = val.includes('T') ? val : val.replace(' ', 'T');
+      const t = Date.parse(iso);
+      return isNaN(t) ? 0 : t;
+    };
+
+    for (const rad of allRadUsers) {
+      const login = String(rad.login ?? '').toLowerCase().trim();
+      if (!login) continue;
+      const current = latestByLogin.get(login);
+      const thisTs = parseDate(rad.acctstarttime || rad.ultima_atualizacao);
+      const currentTs = current ? parseDate(current.acctstarttime || current.ultima_atualizacao) : -1;
+      if (!current || thisTs >= currentTs) {
+        latestByLogin.set(login, rad);
+      }
+    }
+
+    // Classificar por online/offline a partir da ÚLTIMA sessão
+    let online = 0;
+    let offline = 0;
+    for (const [, last] of latestByLogin) {
+      const stop = last.acctstoptime;
+      if (stop === null || stop === undefined || String(stop).trim() === '') {
+        online++;
+      } else {
+        offline++;
+      }
     }
 
     const clientDetails = {
-      online: onlineLogins.size,
-      offline: 0, // Não temos como calcular offline sem cliente_contrato
-      total: onlineLogins.size,
+      online,
+      offline,
+      total: latestByLogin.size,
     };
 
-    console.log(`Resumo final:`, clientDetails);
+    console.log('Amostra de última sessão por login (até 5):', Array.from(latestByLogin.entries()).slice(0,5).map(([l, r]) => ({ login: l, acctstarttime: r.acctstarttime, acctstoptime: r.acctstoptime })));
+    console.log('Resumo final (radusuarios somente):', clientDetails);
 
     return new Response(
       JSON.stringify({
