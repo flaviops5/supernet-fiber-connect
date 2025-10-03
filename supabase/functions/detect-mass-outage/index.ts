@@ -99,43 +99,139 @@ serve(async (req) => {
 
     console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
 
-    // Agrupar por padrão de nomenclatura (local-bloco)
-    const regionGroups = new Map<string, RadUser[]>();
+    // Buscar informações de porta PON para cada cliente offline
+    console.log('🔍 Buscando informações de porta PON...');
+    const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string }> = [];
     
     for (const user of allRadUsers) {
-      const login = String(user.login || '').toUpperCase().trim();
-      if (!login) continue;
+      const clientId = user.id_cliente;
+      if (!clientId) {
+        clientsWithPon.push({ user });
+        continue;
+      }
 
-      // Extrair padrão: SRI-B-102 -> SRI-B (local-bloco)
-      const parts = login.split('-');
-      if (parts.length >= 2) {
-        const regionPattern = `${parts[0]}-${parts[1]}`; // Ex: SRI-B
-        
-        if (!regionGroups.has(regionPattern)) {
-          regionGroups.set(regionPattern, []);
+      try {
+        // Buscar equipamento/ONU do cliente
+        const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
+        const equipBody = JSON.stringify({
+          qtype: 'cliente_equipamento.id_cliente',
+          query: clientId,
+          oper: '=',
+          page: '1',
+          rp: '50',
+          sortname: 'cliente_equipamento.id',
+          sortorder: 'desc',
+        });
+
+        const equipResponse = await fetch(equipUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+            'ixcsoft': 'listar',
+          },
+          body: equipBody,
+        });
+
+        if (equipResponse.ok) {
+          const equipData = await equipResponse.json();
+          const equipamentos = Array.isArray(equipData?.registros)
+            ? equipData.registros
+            : (equipData?.registros ? Object.values(equipData.registros) : []);
+
+          // Procurar informações de PON/ONU nos equipamentos
+          let ponPort = '';
+          let cto = '';
+          
+          for (const equip of equipamentos) {
+            // Tentar extrair informações de porta PON
+            if (equip.pon_porta) ponPort = String(equip.pon_porta);
+            if (equip.pon_slot) ponPort = `${equip.pon_slot}/${ponPort}`;
+            if (equip.pon_olt) ponPort = `${equip.pon_olt}/${ponPort}`;
+            
+            // Extrair CTO
+            if (equip.cto) cto = String(equip.cto);
+            if (equip.fibra_cto) cto = String(equip.fibra_cto);
+            
+            if (ponPort) break;
+          }
+
+          clientsWithPon.push({ 
+            user, 
+            ponPort: ponPort || undefined,
+            cto: cto || undefined
+          });
+        } else {
+          clientsWithPon.push({ user });
         }
-        regionGroups.get(regionPattern)!.push(user);
+      } catch (error) {
+        console.error(`Erro ao buscar equipamento do cliente ${clientId}:`, error);
+        clientsWithPon.push({ user });
       }
     }
 
-    // Definir limiar para queda em massa (mínimo 3 clientes da mesma região)
-    const MASS_OUTAGE_THRESHOLD = 3;
+    console.log(`📊 Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
+
+    // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
+    const ponGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string }>>();
+    
+    for (const clientData of clientsWithPon) {
+      const login = String(clientData.user.login || '').toUpperCase().trim();
+      if (!login) continue;
+
+      let groupKey = '';
+      
+      // Prioridade 1: Agrupar por porta PON completa (mais preciso)
+      if (clientData.ponPort) {
+        groupKey = `PON:${clientData.ponPort}`;
+      }
+      // Prioridade 2: Agrupar por CTO
+      else if (clientData.cto) {
+        groupKey = `CTO:${clientData.cto}`;
+      }
+      // Prioridade 3: Agrupar por padrão de login (local-bloco)
+      else {
+        const parts = login.split('-');
+        if (parts.length >= 2) {
+          groupKey = `REGION:${parts[0]}-${parts[1]}`;
+        }
+      }
+
+      if (groupKey) {
+        if (!ponGroups.has(groupKey)) {
+          ponGroups.set(groupKey, []);
+        }
+        ponGroups.get(groupKey)!.push(clientData);
+      }
+    }
+
+    // Definir limiar para queda em massa
+    // - Porta PON: 3+ clientes (mais preciso, indica problema na OLT/Splitter)
+    // - CTO: 4+ clientes (problema em caixa de terminação)
+    // - Região: 5+ clientes (menos preciso, pode ser problema maior)
     const massOutages: any[] = [];
 
-    for (const [regionPattern, users] of regionGroups) {
-      if (users.length >= MASS_OUTAGE_THRESHOLD) {
-        const eventKey = `${regionPattern}_${new Date().toISOString().split('T')[0]}`;
-        const affectedLogins = users.map(u => u.login);
+    for (const [groupKey, clientsData] of ponGroups) {
+      const isPonGroup = groupKey.startsWith('PON:');
+      const isCtoGroup = groupKey.startsWith('CTO:');
+      const threshold = isPonGroup ? 3 : (isCtoGroup ? 4 : 5);
+      
+      if (clientsData.length >= threshold) {
+        const affectedLogins = clientsData.map(c => c.user.login);
+        const eventKey = `${groupKey}_${new Date().toISOString().split('T')[0]}`;
+        
+        const groupType = isPonGroup ? 'Porta PON' : (isCtoGroup ? 'CTO' : 'Região');
+        const groupIdentifier = groupKey.split(':')[1];
+        
+        console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados`);
 
-        console.log(`🚨 QUEDA EM MASSA detectada: ${regionPattern} - ${users.length} clientes afetados`);
-
-        // Verificar se já existe evento ativo para esta região hoje
+        // Verificar se já existe evento ativo para este grupo hoje
         const { data: existingEvent } = await supabase
           .from('mass_outage_events')
           .select('*')
           .eq('event_key', eventKey)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
         if (!existingEvent) {
           // Criar novo evento
@@ -143,13 +239,17 @@ serve(async (req) => {
             .from('mass_outage_events')
             .insert({
               event_key: eventKey,
-              region_pattern: regionPattern,
-              affected_count: users.length,
+              region_pattern: groupKey,
+              affected_count: clientsData.length,
               affected_logins: affectedLogins,
               status: 'active',
               metadata: {
                 detection_time: new Date().toISOString(),
-                threshold: MASS_OUTAGE_THRESHOLD
+                threshold,
+                group_type: groupType,
+                group_identifier: groupIdentifier,
+                pon_port: isPonGroup ? groupIdentifier : undefined,
+                cto: isCtoGroup ? groupIdentifier : undefined
               }
             })
             .select()
@@ -166,9 +266,16 @@ serve(async (req) => {
           const { error: updateError } = await supabase
             .from('mass_outage_events')
             .update({
-              affected_count: users.length,
+              affected_count: clientsData.length,
               affected_logins: affectedLogins,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
+              metadata: {
+                ...existingEvent.metadata,
+                last_update: new Date().toISOString(),
+                threshold,
+                group_type: groupType,
+                group_identifier: groupIdentifier
+              }
             })
             .eq('id', existingEvent.id);
 
@@ -181,7 +288,7 @@ serve(async (req) => {
       }
     }
 
-    // Marcar eventos como resolvidos se não há mais clientes offline na região
+    // Marcar eventos como resolvidos se não há mais clientes offline no grupo
     const { data: activeEvents } = await supabase
       .from('mass_outage_events')
       .select('*')
@@ -189,8 +296,14 @@ serve(async (req) => {
 
     if (activeEvents) {
       for (const event of activeEvents) {
-        const stillOffline = regionGroups.get(event.region_pattern);
-        if (!stillOffline || stillOffline.length < MASS_OUTAGE_THRESHOLD) {
+        const groupKey = event.region_pattern;
+        const stillOffline = ponGroups.get(groupKey);
+        
+        const isPonGroup = groupKey.startsWith('PON:');
+        const isCtoGroup = groupKey.startsWith('CTO:');
+        const threshold = isPonGroup ? 3 : (isCtoGroup ? 4 : 5);
+        
+        if (!stillOffline || stillOffline.length < threshold) {
           await supabase
             .from('mass_outage_events')
             .update({
@@ -199,7 +312,7 @@ serve(async (req) => {
             })
             .eq('id', event.id);
           
-          console.log(`✅ Evento resolvido: ${event.region_pattern}`);
+          console.log(`✅ Evento resolvido: ${groupKey}`);
         }
       }
     }
@@ -208,9 +321,15 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         total_offline: allRadUsers.length,
+        clients_with_pon_data: clientsWithPon.filter(c => c.ponPort).length,
         mass_outages_detected: massOutages.length,
         mass_outages: massOutages,
-        regions_analyzed: regionGroups.size
+        groups_analyzed: {
+          total: ponGroups.size,
+          by_pon_port: Array.from(ponGroups.keys()).filter(k => k.startsWith('PON:')).length,
+          by_cto: Array.from(ponGroups.keys()).filter(k => k.startsWith('CTO:')).length,
+          by_region: Array.from(ponGroups.keys()).filter(k => k.startsWith('REGION:')).length
+        }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
