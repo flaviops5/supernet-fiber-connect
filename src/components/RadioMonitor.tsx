@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Radio, TowerControl, Wifi } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 import {
   Tooltip,
   TooltipContent,
@@ -70,6 +71,36 @@ export function RadioMonitor() {
       setTowers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testConnectivity = async (ip: string, equipmentName: string) => {
+    const loadingToast = sonnerToast.loading(`Testando conectividade com ${equipmentName}...`);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('test-equipment-connectivity', {
+        body: { ip, port: 80, timeout: 5000 }
+      });
+      
+      sonnerToast.dismiss(loadingToast);
+      
+      if (error) throw error;
+      
+      if (data.reachable) {
+        sonnerToast.success(`${equipmentName} está online!`, {
+          description: `Respondeu em ${data.responseTime}ms (HTTP ${data.status})`
+        });
+      } else {
+        sonnerToast.error(`${equipmentName} não está alcançável`, {
+          description: data.message
+        });
+      }
+    } catch (error: any) {
+      sonnerToast.dismiss(loadingToast);
+      console.error('Erro ao testar conectividade:', error);
+      sonnerToast.error('Erro ao testar conectividade', {
+        description: error.message
+      });
     }
   };
 
@@ -279,22 +310,38 @@ export function RadioMonitor() {
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent side="left" className="max-w-xs">
-                                <div className="space-y-1 text-xs">
-                                  <p><strong>Cliente:</strong> {radio.cliente}</p>
-                                  {radio.serial && <p><strong>Serial:</strong> {radio.serial}</p>}
-                                  {radio.ip && <p><strong>IP:</strong> {radio.ip}</p>}
-                                  {radio.fabricante && <p><strong>Fabricante:</strong> {radio.fabricante}</p>}
-                                  {radio.modelo && <p><strong>Modelo:</strong> {radio.modelo}</p>}
-                                  {radio.firmware && <p><strong>Firmware:</strong> {radio.firmware}</p>}
-                                  {radio.uptime && <p><strong>Uptime:</strong> {radio.uptime}</p>}
-                                  {radio.temperatura && <p><strong>Temperatura:</strong> {radio.temperatura}°C</p>}
-                                  {radio.voltagem && <p><strong>Voltagem:</strong> {radio.voltagem}V</p>}
-                                  {radio.cpu_load && <p><strong>CPU:</strong> {radio.cpu_load}%</p>}
-                                  {radio.memoria_total && (
-                                    <p><strong>Memória:</strong> {radio.memoria_livre ? Math.round((radio.memoria_livre / radio.memoria_total) * 100) : 0}% livre</p>
+                                <div className="space-y-3">
+                                  <div className="space-y-1 text-xs">
+                                    <p><strong>Cliente:</strong> {radio.cliente}</p>
+                                    {radio.serial && <p><strong>Serial:</strong> {radio.serial}</p>}
+                                    {radio.ip && <p><strong>IP:</strong> {radio.ip}</p>}
+                                    {radio.fabricante && <p><strong>Fabricante:</strong> {radio.fabricante}</p>}
+                                    {radio.modelo && <p><strong>Modelo:</strong> {radio.modelo}</p>}
+                                    {radio.firmware && <p><strong>Firmware:</strong> {radio.firmware}</p>}
+                                    {radio.uptime && <p><strong>Uptime:</strong> {radio.uptime}</p>}
+                                    {radio.temperatura && <p><strong>Temperatura:</strong> {radio.temperatura}°C</p>}
+                                    {radio.voltagem && <p><strong>Voltagem:</strong> {radio.voltagem}V</p>}
+                                    {radio.cpu_load && <p><strong>CPU:</strong> {radio.cpu_load}%</p>}
+                                    {radio.memoria_total && (
+                                      <p><strong>Memória:</strong> {radio.memoria_livre ? Math.round((radio.memoria_livre / radio.memoria_total) * 100) : 0}% livre</p>
+                                    )}
+                                    {radio.signal && <p><strong>Sinal:</strong> {radio.signal}</p>}
+                                    {radio.frequency && <p><strong>Frequência:</strong> {radio.frequency}</p>}
+                                  </div>
+                                  {radio.ip && (
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      className="w-full"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        testConnectivity(radio.ip!, `${radio.fabricante || 'Equipamento'} - ${radio.cliente}`);
+                                      }}
+                                    >
+                                      <Wifi className="h-3 w-3 mr-2" />
+                                      Testar Conectividade
+                                    </Button>
                                   )}
-                                  {radio.signal && <p><strong>Sinal:</strong> {radio.signal}</p>}
-                                  {radio.frequency && <p><strong>Frequência:</strong> {radio.frequency}</p>}
                                 </div>
                               </TooltipContent>
                             </Tooltip>
