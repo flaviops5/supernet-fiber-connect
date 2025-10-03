@@ -103,8 +103,21 @@ serve(async (req) => {
       }
 
       for (const radio of radioRegistros) {
+        // Log detalhado do id_pop e outros campos relacionados
+        console.log('🔍 Dados do equipamento:', {
+          id_pop: radio.id_pop,
+          tipo_id_pop: typeof radio.id_pop,
+          su_pop: radio.su_pop,
+          pop: radio.pop,
+          torre: radio.torre,
+          setor: radio.setor,
+          descricao: radio.descricao,
+          ip: radio.ip,
+          fabricante_modelo: radio.fabricante_modelo,
+        });
+        
         // Identificar a torre/POP/setor
-        const popName = radio.su_pop || radio.pop || radio.torre || radio.setor || 'TORRE-DESCONHECIDA';
+        const popName = radio.su_pop || radio.pop || radio.torre || radio.setor || radio.descricao || 'TORRE-DESCONHECIDA';
         const popId = String(popName).trim();
 
         if (!radioMap.has(popId)) {
