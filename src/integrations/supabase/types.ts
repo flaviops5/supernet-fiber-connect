@@ -1401,6 +1401,51 @@ export type Database = {
           },
         ]
       }
+      mass_outage_events: {
+        Row: {
+          affected_count: number
+          affected_logins: string[]
+          created_at: string | null
+          detected_at: string
+          event_key: string
+          id: string
+          metadata: Json | null
+          notifications_sent: boolean | null
+          region_pattern: string
+          resolved_at: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          affected_count: number
+          affected_logins: string[]
+          created_at?: string | null
+          detected_at?: string
+          event_key: string
+          id?: string
+          metadata?: Json | null
+          notifications_sent?: boolean | null
+          region_pattern: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          affected_count?: number
+          affected_logins?: string[]
+          created_at?: string | null
+          detected_at?: string
+          event_key?: string
+          id?: string
+          metadata?: Json | null
+          notifications_sent?: boolean | null
+          region_pattern?: string
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notification_templates: {
         Row: {
           created_at: string
@@ -1622,6 +1667,56 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: true
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outage_notifications: {
+        Row: {
+          channel: string
+          created_at: string | null
+          customer_login: string
+          customer_name: string | null
+          customer_phone: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          outage_event_id: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          customer_login: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          outage_event_id: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          customer_login?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          outage_event_id?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outage_notifications_outage_event_id_fkey"
+            columns: ["outage_event_id"]
+            isOneToOne: false
+            referencedRelation: "mass_outage_events"
             referencedColumns: ["id"]
           },
         ]

@@ -59,3 +59,6 @@ verify_jwt = true
 
 [functions.ixc-discover-gpon-endpoints]
 verify_jwt = true
+
+[functions.detect-mass-outage]
+verify_jwt = false

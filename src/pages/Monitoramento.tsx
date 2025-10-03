@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft } from 'lucide-react';
+import { MassOutageMonitor } from '@/components/MassOutageMonitor';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
@@ -86,8 +88,22 @@ export default function Monitoramento() {
             </Button>
           </div>
 
-          {/* Stats Cards */}
-          {clientCount && (
+          {/* Tabs */}
+          <Tabs defaultValue="status" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="status" className="gap-2">
+                <Activity className="h-4 w-4" />
+                Status dos Clientes
+              </TabsTrigger>
+              <TabsTrigger value="outages" className="gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Quedas em Massa
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="status" className="space-y-6">
+              {/* Stats Cards */}
+              {clientCount && (
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="border-primary/20 hover:border-primary/40 transition-all">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -174,24 +190,30 @@ export default function Monitoramento() {
             </Card>
           )}
 
-          {/* Empty State */}
-          {!clientCount && !loading && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Bem-vindo ao Monitoramento IXC</CardTitle>
-                <CardDescription>
-                  Clique no botão "Atualizar Contagem" para carregar os dados dos clientes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground max-w-md">
-                  Esta página permite monitorar em tempo real o status de todos os clientes
-                  cadastrados no sistema IXC, incluindo clientes ativos, inativos e bloqueados.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+              {/* Empty State */}
+              {!clientCount && !loading && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Bem-vindo ao Monitoramento IXC</CardTitle>
+                    <CardDescription>
+                      Clique no botão "Atualizar Contagem" para carregar os dados dos clientes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground max-w-md">
+                      Esta página permite monitorar em tempo real o status de todos os clientes
+                      cadastrados no sistema IXC, incluindo clientes ativos, inativos e bloqueados.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="outages">
+              <MassOutageMonitor />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </AuthGuard>
