@@ -172,6 +172,74 @@ serve(async (req) => {
 
     console.log(`📊 Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
 
+    // Verificar se há registros de falta de energia no IXC
+    console.log('🔍 Verificando registros de falta de energia...');
+    const powerOutageInfo = new Map<string, { hasPowerOutage: boolean; description?: string; affected_area?: string }>();
+    
+    try {
+      // Buscar atendimentos recentes relacionados a energia/rede
+      const atendimentoUrl = `https://${IXC_BASE_HOST}/webservice/v1/su_oss_chamado`;
+      const atendimentoBody = JSON.stringify({
+        qtype: 'su_oss_chamado.assunto',
+        query: 'energia',
+        oper: 'LIKE',
+        page: '1',
+        rp: '100',
+        sortname: 'su_oss_chamado.data_abertura',
+        sortorder: 'desc',
+      });
+
+      const atendimentoResponse = await fetch(atendimentoUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+          'ixcsoft': 'listar',
+        },
+        body: atendimentoBody,
+      });
+
+      if (atendimentoResponse.ok) {
+        const atendimentoData = await atendimentoResponse.json();
+        const chamados = Array.isArray(atendimentoData?.registros)
+          ? atendimentoData.registros
+          : (atendimentoData?.registros ? Object.values(atendimentoData.registros) : []);
+
+        // Processar chamados de falta de energia nas últimas 24h
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        
+        for (const chamado of chamados) {
+          const dataAbertura = new Date(chamado.data_abertura || chamado.dhcad);
+          if (dataAbertura > oneDayAgo) {
+            const assunto = String(chamado.assunto || '').toLowerCase();
+            const descricao = String(chamado.descricao || '').toLowerCase();
+            const local = String(chamado.localidade || chamado.bairro || '').toUpperCase();
+            
+            // Detectar se é relacionado a energia
+            const isEnergia = 
+              assunto.includes('energia') || 
+              assunto.includes('luz') || 
+              assunto.includes('queda') ||
+              assunto.includes('falta') ||
+              descricao.includes('sem energia') ||
+              descricao.includes('falta de energia') ||
+              descricao.includes('queda de energia');
+            
+            if (isEnergia && local) {
+              powerOutageInfo.set(local, {
+                hasPowerOutage: true,
+                description: chamado.assunto || 'Falta de energia detectada',
+                affected_area: local
+              });
+              console.log(`⚡ Falta de energia detectada em: ${local}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao verificar falta de energia:', error);
+    }
+
     // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
     const ponGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string }>>();
     
@@ -223,7 +291,21 @@ serve(async (req) => {
         const groupType = isPonGroup ? 'Porta PON' : (isCtoGroup ? 'CTO' : 'Região');
         const groupIdentifier = groupKey.split(':')[1];
         
-        console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados`);
+        // Verificar se há falta de energia na região
+        let powerOutageCause = false;
+        let powerOutageDescription = '';
+        
+        for (const [area, info] of powerOutageInfo) {
+          // Verificar se o identificador do grupo contém a área afetada
+          if (groupIdentifier.includes(area) || area.includes(groupIdentifier.split('-')[0])) {
+            powerOutageCause = true;
+            powerOutageDescription = info.description || '';
+            break;
+          }
+        }
+        
+        const causeType = powerOutageCause ? '⚡ FALTA DE ENERGIA' : '❓ Causa desconhecida';
+        console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
 
         // Verificar se já existe evento ativo para este grupo hoje
         const { data: existingEvent } = await supabase
@@ -249,7 +331,10 @@ serve(async (req) => {
                 group_type: groupType,
                 group_identifier: groupIdentifier,
                 pon_port: isPonGroup ? groupIdentifier : undefined,
-                cto: isCtoGroup ? groupIdentifier : undefined
+                cto: isCtoGroup ? groupIdentifier : undefined,
+                power_outage: powerOutageCause,
+                power_outage_description: powerOutageDescription,
+                outage_cause: powerOutageCause ? 'power_outage' : 'unknown'
               }
             })
             .select()
@@ -274,7 +359,10 @@ serve(async (req) => {
                 last_update: new Date().toISOString(),
                 threshold,
                 group_type: groupType,
-                group_identifier: groupIdentifier
+                group_identifier: groupIdentifier,
+                power_outage: powerOutageCause,
+                power_outage_description: powerOutageDescription,
+                outage_cause: powerOutageCause ? 'power_outage' : 'unknown'
               }
             })
             .eq('id', existingEvent.id);

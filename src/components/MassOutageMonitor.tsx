@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, RefreshCw, Users, MapPin, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Users, MapPin, Clock, CheckCircle, Loader2, Zap } from 'lucide-react';
 
 interface MassOutageEvent {
   id: string;
@@ -16,6 +16,7 @@ interface MassOutageEvent {
   resolved_at: string | null;
   status: string;
   notifications_sent: boolean;
+  metadata?: any;
 }
 
 export function MassOutageMonitor() {
@@ -167,15 +168,33 @@ export function MassOutageMonitor() {
                         <div>
                           <h3 className="font-bold text-lg">{event.region_pattern}</h3>
                           <p className="text-sm text-muted-foreground">
+                            {event.metadata?.group_type && `${event.metadata.group_type} - `}
                             Região afetada
                           </p>
                         </div>
                       </div>
-                      <Badge variant="destructive" className="gap-2">
-                        <Users className="h-3 w-3" />
-                        {event.affected_count} clientes
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant="destructive" className="gap-2">
+                          <Users className="h-3 w-3" />
+                          {event.affected_count} clientes
+                        </Badge>
+                        {event.metadata?.power_outage && (
+                          <Badge variant="outline" className="gap-2 border-yellow-500 text-yellow-500">
+                            <Zap className="h-3 w-3" />
+                            Falta de Energia
+                          </Badge>
+                        )}
+                      </div>
                     </div>
+
+                    {event.metadata?.power_outage && event.metadata?.power_outage_description && (
+                      <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                        <Zap className="h-4 w-4 text-yellow-500" />
+                        <AlertDescription className="text-sm">
+                          <strong>Causa identificada:</strong> {event.metadata.power_outage_description}
+                        </AlertDescription>
+                      </Alert>
+                    )}
 
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
@@ -228,12 +247,20 @@ export function MassOutageMonitor() {
                           <h3 className="font-bold">{event.region_pattern}</h3>
                           <p className="text-sm text-muted-foreground">
                             {event.affected_count} clientes foram afetados
+                            {event.metadata?.power_outage && ' - Falta de energia'}
                           </p>
                         </div>
                       </div>
-                      <Badge variant="outline" className="border-green-500/50 text-green-500">
-                        Resolvido
-                      </Badge>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant="outline" className="border-green-500/50 text-green-500">
+                          Resolvido
+                        </Badge>
+                        {event.metadata?.power_outage && (
+                          <Badge variant="outline" className="gap-1 text-xs border-yellow-500/50 text-yellow-500">
+                            <Zap className="h-3 w-3" />
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
