@@ -62,3 +62,9 @@ verify_jwt = true
 
 [functions.detect-mass-outage]
 verify_jwt = false
+
+[functions.ixc-pon-status]
+verify_jwt = true
+
+[functions.ixc-radio-status]
+verify_jwt = true
