@@ -18,6 +18,16 @@ interface RadioEquipment {
   cliente: string;
   signal?: string;
   frequency?: string;
+  fabricante?: string;
+  modelo?: string;
+  ip?: string;
+  temperatura?: string;
+  cpu_load?: string;
+  memoria_livre?: number;
+  memoria_total?: number;
+  uptime?: string;
+  voltagem?: string;
+  firmware?: string;
 }
 
 interface RadioTower {
@@ -229,17 +239,66 @@ export function RadioMonitor() {
                       <p className="text-xs text-muted-foreground mb-2">
                         Equipamentos ({tower.radios.length})
                       </p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
                         {tower.radios.slice(0, 5).map((radio, idx) => (
-                          <div key={idx} className="text-xs flex items-center justify-between gap-2">
-                            <span className="truncate flex-1">{radio.cliente}</span>
-                            <Badge 
-                              variant={radio.status === 'online' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {radio.status}
-                            </Badge>
-                          </div>
+                          <TooltipProvider key={idx}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-xs p-2 bg-background/50 rounded border border-border/50 hover:border-border transition-colors cursor-pointer">
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <span className="truncate flex-1 font-medium">{radio.cliente}</span>
+                                    <Badge 
+                                      variant={radio.status === 'online' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {radio.status}
+                                    </Badge>
+                                  </div>
+                                  {(radio.fabricante || radio.modelo) && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {radio.fabricante} {radio.modelo}
+                                    </div>
+                                  )}
+                                  <div className="flex gap-2 mt-1 flex-wrap">
+                                    {radio.temperatura && (
+                                      <span className={`text-xs ${parseFloat(radio.temperatura) > 70 ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
+                                        🌡️ {radio.temperatura}°C
+                                      </span>
+                                    )}
+                                    {radio.cpu_load && (
+                                      <span className={`text-xs ${parseFloat(radio.cpu_load) > 80 ? 'text-yellow-600 font-semibold' : 'text-muted-foreground'}`}>
+                                        💻 {radio.cpu_load}%
+                                      </span>
+                                    )}
+                                    {radio.signal && (
+                                      <span className="text-xs text-muted-foreground">
+                                        📶 {radio.signal}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="max-w-xs">
+                                <div className="space-y-1 text-xs">
+                                  <p><strong>Cliente:</strong> {radio.cliente}</p>
+                                  {radio.serial && <p><strong>Serial:</strong> {radio.serial}</p>}
+                                  {radio.ip && <p><strong>IP:</strong> {radio.ip}</p>}
+                                  {radio.fabricante && <p><strong>Fabricante:</strong> {radio.fabricante}</p>}
+                                  {radio.modelo && <p><strong>Modelo:</strong> {radio.modelo}</p>}
+                                  {radio.firmware && <p><strong>Firmware:</strong> {radio.firmware}</p>}
+                                  {radio.uptime && <p><strong>Uptime:</strong> {radio.uptime}</p>}
+                                  {radio.temperatura && <p><strong>Temperatura:</strong> {radio.temperatura}°C</p>}
+                                  {radio.voltagem && <p><strong>Voltagem:</strong> {radio.voltagem}V</p>}
+                                  {radio.cpu_load && <p><strong>CPU:</strong> {radio.cpu_load}%</p>}
+                                  {radio.memoria_total && (
+                                    <p><strong>Memória:</strong> {radio.memoria_livre ? Math.round((radio.memoria_livre / radio.memoria_total) * 100) : 0}% livre</p>
+                                  )}
+                                  {radio.signal && <p><strong>Sinal:</strong> {radio.signal}</p>}
+                                  {radio.frequency && <p><strong>Frequência:</strong> {radio.frequency}</p>}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ))}
                         {tower.radios.length > 5 && (
                           <p className="text-xs text-muted-foreground text-center pt-1">

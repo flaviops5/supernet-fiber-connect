@@ -35,6 +35,16 @@ serve(async (req) => {
         cliente: string;
         signal?: string;
         frequency?: string;
+        fabricante?: string;
+        modelo?: string;
+        ip?: string;
+        temperatura?: string;
+        cpu_load?: string;
+        memoria_livre?: number;
+        memoria_total?: number;
+        uptime?: string;
+        voltagem?: string;
+        firmware?: string;
       }>;
     }>();
 
@@ -123,6 +133,16 @@ serve(async (req) => {
           cliente: String(radio.cliente_razao || radio.cliente || 'N/A'),
           signal: radio.su_signal ? `${radio.su_signal} dBm` : undefined,
           frequency: radio.su_frequency || radio.frequency || undefined,
+          fabricante: radio.fabricante_modelo || undefined,
+          modelo: radio.modelo || undefined,
+          ip: radio.ip || undefined,
+          temperatura: radio.temperatura || undefined,
+          cpu_load: radio.cpu_load || undefined,
+          memoria_livre: radio.free_memory ? parseInt(radio.free_memory) : undefined,
+          memoria_total: radio.total_memory ? parseInt(radio.total_memory) : undefined,
+          uptime: radio.uptime || undefined,
+          voltagem: radio.voltagem || undefined,
+          firmware: radio.fwversion || radio.current_firmware || undefined,
         });
       }
 
@@ -231,6 +251,16 @@ serve(async (req) => {
             serial: String(equip.serial || equip.mac || 'N/A'),
             status: isOnline ? 'online' : 'offline',
             cliente: String(equip.cliente_razao || clientId || 'N/A'),
+            fabricante: equip.fabricante_modelo || undefined,
+            modelo: equip.modelo || undefined,
+            ip: equip.ip || undefined,
+            temperatura: equip.temperatura || undefined,
+            cpu_load: equip.cpu_load || undefined,
+            memoria_livre: equip.free_memory ? parseInt(equip.free_memory) : undefined,
+            memoria_total: equip.total_memory ? parseInt(equip.total_memory) : undefined,
+            uptime: equip.uptime || undefined,
+            voltagem: equip.voltagem || undefined,
+            firmware: equip.fwversion || equip.current_firmware || undefined,
           });
         }
 
