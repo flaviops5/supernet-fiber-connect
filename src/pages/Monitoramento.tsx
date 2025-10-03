@@ -7,7 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { MassOutageMonitor } from '@/components/MassOutageMonitor';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { PonPortsMonitor } from '@/components/PonPortsMonitor';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
@@ -146,10 +147,14 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status dos Clientes
+              </TabsTrigger>
+              <TabsTrigger value="pon" className="gap-2">
+                <Network className="h-4 w-4" />
+                Portas PON
               </TabsTrigger>
               <TabsTrigger value="outages" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
@@ -264,6 +269,10 @@ export default function Monitoramento() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="pon">
+              <PonPortsMonitor />
             </TabsContent>
 
             <TabsContent value="outages">

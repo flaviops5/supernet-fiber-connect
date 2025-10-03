@@ -167,10 +167,18 @@ export function MassOutageMonitor() {
                         <MapPin className="h-5 w-5 text-red-500" />
                         <div>
                           <h3 className="font-bold text-lg">{event.region_pattern}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {event.metadata?.group_type && `${event.metadata.group_type} - `}
-                            Região afetada
-                          </p>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm text-muted-foreground">
+                              {event.metadata?.group_type && `${event.metadata.group_type}`}
+                              {event.metadata?.pon_port && ` - Porta: ${event.metadata.pon_port}`}
+                            </p>
+                            {event.metadata?.group_type === 'Porta PON' && event.metadata?.pon_port && (
+                              <Badge variant="outline" className="w-fit gap-1 text-xs">
+                                <MapPin className="h-3 w-3" />
+                                PON: {event.metadata.pon_port}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
