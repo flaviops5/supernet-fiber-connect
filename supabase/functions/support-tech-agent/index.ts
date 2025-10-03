@@ -81,6 +81,13 @@ IMPORTANTE: Siga os fluxos documentados para resolver problemas de forma eficien
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
+    // Check if customer is already identified (handle both naming conventions)
+    const customerName = customerData?.customer_name || customerData?.name;
+    const customerPhone = customerData?.customer_phone || customerData?.phone;
+    const customerCpf = customerData?.customer_cpf || customerData?.cpf;
+    const isCustomerIdentified = customerName && customerData?.ixc_client_id;
+    const customerFirstName = customerName ? customerName.split(' ')[0] : '';
+    
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
@@ -91,7 +98,28 @@ ${knowledgeContext}
 
 ${ixcToolsNote}
 
-INFORMAÇÕES DO CLIENTE:
+${isCustomerIdentified ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ CLIENTE JÁ IDENTIFICADO:
+Nome: ${customerName}
+Telefone: ${customerPhone || 'Não informado'}
+ID IXC: ${customerData.ixc_client_id}
+CPF: ${customerCpf || 'Não informado'}
+
+IMPORTANTE: O cliente JÁ FOI IDENTIFICADO pela Cloé. 
+NÃO PEÇA O CPF NOVAMENTE!
+Cumprimente-o pelo nome (${customerFirstName}) e vá direto para entender o problema técnico.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+` : `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ CLIENTE NÃO IDENTIFICADO
+Para localizar o cadastro e gerar protocolo, você precisa do CPF do titular.
+Peça educadamente: "Para começarmos, você poderia me informar o seu nome completo e o CPF do titular da conta?"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`}
+
+SUAS RESPONSABILIDADES:
+
 1. **Atendimento Inicial**
    - Receber e registrar chamados técnicos
    - Fazer diagnóstico básico do problema
@@ -123,10 +151,6 @@ INFORMAÇÕES DO CLIENTE:
    - Problemas na rede externa
    - Configurações avançadas
    - Problemas de sinal ou infraestrutura
-
-${customerData?.name ? `Nome: ${customerData.name}` : 'Não identificado'}
-${customerData?.phone ? `Telefone: ${customerData.phone}` : ''}
-${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
 `;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
