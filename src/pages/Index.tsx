@@ -6,6 +6,7 @@ import { SalesAgentChat } from '@/components/SalesAgentChat';
 import Testimonials from '@/components/Testimonials';
 import AdditionalServices from '@/components/AdditionalServices';
 import FAQ from '@/components/FAQ';
+import SalesAgentWidget from '@/components/SalesAgentWidget';
 import { useScrollToHash } from '@/hooks/useScrollToHash';
 
 const Index = () => {
@@ -21,6 +22,7 @@ const Index = () => {
       <FAQ />
       <Testimonials />
       <AdditionalServices />
+      <SalesAgentWidget />
     </div>
   );
 };
