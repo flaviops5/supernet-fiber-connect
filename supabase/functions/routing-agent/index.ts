@@ -575,8 +575,34 @@ serve(async (req) => {
           // Senão, verifica se está offline → Suporte Técnico (Luan)
           const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
-            console.log('Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
+            console.log('Cliente OFFLINE - verificando se há queda em massa...');
             const firstName = customerData.customer_name.split(' ')[0];
+            
+            // Extrair padrão de região do login (ex: SRI-B de SRI-B-102)
+            const customerLogin = customerData.metadata?.ixc_data?.login || '';
+            const loginParts = customerLogin.toUpperCase().split('-');
+            const regionPattern = loginParts.length >= 2 ? `${loginParts[0]}-${loginParts[1]}` : '';
+            
+            console.log('Login do cliente:', customerLogin);
+            console.log('Padrão da região:', regionPattern);
+            
+            // Verificar se há queda em massa ativa para esta região
+            let massOutageMessage = '';
+            if (regionPattern) {
+              const { data: massOutage } = await supabase
+                .from('mass_outage_events')
+                .select('*')
+                .eq('region_pattern', regionPattern)
+                .eq('status', 'active')
+                .single();
+              
+              if (massOutage) {
+                console.log('🚨 QUEDA EM MASSA detectada para região:', regionPattern);
+                console.log('Clientes afetados:', massOutage.affected_count);
+                
+                massOutageMessage = `\n\n🚨 *INFORMAÇÃO IMPORTANTE*: Identificamos uma interrupção afetando múltiplos clientes na sua região (CTO compartilhada). Atualmente ${massOutage.affected_count} clientes estão sendo afetados. Nossa equipe técnica já foi notificada e está trabalhando na solução. O problema não é no seu equipamento individual.`;
+              }
+            }
             
             // Generate protocol
             const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -588,14 +614,18 @@ serve(async (req) => {
               console.log('🟡 Invocando support-tech-agent com:', {
                 conversationId,
                 hasSupabase: !!supabase,
-                hasCustomerData: !!customerData
+                hasCustomerData: !!customerData,
+                hasMassOutage: !!massOutageMessage
               });
               
               const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
                 body: {
                   messages: [{ role: 'user', content: message }],
                   conversationId,
-                  customerData,
+                  customerData: {
+                    ...customerData,
+                    mass_outage_info: massOutageMessage // Passa informação de queda em massa
+                  },
                 },
               });
               
@@ -640,8 +670,8 @@ serve(async (req) => {
             // Se Luan respondeu, usa a mensagem dele como principal
             // Se não, apenas informa o protocolo (Luan deve responder através da edge function)
             const finalMessage = techMessage ? 
-              `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-              `📋 *Protocolo de Atendimento:* ${protocol}`;
+              `${techMessage}${massOutageMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
+              `${massOutageMessage || 'Sua solicitação foi encaminhada para o suporte técnico.'}\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
             
             console.log('🔵 Retornando resposta:', {
               hasTechMessage: !!techMessage,
