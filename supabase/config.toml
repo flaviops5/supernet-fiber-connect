@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.send-locaweb-email]
 verify_jwt = true
+
+[functions.ixc-discover-gpon-endpoints]
+verify_jwt = true

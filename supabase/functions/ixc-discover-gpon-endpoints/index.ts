@@ -1,0 +1,175 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const ixcUsername = Deno.env.get('IXC_API_USERNAME');
+    const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+    const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
+
+    if (!ixcUsername || !ixcPassword || !ixcBaseUrl) {
+      throw new Error('Credenciais IXC não configuradas');
+    }
+
+    const basicAuth = btoa(`${ixcUsername}:${ixcPassword}`);
+    const normalizedUrl = ixcBaseUrl.replace(/^https?:\/\//, '').split('/')[0];
+
+    console.log('🔍 Iniciando descoberta de endpoints GPON...');
+
+    // Lista de endpoints potenciais relacionados a GPON
+    const potentialEndpoints = [
+      // Equipamentos
+      'cliente_equipamento',
+      'equipamento_fibra',
+      'pon_onu',
+      'equipamento',
+      
+      // Monitoramento
+      'pon_olt',
+      'pon_sinal',
+      'cliente_conexao_historico',
+      'conexao_historico',
+      
+      // Infraestrutura
+      'fibra_cto',
+      'fibra_splitter',
+      'fibra_cabo',
+      'fibra_rede',
+      'cto',
+      'splitter',
+      
+      // Diagnóstico
+      'pon_diagnostico',
+      'pon_rx_power',
+      'pon_tx_power',
+      'diagnostico_rede',
+      
+      // Outros
+      'pop',
+      'equipamento_rede',
+      'infra_rede',
+      'topologia_rede'
+    ];
+
+    const results = [];
+
+    for (const endpoint of potentialEndpoints) {
+      try {
+        console.log(`🔎 Testando endpoint: ${endpoint}`);
+        
+        const response = await fetch(`https://${normalizedUrl}/webservice/v1/${endpoint}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${basicAuth}`,
+            'Content-Type': 'application/json',
+            'ixcsoft': 'listar'
+          },
+          body: JSON.stringify({
+            qtype: `${endpoint}.id`,
+            query: '1',
+            oper: '>=',
+            page: '1',
+            rp: '1'
+          })
+        });
+
+        const status = response.status;
+        
+        if (status === 200) {
+          const data = await response.json();
+          results.push({
+            endpoint,
+            status: 'EXISTS',
+            statusCode: 200,
+            recordCount: data?.registros?.length || 0,
+            message: '✅ Endpoint disponível'
+          });
+          console.log(`✅ ${endpoint}: EXISTE`);
+        } else if (status === 404) {
+          results.push({
+            endpoint,
+            status: 'NOT_FOUND',
+            statusCode: 404,
+            message: '❌ Endpoint não existe'
+          });
+          console.log(`❌ ${endpoint}: NÃO EXISTE`);
+        } else {
+          results.push({
+            endpoint,
+            status: 'ERROR',
+            statusCode: status,
+            message: `⚠️ Erro: ${status}`
+          });
+          console.log(`⚠️ ${endpoint}: ERRO ${status}`);
+        }
+      } catch (error) {
+        results.push({
+          endpoint,
+          status: 'ERROR',
+          statusCode: 0,
+          message: `❌ Erro: ${error.message}`
+        });
+        console.error(`❌ ${endpoint}: ${error.message}`);
+      }
+
+      // Pequeno delay para não sobrecarregar a API
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    const existingEndpoints = results.filter(r => r.status === 'EXISTS');
+    const notFoundEndpoints = results.filter(r => r.status === 'NOT_FOUND');
+    const errorEndpoints = results.filter(r => r.status === 'ERROR');
+
+    console.log('\n📊 RESUMO DA DESCOBERTA:');
+    console.log(`✅ Endpoints encontrados: ${existingEndpoints.length}`);
+    console.log(`❌ Endpoints não encontrados: ${notFoundEndpoints.length}`);
+    console.log(`⚠️ Endpoints com erro: ${errorEndpoints.length}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        summary: {
+          total: potentialEndpoints.length,
+          found: existingEndpoints.length,
+          notFound: notFoundEndpoints.length,
+          errors: errorEndpoints.length
+        },
+        existingEndpoints: existingEndpoints.map(e => ({
+          endpoint: e.endpoint,
+          recordCount: e.recordCount
+        })),
+        allResults: results
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ Erro na descoberta:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+  }
+});

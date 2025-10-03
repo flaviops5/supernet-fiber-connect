@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Wifi, WifiOff, Activity, FileText, CheckCircle2, XCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
+import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
 
 interface IXCCustomer {
   id: string;
@@ -331,6 +332,11 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
+      {/* Descoberta de Endpoints GPON */}
+      <IXCEndpointDiscovery />
+      
+      <Separator className="my-8" />
+      
       {/* Lista de Contratos IXC */}
       <IXCContractsList />
       
