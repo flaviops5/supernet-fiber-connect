@@ -99,9 +99,9 @@ serve(async (req) => {
 
     console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
 
-    // Buscar informações de porta PON para cada cliente offline
-    console.log('🔍 Buscando informações de porta PON...');
-    const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string }> = [];
+    // Buscar informações de porta PON e bairro para cada cliente offline
+    console.log('🔍 Buscando informações de porta PON e localização...');
+    const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }> = [];
     
     for (const user of allRadUsers) {
       const clientId = user.id_cliente;
@@ -111,6 +111,41 @@ serve(async (req) => {
       }
 
       try {
+        // Buscar dados do cliente (incluindo bairro)
+        const clientUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente`;
+        const clientBody = JSON.stringify({
+          qtype: 'cliente.id',
+          query: clientId,
+          oper: '=',
+          page: '1',
+          rp: '1',
+          sortname: 'cliente.id',
+          sortorder: 'desc',
+        });
+
+        let bairro = '';
+        const clientResponse = await fetch(clientUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+            'ixcsoft': 'listar',
+          },
+          body: clientBody,
+        });
+
+        if (clientResponse.ok) {
+          const clientData = await clientResponse.json();
+          const clientes = Array.isArray(clientData?.registros)
+            ? clientData.registros
+            : (clientData?.registros ? Object.values(clientData.registros) : []);
+          
+          if (clientes.length > 0) {
+            const cliente = clientes[0];
+            bairro = cliente.bairro || cliente.endereco_bairro || '';
+          }
+        }
+
         // Buscar equipamento/ONU do cliente
         const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
         const equipBody = JSON.stringify({
@@ -159,10 +194,11 @@ serve(async (req) => {
           clientsWithPon.push({ 
             user, 
             ponPort: ponPort || undefined,
-            cto: cto || undefined
+            cto: cto || undefined,
+            bairro: bairro || undefined
           });
         } else {
-          clientsWithPon.push({ user });
+          clientsWithPon.push({ user, bairro: bairro || undefined });
         }
       } catch (error) {
         console.error(`Erro ao buscar equipamento do cliente ${clientId}:`, error);
@@ -260,7 +296,8 @@ serve(async (req) => {
     }
 
     // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
-    const ponGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string }>>();
+    const ponGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }>>();
+    const bairrosMap = new Map<string, string[]>(); // Mapear grupos para bairros
     
     for (const clientData of clientsWithPon) {
       const login = String(clientData.user.login || '').toUpperCase().trim();
@@ -287,8 +324,17 @@ serve(async (req) => {
       if (groupKey) {
         if (!ponGroups.has(groupKey)) {
           ponGroups.set(groupKey, []);
+          bairrosMap.set(groupKey, []);
         }
         ponGroups.get(groupKey)!.push(clientData);
+        
+        // Adicionar bairro ao mapa se disponível
+        if (clientData.bairro) {
+          const bairros = bairrosMap.get(groupKey)!;
+          if (!bairros.includes(clientData.bairro)) {
+            bairros.push(clientData.bairro);
+          }
+        }
       }
     }
 
@@ -309,6 +355,7 @@ serve(async (req) => {
         
         const groupType = isPonGroup ? 'Porta PON' : (isCtoGroup ? 'CTO' : 'Região');
         const groupIdentifier = groupKey.split(':')[1];
+        const bairrosAfetados = bairrosMap.get(groupKey) || [];
         
         // Verificar se há Dying Gasp (perda de energia) para este grupo
         let powerOutageCause = false;
@@ -353,6 +400,7 @@ serve(async (req) => {
                 group_identifier: groupIdentifier,
                 pon_port: isPonGroup ? groupIdentifier : undefined,
                 cto: isCtoGroup ? groupIdentifier : undefined,
+                bairros: bairrosAfetados.length > 0 ? bairrosAfetados : undefined,
                 power_outage: powerOutageCause,
                 dying_gasp_count: dyingGaspCount,
                 affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
@@ -385,6 +433,7 @@ serve(async (req) => {
                 threshold,
                 group_type: groupType,
                 group_identifier: groupIdentifier,
+                bairros: bairrosAfetados.length > 0 ? bairrosAfetados : undefined,
                 power_outage: powerOutageCause,
                 dying_gasp_count: dyingGaspCount,
                 affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,

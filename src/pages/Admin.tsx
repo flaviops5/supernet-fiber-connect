@@ -37,6 +37,7 @@ import { EmailTemplateManagement } from '@/components/EmailTemplateManagement';
 import { CampaignManagement } from '@/components/CampaignManagement';
 import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
+import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -83,6 +84,9 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">Visão geral do sistema administrativo</p>
       </div>
+
+      {/* Alert Card for Mass Outages */}
+      <MassOutageAlertCard />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

@@ -78,6 +78,16 @@ export function MassOutageMonitor() {
 
   useEffect(() => {
     loadEvents();
+    
+    // Detecção automática inicial após 5 segundos
+    const initialDetection = setTimeout(() => {
+      detectOutages();
+    }, 5000);
+    
+    // Pooling automático a cada 3 minutos
+    const detectionInterval = setInterval(() => {
+      detectOutages();
+    }, 3 * 60 * 1000);
 
     // Inscrever em mudanças em tempo real
     const channel = supabase
@@ -96,6 +106,8 @@ export function MassOutageMonitor() {
       .subscribe();
 
     return () => {
+      clearTimeout(initialDetection);
+      clearInterval(detectionInterval);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -110,7 +122,7 @@ export function MassOutageMonitor() {
         <div>
           <h2 className="text-2xl font-bold">Monitor de Quedas em Massa</h2>
           <p className="text-muted-foreground">
-            Detecção automática de interrupções regionais
+            Detecção automática de interrupções regionais (atualização a cada 3 minutos)
           </p>
         </div>
         <Button 
@@ -176,6 +188,12 @@ export function MassOutageMonitor() {
                               <Badge variant="outline" className="w-fit gap-1 text-xs">
                                 <MapPin className="h-3 w-3" />
                                 PON: {event.metadata.pon_port}
+                              </Badge>
+                            )}
+                            {event.metadata?.bairros && event.metadata.bairros.length > 0 && (
+                              <Badge variant="secondary" className="w-fit gap-1 text-xs mt-1">
+                                <MapPin className="h-3 w-3" />
+                                Bairros: {event.metadata.bairros.join(', ')}
                               </Badge>
                             )}
                           </div>
@@ -257,6 +275,11 @@ export function MassOutageMonitor() {
                             {event.affected_count} clientes foram afetados
                             {event.metadata?.power_outage && ' - Falta de energia'}
                           </p>
+                          {event.metadata?.bairros && event.metadata.bairros.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Bairros: {event.metadata.bairros.join(', ')}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
@@ -298,7 +321,7 @@ export function MassOutageMonitor() {
             <CheckCircle className="h-16 w-16 text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nenhuma queda detectada</h3>
             <p className="text-muted-foreground max-w-md">
-              Clique em "Detectar Agora" para verificar se há quedas em massa na rede
+              A detecção automática está ativa. Clique em "Detectar Agora" para forçar uma verificação imediata.
             </p>
           </CardContent>
         </Card>
