@@ -6,12 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Radio, TowerControl, Wifi } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface RadioEquipment {
   serial: string;
@@ -222,136 +216,108 @@ export function RadioMonitor() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="p-2 bg-background rounded-lg">
-                            <div className="text-xs text-muted-foreground">Total</div>
-                            <div className="text-lg font-bold">{tower.total}</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Total de equipamentos</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="p-2 bg-background rounded-lg">
+                      <div className="text-xs text-muted-foreground">Total</div>
+                      <div className="text-lg font-bold">{tower.total}</div>
+                    </div>
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="p-2 bg-green-500/10 rounded-lg">
-                            <div className="text-xs text-green-600">Online</div>
-                            <div className="text-lg font-bold text-green-600">{tower.online}</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Equipamentos online</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <div className="text-xs text-green-600">Online</div>
+                      <div className="text-lg font-bold text-green-600">{tower.online}</div>
+                    </div>
 
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="p-2 bg-red-500/10 rounded-lg">
-                            <div className="text-xs text-red-600">Offline</div>
-                            <div className="text-lg font-bold text-red-600">{tower.offline}</div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Equipamentos offline</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="p-2 bg-red-500/10 rounded-lg">
+                      <div className="text-xs text-red-600">Offline</div>
+                      <div className="text-lg font-bold text-red-600">{tower.offline}</div>
+                    </div>
                   </div>
 
                   {tower.radios.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground mb-2">
+                      <p className="text-xs text-muted-foreground mb-3 font-semibold">
                         Equipamentos ({tower.radios.length})
                       </p>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {tower.radios.slice(0, 5).map((radio, idx) => (
-                          <TooltipProvider key={idx}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="text-xs p-2 bg-background/50 rounded border border-border/50 hover:border-border transition-colors cursor-pointer">
-                                  <div className="flex items-center justify-between gap-2 mb-1">
-                                    <span className="truncate flex-1 font-medium">{radio.cliente}</span>
-                                    <Badge 
-                                      variant={radio.status === 'online' ? 'default' : 'secondary'}
-                                      className="text-xs"
-                                    >
-                                      {radio.status}
-                                    </Badge>
-                                  </div>
-                                  {(radio.fabricante || radio.modelo) && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {radio.fabricante} {radio.modelo}
-                                    </div>
-                                  )}
-                                  <div className="flex gap-2 mt-1 flex-wrap">
-                                    {radio.temperatura && (
-                                      <span className={`text-xs ${parseFloat(radio.temperatura) > 70 ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
-                                        🌡️ {radio.temperatura}°C
-                                      </span>
-                                    )}
-                                    {radio.cpu_load && (
-                                      <span className={`text-xs ${parseFloat(radio.cpu_load) > 80 ? 'text-yellow-600 font-semibold' : 'text-muted-foreground'}`}>
-                                        💻 {radio.cpu_load}%
-                                      </span>
-                                    )}
-                                    {radio.signal && (
-                                      <span className="text-xs text-muted-foreground">
-                                        📶 {radio.signal}
-                                      </span>
-                                    )}
-                                  </div>
+                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        {tower.radios.map((radio, idx) => (
+                          <div key={idx} className="text-xs p-3 bg-background rounded-lg border border-border space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-sm">{radio.cliente}</span>
+                              <Badge 
+                                variant={radio.status === 'online' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {radio.status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                              {radio.ip && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">IP:</span>
+                                  <span className="font-mono">{radio.ip}</span>
                                 </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="max-w-xs">
-                                <div className="space-y-3">
-                                  <div className="space-y-1 text-xs">
-                                    <p><strong>Cliente:</strong> {radio.cliente}</p>
-                                    {radio.serial && <p><strong>Serial:</strong> {radio.serial}</p>}
-                                    {radio.ip && <p><strong>IP:</strong> {radio.ip}</p>}
-                                    {radio.fabricante && <p><strong>Fabricante:</strong> {radio.fabricante}</p>}
-                                    {radio.modelo && <p><strong>Modelo:</strong> {radio.modelo}</p>}
-                                    {radio.firmware && <p><strong>Firmware:</strong> {radio.firmware}</p>}
-                                    {radio.uptime && <p><strong>Uptime:</strong> {radio.uptime}</p>}
-                                    {radio.temperatura && <p><strong>Temperatura:</strong> {radio.temperatura}°C</p>}
-                                    {radio.voltagem && <p><strong>Voltagem:</strong> {radio.voltagem}V</p>}
-                                    {radio.cpu_load && <p><strong>CPU:</strong> {radio.cpu_load}%</p>}
-                                    {radio.memoria_total && (
-                                      <p><strong>Memória:</strong> {radio.memoria_livre ? Math.round((radio.memoria_livre / radio.memoria_total) * 100) : 0}% livre</p>
-                                    )}
-                                    {radio.signal && <p><strong>Sinal:</strong> {radio.signal}</p>}
-                                    {radio.frequency && <p><strong>Frequência:</strong> {radio.frequency}</p>}
-                                  </div>
-                                  {radio.ip && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        testConnectivity(radio.ip!, `${radio.fabricante || 'Equipamento'} - ${radio.cliente}`);
-                                      }}
-                                    >
-                                      <Wifi className="h-3 w-3 mr-2" />
-                                      Testar Conectividade
-                                    </Button>
-                                  )}
+                              )}
+                              {radio.fabricante && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Fabricante:</span>
+                                  <span>{radio.fabricante}</span>
                                 </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                              )}
+                              {radio.temperatura && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Temp:</span>
+                                  <span className={parseFloat(radio.temperatura) > 70 ? 'text-red-600 font-semibold' : ''}>
+                                    {radio.temperatura}°C
+                                  </span>
+                                </div>
+                              )}
+                              {radio.cpu_load && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">CPU:</span>
+                                  <span className={parseFloat(radio.cpu_load) > 80 ? 'text-yellow-600 font-semibold' : ''}>
+                                    {radio.cpu_load}
+                                  </span>
+                                </div>
+                              )}
+                              {radio.memoria_livre && radio.memoria_total && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Memória:</span>
+                                  <span>{radio.memoria_livre}MB / {radio.memoria_total}MB</span>
+                                </div>
+                              )}
+                              {radio.voltagem && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Voltagem:</span>
+                                  <span>{radio.voltagem}</span>
+                                </div>
+                              )}
+                              {radio.uptime && (
+                                <div className="flex items-center gap-1 col-span-2">
+                                  <span className="text-muted-foreground">Uptime:</span>
+                                  <span>{radio.uptime}</span>
+                                </div>
+                              )}
+                              {radio.firmware && (
+                                <div className="flex items-center gap-1 col-span-2">
+                                  <span className="text-muted-foreground">Firmware:</span>
+                                  <span className="font-mono text-xs">{radio.firmware}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {radio.ip && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="w-full mt-2"
+                                onClick={() => testConnectivity(radio.ip!, `${radio.fabricante || 'Equipamento'} - ${radio.cliente}`)}
+                              >
+                                <Wifi className="h-3 w-3 mr-2" />
+                                Testar Conectividade
+                              </Button>
+                            )}
+                          </div>
                         ))}
-                        {tower.radios.length > 5 && (
-                          <p className="text-xs text-muted-foreground text-center pt-1">
-                            +{tower.radios.length - 5} mais...
-                          </p>
-                        )}
                       </div>
                     </div>
                   )}

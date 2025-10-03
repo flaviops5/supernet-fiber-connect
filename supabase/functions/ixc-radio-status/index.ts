@@ -114,6 +114,17 @@ serve(async (req) => {
           descricao: radio.descricao,
           ip: radio.ip,
           fabricante_modelo: radio.fabricante_modelo,
+          temperatura: radio.temperatura,
+          cpu_load: radio.cpu_load,
+          free_memory: radio.free_memory,
+          total_memory: radio.total_memory,
+          uptime: radio.uptime,
+          voltagem: radio.voltagem,
+          firmware: radio.fwversion || radio.current_firmware,
+          ativo: radio.ativo,
+          online: radio.online,
+          status: radio.status,
+          su_status: radio.su_status,
         });
         
         // Identificar a torre/POP/setor
@@ -127,10 +138,13 @@ serve(async (req) => {
         const popData = radioMap.get(popId)!;
         
         // Determinar status (online/offline)
-        const isOnline = (radio.su_status === 'online' || 
-                         radio.status === 'online' || 
-                         radio.online === 'S' || 
-                         radio.online === true);
+        // Se tem dados de monitoramento (uptime, cpu_load, temperatura), está online
+        const hasMonitoringData = radio.uptime || radio.cpu_load || radio.temperatura || radio.time;
+        const statusField = radio.su_status || radio.status || radio.online || radio.ativo;
+        const isOnline = hasMonitoringData || 
+                         statusField === 'online' || 
+                         statusField === 'S' || 
+                         statusField === true;
 
         if (isOnline) {
           popData.online++;
