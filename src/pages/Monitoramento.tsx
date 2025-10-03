@@ -44,6 +44,42 @@ export default function Monitoramento() {
     }
   };
 
+  const testPonAccess = async () => {
+    setLoading(true);
+    try {
+      toast({
+        title: "Testando acesso PON",
+        description: "Consultando dados da rede GPON...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('detect-mass-outage');
+      
+      if (error) throw error;
+      
+      console.log('Resultado do teste PON:', data);
+      
+      if (data?.success) {
+        const ponData = data.clients_with_pon_data || 0;
+        const totalOffline = data.total_offline || 0;
+        const groups = data.groups_analyzed || {};
+        
+        toast({
+          title: "✅ Acesso PON configurado",
+          description: `${ponData}/${totalOffline} clientes offline com dados PON. ${groups.by_pon_port || 0} porta(s) PON identificada(s).`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao testar acesso PON:', error);
+      toast({
+        title: "Erro no teste",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthGuard requiredRoles={['admin', 'editor']}>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -83,6 +119,26 @@ export default function Monitoramento() {
                 <>
                   <Activity className="h-4 w-4" />
                   Atualizar Contagem
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={testPonAccess}
+              disabled={loading}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Testando...
+                </>
+              ) : (
+                <>
+                  <Shield className="h-4 w-4" />
+                  Testar Acesso PON
                 </>
               )}
             </Button>
