@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, TestTube, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Loader2, TestTube, CheckCircle2, XCircle, Clock, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TestResult {
   name: string;
@@ -28,36 +28,97 @@ interface TestResults {
 export const ElevationappTester = () => {
   const [serverIp, setServerIp] = useState("192.168.72.20");
   const [endpoint, setEndpoint] = useState("/api/health");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [testing, setTesting] = useState(false);
   const [results, setResults] = useState<TestResults | null>(null);
   const { toast } = useToast();
+
+  const testEndpoint = async (port: number, protocol: 'http' | 'https') => {
+    const test: TestResult = {
+      name: `${protocol.toUpperCase()} Port ${port}`,
+      success: false,
+      responseTime: 0,
+      message: '',
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const startTime = Date.now();
+      
+      const url = `${protocol}://${serverIp}:${port}${endpoint}`;
+      console.log(`🔍 Testando: ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        mode: 'no-cors', // Permite testar mesmo sem CORS configurado
+      });
+      
+      test.responseTime = Date.now() - startTime;
+      clearTimeout(timeoutId);
+
+      // Com no-cors, não conseguimos ler o status, mas se não deu erro, o servidor respondeu
+      test.success = true;
+      test.message = `Servidor respondeu em ${test.responseTime}ms (modo no-cors)`;
+      
+      console.log(`✅ ${test.name}: ${test.message}`);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        test.message = 'Timeout - servidor não respondeu em 5s';
+      } else if (error.message.includes('Failed to fetch')) {
+        test.message = 'Servidor não acessível (verifique IP e porta)';
+      } else {
+        test.message = `Erro: ${error.message}`;
+      }
+      console.log(`❌ ${test.name}: ${test.message}`);
+    }
+
+    return test;
+  };
 
   const runTest = async () => {
     setTesting(true);
     setResults(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('test-elevationapp', {
-        body: {
-          serverIp,
-          endpoint,
-          username: username || undefined,
-          password: password || undefined,
+      const tests: TestResult[] = [];
+      
+      // Testar portas comuns
+      const ports = [
+        { port: 80, protocol: 'http' as const },
+        { port: 443, protocol: 'https' as const },
+        { port: 8080, protocol: 'http' as const },
+        { port: 3000, protocol: 'http' as const },
+      ];
+
+      // Executar testes em paralelo
+      const testResults = await Promise.all(
+        ports.map(({ port, protocol }) => testEndpoint(port, protocol))
+      );
+      
+      tests.push(...testResults);
+
+      const successful = tests.filter(t => t.success).length;
+      const failed = tests.filter(t => !t.success).length;
+
+      const results: TestResults = {
+        server: serverIp,
+        tests,
+        summary: {
+          total: tests.length,
+          successful,
+          failed,
         }
-      });
+      };
 
-      if (error) throw error;
-
-      setResults(data);
+      setResults(results);
 
       toast({
         title: "Teste concluído",
-        description: `${data.summary.successful}/${data.summary.total} testes bem-sucedidos`,
-        variant: data.summary.successful > 0 ? "default" : "destructive",
+        description: `${successful}/${tests.length} testes bem-sucedidos`,
+        variant: successful > 0 ? "default" : "destructive",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao testar:', error);
       toast({
         title: "Erro ao testar",
@@ -74,13 +135,20 @@ export const ElevationappTester = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TestTube className="h-5 w-5" />
-          Teste Elevationapp
+          Teste Elevationapp (Rede Local)
         </CardTitle>
         <CardDescription>
-          Teste a conectividade e API do Elevationapp no servidor virtual
+          Teste a conectividade com o Elevationapp direto do seu navegador
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert>
+          <Wifi className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Teste Local:</strong> Este teste roda direto no seu navegador, permitindo acessar IPs privados (192.168.x.x) 
+            desde que você esteja na mesma rede do servidor.
+          </AlertDescription>
+        </Alert>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="serverIp">IP do Servidor</Label>
@@ -98,25 +166,6 @@ export const ElevationappTester = () => {
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
               placeholder="/api/health"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="username">Usuário (opcional)</Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="flavio"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha (opcional)</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
             />
           </div>
         </div>
