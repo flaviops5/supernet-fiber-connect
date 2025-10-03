@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.ixc-radio-status]
 verify_jwt = true
+
+[functions.test-elevationapp]
+verify_jwt = true
