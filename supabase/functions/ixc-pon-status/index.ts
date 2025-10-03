@@ -30,6 +30,7 @@ serve(async (req) => {
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
     console.log('🔍 Buscando status das portas PON...');
+    console.log(`URL: https://${IXC_BASE_HOST}/webservice/v1/pon_onu`);
 
     // Buscar ONUs do IXC
     const onuUrl = `https://${IXC_BASE_HOST}/webservice/v1/pon_onu`;
@@ -48,6 +49,8 @@ serve(async (req) => {
         sortorder: 'desc',
       });
 
+      console.log(`📡 Consultando página ${page} do endpoint pon_onu...`);
+
       const onuResponse = await fetch(onuUrl, {
         method: 'POST',
         headers: {
@@ -58,24 +61,87 @@ serve(async (req) => {
         body: bodyOnu,
       });
 
+      console.log(`📊 Status da resposta: ${onuResponse.status}`);
+
       if (!onuResponse.ok) {
-        console.error('Erro ao buscar ONUs:', onuResponse.status);
+        const errorText = await onuResponse.text();
+        console.error(`❌ Erro ao buscar ONUs (${onuResponse.status}):`, errorText);
+        
+        // Se o endpoint não existe, tentar endpoint alternativo
+        if (onuResponse.status === 404 || onuResponse.status === 500) {
+          console.log('⚠️ Endpoint pon_onu não disponível. Tentando endpoint cliente_equipamento...');
+          
+          // Buscar equipamentos dos clientes (inclui ONUs)
+          const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
+          const equipBody = JSON.stringify({
+            qtype: 'cliente_equipamento.id',
+            query: '1',
+            oper: '>=',
+            page: '1',
+            rp: '1000',
+            sortname: 'cliente_equipamento.id',
+            sortorder: 'desc',
+          });
+
+          const equipResponse = await fetch(equipUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${credentials}`,
+              'Content-Type': 'application/json',
+              'ixcsoft': 'listar',
+            },
+            body: equipBody,
+          });
+
+          if (equipResponse.ok) {
+            const equipData = await equipResponse.json();
+            const equipRegistros = Array.isArray(equipData?.registros)
+              ? equipData.registros
+              : (equipData?.registros ? Object.values(equipData.registros) : []);
+            
+            console.log(`📦 ${equipRegistros.length} equipamentos encontrados`);
+            
+            // Filtrar apenas ONUs (que têm informação de porta PON)
+            const onusFromEquip = equipRegistros.filter((equip: any) => 
+              equip.pon_porta || equip.pon_slot || equip.pon_olt
+            );
+            
+            console.log(`🔌 ${onusFromEquip.length} ONUs encontradas nos equipamentos`);
+            
+            if (onusFromEquip.length > 0) {
+              console.log('✅ Usando dados de cliente_equipamento');
+              allOnus.push(...onusFromEquip);
+              break;
+            }
+          }
+        }
+        
         break;
       }
 
       const onuData = await onuResponse.json();
+      console.log('📦 Estrutura da resposta:', JSON.stringify(Object.keys(onuData || {})));
+      
       const onuRegistros = Array.isArray(onuData?.registros)
         ? onuData.registros
         : (onuData?.registros ? Object.values(onuData.registros) : []);
 
+      console.log(`📋 Registros encontrados: ${onuRegistros.length}`);
+      
+      if (onuRegistros.length > 0) {
+        console.log('🔍 Estrutura do primeiro registro:', JSON.stringify(Object.keys(onuRegistros[0] || {})));
+      }
+
       if (!onuRegistros || onuRegistros.length === 0) {
+        console.log('⚠️ Nenhum registro encontrado nesta página');
         break;
       }
 
       allOnus.push(...onuRegistros);
-      console.log(`Página ${page}: ${onuRegistros.length} ONUs`);
+      console.log(`✅ Página ${page}: ${onuRegistros.length} ONUs adicionadas (Total: ${allOnus.length})`);
 
       if (onuRegistros.length < itemsPerPage) {
+        console.log('📄 Última página alcançada');
         break;
       }
       page++;
