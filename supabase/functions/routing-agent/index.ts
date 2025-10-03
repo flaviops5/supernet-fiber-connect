@@ -239,6 +239,19 @@ serve(async (req) => {
               // Generate protocol
               const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
+              // First, send Cloé's transfer message with protocol
+              const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Financeiro. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              
+              await supabase
+                .from('conversation_messages')
+                .insert({
+                  conversation_id: conversationId,
+                  sender_type: 'agent',
+                  sender_name: 'Cloé (Atendente Virtual)',
+                  content: cloeTransferMessage,
+                  ai_suggestion: true,
+                });
+
               let financialMessage: string | undefined = undefined;
               try {
                 const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
@@ -270,8 +283,8 @@ serve(async (req) => {
               }
 
               const finalMessage = financialMessage ? 
-                `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-                `📋 *Protocolo de Atendimento:* ${protocol}`;
+                `${cloeTransferMessage}\n\n${financialMessage}` :
+                cloeTransferMessage;
               
               return new Response(
                 JSON.stringify({
@@ -298,6 +311,19 @@ serve(async (req) => {
               
               // Generate protocol
               const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+              // First, send Cloé's transfer message with protocol
+              const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              
+              await supabase
+                .from('conversation_messages')
+                .insert({
+                  conversation_id: conversationId,
+                  sender_type: 'agent',
+                  sender_name: 'Cloé (Atendente Virtual)',
+                  content: cloeTransferMessage,
+                  ai_suggestion: true,
+                });
 
               let techMessage: string | undefined = undefined;
               try {
@@ -329,8 +355,8 @@ serve(async (req) => {
               }
 
               const finalMessage = techMessage ? 
-                `${techMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-                `📋 *Protocolo de Atendimento:* ${protocol}`;
+                `${cloeTransferMessage}\n\n${techMessage}` :
+                cloeTransferMessage;
               
               return new Response(
                 JSON.stringify({
@@ -488,6 +514,20 @@ serve(async (req) => {
             // Server-side handoff: call Julia (support-financial-agent) immediately
             let financialMessage: string | undefined = undefined;
             console.log('🔵 ANTES de chamar support-financial-agent');
+            
+            // First, send Cloé's transfer message with protocol
+            const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Financeiro. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+            
+            await supabase
+              .from('conversation_messages')
+              .insert({
+                conversation_id: conversationId,
+                sender_type: 'agent',
+                sender_name: 'Cloé (Atendente Virtual)',
+                content: cloeTransferMessage,
+                ai_suggestion: true,
+              });
+            
             try {
               console.log('🟡 Invocando support-financial-agent com:', {
                 conversationId,
@@ -516,7 +556,7 @@ serve(async (req) => {
                 financialMessage = finData.message as string;
                 console.log('✅ Mensagem da Julia recebida:', financialMessage.substring(0, 50) + '...');
 
-                // Persist Julia's message server-side so it appears in timelines
+                // Persist Julia's message server-side (WITHOUT protocol)
                 const { data: insertResult, error: insertError } = await supabase
                   .from('conversation_messages')
                   .insert({
@@ -542,11 +582,10 @@ serve(async (req) => {
               console.error('💥 Stack trace:', e instanceof Error ? e.stack : 'N/A');
             }
 
-            // Se Julia respondeu, usa a mensagem dela como principal
-            // Se não, apenas informa o protocolo (Julia deve responder através da edge function)
+            // Return Cloé's transfer message (with protocol) + Julia's message (without protocol)
             const finalMessage = financialMessage ? 
-              `${financialMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-              `📋 *Protocolo de Atendimento:* ${protocol}`;
+              `${cloeTransferMessage}\n\n${financialMessage}` :
+              cloeTransferMessage;
             
             console.log('🔵 Retornando resposta:', {
               hasFinancialMessage: !!financialMessage,
@@ -621,6 +660,20 @@ serve(async (req) => {
             // Server-side handoff: call Luan (support-tech-agent) immediately
             let techMessage: string | undefined = undefined;
             console.log('🔵 ANTES de chamar support-tech-agent');
+            
+            // First, send Cloé's transfer message with protocol
+            const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+            
+            await supabase
+              .from('conversation_messages')
+              .insert({
+                conversation_id: conversationId,
+                sender_type: 'agent',
+                sender_name: 'Cloé (Atendente Virtual)',
+                content: cloeTransferMessage,
+                ai_suggestion: true,
+              });
+            
             try {
               console.log('🟡 Invocando support-tech-agent com:', {
                 conversationId,
@@ -652,14 +705,15 @@ serve(async (req) => {
                 techMessage = techData.message as string;
                 console.log('✅ Mensagem do Luan recebida:', techMessage.substring(0, 50) + '...');
 
-                // Persist Luan's message server-side so it appears in timelines
+                // Persist Luan's message server-side (WITHOUT protocol)
+                const luanMessageContent = techMessage + (massOutageMessage || '');
                 const { data: insertResult, error: insertError } = await supabase
                   .from('conversation_messages')
                   .insert({
                     conversation_id: conversationId,
                     sender_type: 'agent',
                     sender_name: 'Luan Silva (Suporte Técnico N1)',
-                    content: techMessage,
+                    content: luanMessageContent,
                     ai_suggestion: true,
                   })
                   .select();
@@ -678,11 +732,10 @@ serve(async (req) => {
               console.error('💥 Stack trace:', e instanceof Error ? e.stack : 'N/A');
             }
 
-            // Se Luan respondeu, usa a mensagem dele como principal
-            // Se não, apenas informa o protocolo (Luan deve responder através da edge function)
+            // Return Cloé's transfer message (with protocol) + Luan's message (without protocol)
             const finalMessage = techMessage ? 
-              `${techMessage}${massOutageMessage}\n\n📋 *Protocolo de Atendimento:* ${protocol}` :
-              `${massOutageMessage || 'Sua solicitação foi encaminhada para o suporte técnico.'}\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              `${cloeTransferMessage}\n\n${techMessage}${massOutageMessage || ''}` :
+              cloeTransferMessage;
             
             console.log('🔵 Retornando resposta:', {
               hasTechMessage: !!techMessage,
