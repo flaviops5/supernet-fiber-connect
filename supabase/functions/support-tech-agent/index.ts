@@ -61,7 +61,7 @@ serve(async (req) => {
       .from('knowledge_base')
       .select('title, content, category')
       .in('category', ['suporte_tecnico', 'configuracoes', 'troubleshooting', 'ixc_endpoints'])
-      .or('agent_type.eq.support_tech,agent_type.is.null')
+      .or('agent_types.cs.{support_tech},agent_types.is.null')
       .eq('is_active', true);
 
     const knowledgeContext = techKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
