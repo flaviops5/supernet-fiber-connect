@@ -172,72 +172,91 @@ serve(async (req) => {
 
     console.log(`📊 Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
 
-    // Verificar se há registros de falta de energia no IXC
-    console.log('🔍 Verificando registros de falta de energia...');
-    const powerOutageInfo = new Map<string, { hasPowerOutage: boolean; description?: string; affected_area?: string }>();
+    // Verificar Dying Gasp (sinal de perda de energia da ONU) no IXC
+    console.log('🔍 Verificando eventos Dying Gasp (perda de energia)...');
+    const dyingGaspEvents = new Map<string, { count: number; onus: string[]; lastEvent?: string }>();
     
     try {
-      // Buscar atendimentos recentes relacionados a energia/rede
-      const atendimentoUrl = `https://${IXC_BASE_HOST}/webservice/v1/su_oss_chamado`;
-      const atendimentoBody = JSON.stringify({
-        qtype: 'su_oss_chamado.assunto',
-        query: 'energia',
+      // Buscar eventos PON recentes - Dying Gasp indica perda de energia na ONU
+      const ponEventUrl = `https://${IXC_BASE_HOST}/webservice/v1/pon_onu`;
+      const ponEventBody = JSON.stringify({
+        qtype: 'pon_onu.ultimo_evento',
+        query: 'Dying',
         oper: 'LIKE',
         page: '1',
-        rp: '100',
-        sortname: 'su_oss_chamado.data_abertura',
+        rp: '500',
+        sortname: 'pon_onu.data_ultimo_evento',
         sortorder: 'desc',
       });
 
-      const atendimentoResponse = await fetch(atendimentoUrl, {
+      const ponEventResponse = await fetch(ponEventUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
           'Content-Type': 'application/json',
           'ixcsoft': 'listar',
         },
-        body: atendimentoBody,
+        body: ponEventBody,
       });
 
-      if (atendimentoResponse.ok) {
-        const atendimentoData = await atendimentoResponse.json();
-        const chamados = Array.isArray(atendimentoData?.registros)
-          ? atendimentoData.registros
-          : (atendimentoData?.registros ? Object.values(atendimentoData.registros) : []);
+      if (ponEventResponse.ok) {
+        const ponEventData = await ponEventResponse.json();
+        const ponEvents = Array.isArray(ponEventData?.registros)
+          ? ponEventData.registros
+          : (ponEventData?.registros ? Object.values(ponEventData.registros) : []);
 
-        // Processar chamados de falta de energia nas últimas 24h
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        console.log(`📊 Total de eventos PON encontrados: ${ponEvents.length}`);
+
+        // Processar eventos Dying Gasp nas últimas 2 horas (indicam perda de energia recente)
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
         
-        for (const chamado of chamados) {
-          const dataAbertura = new Date(chamado.data_abertura || chamado.dhcad);
-          if (dataAbertura > oneDayAgo) {
-            const assunto = String(chamado.assunto || '').toLowerCase();
-            const descricao = String(chamado.descricao || '').toLowerCase();
-            const local = String(chamado.localidade || chamado.bairro || '').toUpperCase();
+        for (const event of ponEvents) {
+          const lastEvent = String(event.ultimo_evento || '').toUpperCase();
+          const dataEvento = event.data_ultimo_evento ? new Date(event.data_ultimo_evento) : null;
+          
+          // Verificar se é Dying Gasp recente
+          if (lastEvent.includes('DYING') && (!dataEvento || dataEvento > twoHoursAgo)) {
+            // Extrair informações da ONU/porta PON
+            const ponPort = event.pon_porta ? String(event.pon_porta) : '';
+            const ponSlot = event.pon_slot ? String(event.pon_slot) : '';
+            const ponOlt = event.pon_olt ? String(event.pon_olt) : '';
+            const onuSerial = event.serial ? String(event.serial) : '';
             
-            // Detectar se é relacionado a energia
-            const isEnergia = 
-              assunto.includes('energia') || 
-              assunto.includes('luz') || 
-              assunto.includes('queda') ||
-              assunto.includes('falta') ||
-              descricao.includes('sem energia') ||
-              descricao.includes('falta de energia') ||
-              descricao.includes('queda de energia');
+            let ponKey = '';
+            if (ponOlt && ponSlot && ponPort) {
+              ponKey = `PON:${ponOlt}/${ponSlot}/${ponPort}`;
+            } else if (ponOlt && ponPort) {
+              ponKey = `PON:${ponOlt}/${ponPort}`;
+            }
             
-            if (isEnergia && local) {
-              powerOutageInfo.set(local, {
-                hasPowerOutage: true,
-                description: chamado.assunto || 'Falta de energia detectada',
-                affected_area: local
-              });
-              console.log(`⚡ Falta de energia detectada em: ${local}`);
+            // Também tentar identificar por localização/CTO
+            const cto = event.cto || event.fibra_cto || '';
+            const location = event.localidade || event.bairro || '';
+            
+            const groupKey = ponKey || (cto ? `CTO:${cto}` : (location ? `REGION:${location}` : ''));
+            
+            if (groupKey) {
+              if (!dyingGaspEvents.has(groupKey)) {
+                dyingGaspEvents.set(groupKey, { count: 0, onus: [], lastEvent: event.data_ultimo_evento });
+              }
+              const gasps = dyingGaspEvents.get(groupKey)!;
+              gasps.count++;
+              if (onuSerial) gasps.onus.push(onuSerial);
+              
+              console.log(`⚡ Dying Gasp detectado: ${groupKey} - ONU: ${onuSerial || 'N/A'}`);
             }
           }
         }
+        
+        console.log(`⚡ Total de grupos com Dying Gasp: ${dyingGaspEvents.size}`);
+        for (const [key, data] of dyingGaspEvents) {
+          console.log(`   ${key}: ${data.count} ONUs com perda de energia`);
+        }
+      } else {
+        console.log('⚠️ Endpoint pon_onu não disponível ou sem dados');
       }
     } catch (error) {
-      console.error('Erro ao verificar falta de energia:', error);
+      console.error('Erro ao verificar Dying Gasp:', error);
     }
 
     // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
@@ -291,20 +310,22 @@ serve(async (req) => {
         const groupType = isPonGroup ? 'Porta PON' : (isCtoGroup ? 'CTO' : 'Região');
         const groupIdentifier = groupKey.split(':')[1];
         
-        // Verificar se há falta de energia na região
+        // Verificar se há Dying Gasp (perda de energia) para este grupo
         let powerOutageCause = false;
-        let powerOutageDescription = '';
+        let dyingGaspCount = 0;
+        let affectedOnus: string[] = [];
         
-        for (const [area, info] of powerOutageInfo) {
-          // Verificar se o identificador do grupo contém a área afetada
-          if (groupIdentifier.includes(area) || area.includes(groupIdentifier.split('-')[0])) {
-            powerOutageCause = true;
-            powerOutageDescription = info.description || '';
-            break;
-          }
+        const gaspData = dyingGaspEvents.get(groupKey);
+        if (gaspData && gaspData.count >= 2) {
+          // Se temos 2+ ONUs com Dying Gasp no mesmo grupo, é falta de energia
+          powerOutageCause = true;
+          dyingGaspCount = gaspData.count;
+          affectedOnus = gaspData.onus;
         }
         
-        const causeType = powerOutageCause ? '⚡ FALTA DE ENERGIA' : '❓ Causa desconhecida';
+        const causeType = powerOutageCause 
+          ? `⚡ FALTA DE ENERGIA (${dyingGaspCount} ONUs com Dying Gasp)` 
+          : '❓ Causa desconhecida';
         console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
 
         // Verificar se já existe evento ativo para este grupo hoje
@@ -333,8 +354,12 @@ serve(async (req) => {
                 pon_port: isPonGroup ? groupIdentifier : undefined,
                 cto: isCtoGroup ? groupIdentifier : undefined,
                 power_outage: powerOutageCause,
-                power_outage_description: powerOutageDescription,
-                outage_cause: powerOutageCause ? 'power_outage' : 'unknown'
+                dying_gasp_count: dyingGaspCount,
+                affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
+                outage_cause: powerOutageCause ? 'power_outage_dying_gasp' : 'unknown',
+                power_outage_description: powerOutageCause 
+                  ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
+                  : undefined
               }
             })
             .select()
@@ -361,8 +386,12 @@ serve(async (req) => {
                 group_type: groupType,
                 group_identifier: groupIdentifier,
                 power_outage: powerOutageCause,
-                power_outage_description: powerOutageDescription,
-                outage_cause: powerOutageCause ? 'power_outage' : 'unknown'
+                dying_gasp_count: dyingGaspCount,
+                affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
+                outage_cause: powerOutageCause ? 'power_outage_dying_gasp' : 'unknown',
+                power_outage_description: powerOutageCause 
+                  ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
+                  : undefined
               }
             })
             .eq('id', existingEvent.id);

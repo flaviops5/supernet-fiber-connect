@@ -602,7 +602,14 @@ serve(async (req) => {
                 
                 const metadata = massOutage.metadata as any;
                 const isPowerOutage = metadata?.power_outage === true;
-                const causeInfo = isPowerOutage ? '\n\n⚡ *CAUSA IDENTIFICADA*: Falta de energia na região.' : '';
+                const dyingGaspCount = metadata?.dying_gasp_count || 0;
+                
+                let causeInfo = '';
+                if (isPowerOutage && dyingGaspCount > 0) {
+                  causeInfo = `\n\n⚡ *CAUSA IDENTIFICADA*: Falta de energia na região confirmada por ${dyingGaspCount} equipamento${dyingGaspCount > 1 ? 's' : ''} (Dying Gasp).`;
+                } else if (isPowerOutage) {
+                  causeInfo = '\n\n⚡ *CAUSA IDENTIFICADA*: Falta de energia na região.';
+                }
                 
                 massOutageMessage = `\n\n🚨 *INFORMAÇÃO IMPORTANTE*: Identificamos uma interrupção afetando múltiplos clientes na sua região${metadata?.group_type ? ` (${metadata.group_type})` : ' (CTO compartilhada)'}. Atualmente ${massOutage.affected_count} clientes estão sendo afetados.${causeInfo} Nossa equipe técnica já foi notificada e está trabalhando na solução. O problema não é no seu equipamento individual.`;
               }
