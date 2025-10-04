@@ -952,6 +952,54 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_contact_history: {
+        Row: {
+          contact_channel: string | null
+          contact_reason: string | null
+          conversation_id: string | null
+          cpf: string
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          ixc_client_id: string | null
+          metadata: Json | null
+          updated_at: string | null
+          was_found_in_ixc: boolean | null
+        }
+        Insert: {
+          contact_channel?: string | null
+          contact_reason?: string | null
+          conversation_id?: string | null
+          cpf: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          metadata?: Json | null
+          updated_at?: string | null
+          was_found_in_ixc?: boolean | null
+        }
+        Update: {
+          contact_channel?: string | null
+          contact_reason?: string | null
+          conversation_id?: string | null
+          cpf?: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          ixc_client_id?: string | null
+          metadata?: Json | null
+          updated_at?: string | null
+          was_found_in_ixc?: boolean | null
+        }
+        Relationships: []
+      }
       document_categories: {
         Row: {
           color: string

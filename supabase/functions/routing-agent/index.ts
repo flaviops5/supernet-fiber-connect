@@ -87,6 +87,25 @@ serve(async (req) => {
       const cpf = cpfMatch[1].replace(/\D/g, '');
       console.log('CPF found in message:', cpf);
 
+      // 🆕 PASSO 1: Consultar histórico de contatos ANTES do IXC
+      const { data: contactHistory } = await supabase
+        .from('customer_contact_history')
+        .select('*')
+        .eq('cpf', cpf)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const hasContactHistory = contactHistory && contactHistory.length > 0;
+      const lastContact = contactHistory?.[0];
+      const contactCount = contactHistory?.length || 0;
+
+      console.log('📊 Histórico de contatos:', { 
+        hasHistory: hasContactHistory, 
+        contactCount,
+        lastContact: lastContact?.created_at,
+        wasFoundInIXC: lastContact?.was_found_in_ixc
+      });
+
       // MOCK DATA FOR TESTING - Check if it's a test CPF
       const isTestCPF = ['11111111111', '22222222222', '33333333333', '44444444444', '99999999999'].includes(cpf);
       
@@ -457,23 +476,124 @@ serve(async (req) => {
           };
         } else {
           // Cliente não encontrado no IXC
-          customerData = {
-            customer_cpf: cpf,
-            customer_name: 'Cliente Novo',
-            customer_email: null,
-            customer_phone: null,
-            ixc_client_id: null,
-            metadata: {
-              ...conversation?.metadata,
-              cliente_novo: true
+          console.log('❌ CPF não encontrado no IXC');
+
+          // 🆕 Registrar tentativa no histórico
+          await supabase
+            .from('customer_contact_history')
+            .insert({
+              cpf,
+              contact_reason: 'cpf_validation_failed',
+              was_found_in_ixc: false,
+              conversation_id: conversationId,
+              metadata: {
+                attempt_number: (conversation?.metadata?.cpf_attempts || 0) + 1,
+                has_previous_history: hasContactHistory,
+                previous_contact_count: contactCount
+              }
+            });
+
+          // 🆕 Contar tentativas de validação
+          const cpfAttempts = (conversation?.metadata?.cpf_attempts || 0) + 1;
+          
+          // Atualizar metadata com contador de tentativas
+          await supabase
+            .from('conversations')
+            .update({
+              metadata: {
+                ...conversation?.metadata,
+                cpf_attempts: cpfAttempts,
+                last_cpf_attempt: cpf,
+                last_cpf_attempt_at: new Date().toISOString()
+              }
+            })
+            .eq('id', conversationId);
+
+          console.log('📊 Tentativa de CPF:', { cpfAttempts, cpf });
+
+          // 🆕 Após 3 tentativas, transferir para humano
+          if (cpfAttempts >= 3) {
+            console.log('⚠️ 3 tentativas de CPF sem sucesso - transferindo para humano');
+            
+            return new Response(
+              JSON.stringify({
+                agent: 'human_transfer',
+                message: `Não consegui localizar seu cadastro após várias tentativas. Vou transferir você para um de nossos colaboradores que vai entrar em contato em breve. 🙏`,
+                needsHumanTransfer: true,
+                cpfAttempts,
+                cpfNotFound: true
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+
+          // 🆕 Mensagem personalizada baseada no histórico e tentativas
+          let notFoundMessage = '❌ Não encontrei cadastro com esse CPF.\n\n';
+          
+          if (hasContactHistory && lastContact?.was_found_in_ixc) {
+            // Cliente já foi encontrado antes no IXC
+            notFoundMessage += '🤔 Vejo que você já entrou em contato conosco antes e seu cadastro foi encontrado. ';
+          }
+
+          if (cpfAttempts === 1) {
+            // Primeira tentativa - perguntas simples
+            notFoundMessage += 'Por favor, verifique:\n• O CPF está correto?\n• O contrato está em seu nome?\n\nPode confirmar essas informações? 🙂';
+          } else if (cpfAttempts === 2) {
+            // Segunda tentativa - mais detalhes
+            notFoundMessage += 'Vamos tentar de novo. Por favor, confirme:\n• Você digitou o CPF corretamente?\n• O contrato da SUPERNET está registrado no seu CPF?\n\nTente informar novamente ou me diga se o contrato está em outro nome. 🙏';
+          }
+
+          return new Response(
+            JSON.stringify({
+              agent: 'identification',
+              message: notFoundMessage,
+              cpfNotFound: true,
+              cpfAttempts,
+              hasContactHistory,
+              needsIdentification: true
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
-          };
+          );
         }
+
+        // 🆕 Registrar contato bem-sucedido no histórico
+        await supabase
+          .from('customer_contact_history')
+          .insert({
+            cpf,
+            customer_name: customerData.customer_name,
+            customer_phone: customerData.customer_phone,
+            customer_email: customerData.customer_email,
+            ixc_client_id: customerData.ixc_client_id,
+            contact_reason: 'cpf_validation_success',
+            was_found_in_ixc: !!customerData.ixc_client_id,
+            conversation_id: conversationId,
+            metadata: {
+              client_status: clientStatus,
+              is_returning_customer: hasContactHistory,
+              previous_contact_count: contactCount,
+              last_contact_date: lastContact?.created_at
+            }
+          });
 
         // Update conversation with customer data
         const { error: updateError } = await supabase
           .from('conversations')
-          .update(customerData)
+          .update({
+            ...customerData,
+            metadata: {
+              ...customerData.metadata,
+              cpf_attempts: 0, // Resetar contador após sucesso
+              is_returning_customer: hasContactHistory,
+              contact_history_count: contactCount
+            }
+          })
           .eq('id', conversationId);
 
         if (updateError) {
@@ -482,6 +602,13 @@ serve(async (req) => {
         }
 
         console.log('Customer identified and status verified');
+
+        // 🆕 Personalizar mensagem se for cliente recorrente
+        const firstName = customerData.customer_name.split(' ')[0];
+        let returningCustomerGreeting = '';
+        if (hasContactHistory && contactCount > 1) {
+          returningCustomerGreeting = `Que bom te ver de novo, ${firstName}! `;
+        }
 
         // ROTEAMENTO SIMPLIFICADO: BLOQUEADO ou FINANCEIRO EM ATRASO → Julia (Financeiro)
         if (clientStatus) {
