@@ -117,100 +117,57 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
     setIsLoading(true);
 
     try {
-      // If we already have an agent assigned, send directly to that agent
-      let targetAgent = currentAgent;
-      
-      if (currentAgent === 'routing') {
-        // Only call routing agent if we don't have an agent assigned yet
-        const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
-          body: {
-            message: input,
-            conversationId,
-            context: customerData
-          }
-        });
-
-        if (routingError) throw routingError;
-
-        console.log('Routing decision:', routingData);
-
-        if (routingData.agent === 'clarify') {
-          // Need clarification
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: routingData.message,
-            agent: 'routing',
-            timestamp: new Date()
-          }]);
-          setIsLoading(false);
-          return;
-        }
-
-        targetAgent = routingData.agent;
-        setCurrentAgent(targetAgent);
-
-        // Show routing message
-        if (routingData.message) {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: routingData.message,
-            agent: 'routing',
-            timestamp: new Date()
-          }]);
-          
-          // Small delay to show routing message
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      } else {
-        // We already have an agent, use it directly
-        console.log('Using existing agent:', targetAgent);
-      }
-
-      // Call the appropriate agent
-      const agentEndpoint = 
-        targetAgent === 'sales' ? 'sales-agent' :
-        targetAgent === 'support_tech' ? 'support-tech-agent' :
-        targetAgent === 'support_financial' ? 'support-financial-agent' :
-        'sales-agent'; // Default fallback
-
-      const { data: agentData, error: agentError } = await supabase.functions.invoke(agentEndpoint, {
+      // Sempre passar pela Cloé (routing-agent) que orquestra conforme o fluxograma
+      const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
         body: {
-          messages: [{ role: 'user', content: input }],
+          message: userMessage.content,
           conversationId,
-          customerData
+          context: customerData,
+          currentAgent, // informa o agente atual para evitar retransferências indevidas
         }
       });
 
-      if (agentError) throw agentError;
+      if (routingError) throw routingError;
+
+      // Determinar agente retornado pela Cloé
+      const returnedAgent: string = routingData?.agent || 'routing';
+      setCurrentAgent(returnedAgent);
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: agentData.message,
-        agent: targetAgent,
+        content: routingData?.message || 'Entendi. Como posso ajudar? ',
+        agent: returnedAgent,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-    // Save messages to database if conversationId exists
-    if (conversationId) {
-      await supabase.from('conversation_messages').insert([
-        {
-          conversation_id: conversationId,
-          sender_type: 'customer',
-          sender_name: customerData?.name || 'Cliente',
-          content: input
-        },
-        {
-          conversation_id: conversationId,
-          sender_type: 'agent',
-          sender_name: `Agente IA - ${targetAgent}`,
-          content: agentData.message,
-          ai_suggestion: true
-        }
-      ]);
-    }
+      // Persistir no banco se houver conversationId
+      if (conversationId) {
+        const agentLabelMap: Record<string, string> = {
+          routing: 'Cloé',
+          sales: 'Agente IA - Vendas',
+          support_tech: 'Agente IA - Suporte Técnico',
+          support_financial: 'Agente IA - Financeiro'
+        };
+        const senderName = agentLabelMap[returnedAgent] || `Agente IA - ${returnedAgent}`;
 
+        await supabase.from('conversation_messages').insert([
+          {
+            conversation_id: conversationId,
+            sender_type: 'customer',
+            sender_name: customerData?.name || 'Cliente',
+            content: userMessage.content
+          },
+          {
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: senderName,
+            content: assistantMessage.content,
+            ai_suggestion: true
+          }
+        ]);
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
@@ -218,7 +175,6 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
         description: error.message || 'Tente novamente',
         variant: 'destructive',
       });
-      
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: 'Desculpe, estou com dificuldades no momento. Por favor, tente novamente.',
