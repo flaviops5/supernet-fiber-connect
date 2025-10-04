@@ -40,6 +40,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
     // Load initial messages if conversationId exists
     if (conversationId) {
       loadConversationMessages();
+      loadConversationAgent();
     } else {
       // Initial greeting
       setMessages([{
@@ -50,6 +51,35 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
       }]);
     }
   }, [conversationId]);
+
+  const loadConversationAgent = async () => {
+    if (!conversationId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('department')
+        .eq('id', conversationId)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.department) {
+        // Map department to agent
+        const agentMap: Record<string, string> = {
+          'sales': 'sales',
+          'technical': 'support_tech',
+          'financial': 'support_financial'
+        };
+        
+        const agent = agentMap[data.department] || 'routing';
+        console.log('Loaded conversation agent:', agent, 'from department:', data.department);
+        setCurrentAgent(agent);
+      }
+    } catch (error) {
+      console.error('Error loading conversation agent:', error);
+    }
+  };
 
   const loadConversationMessages = async () => {
     try {
@@ -87,11 +117,11 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
     setIsLoading(true);
 
     try {
-      // First, determine routing if we're not already routed
+      // If we already have an agent assigned, send directly to that agent
       let targetAgent = currentAgent;
       
-      if (currentAgent === 'routing' || messages.length < 2) {
-        // Call routing agent
+      if (currentAgent === 'routing') {
+        // Only call routing agent if we don't have an agent assigned yet
         const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
           body: {
             message: input,
@@ -131,6 +161,9 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
           // Small delay to show routing message
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
+      } else {
+        // We already have an agent, use it directly
+        console.log('Using existing agent:', targetAgent);
       }
 
       // Call the appropriate agent
