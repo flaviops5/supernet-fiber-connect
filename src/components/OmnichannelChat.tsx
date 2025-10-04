@@ -117,41 +117,88 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
     setIsLoading(true);
 
     try {
-      // Sempre passar pela Cloé (routing-agent) que orquestra conforme o fluxograma
-      const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
-        body: {
-          message: userMessage.content,
-          conversationId,
-          context: customerData,
-          currentAgent, // informa o agente atual para evitar retransferências indevidas
+      let finalAgent = currentAgent;
+      let responseMessage = '';
+
+      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
+      if (currentAgent === 'routing') {
+        const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
+          body: {
+            message: userMessage.content,
+            conversationId,
+            context: customerData,
+          }
+        });
+
+        if (routingError) throw routingError;
+
+        finalAgent = routingData?.agent || 'routing';
+        responseMessage = routingData?.message || 'Como posso ajudar?';
+        
+        // Atualizar agente se mudou
+        if (finalAgent !== currentAgent) {
+          setCurrentAgent(finalAgent);
+          
+          // Se foi atribuído um agente especializado, atualizar o departamento na conversation
+          if (conversationId && finalAgent !== 'routing') {
+            const deptMap: Record<string, 'comercial' | 'tecnico' | 'financeiro'> = {
+              'sales': 'comercial',
+              'support_tech': 'tecnico',
+              'support_financial': 'financeiro'
+            };
+            const dept = deptMap[finalAgent as keyof typeof deptMap];
+            if (dept) {
+              await supabase
+                .from('conversations')
+                .update({ department: dept })
+                .eq('id', conversationId);
+            }
+          }
         }
-      });
+      } else {
+        // Já temos um agente especializado atribuído - enviar DIRETO para ele
+        const agentEndpointMap: Record<string, string> = {
+          'sales': 'sales-agent',
+          'support_tech': 'support-tech-agent',
+          'support_financial': 'support-financial-agent'
+        };
+        
+        const endpoint = agentEndpointMap[currentAgent];
+        if (!endpoint) throw new Error(`Agente desconhecido: ${currentAgent}`);
 
-      if (routingError) throw routingError;
+        const { data: agentData, error: agentError } = await supabase.functions.invoke(endpoint, {
+          body: {
+            message: userMessage.content,
+            conversationId,
+            customerData,
+            messages: messages.map(m => ({ role: m.role, content: m.content }))
+          }
+        });
 
-      // Determinar agente retornado pela Cloé
-      const returnedAgent: string = routingData?.agent || 'routing';
-      setCurrentAgent(returnedAgent);
+        if (agentError) throw agentError;
+
+        responseMessage = agentData?.message || 'Entendido. Como mais posso ajudar?';
+        finalAgent = currentAgent; // mantém o agente atual
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: routingData?.message || 'Entendi. Como posso ajudar? ',
-        agent: returnedAgent,
+        content: responseMessage,
+        agent: finalAgent,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Persistir no banco se houver conversationId
+      // Persistir no banco
       if (conversationId) {
         const agentLabelMap: Record<string, string> = {
           routing: 'Cloé',
-          sales: 'Agente IA - Vendas',
-          support_tech: 'Agente IA - Suporte Técnico',
-          support_financial: 'Agente IA - Financeiro'
+          sales: 'Vicente - Vendas',
+          support_tech: 'Luan - Suporte Técnico',
+          support_financial: 'Julia - Financeiro'
         };
-        const senderName = agentLabelMap[returnedAgent] || `Agente IA - ${returnedAgent}`;
-
+        
         await supabase.from('conversation_messages').insert([
           {
             conversation_id: conversationId,
@@ -162,8 +209,8 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
           {
             conversation_id: conversationId,
             sender_type: 'agent',
-            sender_name: senderName,
-            content: assistantMessage.content,
+            sender_name: agentLabelMap[finalAgent] || finalAgent,
+            content: responseMessage,
             ai_suggestion: true
           }
         ]);
