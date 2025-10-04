@@ -331,8 +331,14 @@ serve(async (req) => {
               // Generate protocol
               const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
+              // 🆕 Personalizar mensagem baseado no histórico
+              let cloeGreeting = '';
+              if (hasContactHistory && contactCount > 0) {
+                cloeGreeting = `Que bom te ver de novo, ${firstName}! 😊 `;
+              }
+              
               // First, send Cloé's transfer message with protocol
-              const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+              const cloeTransferMessage = `${cloeGreeting}Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
               
               await supabase
                 .from('conversation_messages')
@@ -397,13 +403,23 @@ serve(async (req) => {
 
             console.log('🧪 MOCK: Cliente online e não bloqueado - confirmando');
             const firstName = mockCustomerData.customer_name.split(' ')[0];
+            
+            // 🆕 Personalizar mensagem baseado no histórico
+            let welcomeMessage = '';
+            if (hasContactHistory && contactCount > 0) {
+              welcomeMessage = `Que bom te ver de novo, ${firstName}! 😊 Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo hoje?`;
+            } else {
+              welcomeMessage = `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`;
+            }
+            
             return new Response(
               JSON.stringify({
                 agent: 'routing',
-                message: `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
+                message: welcomeMessage,
                 customerIdentified: true,
                 customerData: mockCustomerData,
-                requiresIntent: true
+                requiresIntent: true,
+                isReturningCustomer: hasContactHistory
               }),
               {
                 status: 200,
@@ -413,13 +429,24 @@ serve(async (req) => {
           }
 
           // New customer
+          const firstName = mockCustomerData.customer_name.split(' ')[0];
+          
+          // 🆕 Personalizar mensagem baseado no histórico
+          let welcomeMessage = '';
+          if (hasContactHistory && contactCount > 0) {
+            welcomeMessage = `Que bom te ver de novo, ${firstName}! 😊 ${mockCustomerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`;
+          } else {
+            welcomeMessage = `Olá! ${mockCustomerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`;
+          }
+          
           return new Response(
             JSON.stringify({
               agent: 'routing',
-              message: `Olá! ${mockCustomerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`,
+              message: welcomeMessage,
               customerIdentified: true,
               customerData: mockCustomerData,
-              requiresIntent: true
+              requiresIntent: true,
+              isReturningCustomer: hasContactHistory
             }),
             {
               status: 200,
@@ -642,8 +669,14 @@ serve(async (req) => {
             let financialMessage: string | undefined = undefined;
             console.log('🔵 ANTES de chamar support-financial-agent');
             
+            // 🆕 Personalizar mensagem baseado no histórico
+            let cloeGreeting = '';
+            if (hasContactHistory && contactCount > 0) {
+              cloeGreeting = `Que bom te ver de novo, ${firstName}! 😊 `;
+            }
+            
             // First, send Cloé's transfer message with protocol
-            const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Financeiro. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+            const cloeTransferMessage = `${cloeGreeting}Perfeito! Transferindo você para nosso Suporte Financeiro. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
             
             await supabase
               .from('conversation_messages')
@@ -788,8 +821,14 @@ serve(async (req) => {
             let techMessage: string | undefined = undefined;
             console.log('🔵 ANTES de chamar support-tech-agent');
             
+            // 🆕 Personalizar mensagem baseado no histórico
+            let cloeGreeting = '';
+            if (hasContactHistory && contactCount > 0) {
+              cloeGreeting = `Que bom te ver de novo, ${firstName}! 😊 `;
+            }
+            
             // First, send Cloé's transfer message with protocol
-            const cloeTransferMessage = `Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+            const cloeTransferMessage = `${cloeGreeting}Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
             
             await supabase
               .from('conversation_messages')
@@ -891,13 +930,23 @@ serve(async (req) => {
           // If online and not blocked - confirm and continue with normal routing
           console.log('Client is online and not blocked - confirming and proceeding');
           const firstName = customerData.customer_name.split(' ')[0];
+          
+          // 🆕 Personalizar mensagem baseado no histórico de contatos
+          let welcomeMessage = '';
+          if (hasContactHistory && contactCount > 0) {
+            welcomeMessage = `Que bom te ver de novo, ${firstName}! 😊 Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo hoje?`;
+          } else {
+            welcomeMessage = `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`;
+          }
+          
           return new Response(
             JSON.stringify({
               agent: 'routing',
-              message: `Obrigado, ${firstName}! Verifiquei aqui e está tudo certo com sua conexão. Como posso ajudá-lo?`,
+              message: welcomeMessage,
               customerIdentified: true,
               customerData,
-              requiresIntent: true
+              requiresIntent: true,
+              isReturningCustomer: hasContactHistory
             }),
             {
               status: 200,
@@ -907,13 +956,24 @@ serve(async (req) => {
         }
 
         // New customer or couldn't verify status - ask how to help
+        const firstName = customerData.customer_name.split(' ')[0];
+        
+        // 🆕 Personalizar mensagem baseado no histórico de contatos
+        let welcomeMessage = '';
+        if (hasContactHistory && contactCount > 0) {
+          welcomeMessage = `Que bom te ver de novo, ${firstName}! 😊 ${customerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`;
+        } else {
+          welcomeMessage = `Olá! ${customerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`;
+        }
+        
         return new Response(
           JSON.stringify({
             agent: 'routing',
-            message: `Olá! ${customerData.ixc_client_id ? 'Encontrei seu cadastro.' : 'Vejo que você ainda não é nosso cliente!'} Como posso ajudá-lo hoje?`,
+            message: welcomeMessage,
             customerIdentified: true,
             customerData,
-            requiresIntent: true
+            requiresIntent: true,
+            isReturningCustomer: hasContactHistory
           }),
           {
             status: 200,
