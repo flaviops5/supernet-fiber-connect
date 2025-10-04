@@ -13,13 +13,13 @@ graph TD
     
     CheckMessage -->|Sim| ExtractCPF[Extrair CPF da mensagem]
     
-    ExtractCPF --> CheckHistory[🆕 PASSO 1:<br/>Consultar histórico_contatos]
+    ExtractCPF --> CheckHistory[🔍 PASSO 1: CONSULTAR BANCO<br/>customer_contact_history<br/>Buscar CPF no histórico de contatos]
     
-    CheckHistory --> HasHistory{Cliente já entrou<br/>em contato antes?}
-    HasHistory -->|Sim| LogHistory[📊 Log: Cliente recorrente<br/>Total de contatos anteriores<br/>Última vez encontrado no IXC?]
-    HasHistory -->|Não| LogNewContact[📊 Log: Primeiro contato]
+    CheckHistory --> HasHistory{📊 Cliente já entrou<br/>em contato antes<br/>com a SUPERNET?}
+    HasHistory -->|✅ Sim - Cliente Recorrente| LogHistory[📝 Registrar Log:<br/>• Cliente conhecido<br/>• Total de contatos anteriores<br/>• Última vez encontrado no IXC?<br/>• Personalizar atendimento]
+    HasHistory -->|❌ Não - Primeiro Contato| LogNewContact[📝 Registrar Log:<br/>• Cliente novo<br/>• Primeira interação<br/>• Preparar cadastro]
     
-    LogHistory --> CheckIXC[🆕 PASSO 2:<br/>Buscar CPF no IXC]
+    LogHistory --> CheckIXC[🔍 PASSO 2: VALIDAR NO IXC<br/>Buscar CPF na base IXC]
     LogNewContact --> CheckIXC
     
     CheckIXC --> FoundIXC{Cliente encontrado<br/>no IXC?}
