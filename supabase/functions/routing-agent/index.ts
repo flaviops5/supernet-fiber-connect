@@ -660,7 +660,6 @@ serve(async (req) => {
           // Se está BLOQUEADO ou em ATRASO → Julia (Financeiro)
           if (isBlocked) {
             console.log('Cliente BLOQUEADO ou FINANCEIRO EM ATRASO - roteando para Julia (Financeiro)');
-            const firstName = customerData.customer_name.split(' ')[0];
             
             // Generate protocol
             const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -775,7 +774,6 @@ serve(async (req) => {
           const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
             console.log('Cliente OFFLINE - verificando se há queda em massa...');
-            const firstName = customerData.customer_name.split(' ')[0];
             
             // Extrair padrão de região do login (ex: SRI-B de SRI-B-102)
             const customerLogin = customerData.metadata?.ixc_data?.login || '';
@@ -929,7 +927,6 @@ serve(async (req) => {
 
           // If online and not blocked - confirm and continue with normal routing
           console.log('Client is online and not blocked - confirming and proceeding');
-          const firstName = customerData.customer_name.split(' ')[0];
           
           // 🆕 Personalizar mensagem baseado no histórico de contatos
           let welcomeMessage = '';
@@ -956,7 +953,6 @@ serve(async (req) => {
         }
 
         // New customer or couldn't verify status - ask how to help
-        const firstName = customerData.customer_name.split(' ')[0];
         
         // 🆕 Personalizar mensagem baseado no histórico de contatos
         let welcomeMessage = '';
