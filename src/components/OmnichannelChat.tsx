@@ -65,11 +65,11 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
       if (error) throw error;
 
       if (data?.department) {
-        // Map department to agent
+        // Map department to agent (departments são: comercial, tecnico, financeiro)
         const agentMap: Record<string, string> = {
-          'sales': 'sales',
-          'technical': 'support_tech',
-          'financial': 'support_financial'
+          'comercial': 'sales',
+          'tecnico': 'support_tech',
+          'financeiro': 'support_financial'
         };
         
         const agent = agentMap[data.department] || 'routing';
@@ -152,6 +152,8 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
                 .from('conversations')
                 .update({ department: dept })
                 .eq('id', conversationId);
+              
+              console.log('Department updated to:', dept, 'for agent:', finalAgent);
             }
           }
         }
