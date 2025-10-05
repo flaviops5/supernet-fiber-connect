@@ -481,6 +481,10 @@ export default function TesteFonteQueimada() {
                               ) : (
                                 <Badge variant="secondary">Não</Badge>
                               )
+                            ) : typeof value === 'object' && value !== null ? (
+                              <pre className="text-xs whitespace-pre-wrap">
+                                {JSON.stringify(value, null, 2)}
+                              </pre>
                             ) : (
                               value
                             )}
