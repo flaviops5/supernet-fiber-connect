@@ -25,46 +25,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 🆕 VERIFICAR MASS OUTAGE - apenas se o cliente estiver na lista de afetados
-    const customerLogin = customerData?.metadata?.ixc_data?.login;
-    
-    const { data: massOutage } = await supabase
-      .from('mass_outage_events')
-      .select('*')
-      .eq('status', 'active')
-      .order('detected_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    let massOutageContext = '';
-    let isClientAffected = false;
-    
-    if (massOutage && customerLogin) {
-      // Verificar se o login do cliente está na lista de afetados
-      isClientAffected = massOutage.affected_logins?.includes(customerLogin);
-      
-      if (isClientAffected) {
-        console.log(`⚠️ MASS OUTAGE ativo detectado - Cliente ${customerLogin} ESTÁ AFETADO`);
-        massOutageContext = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 ALERTA DE INTERRUPÇÃO EM MASSA ATIVA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-CRÍTICO: Este cliente está afetado por uma interrupção em massa na região.
-- Região afetada: ${massOutage.region_pattern}
-- Clientes afetados: ${massOutage.affected_count}
-- Detectado em: ${new Date(massOutage.detected_at).toLocaleString('pt-BR')}
-
-INSTRUÇÃO: Informe o cliente IMEDIATAMENTE sobre a interrupção em massa.
-Explique que nossa equipe técnica já está trabalhando na solução.
-NÃO solicite diagnósticos detalhados neste momento.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-      } else {
-        console.log(`ℹ️ MASS OUTAGE ativo detectado mas cliente ${customerLogin} NÃO está afetado`);
-      }
-    }
-
     // Fetch agent configuration from database
     const { data: agentConfig, error: configError } = await supabase
       .from('agent_configurations')

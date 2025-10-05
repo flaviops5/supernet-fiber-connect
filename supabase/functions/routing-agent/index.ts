@@ -457,6 +457,8 @@ serve(async (req) => {
             const isOnline = clientStatus.isOnline === true;
             if (!isOnline) {
               // 🆕 VERIFICAR MASS OUTAGE antes de transferir para Luan
+              const mockLogin = mockClientStatus?.pppoeLogin || 'test@pppoe';
+              
               const { data: massOutage } = await supabase
                 .from('mass_outage_events')
                 .select('*')
@@ -465,9 +467,34 @@ serve(async (req) => {
                 .limit(1)
                 .maybeSingle();
               
-              if (massOutage) {
-                console.log('⚠️ MASS OUTAGE detectado - informando cliente');
-                const outageMessage = `Olá! Identificamos uma **interrupção em massa** na sua região. 🚨\n\nNossa equipe técnica já está trabalhando na solução. Previsão de normalização: em breve.\n\nAcompanhe atualizações ou aguarde. Pedimos desculpas pelo transtorno! 🙏`;
+              // Verificar se o login está na lista de afetados
+              const isClientAffected = massOutage?.affected_logins?.includes(mockLogin);
+              
+              if (isClientAffected) {
+                console.log('🚨 MOCK: Cliente AFETADO por queda em massa');
+                const firstName = mockCustomerData.customer_name.split(' ')[0];
+                const metadata = massOutage.metadata as any;
+                const isPowerOutage = metadata?.power_outage === true;
+                const dyingGaspCount = metadata?.dying_gasp_count || 0;
+                
+                let causeInfo = '';
+                if (isPowerOutage && dyingGaspCount > 0) {
+                  causeInfo = `\n\n⚡ **CAUSA IDENTIFICADA**: Falta de energia na região confirmada por ${dyingGaspCount} equipamento${dyingGaspCount > 1 ? 's' : ''} (Dying Gasp).`;
+                } else if (isPowerOutage) {
+                  causeInfo = '\n\n⚡ **CAUSA IDENTIFICADA**: Falta de energia na região.';
+                }
+                
+                const outageMessage = `Olá ${firstName}! 👋\n\n🚨 **INTERRUPÇÃO EM MASSA DETECTADA**\n\nIdentifiquei que você está afetado por uma interrupção na sua região (${massOutage.region_pattern}).\n\n📊 **Situação atual:**\n• ${massOutage.affected_count} clientes afetados\n• Detectado em: ${new Date(massOutage.detected_at).toLocaleString('pt-BR')}${causeInfo}\n\n✅ **Nossa equipe técnica já está trabalhando na solução.**\n\nO problema não é no seu equipamento individual. Assim que normalizar, sua conexão voltará automaticamente.\n\nPedimos desculpas pelo transtorno! 🙏`;
+                
+                await supabase
+                  .from('conversation_messages')
+                  .insert({
+                    conversation_id: conversationId,
+                    sender_type: 'agent',
+                    sender_name: 'Cloé (Atendente Virtual)',
+                    content: outageMessage,
+                    ai_suggestion: true,
+                  });
                 
                 return new Response(
                   JSON.stringify({
@@ -475,7 +502,7 @@ serve(async (req) => {
                     message: outageMessage,
                     customerIdentified: true,
                     customerData: mockCustomerData,
-                    massOutage: true,
+                    massOutageDetected: true,
                   }),
                   {
                     status: 200,
@@ -932,7 +959,78 @@ serve(async (req) => {
           // Senão, verifica se está offline → Suporte Técnico (Luan)
           const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
-            console.log('Cliente OFFLINE - verificando departamento atual...');
+            console.log('Cliente OFFLINE - verificando quedas em massa...');
+            
+            // 🆕 VERIFICAR MASS OUTAGE ANTES DE QUALQUER COISA
+            const customerLogin = clientStatus?.pppoeLogin || customerData.metadata?.ixc_data?.login || '';
+            console.log('🔍 Login do cliente para verificação:', customerLogin);
+            
+            if (customerLogin) {
+              const { data: massOutage } = await supabase
+                .from('mass_outage_events')
+                .select('*')
+                .eq('status', 'active')
+                .order('detected_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              
+              // Verificar se o login do cliente está na lista de afetados
+              const isClientAffected = massOutage?.affected_logins?.includes(customerLogin);
+              
+              if (isClientAffected) {
+                console.log('🚨 CLIENTE AFETADO POR QUEDA EM MASSA:', customerLogin);
+                console.log('Região:', massOutage.region_pattern);
+                console.log('Clientes afetados:', massOutage.affected_count);
+                
+                const metadata = massOutage.metadata as any;
+                const isPowerOutage = metadata?.power_outage === true;
+                const dyingGaspCount = metadata?.dying_gasp_count || 0;
+                
+                let causeInfo = '';
+                if (isPowerOutage && dyingGaspCount > 0) {
+                  causeInfo = `\n\n⚡ **CAUSA IDENTIFICADA**: Falta de energia na região confirmada por ${dyingGaspCount} equipamento${dyingGaspCount > 1 ? 's' : ''} (Dying Gasp).`;
+                } else if (isPowerOutage) {
+                  causeInfo = '\n\n⚡ **CAUSA IDENTIFICADA**: Falta de energia na região.';
+                }
+                
+                const firstName = customerData.customer_name.split(' ')[0];
+                const massOutageMessage = `Olá ${firstName}! 👋\n\n🚨 **INTERRUPÇÃO EM MASSA DETECTADA**\n\nIdentifiquei que você está afetado por uma interrupção na sua região (${massOutage.region_pattern}).\n\n📊 **Situação atual:**\n• ${massOutage.affected_count} clientes afetados\n• Detectado em: ${new Date(massOutage.detected_at).toLocaleString('pt-BR')}${causeInfo}\n\n✅ **Nossa equipe técnica já está trabalhando na solução.**\n\nO problema não é no seu equipamento individual. Assim que normalizar, sua conexão voltará automaticamente.\n\nPedimos desculpas pelo transtorno! 🙏`;
+                
+                // Salvar mensagem da Cloé
+                await supabase
+                  .from('conversation_messages')
+                  .insert({
+                    conversation_id: conversationId,
+                    sender_type: 'agent',
+                    sender_name: 'Cloé (Atendente Virtual)',
+                    content: massOutageMessage,
+                    ai_suggestion: true,
+                  });
+                
+                // NÃO TRANSFERIR PARA LUAN - Cloé já informou sobre a queda em massa
+                return new Response(
+                  JSON.stringify({
+                    agent: 'routing',
+                    message: massOutageMessage,
+                    customerIdentified: true,
+                    customerData,
+                    massOutageDetected: true,
+                    massOutageInfo: {
+                      region: massOutage.region_pattern,
+                      affectedCount: massOutage.affected_count,
+                      isPowerOutage,
+                      detectedAt: massOutage.detected_at
+                    }
+                  }),
+                  {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                  }
+                );
+              }
+              
+              console.log('✅ Cliente NÃO está afetado por queda em massa - prosseguindo para suporte técnico');
+            }
             
             // 🆕 VERIFICAR SE JÁ EXISTE ATENDIMENTO EM ANDAMENTO
             const { data: currentConversation } = await supabase
@@ -1002,43 +1100,6 @@ serve(async (req) => {
             // SE NÃO ESTÁ EM ATENDIMENTO AINDA, CRIAR PROTOCOLO E TRANSFERIR (PRIMEIRA VEZ)
             console.log('🆕 Primeira transferência - criando protocolo e transferindo para Luan');
             
-            // Extrair padrão de região do login (ex: SRI-B de SRI-B-102)
-            const customerLogin = customerData.metadata?.ixc_data?.login || '';
-            const loginParts = customerLogin.toUpperCase().split('-');
-            const regionPattern = loginParts.length >= 2 ? `${loginParts[0]}-${loginParts[1]}` : '';
-            
-            console.log('Login do cliente:', customerLogin);
-            console.log('Padrão da região:', regionPattern);
-            
-            // Verificar se há queda em massa ativa para esta região
-            let massOutageMessage = '';
-            if (regionPattern) {
-              const { data: massOutage } = await supabase
-                .from('mass_outage_events')
-                .select('*')
-                .eq('region_pattern', regionPattern)
-                .eq('status', 'active')
-                .single();
-              
-              if (massOutage) {
-                console.log('🚨 QUEDA EM MASSA detectada para região:', regionPattern);
-                console.log('Clientes afetados:', massOutage.affected_count);
-                
-                const metadata = massOutage.metadata as any;
-                const isPowerOutage = metadata?.power_outage === true;
-                const dyingGaspCount = metadata?.dying_gasp_count || 0;
-                
-                let causeInfo = '';
-                if (isPowerOutage && dyingGaspCount > 0) {
-                  causeInfo = `\n\n⚡ *CAUSA IDENTIFICADA*: Falta de energia na região confirmada por ${dyingGaspCount} equipamento${dyingGaspCount > 1 ? 's' : ''} (Dying Gasp).`;
-                } else if (isPowerOutage) {
-                  causeInfo = '\n\n⚡ *CAUSA IDENTIFICADA*: Falta de energia na região.';
-                }
-                
-                massOutageMessage = `\n\n🚨 *INFORMAÇÃO IMPORTANTE*: Identificamos uma interrupção afetando múltiplos clientes na sua região${metadata?.group_type ? ` (${metadata.group_type})` : ' (CTO compartilhada)'}. Atualmente ${massOutage.affected_count} clientes estão sendo afetados.${causeInfo} Nossa equipe técnica já foi notificada e está trabalhando na solução. O problema não é no seu equipamento individual.`;
-              }
-            }
-            
             // Generate protocol
             const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
@@ -1081,8 +1142,7 @@ serve(async (req) => {
               console.log('🟡 Invocando support-tech-agent com:', {
                 conversationId,
                 hasSupabase: !!supabase,
-                hasCustomerData: !!customerData,
-                hasMassOutage: !!massOutageMessage
+                hasCustomerData: !!customerData
               });
               
               const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
@@ -1091,10 +1151,9 @@ serve(async (req) => {
                   conversationId,
                   customerData: {
                     ...customerData,
-                    mass_outage_info: massOutageMessage, // Passa informação de queda em massa
                     metadata: {
                       ...customerData.metadata,
-                      customer_status: 'offline' // 🆕 Passar status offline explicitamente
+                      customer_status: 'offline'
                     }
                   },
                 },
