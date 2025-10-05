@@ -302,6 +302,28 @@ SUAS RESPONSABILIDADES:
         
         console.log('Creating IXC ticket with args:', args);
         
+        // 📝 STEP 1: Create action_log entry BEFORE IXC call
+        const { data: actionLog, error: actionLogError } = await supabase
+          .from('action_log')
+          .insert({
+            agent_name: 'Luan',
+            client_cpf: customerCpf,
+            action_type: 'create_ticket',
+            action_payload: {
+              tipo_problema: args.tipo_problema,
+              descricao: args.descricao,
+              urgencia: args.urgencia,
+              customer_name: customerName,
+              ixc_client_id: customerData?.ixc_client_id
+            }
+          })
+          .select()
+          .single();
+
+        if (actionLogError) {
+          console.error('Error creating action_log:', actionLogError);
+        }
+
         // Create ticket in IXC
         const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
         const ixcUsername = Deno.env.get('IXC_API_USERNAME');
@@ -337,6 +359,53 @@ SUAS RESPONSABILIDADES:
             if (ixcResponse.ok) {
               const ticketData = await ixcResponse.json();
               console.log('IXC ticket created:', ticketData);
+              const ticketId = ticketData.id || ticketData.protocolo;
+              
+              // 📝 STEP 2: Update action_log with IXC result
+              if (actionLog) {
+                await supabase
+                  .from('action_log')
+                  .update({
+                    ixcticket_id: String(ticketId),
+                    result: ticketData
+                  })
+                  .eq('id', actionLog.id);
+              }
+
+              // 📅 STEP 3: Create installation appointment
+              const startDate = new Date();
+              startDate.setDate(startDate.getDate() + 1); // Tomorrow
+              startDate.setHours(8, 0, 0, 0); // 08:00
+              
+              const endDate = new Date(startDate);
+              endDate.setHours(12, 0, 0, 0); // 12:00
+
+              const { error: appointmentError } = await supabase
+                .from('installation_appointments')
+                .insert({
+                  customer_cpf: customerCpf,
+                  customer_name: customerName,
+                  customer_phone: customerPhone,
+                  customer_email: customerData?.email,
+                  ixc_contract_id: String(ticketId),
+                  appointment_date: startDate.toISOString().split('T')[0],
+                  appointment_period: '08:00-12:00',
+                  status: 'scheduled',
+                  plan_name: 'Manutenção Técnica',
+                  plan_speed: 'N/A',
+                  plan_price: 0,
+                  payment_day: 1,
+                  customer_birth_date: '2000-01-01',
+                  customer_cep: '00000-000',
+                  customer_address: 'A definir',
+                  observations: `Atendimento técnico: ${args.tipo_problema} - ${args.descricao}`
+                });
+
+              if (appointmentError) {
+                console.error('Error creating appointment:', appointmentError);
+              } else {
+                console.log('Appointment scheduled for:', startDate.toISOString());
+              }
               
               // Update conversation with ticket info
               if (conversationId) {
@@ -344,22 +413,46 @@ SUAS RESPONSABILIDADES:
                   .from('conversations')
                   .update({
                     metadata: {
-                      ixc_ticket_id: ticketData.id || ticketData.protocolo,
+                      ixc_ticket_id: ticketId,
                       ticket_type: args.tipo_problema,
-                      ticket_created_at: new Date().toISOString()
+                      ticket_created_at: new Date().toISOString(),
+                      action_log_id: actionLog?.id
                     },
                     status: 'scheduled'
                   })
                   .eq('id', conversationId);
               }
 
-              assistantMessage = `${assistantMessage}\n\n✅ Atendimento criado com sucesso! Protocolo: ${ticketData.id || ticketData.protocolo}. Nossa equipe técnica entrará em contato em breve para agendar a visita.`;
+              assistantMessage = `${assistantMessage}\n\n✅ Atendimento criado com sucesso! Protocolo: ${ticketId}. Nossa equipe técnica entrará em contato em breve para agendar a visita.`;
             } else {
-              console.error('Error creating IXC ticket:', await ixcResponse.text());
+              const errorText = await ixcResponse.text();
+              console.error('Error creating IXC ticket:', errorText);
+              
+              // Update action_log with error
+              if (actionLog) {
+                await supabase
+                  .from('action_log')
+                  .update({
+                    result: { error: errorText, status: ixcResponse.status }
+                  })
+                  .eq('id', actionLog.id);
+              }
+              
               assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica, mas tive um problema ao registrar o atendimento. Por favor, anote o protocolo de atendimento e nossa equipe retornará em breve.`;
             }
           } catch (error) {
             console.error('Error calling IXC API:', error);
+            
+            // Update action_log with error
+            if (actionLog) {
+              await supabase
+                .from('action_log')
+                .update({
+                  result: { error: String(error) }
+                })
+                .eq('id', actionLog.id);
+            }
+            
             assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica. Vou registrar internamente e nossa equipe entrará em contato para agendar.`;
           }
         }

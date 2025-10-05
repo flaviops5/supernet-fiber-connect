@@ -95,6 +95,22 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
     if (routeReason === 'blocked_or_overdue' && customerData?.ixc_client_id) {
       console.log('🔓 Cliente bloqueado/em atraso - tentando desbloqueio automático...');
       
+      // 📝 Register action_log for unblock attempt
+      const { data: actionLog } = await supabase
+        .from('action_log')
+        .insert({
+          agent_name: 'Júlia Martins',
+          client_cpf: customerData?.cpf,
+          action_type: 'unblock_attempt',
+          action_payload: {
+            reason: routeReason,
+            ixc_client_id: customerData.ixc_client_id,
+            customer_name: customerData?.name
+          }
+        })
+        .select()
+        .single();
+      
       try {
         // Buscar contratos do cliente via IXC
         const statusResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
@@ -141,6 +157,20 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
               
               if (unblockData.data?.success) {
                 console.log('✅ Desbloqueio bem-sucedido!');
+                
+                // 📝 Update action_log with success
+                if (actionLog) {
+                  await supabase
+                    .from('action_log')
+                    .update({
+                      result: {
+                        success: true,
+                        contract_id: blockedContract.id,
+                        unblock_data: unblockData.data
+                      }
+                    })
+                    .eq('id', actionLog.id);
+                }
                 
                 // Buscar títulos financeiros pendentes
                 const titlesResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
@@ -221,6 +251,20 @@ IMPORTANTE: Explique ao cliente que:
               } else {
                 console.log('❌ Falha no desbloqueio:', unblockData.data?.error);
                 
+                // 📝 Update action_log with failure
+                if (actionLog) {
+                  await supabase
+                    .from('action_log')
+                    .update({
+                      result: {
+                        success: false,
+                        error: unblockData.data?.error,
+                        contract_id: blockedContract.id
+                      }
+                    })
+                    .eq('id', actionLog.id);
+                }
+                
                 desbloqueioInfo = `
 ❌ TENTATIVA DE DESBLOQUEIO NÃO FOI POSSÍVEL
 
@@ -275,6 +319,34 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // 🛠️ Tool for creating administrative escalation ticket
+    const tools = [{
+      type: "function",
+      function: {
+        name: "criar_atendimento_escalacao",
+        description: "Cria um atendimento de escalação administrativa quando o cliente solicita falar com supervisor, gerente ou diretor. Use quando a solicitação não pode ser resolvida no nível financeiro e requer intervenção administrativa.",
+        parameters: {
+          type: "object",
+          properties: {
+            motivo: {
+              type: "string",
+              description: "Motivo da escalação (ex: 'Cliente solicita falar com gerente', 'Reclamação que exige atenção administrativa')"
+            },
+            urgencia: {
+              type: "string",
+              enum: ["normal", "alta", "urgente"],
+              description: "Nível de urgência da escalação"
+            },
+            detalhes: {
+              type: "string",
+              description: "Detalhes adicionais sobre o contexto da solicitação"
+            }
+          },
+          required: ["motivo", "urgencia"]
+        }
+      }
+    }];
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -288,6 +360,8 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
           ...conversationHistory,
           ...messages
         ],
+        tools: tools,
+        tool_choice: "auto",
         modalities: ['text', 'image'],
         temperature: parseFloat(agentConfig.temperature),
         max_tokens: agentConfig.max_tokens,
@@ -301,7 +375,124 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
     }
 
     const aiData = await aiResponse.json();
-    const assistantMessage = aiData.choices[0].message.content as string;
+    const choice = aiData.choices[0];
+    let assistantMessage = choice.message.content as string;
+
+    // 🎫 Check if AI wants to create escalation ticket
+    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+      const toolCall = choice.message.tool_calls[0];
+      
+      if (toolCall.function.name === 'criar_atendimento_escalacao') {
+        const args = JSON.parse(toolCall.function.arguments);
+        
+        console.log('Creating escalation ticket with args:', args);
+        
+        // 📝 Create action_log entry BEFORE IXC call
+        const { data: escalationLog } = await supabase
+          .from('action_log')
+          .insert({
+            agent_name: 'Júlia Martins',
+            client_cpf: customerData?.cpf,
+            action_type: 'create_ticket',
+            action_payload: {
+              tipo: 'escalacao_administrativa',
+              motivo: args.motivo,
+              urgencia: args.urgencia,
+              detalhes: args.detalhes,
+              customer_name: customerData?.name,
+              ixc_client_id: customerData?.ixc_client_id
+            }
+          })
+          .select()
+          .single();
+
+        // Create escalation ticket in IXC
+        const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
+        const ixcUsername = Deno.env.get('IXC_API_USERNAME');
+        const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+        
+        if (ixcBaseUrl && customerData?.ixc_client_id) {
+          try {
+            const ixcResponse = await fetch(`${ixcBaseUrl}/webservice/v1/su_oss_chamado`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${btoa(`${ixcUsername}:${ixcPassword}`)}`
+              },
+              body: JSON.stringify({
+                id_cliente: customerData.ixc_client_id,
+                id_tipo_chamado: 99, // Escalação Administrativa (adjust ID as needed)
+                descricao: `ESCALAÇÃO ADMINISTRATIVA\n\nMotivo: ${args.motivo}\n\nDetalhes: ${args.detalhes || 'Cliente solicita atenção do setor administrativo'}`,
+                prioridade: args.urgencia === 'urgente' ? 'alta' : args.urgencia,
+                status: 'A' // Aberto
+              })
+            });
+
+            if (ixcResponse.ok) {
+              const ticketData = await ixcResponse.json();
+              const ticketId = ticketData.id || ticketData.protocolo;
+              console.log('Escalation ticket created:', ticketId);
+              
+              // 📝 Update action_log with result
+              if (escalationLog) {
+                await supabase
+                  .from('action_log')
+                  .update({
+                    ixcticket_id: String(ticketId),
+                    result: ticketData
+                  })
+                  .eq('id', escalationLog.id);
+              }
+
+              // Update conversation
+              if (conversationId) {
+                await supabase
+                  .from('conversations')
+                  .update({
+                    metadata: {
+                      escalation_ticket_id: ticketId,
+                      escalation_reason: args.motivo,
+                      escalation_created_at: new Date().toISOString(),
+                      action_log_id: escalationLog?.id
+                    },
+                    status: 'escalated'
+                  })
+                  .eq('id', conversationId);
+              }
+
+              assistantMessage = `${assistantMessage}\n\n✅ Atendimento de escalação criado com sucesso! Protocolo: ${ticketId}. Nossa equipe administrativa entrará em contato com você em breve.`;
+            } else {
+              const errorText = await ixcResponse.text();
+              console.error('Error creating escalation ticket:', errorText);
+              
+              if (escalationLog) {
+                await supabase
+                  .from('action_log')
+                  .update({
+                    result: { error: errorText, status: ixcResponse.status }
+                  })
+                  .eq('id', escalationLog.id);
+              }
+              
+              assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei sua solicitação de escalação, mas tive um problema ao registrar. Por favor, entre em contato pelo telefone para falar diretamente com nossa equipe administrativa.`;
+            }
+          } catch (error) {
+            console.error('Error calling IXC API for escalation:', error);
+            
+            if (escalationLog) {
+              await supabase
+                .from('action_log')
+                .update({
+                  result: { error: String(error) }
+                })
+                .eq('id', escalationLog.id);
+            }
+            
+            assistantMessage = `${assistantMessage}\n\n⚠️ Sua solicitação foi registrada internamente e nossa equipe administrativa retornará em breve.`;
+          }
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({ message: assistantMessage }),
