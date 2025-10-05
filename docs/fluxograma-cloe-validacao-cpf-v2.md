@@ -59,12 +59,14 @@ graph TD
     
     CheckBlocked -->|❌ NÃO| CheckOnline{Cliente está<br/>ONLINE?}
     
-    CheckOnline -->|❌ NÃO - OFFLINE| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé: 'Perfeito! Transferindo você<br/>para nosso Suporte Técnico.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    CheckOnline -->|❌ NÃO - OFFLINE| CheckMassOutage{🔍 Cloé verifica:<br/>Login PPPoE está em<br/>affected_logins da<br/>mass_outage_events?}
     
-    RouteSupport --> CheckMassOutage{Detectada queda<br/>em massa na região?}
-    CheckMassOutage -->|Sim| MassOutageAlert["🚨 ALERTA QUEDA EM MASSA<br/><br/>Luan:<br/>'Identifiquei uma interrupção afetando<br/>múltiplos clientes na sua região.<br/>Nossa equipe já está trabalhando<br/>na solução.'"]
-    CheckMassOutage -->|Não| TransferSupport[🔄 Luan Silva<br/>Suporte Técnico N1]
-    MassOutageAlert --> End3([FIM - Queda em Massa])
+    CheckMassOutage -->|✅ SIM - Cliente Afetado| MassOutageAlert["🚨 CLOÉ INFORMA DIRETAMENTE<br/><br/>Olá [Nome]! 👋<br/><br/>🚨 INTERRUPÇÃO EM MASSA DETECTADA<br/><br/>Identifiquei que você está afetado<br/>por uma interrupção na sua região.<br/><br/>📊 Situação atual:<br/>• X clientes afetados<br/>• Detectado em: [timestamp]<br/>• Causa: [se identificada]<br/><br/>✅ Nossa equipe técnica já está<br/>trabalhando na solução.<br/><br/>NÃO É PROBLEMA NO SEU EQUIPAMENTO.<br/>Pedimos desculpas pelo transtorno! 🙏"]
+    
+    CheckMassOutage -->|❌ NÃO - Cliente OK| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé: 'Perfeito! Transferindo você<br/>para nosso Suporte Técnico.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    
+    MassOutageAlert --> End3([FIM - Aguarda Normalização])
+    RouteSupport --> TransferSupport[🔄 Luan Silva<br/>Suporte Técnico N1]
     TransferSupport --> SupportAnalysis["Luan analisa problema<br/>e oferece soluções técnicas"]
     SupportAnalysis --> End3
     
@@ -97,10 +99,17 @@ graph TD
 - **Transferência Humana**: Após 3 tentativas sem sucesso, transfere para atendente humano
 - **Mensagens Progressivas**: Mensagens de erro mais detalhadas a cada tentativa
 - **Personalização**: Saudações personalizadas para clientes recorrentes
+- **🚨 Verificação de Quedas em Massa**: Cloé verifica `affected_logins` e informa cliente diretamente
+  - Verifica se `pppoeLogin` está em `mass_outage_events.affected_logins`
+  - Se afetado: informa sobre a queda e **NÃO transfere** para técnico
+  - Se não afetado: transfere para Luan para troubleshooting
 
 ### 🔴 Roteamento Automático:
 - **Bloqueado/Atraso**: Julia Martins (Financeiro) com tentativa de desbloqueio automático
-- **Offline**: Luan Silva (Técnico) com verificação de queda em massa
+- **Offline**: 
+  - **1º**: Cloé verifica queda em massa (consulta `mass_outage_events.affected_logins`)
+  - **Se afetado**: Cloé informa diretamente e **NÃO** transfere
+  - **Se não afetado**: Transfere para Luan Silva (Técnico N1)
 - **Online**: Continua com Cloé até identificar intenção específica
 
 ### 📊 Banco de Dados:
