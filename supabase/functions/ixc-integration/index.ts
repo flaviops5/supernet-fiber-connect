@@ -473,7 +473,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       
       // Buscar DIRETAMENTE no radusuarios usando o id_cliente
       try {
-        // Busca primeiro por online = 'S' ou 'SS'
+        // Busca TODOS os registros (online='S', 'SS', 'N', etc)
         const formOnline: Record<string, string> = {
           qtype: 'radusuarios.id_cliente',
           query: String(customerId),
@@ -489,57 +489,40 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
           const users = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
           console.log(`✓ /radusuarios retornou ${users.length} registros para id_cliente ${customerId}`);
           
-          // Verifica se algum registro tem online = 'S' ou 'SS'
-          const onlineUser = users.find((u: any) => u.online === 'S' || u.online === 'SS');
-          
-          if (onlineUser) {
-            // Encontrou usuário online!
-            console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2));
+          if (users.length > 0) {
+            // Log detalhado dos registros encontrados
+            console.log('📋 Registros encontrados:');
+            users.forEach((u: any, idx: number) => {
+              console.log(`  [${idx}] Login: ${u.login || u.usuario || u.username || 'N/A'}, Online: ${u.online}, Data: ${u.data_inicio || 'N/A'}`);
+            });
             
-            onlineStatus = true;
-            lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
-            pppoeLogin = onlineUser.login || onlineUser.usuario || onlineUser.username || null;
+            // Verifica se algum registro tem online = 'S' ou 'SS'
+            const onlineUser = users.find((u: any) => u.online === 'S' || u.online === 'SS');
             
-            console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Login PPPoE: ${pppoeLogin}, Online: ${onlineUser.online}`);
+            if (onlineUser) {
+              // Encontrou usuário online!
+              console.log('✓✓ CLIENTE ONLINE ENCONTRADO:', JSON.stringify(onlineUser, null, 2));
+              
+              onlineStatus = true;
+              lastConnection = onlineUser.data_inicio || onlineUser.acctstarttime || onlineUser.data_conexao || new Date().toISOString();
+              pppoeLogin = onlineUser.login || onlineUser.usuario || onlineUser.username || null;
+              
+              console.log(`✓✓✓ Cliente ONLINE confirmado! ID Cliente: ${customerId}, Login PPPoE: ${pppoeLogin}, Online: ${onlineUser.online}`);
+            } else {
+              // Cliente OFFLINE, mas vamos extrair o login do primeiro registro disponível
+              console.log('Cliente não está online (nenhum registro com online=S ou online=SS)');
+              const firstUser = users[0];
+              pppoeLogin = firstUser.login || firstUser.usuario || firstUser.username || null;
+              lastConnection = firstUser.data_inicio || firstUser.acctstarttime || firstUser.data_conexao || null;
+              
+              console.log(`📌 Cliente OFFLINE. Login PPPoE extraído: ${pppoeLogin}, Última conexão: ${lastConnection}`);
+            }
           } else {
-            console.log('Cliente não está online (nenhum registro com online=S ou online=SS)');
+            console.log('⚠️ Nenhum registro encontrado em radusuarios para este cliente');
           }
         }
       } catch (e) {
         console.log(`✗ Erro ao buscar status online por id_cliente:`, (e as Error)?.message);
-      }
-      
-      // Se não estiver online, buscar histórico de conexões
-      if (!onlineStatus) {
-        console.log('Cliente não está online, buscando histórico de conexões...');
-        try {
-          const formHistory: Record<string, string> = {
-            qtype: 'radusuarios.id',
-            query: '1',
-            oper: '>=',
-            page: '1',
-            rp: '5',
-            sortname: 'radusuarios.data_inicio',
-            sortorder: 'desc',
-            grid_param: JSON.stringify([{
-              TB: 'radusuarios.id_cliente',
-              OP: '=',
-              P: String(customerId)
-            }])
-          };
-          
-          const { ok, data } = await postIXC(`${baseUrl}/radusuarios`, auth, formHistory);
-          if (ok && data?.registros) {
-            const history = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
-            if (history.length > 0) {
-              lastConnection = history[0].data_inicio || history[0].acctstarttime || history[0].data_conexao || null;
-              pppoeLogin = history[0].login || history[0].usuario || history[0].username || null;
-              console.log(`Última conexão encontrada no histórico: ${lastConnection}, Login PPPoE: ${pppoeLogin}`);
-            }
-          }
-        } catch (e) {
-          console.log(`Erro ao buscar histórico:`, (e as Error)?.message);
-        }
       }
 
     } catch (radiusError) {
