@@ -62,17 +62,20 @@ export default function TesteFonteQueimada() {
       }
     },
     {
-      title: 'Luan realiza diagnóstico',
-      description: 'Verificação de conectividade do equipamento',
+      title: 'Luan recebe dados e atende',
+      description: 'Atendimento com base nos dados processados por Cloé',
       status: 'pending',
       icon: Zap,
       color: 'text-orange-500',
       details: {
-        equipment_status: 'Offline',
-        last_online: 'Há 18 horas',
-        signal_level: 'Sem sinal',
-        diagnosis: 'Equipamento não está enviando sinal de conexão',
-        probable_cause: 'Fonte de alimentação queimada'
+        received_data: {
+          cpf: '123.456.789-00',
+          pppoe_login: 'maria.santos@fibra',
+          equipment_status: 'Offline',
+          last_online: 'Há 18 horas',
+          signal_level: 'Sem sinal'
+        },
+        action: 'Luan não faz consultas, apenas atende com os dados recebidos'
       }
     },
     {
@@ -164,13 +167,14 @@ export default function TesteFonteQueimada() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-background/50 p-4 rounded-lg space-y-2">
                   <Badge variant="default">Cloé - Routing Agent</Badge>
-                  <p className="text-sm"><strong>Função:</strong> Primeiro contato e roteamento</p>
+                  <p className="text-sm"><strong>Função:</strong> Primeiro contato, consultas e roteamento</p>
                   <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
                     <li>Valida CPF do cliente</li>
-                    <li>Busca dados no IXC ERP</li>
+                    <li>Busca TODOS os dados no IXC (cliente, PPPoE, status)</li>
                     <li>Verifica quedas em massa (mass_outage_events)</li>
-                    <li>Decide departamento de destino</li>
-                    <li>NÃO realiza diagnóstico técnico</li>
+                    <li>Se queda em massa: informa e ENCERRA (não transfere)</li>
+                    <li>Se problema individual: registra conversa e transfere para Luan</li>
+                    <li>Passa TODOS os dados processados para Luan</li>
                   </ul>
                   <p className="text-xs text-muted-foreground mt-2">
                     <strong>Edge Function:</strong> /supabase/functions/routing-agent
@@ -179,13 +183,13 @@ export default function TesteFonteQueimada() {
 
                 <div className="bg-background/50 p-4 rounded-lg space-y-2">
                   <Badge variant="secondary">Luan - Support Tech Agent</Badge>
-                  <p className="text-sm"><strong>Função:</strong> Diagnóstico técnico especializado</p>
+                  <p className="text-sm"><strong>Função:</strong> Atendimento e suporte técnico</p>
                   <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                    <li>Recebe casos de Cloé</li>
-                    <li>Consulta IXC para status do equipamento</li>
-                    <li>Analisa logs de conectividade</li>
-                    <li>Identifica causa raiz do problema</li>
-                    <li>Propõe solução e agenda visita</li>
+                    <li>Recebe dados já processados por Cloé</li>
+                    <li>NÃO faz consultas ao IXC ou banco de dados</li>
+                    <li>Foca apenas no atendimento ao cliente</li>
+                    <li>Propõe solução baseada nos dados recebidos</li>
+                    <li>Agenda visita técnica quando necessário</li>
                   </ul>
                   <p className="text-xs text-muted-foreground mt-2">
                     <strong>Edge Function:</strong> /supabase/functions/support-tech-agent
@@ -229,14 +233,14 @@ export default function TesteFonteQueimada() {
                 </div>
 
                 <div className="bg-background/50 p-4 rounded-lg space-y-2">
-                  <Badge variant="outline">Checkpoint 3: Diagnóstico Técnico</Badge>
+                  <Badge variant="outline">Checkpoint 3: Transferência com Contexto</Badge>
                   <p className="text-sm">
-                    <strong>Decisão:</strong> Luan identifica causa raiz do problema
+                    <strong>Decisão:</strong> Cloé registra conversa e envia dados completos para Luan
                   </p>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>🔌 Equipamento offline + sem sinal = <strong>Fonte queimada</strong></p>
-                    <p>📡 Equipamento online + sinal baixo = Problema de cabo/fibra</p>
-                    <p>⚙️ Equipamento online + desconfiguração = Problema de configuração</p>
+                    <p>📝 INSERT INTO conversations (cpf, status, assigned_agent) VALUES (cpf, 'routing_completed', 'Luan')</p>
+                    <p>📦 Dados enviados: CPF, PPPoE login, equipment_status, last_online, signal, etc.</p>
+                    <p>💬 Luan recebe contexto completo e faz apenas atendimento (SEM consultas adicionais)</p>
                   </div>
                 </div>
               </div>
@@ -315,17 +319,16 @@ export default function TesteFonteQueimada() {
                 </div>
 
                 <div className="bg-background/50 p-4 rounded-lg space-y-2">
-                  <Badge>Luan → Diagnóstico</Badge>
+                  <Badge>Luan → Atendimento (com dados já processados)</Badge>
                   <div className="text-sm space-y-2">
-                    <p><strong>Dados disponíveis:</strong> Equipment offline, last_online: 18h atrás, signal: null</p>
+                    <p><strong>Dados recebidos de Cloé:</strong> cpf: "123.456.789-00", pppoe_login: "maria.santos@fibra", 
+                    equipment_status: "offline", last_online: "18h", signal: null</p>
                     <p className="text-muted-foreground">
-                      <strong>Luan deve:</strong> Analisar padrão e diagnosticar fonte queimada
+                      <strong>Luan NÃO faz consultas.</strong> Apenas atende com base nos dados recebidos.
                     </p>
                     <p className="text-green-600">
-                      <strong>Resposta esperada:</strong> "Maria, fiz uma verificação no seu equipamento e identifiquei
-                      que ele está sem energia há 18 horas. Pelo padrão que estou vendo, muito provavelmente a fonte
-                      de alimentação queimou. Vou agendar uma visita técnica para amanhã no período da manhã (08h-12h)
-                      para substituir a fonte. Pode ser nesse horário?"
+                      <strong>Resposta esperada:</strong> "Olá Maria! Vi aqui que seu equipamento está offline há 18 horas. 
+                      Vou agendar uma visita técnica para trocar a fonte. Você pode amanhã entre 08h e 12h?"
                     </p>
                   </div>
                 </div>
