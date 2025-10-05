@@ -15,6 +15,7 @@ import Atendimento from "./pages/Atendimento";
 import Monitoramento from "./pages/Monitoramento";
 import Roteamento from "./pages/Roteamento";
 import SimulacaoCompleta from "./pages/SimulacaoCompleta";
+import TesteFonteQueimada from "./pages/TesteFonteQueimada";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -56,6 +57,7 @@ const App = () => {
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/roteamento" element={<Roteamento />} />
                     <Route path="/simulacao_completa" element={<SimulacaoCompleta />} />
+                    <Route path="/teste_fonte_queimada" element={<TesteFonteQueimada />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="*" element={<NotFound />} />
