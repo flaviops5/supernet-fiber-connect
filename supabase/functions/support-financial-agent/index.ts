@@ -406,30 +406,55 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
           .select()
           .single();
 
-        // Create escalation ticket in IXC
-        const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
-        const ixcUsername = Deno.env.get('IXC_API_USERNAME');
-        const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+        // 🔄 Create escalation ticket in IXC via proxy with retry
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
         
-        if (ixcBaseUrl && customerData?.ixc_client_id) {
+        if (supabaseUrl && customerData?.ixc_client_id) {
           try {
-            const ixcResponse = await fetch(`${ixcBaseUrl}/webservice/v1/su_oss_chamado`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${btoa(`${ixcUsername}:${ixcPassword}`)}`
-              },
-              body: JSON.stringify({
-                id_cliente: customerData.ixc_client_id,
-                id_tipo_chamado: 99, // Escalação Administrativa (adjust ID as needed)
-                descricao: `ESCALAÇÃO ADMINISTRATIVA\n\nMotivo: ${args.motivo}\n\nDetalhes: ${args.detalhes || 'Cliente solicita atenção do setor administrativo'}`,
-                prioridade: args.urgencia === 'urgente' ? 'alta' : args.urgencia,
-                status: 'A' // Aberto
-              })
-            });
+            const ticketBody = {
+              id_cliente: customerData.ixc_client_id,
+              id_tipo_chamado: 99,
+              descricao: `ESCALAÇÃO ADMINISTRATIVA\n\nMotivo: ${args.motivo}\n\nDetalhes: ${args.detalhes || 'Cliente solicita atenção do setor administrativo'}`,
+              prioridade: args.urgencia === 'urgente' ? 'alta' : args.urgencia,
+              status: 'A'
+            };
 
-            if (ixcResponse.ok) {
-              const ticketData = await ixcResponse.json();
+            // Usar IXC Proxy com retry
+            const maxRetries = 3;
+            let ixcResponse;
+            let lastError;
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              try {
+                console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} to create escalation ticket`);
+                
+                ixcResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    method: 'POST',
+                    path: '/webservice/v1/su_oss_chamado',
+                    body: ticketBody
+                  })
+                });
+
+                if (ixcResponse.ok) break;
+                
+                lastError = await ixcResponse.text();
+                if (attempt < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+              } catch (e) {
+                lastError = e;
+                if (attempt < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+              }
+            }
+
+            if (ixcResponse && ixcResponse.ok) {
+              const proxyData = await ixcResponse.json();
+              const ticketData = proxyData.data;
               const ticketId = ticketData.id || ticketData.protocolo;
               console.log('Escalation ticket created:', ticketId);
               

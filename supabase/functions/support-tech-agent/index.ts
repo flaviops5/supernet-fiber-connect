@@ -324,14 +324,12 @@ SUAS RESPONSABILIDADES:
           console.error('Error creating action_log:', actionLogError);
         }
 
-        // Create ticket in IXC
-        const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
-        const ixcUsername = Deno.env.get('IXC_API_USERNAME');
-        const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+        // 🔄 Create ticket in IXC via proxy with retry
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
         
-        if (ixcBaseUrl && customerData?.ixc_client_id) {
+        if (supabaseUrl && customerData?.ixc_client_id) {
           try {
-            // Map problem types to IXC ticket types (adjust IDs according to your IXC setup)
+            // Map problem types to IXC ticket types
             const tipoMap: Record<string, number> = {
               'fonte_queimada': 1,
               'cabo_danificado': 2,
@@ -341,23 +339,50 @@ SUAS RESPONSABILIDADES:
               'instalacao_reparo': 6
             };
 
-            const ixcResponse = await fetch(`${ixcBaseUrl}/webservice/v1/su_oss_chamado`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${btoa(`${ixcUsername}:${ixcPassword}`)}`
-              },
-              body: JSON.stringify({
-                id_cliente: customerData.ixc_client_id,
-                id_tipo_chamado: tipoMap[args.tipo_problema] || 1,
-                descricao: args.descricao,
-                prioridade: args.urgencia === 'critica' ? 'alta' : args.urgencia,
-                status: 'A' // Aberto
-              })
-            });
+            const ticketBody = {
+              id_cliente: customerData.ixc_client_id,
+              id_tipo_chamado: tipoMap[args.tipo_problema] || 1,
+              descricao: args.descricao,
+              prioridade: args.urgencia === 'critica' ? 'alta' : args.urgencia,
+              status: 'A'
+            };
 
-            if (ixcResponse.ok) {
-              const ticketData = await ixcResponse.json();
+            // Usar IXC Proxy com retry
+            const maxRetries = 3;
+            let ixcResponse;
+            let lastError;
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              try {
+                console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} to create IXC ticket`);
+                
+                ixcResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    method: 'POST',
+                    path: '/webservice/v1/su_oss_chamado',
+                    body: ticketBody
+                  })
+                });
+
+                if (ixcResponse.ok) break;
+                
+                lastError = await ixcResponse.text();
+                if (attempt < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+              } catch (e) {
+                lastError = e;
+                if (attempt < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+              }
+            }
+
+            if (ixcResponse && ixcResponse.ok) {
+              const proxyData = await ixcResponse.json();
+              const ticketData = proxyData.data;
               console.log('IXC ticket created:', ticketData);
               const ticketId = ticketData.id || ticketData.protocolo;
               

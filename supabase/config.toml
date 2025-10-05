@@ -24,6 +24,9 @@ verify_jwt = false
 [functions.support-financial-agent]
 verify_jwt = false
 
+[functions.ixc-proxy]
+verify_jwt = false
+
 [functions.ixc-list-contracts]
 verify_jwt = true
 
