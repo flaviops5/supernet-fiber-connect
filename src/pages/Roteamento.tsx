@@ -37,78 +37,111 @@ const Roteamento = () => {
                   <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
 {`flowchart TD
     Start([👤 Cliente inicia conversa]) --> Cloe[🤖 CLOÉ - Agente de Roteamento]
-    
-    Cloe --> ExtractCPF{Extrair CPF<br/>da mensagem}
-    
-    ExtractCPF -->|CPF encontrado| CheckHistory[📋 Verificar histórico<br/>customer_contact_history]
-    ExtractCPF -->|Sem CPF| AskCPF[Solicitar CPF<br/>ao cliente]
+
+    %% Saudação e Coleta de CPF
+    Cloe --> Greeting[Saudação inicial + contexto]
+    Greeting --> ExtractCPF{Extrair CPF<br/>da mensagem}
+    ExtractCPF -->|CPF encontrado| ValidateCPF[Validar formato do CPF]
+    ExtractCPF -->|Sem CPF| AskCPF[Solicitar CPF ao cliente]
     
     AskCPF --> WaitCPF[Aguardar resposta]
     WaitCPF --> ExtractCPF
     
-    CheckHistory --> SearchIXC[🔍 Buscar no IXC]
+    ValidateCPF -->|Formato inválido| RetryCPF[Contagem de tentativas +1]
+    RetryCPF -->|Tentativas < 3| AskCPF
+    RetryCPF -->|Tentativas ≥ 3| TransferSalesCPF[⚡ Transferir para VENDAS<br/>auxílio de cadastro]
     
+    ValidateCPF -->|Formato válido| CheckHistory[📋 Verificar histórico<br/>customer_contact_history]
+    
+    %% Busca no IXC
+    CheckHistory --> SearchIXC[🔍 Consultar cliente no IXC]
     SearchIXC --> FoundIXC{Cliente<br/>encontrado?}
+    FoundIXC -->|NÃO| NewCustomer[🆕 Cliente novo]
+    FoundIXC -->|SIM| GetStatus[📡 Obter status do IXC:<br/>online/offline, bloqueado, faturas]
+
+    %% Avaliação de Status - Prioridade 1: Bloqueio
+    GetStatus --> CheckBlocked{Bloqueado ou<br/>faturas em atraso?}
+    CheckBlocked -->|SIM| TransferJulia[⚡ Transferir para JULIA<br/>Financeiro]
     
-    FoundIXC -->|SIM| GetStatus[Obter status:<br/>- online/offline<br/>- bloqueado/ativo<br/>- faturas em atraso]
-    FoundIXC -->|NÃO| NewCustomer[Cliente novo<br/>sem cadastro]
+    %% Prioridade 2: Verificar Outage em Massa
+    CheckBlocked -->|NÃO| CheckMassOutage{Detectar<br/>outage em massa?}
+    CheckMassOutage -->|SIM| NotifyOutage[📢 Notificar cliente sobre<br/>interrupção regional]
+    NotifyOutage --> InfoAgent
     
-    GetStatus --> CheckBlocked{Bloqueado ou<br/>financeiro<br/>em atraso?}
+    %% Prioridade 3: Cliente Offline ou Relata Problema
+    CheckMassOutage -->|NÃO| CheckOffline{Cliente OFFLINE<br/>ou relata sem internet?}
+    CheckOffline -->|SIM| TransferLuan[⚡ Transferir para LUAN<br/>Suporte Técnico]
     
-    CheckBlocked -->|SIM| TransferJulia[⚡ TRANSFERIR<br/>para JULIA<br/>support-financial-agent]
-    CheckBlocked -->|NÃO| CheckOffline{Cliente<br/>OFFLINE?}
-    
-    CheckOffline -->|SIM| TransferLuan[⚡ TRANSFERIR<br/>para LUAN<br/>support-tech-agent]
-    CheckOffline -->|NÃO| CheckOnline{Cliente<br/>ONLINE?}
-    
-    CheckOnline -->|SIM| AskReason[Perguntar:<br/>Qual o motivo<br/>do contato?]
-    CheckOnline -->|NÃO| AskReason
-    
-    NewCustomer --> TransferSales[⚡ TRANSFERIR<br/>para VENDAS<br/>sales-agent]
-    
+    %% Cliente Online - Análise de Intenção
+    CheckOffline -->|NÃO| ProceedOnline[Cliente ONLINE sem problemas]
+    ProceedOnline --> AskReason[Perguntar: Qual o motivo do contato?]
     AskReason --> UserResponse[Cliente responde]
-    
-    UserResponse --> AnalyzeIntent{Analisar<br/>intenção}
-    
+    UserResponse --> AnalyzeIntent{Analisar intenção<br/>com IA Gemini 2.5 Flash}
     AnalyzeIntent -->|Problema técnico| TransferLuan
     AnalyzeIntent -->|Dúvida financeira| TransferJulia
     AnalyzeIntent -->|Interesse comercial| TransferSales
-    AnalyzeIntent -->|Informação geral| CloeResponds[Cloé responde<br/>diretamente]
+    AnalyzeIntent -->|Informação geral| InfoAgent[💬 Cloé continua<br/>informações gerais]
+
+    %% Clientes Novos
+    NewCustomer --> TransferSales[⚡ Transferir para VENDAS<br/>sales-agent]
+
+    %% Julia (Financeiro)
+    TransferJulia --> Julia[💰 JULIA - Agente Financeiro]
+    Julia --> CheckAutoUnblock{Pode desbloquear<br/>automaticamente?}
+    CheckAutoUnblock -->|SIM| ProcessAutoUnblock[🔓 Executar desbloqueio de confiança]
+    CheckAutoUnblock -->|NÃO| SendPayment[Enviar QR Code PIX + Instruções]
     
-    TransferJulia --> Julia[💰 JULIA<br/>Agente Financeiro]
-    TransferLuan --> Luan[🔧 LUAN<br/>Agente Técnico]
-    TransferSales --> Sales[🤝 VENDAS<br/>Agente Comercial]
-    
-    Julia --> AutoUnblock{Tentar<br/>desbloqueio<br/>automático}
-    AutoUnblock -->|Sucesso| SendPayment[Enviar QR Code<br/>e dados pagamento]
-    AutoUnblock -->|Falha| ManualSupport[Suporte manual]
-    
-    SendPayment --> JuliaContinue[Julia continua<br/>atendimento]
-    ManualSupport --> JuliaContinue
-    
-    Luan --> TechDiagnosis[Diagnóstico técnico:<br/>- Luzes do equipamento<br/>- Testes de conectividade<br/>- Reinicialização]
-    
-    Sales --> SalesProcess[Processo de vendas:<br/>- Consultar CEP<br/>- Apresentar planos<br/>- Criar pedido]
-    
-    JuliaContinue --> Resolved{Resolvido?}
-    TechDiagnosis --> Resolved
-    SalesProcess --> Resolved
-    CloeResponds --> Resolved
-    
-    Resolved -->|SIM| End([✅ Conversa finalizada])
-    Resolved -->|NÃO| Continue[Continuar<br/>com agente atual]
-    
-    Continue --> Resolved
-    
+    ProcessAutoUnblock --> SendPayment
+    SendPayment --> MonitorPayment[⏱️ Monitorar pagamento em tempo real]
+    MonitorPayment --> PaymentConfirmed{Pagamento<br/>confirmado?}
+    PaymentConfirmed -->|SIM| AutoUnblock[✅ Desbloqueio automático]
+    PaymentConfirmed -->|Timeout 30min| RemindPayment[Lembrar cliente]
+    RemindPayment --> MonitorPayment
+    AutoUnblock --> JuliaContinue[Atendimento contínuo com Julia]
+    JuliaContinue --> Resolved
+
+    %% Luan (Técnico)
+    TransferLuan --> Luan[🔧 LUAN - Suporte Técnico]
+    Luan --> TechDiagnosis[Diagnóstico:<br/>luzes ONT, conectividade, sinal]
+    TechDiagnosis --> CheckEquipment[🔌 Verificar equipamentos via IXC API]
+    CheckEquipment --> TroubleshootSteps[Orientar troubleshooting passo a passo]
+    TroubleshootSteps --> FixIssue{Problema resolvido?}
+    FixIssue -->|SIM| Resolved
+    FixIssue -->|NÃO| ScheduleVisit[📅 Agendar visita técnica]
+    ScheduleVisit --> Resolved
+
+    %% Vendas
+    TransferSales --> Sales[🤝 VENDAS - Agente Comercial]
+    Sales --> CheckCoverage[🗺️ Consultar CEP de cobertura]
+    CheckCoverage -->|Sem cobertura| InformUnavailable[Informar indisponibilidade + Notificar interesse]
+    CheckCoverage -->|Com cobertura| ShowPlans[Apresentar planos disponíveis]
+    ShowPlans --> SelectPlan{Cliente escolhe plano?}
+    SelectPlan -->|SIM| CreateOrder[Criar pedido no IXC]
+    SelectPlan -->|NÃO| FollowUp[Agendar follow-up]
+    CreateOrder --> Resolved
+    FollowUp --> Resolved
+    InformUnavailable --> Resolved
+
+    %% InfoAgent (Cloé continua)
+    InfoAgent --> Resolved
+
+    %% Encerramento
+    Resolved --> End([✅ Conversa finalizada])
+
+    %% Estilos
     style Start fill:#e3f2fd
     style End fill:#c8e6c9
     style Cloe fill:#fff9c4
     style Julia fill:#f8bbd0
     style Luan fill:#b3e5fc
     style Sales fill:#c5e1a5
-    style TransferJulia fill:#ff4081
-    style TransferLuan fill:#29b6f6
-    style TransferSales fill:#66bb6a`}
+    style TransferJulia fill:#ff4081,color:#fff
+    style TransferLuan fill:#29b6f6,color:#fff
+    style TransferSales fill:#66bb6a,color:#fff
+    style TransferSalesCPF fill:#66bb6a,color:#fff
+    style InfoAgent fill:#e1bee7
+    style CheckMassOutage fill:#ff9800
+    style NotifyOutage fill:#ffc107`}
                   </pre>
                 </div>
               </ScrollArea>
