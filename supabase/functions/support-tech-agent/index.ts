@@ -203,24 +203,65 @@ SUAS RESPONSABILIDADES:
         → Orientar: esquecer rede e reconectar
         → Verificar se senha está correta
 
-5. **Escalonamento para N2/N3**
-   Escalonar IMEDIATAMENTE se:
-   - Cliente já reiniciou equipamento e continua sem conexão
-   - Luzes verdes mas nenhum dispositivo conecta
-   - Conecta mas não navega (após verificações básicas)
-   - Cliente relata que cabo está danificado
-   - Suspeita de problema de sinal/OLT
+5. **Abertura de Chamados Técnicos (OS)**
+   Você TEM ACESSO ao IXC e pode criar chamados técnicos automaticamente.
    
-   NÃO ESCALONAR se:
+   ABRA CHAMADO quando diagnosticar:
+   - ✅ Fonte de alimentação queimada (equipamento sem energia)
+   - ✅ Cabo danificado ou rompido
+   - ✅ Equipamento defeituoso (não liga, não autentica após testes)
+   - ✅ Problema de sinal que não resolve remotamente
+   - ✅ Necessidade de troca de equipamento
+   - ✅ Qualquer problema que EXIJA presença técnica no local
+   
+   COMO ABRIR:
+   Quando concluir o diagnóstico e determinar que precisa de visita técnica:
+   1. Use a ferramenta criar_chamado_ixc
+   2. Informe o tipo do problema
+   3. Descreva detalhadamente o diagnóstico
+   4. Defina a urgência corretamente
+   5. Informe ao cliente que o chamado foi aberto e equipe entrará em contato
+   
+   NÃO ABRA CHAMADO se:
    - Problema é claramente no dispositivo do cliente
    - Senha de Wi-Fi incorreta
    - Cliente não seguiu os passos corretamente
+   - Problema pode ser resolvido remotamente
 `;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
+
+    // Tool for creating IXC ticket
+    const tools = [{
+      type: "function",
+      function: {
+        name: "criar_chamado_ixc",
+        description: "Cria uma ordem de serviço (chamado) no IXC quando o problema requer visita técnica presencial. Use quando: equipamento sem energia/queimado, cabo danificado, problema de sinal que não resolve remotamente, necessidade de troca de equipamento.",
+        parameters: {
+          type: "object",
+          properties: {
+            tipo_problema: {
+              type: "string",
+              enum: ["fonte_queimada", "cabo_danificado", "equipamento_defeituoso", "problema_sinal", "troca_equipamento", "instalacao_reparo"],
+              description: "Tipo do problema identificado"
+            },
+            descricao: {
+              type: "string",
+              description: "Descrição detalhada do problema diagnosticado e ações já realizadas"
+            },
+            urgencia: {
+              type: "string",
+              enum: ["baixa", "media", "alta", "critica"],
+              description: "Nível de urgência do chamado"
+            }
+          },
+          required: ["tipo_problema", "descricao", "urgencia"]
+        }
+      }
+    }];
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -235,6 +276,8 @@ SUAS RESPONSABILIDADES:
           ...conversationHistory,
           ...messages
         ],
+        tools: tools,
+        tool_choice: "auto",
         temperature: parseFloat(agentConfig.temperature),
         max_tokens: agentConfig.max_tokens,
       }),
@@ -247,7 +290,81 @@ SUAS RESPONSABILIDADES:
     }
 
     const aiData = await aiResponse.json();
-    const assistantMessage = aiData.choices[0].message.content;
+    const choice = aiData.choices[0];
+    let assistantMessage = choice.message.content;
+
+    // Check if AI wants to create a ticket
+    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+      const toolCall = choice.message.tool_calls[0];
+      
+      if (toolCall.function.name === 'criar_chamado_ixc') {
+        const args = JSON.parse(toolCall.function.arguments);
+        
+        console.log('Creating IXC ticket with args:', args);
+        
+        // Create ticket in IXC
+        const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
+        const ixcUsername = Deno.env.get('IXC_API_USERNAME');
+        const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+        
+        if (ixcBaseUrl && customerData?.ixc_client_id) {
+          try {
+            // Map problem types to IXC ticket types (adjust IDs according to your IXC setup)
+            const tipoMap: Record<string, number> = {
+              'fonte_queimada': 1,
+              'cabo_danificado': 2,
+              'equipamento_defeituoso': 3,
+              'problema_sinal': 4,
+              'troca_equipamento': 5,
+              'instalacao_reparo': 6
+            };
+
+            const ixcResponse = await fetch(`${ixcBaseUrl}/webservice/v1/su_oss_chamado`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${btoa(`${ixcUsername}:${ixcPassword}`)}`
+              },
+              body: JSON.stringify({
+                id_cliente: customerData.ixc_client_id,
+                id_tipo_chamado: tipoMap[args.tipo_problema] || 1,
+                descricao: args.descricao,
+                prioridade: args.urgencia === 'critica' ? 'alta' : args.urgencia,
+                status: 'A' // Aberto
+              })
+            });
+
+            if (ixcResponse.ok) {
+              const ticketData = await ixcResponse.json();
+              console.log('IXC ticket created:', ticketData);
+              
+              // Update conversation with ticket info
+              if (conversationId) {
+                await supabase
+                  .from('conversations')
+                  .update({
+                    metadata: {
+                      ixc_ticket_id: ticketData.id || ticketData.protocolo,
+                      ticket_type: args.tipo_problema,
+                      ticket_created_at: new Date().toISOString()
+                    },
+                    status: 'scheduled'
+                  })
+                  .eq('id', conversationId);
+              }
+
+              assistantMessage = `${assistantMessage}\n\n✅ Chamado criado com sucesso! Protocolo: ${ticketData.id || ticketData.protocolo}. Nossa equipe técnica entrará em contato em breve para agendar a visita.`;
+            } else {
+              console.error('Error creating IXC ticket:', await ixcResponse.text());
+              assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica, mas tive um problema ao registrar o chamado. Por favor, anote o protocolo de atendimento e nossa equipe retornará em breve.`;
+            }
+          } catch (error) {
+            console.error('Error calling IXC API:', error);
+            assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica. Vou registrar internamente e nossa equipe entrará em contato para agendar.`;
+          }
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({ message: assistantMessage }),
