@@ -128,6 +128,10 @@ IMPORTANTE: Siga os fluxos documentados para resolver problemas de forma eficien
     const isCustomerIdentified = customerName && customerData?.ixc_client_id;
     const customerFirstName = customerName ? customerName.split(' ')[0] : '';
     
+    // 🆕 Verificar se o cliente está OFFLINE
+    const isCustomerOffline = customerData?.metadata?.customer_status === 'offline' || 
+                              customerData?.metadata?.cliente_status?.isOnline === false;
+    
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
@@ -147,10 +151,24 @@ Nome: ${customerName}
 Telefone: ${customerPhone || 'Não informado'}
 ID IXC: ${customerData.ixc_client_id}
 CPF: ${customerCpf || 'Não informado'}
+${isCustomerOffline ? '🔴 STATUS: OFFLINE (sem internet)' : '🟢 STATUS: ONLINE'}
 
 IMPORTANTE: O cliente JÁ FOI IDENTIFICADO pela Cloé. 
 NÃO PEÇA O CPF NOVAMENTE!
-Cumprimente-o pelo nome (${customerFirstName}) e vá direto para entender o problema técnico.
+
+${isCustomerOffline ? `
+🚨 AÇÃO IMEDIATA NECESSÁRIA:
+O cliente está SEM INTERNET. Inicie o troubleshooting básico IMEDIATAMENTE:
+1. Cumprimente pelo nome (${customerFirstName})
+2. Informe que você sabe que ele está sem internet
+3. Peça para verificar as luzes do modem/roteador
+4. Pergunte qual é a cor e comportamento das luzes (piscando, fixas, apagadas)
+
+NÃO pergunte "o que está acontecendo?" - você JÁ SABE que ele está offline!
+Vá direto para o diagnóstico das luzes do equipamento.
+` : `
+Cumprimente-o pelo nome (${customerFirstName}) e pergunte qual problema técnico ele está enfrentando.
+`}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ` : `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

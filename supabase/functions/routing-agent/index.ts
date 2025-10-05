@@ -125,9 +125,9 @@ serve(async (req) => {
         );
       }
       
-      // Solicitar CPF
+      // Solicitar CPF com identificação da Cloé
       const askMessage = attempts === 0 
-        ? 'Olá! Para começarmos, você poderia me informar seu CPF? 😊'
+        ? 'Olá! Sou a Cloé, assistente virtual da SUPERNET FIBRA 😊\n\nPara começarmos, você poderia me informar seu CPF?'
         : 'Por favor, informe um CPF válido no formato: 000.000.000-00';
       
       // Incrementar contador de tentativas
@@ -1091,7 +1091,11 @@ serve(async (req) => {
                   conversationId,
                   customerData: {
                     ...customerData,
-                    mass_outage_info: massOutageMessage // Passa informação de queda em massa
+                    mass_outage_info: massOutageMessage, // Passa informação de queda em massa
+                    metadata: {
+                      ...customerData.metadata,
+                      customer_status: 'offline' // 🆕 Passar status offline explicitamente
+                    }
                   },
                 },
               });
