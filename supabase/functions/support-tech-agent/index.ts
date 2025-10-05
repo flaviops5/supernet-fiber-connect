@@ -141,7 +141,7 @@ Peça educadamente: "Para começarmos, você poderia me informar o seu nome comp
 SUAS RESPONSABILIDADES:
 
 1. **Atendimento Inicial**
-   - Receber e registrar chamados técnicos
+   - Receber e registrar atendimentos técnicos
    - Fazer diagnóstico básico do problema
    - Classificar a urgência e complexidade
 
@@ -203,10 +203,10 @@ SUAS RESPONSABILIDADES:
         → Orientar: esquecer rede e reconectar
         → Verificar se senha está correta
 
-5. **Abertura de Chamados Técnicos (OS)**
-   Você TEM ACESSO ao IXC e pode criar chamados técnicos automaticamente.
+5. **Abertura de Atendimentos Técnicos (OS)**
+   Você TEM ACESSO ao IXC e pode criar atendimentos técnicos automaticamente.
    
-   ABRA CHAMADO quando diagnosticar:
+   ABRA ATENDIMENTO quando diagnosticar:
    - ✅ Fonte de alimentação queimada (equipamento sem energia)
    - ✅ Cabo danificado ou rompido
    - ✅ Equipamento defeituoso (não liga, não autentica após testes)
@@ -216,13 +216,13 @@ SUAS RESPONSABILIDADES:
    
    COMO ABRIR:
    Quando concluir o diagnóstico e determinar que precisa de visita técnica:
-   1. Use a ferramenta criar_chamado_ixc
+   1. Use a ferramenta criar_atendimento_ixc
    2. Informe o tipo do problema
    3. Descreva detalhadamente o diagnóstico
    4. Defina a urgência corretamente
-   5. Informe ao cliente que o chamado foi aberto e equipe entrará em contato
+   5. Informe ao cliente que o atendimento foi aberto e equipe entrará em contato
    
-   NÃO ABRA CHAMADO se:
+   NÃO ABRA ATENDIMENTO se:
    - Problema é claramente no dispositivo do cliente
    - Senha de Wi-Fi incorreta
    - Cliente não seguiu os passos corretamente
@@ -238,8 +238,8 @@ SUAS RESPONSABILIDADES:
     const tools = [{
       type: "function",
       function: {
-        name: "criar_chamado_ixc",
-        description: "Cria uma ordem de serviço (chamado) no IXC quando o problema requer visita técnica presencial. Use quando: equipamento sem energia/queimado, cabo danificado, problema de sinal que não resolve remotamente, necessidade de troca de equipamento.",
+        name: "criar_atendimento_ixc",
+        description: "Cria uma ordem de serviço (atendimento) no IXC quando o problema requer visita técnica presencial. Use quando: equipamento sem energia/queimado, cabo danificado, problema de sinal que não resolve remotamente, necessidade de troca de equipamento.",
         parameters: {
           type: "object",
           properties: {
@@ -255,7 +255,7 @@ SUAS RESPONSABILIDADES:
             urgencia: {
               type: "string",
               enum: ["baixa", "media", "alta", "critica"],
-              description: "Nível de urgência do chamado"
+              description: "Nível de urgência do atendimento"
             }
           },
           required: ["tipo_problema", "descricao", "urgencia"]
@@ -297,7 +297,7 @@ SUAS RESPONSABILIDADES:
     if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
       const toolCall = choice.message.tool_calls[0];
       
-      if (toolCall.function.name === 'criar_chamado_ixc') {
+      if (toolCall.function.name === 'criar_atendimento_ixc') {
         const args = JSON.parse(toolCall.function.arguments);
         
         console.log('Creating IXC ticket with args:', args);
@@ -353,10 +353,10 @@ SUAS RESPONSABILIDADES:
                   .eq('id', conversationId);
               }
 
-              assistantMessage = `${assistantMessage}\n\n✅ Chamado criado com sucesso! Protocolo: ${ticketData.id || ticketData.protocolo}. Nossa equipe técnica entrará em contato em breve para agendar a visita.`;
+              assistantMessage = `${assistantMessage}\n\n✅ Atendimento criado com sucesso! Protocolo: ${ticketData.id || ticketData.protocolo}. Nossa equipe técnica entrará em contato em breve para agendar a visita.`;
             } else {
               console.error('Error creating IXC ticket:', await ixcResponse.text());
-              assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica, mas tive um problema ao registrar o chamado. Por favor, anote o protocolo de atendimento e nossa equipe retornará em breve.`;
+              assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei que você precisa de uma visita técnica, mas tive um problema ao registrar o atendimento. Por favor, anote o protocolo de atendimento e nossa equipe retornará em breve.`;
             }
           } catch (error) {
             console.error('Error calling IXC API:', error);
