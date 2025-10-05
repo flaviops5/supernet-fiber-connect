@@ -206,7 +206,17 @@ ${pixData.data?.qrcode_link ? `🔗 Link de Pagamento: ${pixData.data.qrcode_lin
 🌐 Instrua o cliente a testar a navegação IMEDIATAMENTE
 ${paymentInfo}
 
-IMPORTANTE: Explique ao cliente que o serviço foi liberado por 3 dias e após esse período, caso não haja pagamento, o bloqueio retornará automaticamente.
+🔔 MONITORAMENTO AUTOMÁTICO DE PAGAMENTO ATIVO:
+- Sistema irá verificar o pagamento a cada 5 minutos
+- Notificação automática será enviada quando o pagamento for confirmado
+- Timeout de 10 minutos para aguardar confirmação
+- Após timeout, oriente cliente a entrar em contato se já pagou
+
+IMPORTANTE: Explique ao cliente que:
+1. O serviço foi liberado por 3 dias para regularização
+2. Assim que o pagamento for confirmado no sistema, receberá notificação automática
+3. Se já pagou, pode levar alguns minutos para confirmar no sistema
+4. Após 3 dias sem pagamento, o bloqueio retornará automaticamente
 `;
               } else {
                 console.log('❌ Falha no desbloqueio:', unblockData.data?.error);

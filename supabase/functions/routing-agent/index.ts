@@ -82,9 +82,140 @@ serve(async (req) => {
     // Check if message contains CPF
     const cpfMatch = message.match(/\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/);
     
+    // Validar formato do CPF antes de prosseguir
+    const isValidCPFFormat = (cpf: string): boolean => {
+      const clean = cpf.replace(/\D/g, '');
+      if (clean.length !== 11) return false;
+      if (/^(\d)\1{10}$/.test(clean)) return false; // Rejeita CPFs com todos dígitos iguais
+      return true;
+    };
+    
+    // Se não tem CPF na conversa, solicitar
+    if (!conversation?.customer_cpf && !cpfMatch) {
+      const attempts = conversation?.metadata?.cpf_attempts || 0;
+      
+      if (attempts >= 3) {
+        console.log('⚠️ Máximo de tentativas de CPF atingido - transferindo para vendas');
+        const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        
+        const transferMessage = `Vejo que está com dificuldades com o CPF. Vou transferir você para nossa equipe de vendas que poderá auxiliar! ⏳\n\n📋 *Protocolo:* ${protocol}`;
+        
+        await supabase
+          .from('conversation_messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Cloé (Atendente Virtual)',
+            content: transferMessage,
+            ai_suggestion: true,
+          });
+        
+        return new Response(
+          JSON.stringify({
+            agent: 'sales',
+            message: transferMessage,
+            protocol,
+            routeReason: 'cpf_validation_failed',
+            autoRouted: true,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
+      // Solicitar CPF
+      const askMessage = attempts === 0 
+        ? 'Olá! Para começarmos, você poderia me informar seu CPF? 😊'
+        : 'Por favor, informe um CPF válido no formato: 000.000.000-00';
+      
+      // Incrementar contador de tentativas
+      await supabase
+        .from('conversations')
+        .update({
+          metadata: {
+            ...conversation?.metadata,
+            cpf_attempts: attempts + 1
+          }
+        })
+        .eq('id', conversationId);
+      
+      return new Response(
+        JSON.stringify({
+          agent: 'routing',
+          message: askMessage,
+          requiresCPF: true,
+          attempts: attempts + 1
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     // If CPF was provided, identify customer
     if (cpfMatch && !conversation?.customer_cpf) {
       const cpf = cpfMatch[1].replace(/\D/g, '');
+      
+      // Validar formato
+      if (!isValidCPFFormat(cpf)) {
+        const attempts = conversation?.metadata?.cpf_attempts || 0;
+        
+        await supabase
+          .from('conversations')
+          .update({
+            metadata: {
+              ...conversation?.metadata,
+              cpf_attempts: attempts + 1
+            }
+          })
+          .eq('id', conversationId);
+        
+        if (attempts + 1 >= 3) {
+          const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+          const transferMessage = `CPF inválido. Vou transferir você para nossa equipe que poderá auxiliar! ⏳\n\n📋 *Protocolo:* ${protocol}`;
+          
+          await supabase
+            .from('conversation_messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_name: 'Cloé (Atendente Virtual)',
+              content: transferMessage,
+              ai_suggestion: true,
+            });
+          
+          return new Response(
+            JSON.stringify({
+              agent: 'sales',
+              message: transferMessage,
+              protocol,
+              routeReason: 'cpf_validation_failed',
+              autoRouted: true,
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({
+            agent: 'routing',
+            message: 'CPF inválido. Por favor, informe um CPF válido no formato: 000.000.000-00',
+            requiresCPF: true,
+            attempts: attempts + 1
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+      
       console.log('CPF found in message:', cpf);
 
       // 🆕 PASSO 1: Consultar histórico de contatos ANTES do IXC
@@ -325,6 +456,34 @@ serve(async (req) => {
 
             const isOnline = clientStatus.isOnline === true;
             if (!isOnline) {
+              // 🆕 VERIFICAR MASS OUTAGE antes de transferir para Luan
+              const { data: massOutage } = await supabase
+                .from('mass_outage_events')
+                .select('*')
+                .eq('status', 'active')
+                .order('detected_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              
+              if (massOutage) {
+                console.log('⚠️ MASS OUTAGE detectado - informando cliente');
+                const outageMessage = `Olá! Identificamos uma **interrupção em massa** na sua região. 🚨\n\nNossa equipe técnica já está trabalhando na solução. Previsão de normalização: em breve.\n\nAcompanhe atualizações ou aguarde. Pedimos desculpas pelo transtorno! 🙏`;
+                
+                return new Response(
+                  JSON.stringify({
+                    agent: 'routing',
+                    message: outageMessage,
+                    customerIdentified: true,
+                    customerData: mockCustomerData,
+                    massOutage: true,
+                  }),
+                  {
+                    status: 200,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                  }
+                );
+              }
+              
               console.log('🧪 MOCK: Cliente OFFLINE - roteando para Luan (Suporte Técnico)');
               const firstName = mockCustomerData.customer_name.split(' ')[0];
               

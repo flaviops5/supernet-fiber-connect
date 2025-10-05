@@ -25,6 +25,35 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // 🆕 VERIFICAR MASS OUTAGE na primeira mensagem
+    const { data: massOutage } = await supabase
+      .from('mass_outage_events')
+      .select('*')
+      .eq('status', 'active')
+      .order('detected_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    let massOutageContext = '';
+    if (massOutage) {
+      console.log('⚠️ MASS OUTAGE ativo detectado');
+      massOutageContext = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 ALERTA DE INTERRUPÇÃO EM MASSA ATIVA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRÍTICO: Há uma interrupção em massa afetando múltiplos clientes na região.
+- Região afetada: ${massOutage.region_pattern}
+- Clientes afetados: ${massOutage.affected_count}
+- Detectado em: ${new Date(massOutage.detected_at).toLocaleString('pt-BR')}
+
+INSTRUÇÃO: Informe o cliente IMEDIATAMENTE sobre a interrupção em massa.
+Explique que nossa equipe técnica já está trabalhando na solução.
+NÃO solicite diagnósticos detalhados neste momento.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+    }
+
     // Fetch agent configuration from database
     const { data: agentConfig, error: configError } = await supabase
       .from('agent_configurations')
@@ -92,6 +121,8 @@ IMPORTANTE: Siga os fluxos documentados para resolver problemas de forma eficien
     const systemPrompt = agentConfig.system_prompt + `
 
 Você é o Luan, agente de Suporte Técnico N1.
+
+${massOutageContext}
 
 BASE DE CONHECIMENTO:
 ${knowledgeContext}
