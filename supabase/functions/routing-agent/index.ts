@@ -932,7 +932,75 @@ serve(async (req) => {
           // Senão, verifica se está offline → Suporte Técnico (Luan)
           const isOnline = clientStatus.isOnline === true;
           if (!isOnline) {
-            console.log('Cliente OFFLINE - verificando se há queda em massa...');
+            console.log('Cliente OFFLINE - verificando departamento atual...');
+            
+            // 🆕 VERIFICAR SE JÁ EXISTE ATENDIMENTO EM ANDAMENTO
+            const { data: currentConversation } = await supabase
+              .from('conversations')
+              .select('department, metadata')
+              .eq('id', conversationId)
+              .single();
+
+            const existingProtocol = currentConversation?.metadata?.protocol;
+            const alreadyInSupport = currentConversation?.department === 'support_tech';
+
+            console.log('Departamento atual:', currentConversation?.department);
+            console.log('Protocolo existente:', existingProtocol);
+            console.log('Já em atendimento técnico:', alreadyInSupport);
+
+            // SE JÁ ESTÁ EM ATENDIMENTO TÉCNICO, APENAS CONTINUA SEM CRIAR NOVO PROTOCOLO
+            if (alreadyInSupport && existingProtocol) {
+              console.log('⚠️ Cliente já está em atendimento - continuando sem criar novo protocolo');
+
+              try {
+                const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
+                  body: {
+                    messages: [{ role: 'user', content: message }],
+                    conversationId,
+                    customerData: {
+                      ...customerData,
+                      existingProtocol
+                    },
+                  },
+                });
+
+                if (techError) {
+                  console.error('Erro ao invocar support-tech-agent:', techError);
+                  throw techError;
+                }
+
+                if (techData && techData.message) {
+                  // Persistir mensagem do Luan
+                  await supabase
+                    .from('conversation_messages')
+                    .insert({
+                      conversation_id: conversationId,
+                      sender_type: 'agent',
+                      sender_name: 'Luan Silva (Suporte Técnico N1)',
+                      content: techData.message,
+                      ai_suggestion: true,
+                      metadata: {}
+                    });
+
+                  return new Response(
+                    JSON.stringify({
+                      agent: 'support_tech',
+                      message: techData.message,
+                      protocol: existingProtocol,
+                      customerIdentified: true,
+                      customerData,
+                      continuingSupport: true
+                    }),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                  );
+                }
+              } catch (e) {
+                console.error('Erro ao continuar atendimento:', e);
+              }
+            }
+            
+            // SE NÃO ESTÁ EM ATENDIMENTO AINDA, CRIAR PROTOCOLO E TRANSFERIR (PRIMEIRA VEZ)
+            console.log('🆕 Primeira transferência - criando protocolo e transferindo para Luan');
             
             // Extrair padrão de região do login (ex: SRI-B de SRI-B-102)
             const customerLogin = customerData.metadata?.ixc_data?.login || '';
@@ -973,6 +1041,18 @@ serve(async (req) => {
             
             // Generate protocol
             const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+            // Atualizar metadata da conversa com o protocolo e departamento
+            await supabase
+              .from('conversations')
+              .update({
+                department: 'support_tech',
+                metadata: {
+                  ...currentConversation?.metadata,
+                  protocol
+                }
+              })
+              .eq('id', conversationId);
 
             // Server-side handoff: call Luan (support-tech-agent) immediately
             let techMessage: string | undefined = undefined;
