@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_log: {
+        Row: {
+          action_payload: Json | null
+          action_type: string
+          agent_name: string
+          client_cpf: string | null
+          created_at: string
+          id: string
+          ixcticket_id: string | null
+          result: Json | null
+        }
+        Insert: {
+          action_payload?: Json | null
+          action_type: string
+          agent_name: string
+          client_cpf?: string | null
+          created_at?: string
+          id?: string
+          ixcticket_id?: string | null
+          result?: Json | null
+        }
+        Update: {
+          action_payload?: Json | null
+          action_type?: string
+          agent_name?: string
+          client_cpf?: string | null
+          created_at?: string
+          id?: string
+          ixcticket_id?: string | null
+          result?: Json | null
+        }
+        Relationships: []
+      }
       agent_configurations: {
         Row: {
           agent_type: string
