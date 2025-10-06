@@ -39,7 +39,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
   const response = await fetch(\`\${EVOLUTION_API_BASE_URL}/message/sendText/SDR2\`, {
     method: 'POST',
     headers: {
-      'apikey': EVOLUTION_API_KEY,
+      'Authorization': \`Bearer \${EVOLUTION_API_KEY}\`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -49,7 +49,19 @@ async function sendWhatsAppMessage(phone: string, message: string) {
     }),
   });
 
-  return await response.json();
+  const data = await response.json();
+  
+  // Resposta esperada:
+  // {
+  //   "status": "success",
+  //   "message": "Message sent successfully",
+  //   "data": {
+  //     "id": "message-uuid",
+  //     "status": "SENT"
+  //   }
+  // }
+  
+  return data;
 }
 
 // 3. WEBHOOK CONFIGURATION

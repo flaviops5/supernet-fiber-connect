@@ -34,7 +34,7 @@ serve(async (req) => {
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers: {
-        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -55,9 +55,12 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        success: true,
+        status: 'success',
         message: 'Message sent successfully',
-        data: data
+        data: {
+          id: data.key?.id || data.messageId,
+          status: data.status || 'SENT'
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
