@@ -8,6 +8,7 @@ import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
 import TelemedicinaAgentWidget from '@/components/TelemedicinaAgentWidget';
+import { useEffect } from 'react';
 
 
 const Telemedicina = () => {
@@ -18,6 +19,48 @@ const Telemedicina = () => {
   const handleConsultar = () => {
     window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20consultar!', '_blank');
   };
+
+  // Configurar widget IXC Login para telemedicina
+  useEffect(() => {
+    // Configurar o widget
+    (window as any).IXCLoginConfig = {
+      apiUrl: 'https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1',
+      apiKey: 'telemedicina-auth',
+      buttonText: '🔐 Área do Cliente',
+      buttonStyle: 'secondary', // Usar estilo secundário para diferenciar
+      onSuccess: function(userData: any, telemedicinUrl: string) {
+        console.log('✅ Login realizado:', userData);
+        
+        if (userData.possui_telemedicina && telemedicinUrl) {
+          // Cliente tem telemedicina - abrir portal
+          window.open(telemedicinUrl, '_blank');
+        } else {
+          // Cliente não tem telemedicina - mostrar opções
+          alert(`Olá ${userData.nome}!\n\nVocê ainda não possui um plano de telemedicina ativo.\n\nDeseja contratar? Entre em contato conosco!`);
+          handleConsultar();
+        }
+      },
+      onError: function(error: any) {
+        console.error('❌ Erro no login:', error);
+        alert('Não foi possível fazer login. Verifique seu CPF e senha.');
+      },
+      debug: true
+    };
+
+    // Carregar script do widget
+    const script = document.createElement('script');
+    script.src = 'https://ixc-api.k1.mesotec.cloud/widget/ixc-login-widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      // Limpar script ao desmontar
+      if (script.parentNode) {
+        document.body.removeChild(script);
+      }
+      delete (window as any).IXCLoginConfig;
+    };
+  }, [handleConsultar]);
 
   const features = [
     {
@@ -152,15 +195,18 @@ const Telemedicina = () => {
                 </div>
               </div>
 
-              {/* CTA */}
-              <div className="flex justify-center lg:justify-start">
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button
                   onClick={handleConsultar}
                   size="lg"
-                  className="w-full max-w-[280px] bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-8 py-5 animate-glow-rotate"
+                  className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-bold px-8 py-5 animate-glow-rotate"
                 >
                   Consultar
                 </Button>
+                
+                {/* Widget Login Button Container */}
+                <div id="ixc-login-container" className="w-full sm:w-auto"></div>
               </div>
             </div>
 

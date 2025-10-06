@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.telemedicina-agent]
 verify_jwt = false
 
+[functions.telemedicina-auth]
+verify_jwt = false
+
 [functions.voice-to-text]
 verify_jwt = false
 
