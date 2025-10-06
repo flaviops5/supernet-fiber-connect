@@ -22,12 +22,20 @@ serve(async (req) => {
       );
     }
 
-    const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
+    let IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
-    if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      throw new Error('Configurações do IXC não encontradas');
+    // Fallback temporário se o secret não estiver configurado
+    if (!IXC_API_BASE_URL || IXC_API_BASE_URL.length > 100) {
+      console.warn('⚠️ IXC_API_BASE_URL não configurado, usando fallback');
+      IXC_API_BASE_URL = 'https://central.supernetfibra.com.br';
+    }
+
+    console.log('🔧 IXC URL:', IXC_API_BASE_URL.substring(0, 30) + '...');
+
+    if (!IXC_API_USERNAME || !IXC_API_PASSWORD) {
+      throw new Error('Credenciais do IXC não encontradas');
     }
 
     // Remove formatação do CPF
