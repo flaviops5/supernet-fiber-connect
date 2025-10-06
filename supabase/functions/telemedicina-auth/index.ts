@@ -35,18 +35,21 @@ serve(async (req) => {
     // 1. Buscar cliente no IXC pelo CPF usando o proxy
     console.log('🔍 Buscando cliente no IXC:', cleanCpf);
     
-    const searchQuery = new URLSearchParams({
-      cpf_cnpj: cleanCpf,
-      qtype: 'cliente.id',
-      rp: '1'
-    }).toString();
+    const searchBody = {
+      qtype: 'cliente.cnpj_cpf',
+      query: cleanCpf,
+      oper: '=',
+      page: '1',
+      rp: '1',
+      sortname: 'cliente.id',
+      sortorder: 'desc'
+    };
 
     const searchData = await callIxcWithRetry(
       proxyUrl,
-      'GET',
+      'POST',
       '/webservice/v1/cliente',
-      undefined,
-      searchQuery
+      searchBody
     );
 
     console.log('📦 Resposta da busca:', searchData.data);

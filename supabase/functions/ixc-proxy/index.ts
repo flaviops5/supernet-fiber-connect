@@ -102,31 +102,53 @@ serve(async (req) => {
     const url = `${IXC_BASE_URL}${path}${query ? '?' + query : ''}`;
     
     // Fazer requisição ao IXC
+    const ixcHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`
+    };
+
+    // Alguns endpoints do IXC exigem este header para listagens
+    if (method === 'POST' && path.startsWith('/webservice/v1/')) {
+      ixcHeaders['ixcsoft'] = 'listar';
+    }
+
     const ixcResponse = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`
-      },
+      headers: ixcHeaders,
       body: body ? JSON.stringify(body) : undefined
     });
 
-    const ixcData = await ixcResponse.json();
-    const duration = Date.now() - startTime;
+    // Tentar parsear como JSON; caso contrário, capturar texto (ex.: HTML de login)
+    const contentType = ixcResponse.headers.get('content-type') || '';
+    let ixcData: any = null;
+    let rawText: string | undefined;
+    try {
+      if (contentType.includes('application/json')) {
+        ixcData = await ixcResponse.json();
+      } else {
+        rawText = await ixcResponse.text();
+      }
+    } catch (_) {
+      try { rawText = await ixcResponse.text(); } catch { /* ignore */ }
+    }
 
+    const duration = Date.now() - startTime;
     console.log(`✅ IXC Response: ${ixcResponse.status} (${duration}ms)`);
 
-    // Armazenar em cache se GET bem-sucedido
-    if (method === 'GET' && ixcResponse.ok) {
+    // Armazenar em cache se GET bem-sucedido com JSON
+    if (method === 'GET' && ixcResponse.ok && ixcData) {
       cache.set(cacheKey, { data: ixcData, timestamp: Date.now() });
       console.log('💾 Cache STORED:', cacheKey);
     }
 
+    const ok = ixcResponse.ok && !!ixcData;
+
     const response: IXCProxyResponse = {
-      ok: ixcResponse.ok,
+      ok,
       status: ixcResponse.status,
       data: ixcData,
-      error: !ixcResponse.ok ? ixcData.message || ixcData.error || 'IXC error' : undefined
+      error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error'))
     };
 
     return new Response(
