@@ -80,7 +80,7 @@ serve(async (req) => {
 
     // 2. Gerar token de recuperação
     const recoveryToken = btoa(`${cliente.id}:${Date.now()}:${Math.random()}`);
-    const recoveryUrl = `https://telemedicina.supernet.com.br/reset-password?token=${recoveryToken}`;
+    const recoveryUrl = `https://lovable.dev/projects/2cf5ae9f-dc50-45cd-be95-157396f6dc10/telemedicina?recovery_token=${recoveryToken}&customer_id=${cliente.id}`;
 
     // 3. Registrar solicitação no histórico
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -103,11 +103,30 @@ serve(async (req) => {
           recovery_requested_at: new Date().toISOString(),
         }
       });
-    }
 
-    // 4. Aqui você enviaria o e-mail com o link de recuperação
-    // Usando a edge function send-locaweb-email ou outro serviço
-    console.log('📧 Link de recuperação gerado:', recoveryUrl);
+      // 4. Enviar e-mail de recuperação via Locaweb
+      console.log('📧 Enviando e-mail de recuperação...');
+      
+      const emailResponse = await supabase.functions.invoke('send-locaweb-email', {
+        body: {
+          to: cliente.email,
+          template_slug: 'telemedicina-password-recovery',
+          variables: {
+            customer_name: cliente.razao,
+            recovery_url: recoveryUrl,
+            customer_cpf: cleanCpf || 'Não informado'
+          }
+        }
+      });
+
+      if (emailResponse.error) {
+        console.error('❌ Erro ao enviar e-mail:', emailResponse.error);
+      } else {
+        console.log('✅ E-mail de recuperação enviado com sucesso');
+      }
+    } else {
+      console.log('📧 Link de recuperação gerado:', recoveryUrl);
+    }
 
     // 5. Retornar sucesso
     return new Response(
