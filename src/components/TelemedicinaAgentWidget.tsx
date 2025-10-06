@@ -1,95 +1,72 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Bot, MessageCircle, Stethoscope } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Stethoscope, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TelemedicinaChatAgent } from './TelemedicinaChatAgent';
 
-interface TelemedicinaAgentWidgetProps {
-  chatbotId?: string;
-}
-
-const TelemedicinaAgentWidget: React.FC<TelemedicinaAgentWidgetProps> = ({ 
-  chatbotId = 'telemedicina-assistant' 
-}) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+const TelemedicinaAgentWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(true);
 
   useEffect(() => {
     // Auto-open after 8 seconds
     const timer = setTimeout(() => {
       setIsOpen(true);
+      setShowTooltip(false);
     }, 8000);
 
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (isOpen && !isLoaded) {
-      setIsLoaded(true);
-    }
-  }, [isOpen, isLoaded]);
-
   const toggleChat = () => {
     setIsOpen(!isOpen);
+    setShowTooltip(false);
   };
 
   return (
     <>
-      {/* Chat Trigger Button */}
-      <Button
-        onClick={toggleChat}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-xl cta-gradient p-0 hover:scale-110 transition-transform"
-        aria-label="Abrir chat"
-      >
-        {isOpen ? (
-          <MessageCircle className="w-7 h-7" />
-        ) : (
+      {/* Chat Trigger Button - Only show when chat is closed */}
+      {!isOpen && (
+        <Button
+          onClick={toggleChat}
+          className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-xl cta-gradient p-0 hover:scale-110 transition-transform"
+          aria-label="Abrir chat de telemedicina"
+        >
           <Stethoscope className="w-7 h-7 animate-pulse" />
-        )}
-      </Button>
+        </Button>
+      )}
 
-      {/* Chat Window */}
+      {/* Chat Window - TelemedicinaChatAgent with custom positioning */}
       {isOpen && (
-        <div className="fixed bottom-28 right-6 z-50 w-[380px] h-[600px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-8rem)] bg-card rounded-2xl shadow-2xl border-2 border-primary/20 overflow-hidden animate-scale-in">
-          {/* Header */}
-          <div className="bg-gradient-hero text-white p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Stethoscope className="w-6 h-6" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold">Assistente de Telemedicina</h3>
-              <p className="text-xs text-white/80">Online - Responde em segundos</p>
-            </div>
-          </div>
-
-          {/* Chat Content */}
-          <div className="h-[calc(100%-4rem)] bg-background">
-            {isLoaded && (
-              <iframe
-                ref={iframeRef}
-                src={`https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/telemedicina-agent?chatbot_id=${chatbotId}`}
-                className="w-full h-full border-0"
-                title="Chat de Telemedicina"
-                allow="microphone"
-              />
-            )}
-            {!isLoaded && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <Stethoscope className="w-12 h-12 text-primary mx-auto mb-4 animate-pulse" />
-                  <p className="text-muted-foreground">Carregando assistente...</p>
-                </div>
-              </div>
-            )}
+        <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-8rem)] animate-scale-in">
+          <div className="relative h-full">
+            <TelemedicinaChatAgent />
+            {/* Close button overlay */}
+            <Button
+              onClick={toggleChat}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
+              aria-label="Fechar chat"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       )}
 
-      {/* Tooltip para primeira visita */}
-      {!isOpen && (
+      {/* Tooltip for first visit */}
+      {!isOpen && showTooltip && (
         <div className="fixed bottom-28 right-6 z-40 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg p-3 max-w-xs border border-border">
-            <p className="text-sm text-foreground">
-              <strong>Dúvidas sobre telemedicina?</strong><br />
+          <div className="bg-card rounded-lg shadow-elegant p-3 max-w-xs border border-border">
+            <button
+              onClick={() => setShowTooltip(false)}
+              className="absolute top-1 right-1 text-muted-foreground hover:text-foreground"
+              aria-label="Fechar dica"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <p className="text-sm text-foreground pr-6">
+              <strong className="text-primary">Dúvidas sobre telemedicina?</strong><br />
               Fale com nosso assistente médico especializado!
             </p>
           </div>
