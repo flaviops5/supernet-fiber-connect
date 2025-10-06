@@ -39,6 +39,7 @@ import {
   Bell,
   DollarSign,
   Activity,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,6 +111,11 @@ const agentsItems = [
     title: "IA Corporativa",
     url: "/admin/corporate-ai",
     icon: Brain,
+  },
+  {
+    title: "WhatsApp",
+    url: "/admin/whatsapp",
+    icon: MessageCircle,
   },
   {
     title: "Integração IXC",

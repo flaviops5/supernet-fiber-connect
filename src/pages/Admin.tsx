@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle, MessageSquare } from "lucide-react";
+import { Trash2, BarChart3, Users, CreditCard, MapPin, Edit, Plus, Monitor, HelpCircle, MessageSquare, MessageCircle } from "lucide-react";
 import { FinancialDashboard } from "@/components/FinancialDashboard";
 import { InstructionsCard } from "@/components/InstructionsCard";
 import { GoogleReviews } from "@/components/GoogleReviews";
@@ -39,6 +39,7 @@ import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
+import WhatsAppConversations from '@/components/WhatsAppConversations';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -1815,6 +1816,7 @@ const Admin = () => {
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
+                <Route path="/whatsapp" element={<WhatsAppConversations />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>
