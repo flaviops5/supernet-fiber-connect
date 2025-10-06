@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { checkRateLimit, formatBlockedTime } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -217,6 +218,42 @@ serve(async (req) => {
       }
       
       console.log('CPF found in message:', cpf);
+
+      // 🛡️ RATE LIMITING: Verificar antes de consultar IXC
+      const rateLimitCheck = await checkRateLimit(cpf);
+      
+      if (!rateLimitCheck.allowed) {
+        const blockedMessage = rateLimitCheck.blockedUntil
+          ? `Você atingiu o limite de mensagens. Por favor, aguarde ${formatBlockedTime(rateLimitCheck.blockedUntil)} antes de tentar novamente.`
+          : 'Muitas tentativas. Por favor, aguarde alguns minutos.';
+
+        console.warn(`🚫 Rate limit blocked: CPF ${cpf}`);
+
+        await supabase
+          .from('conversation_messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Cloé (Atendente Virtual)',
+            content: blockedMessage,
+            ai_suggestion: true,
+          });
+
+        return new Response(
+          JSON.stringify({
+            agent: 'routing',
+            message: blockedMessage,
+            rateLimited: true,
+            blockedUntil: rateLimitCheck.blockedUntil
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      console.log(`✅ Rate limit OK: ${rateLimitCheck.remaining} requests remaining`);
 
       // 🆕 PASSO 1: Consultar histórico de contatos ANTES do IXC
       const { data: contactHistory } = await supabase

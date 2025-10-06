@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, AlertCircle, CheckCircle, Clock, TrendingUp, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Activity, AlertCircle, CheckCircle, Clock, TrendingUp, XCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { SystemRobustnessScore } from '@/components/SystemRobustnessScore';
 
 export default function SystemMetrics() {
   const [health, setHealth] = useState<any>(null);
@@ -71,10 +73,22 @@ export default function SystemMetrics() {
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-foreground">System Metrics</h1>
-          <p className="text-muted-foreground">Monitoramento em tempo real do sistema</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground">System Metrics</h1>
+            <p className="text-muted-foreground">Monitoramento em tempo real do sistema</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => window.open('https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/system-health', '_blank')}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Health Check API
+          </Button>
         </div>
+
+        {/* Robustness Score Card */}
+        <SystemRobustnessScore />
 
         {/* Overall Health */}
         <Card>
