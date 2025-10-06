@@ -22,21 +22,52 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    // Ler corpo PRIMEIRO (só pode ser lido uma vez)
+    const requestBody = await req.json() as IXCProxyRequest;
+    const { method, path, query, body } = requestBody;
+
     // 🔐 Validar HMAC (se configurado)
     const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
     if (HMAC_SECRET) {
-      const validation = await validateHMACRequest(req, HMAC_SECRET);
-      if (!validation.valid) {
-        console.error('🔐 HMAC validation failed:', validation.error);
+      // Obter headers HMAC
+      const hmacSignature = req.headers.get('X-HMAC-Signature');
+      const hmacTimestamp = req.headers.get('X-HMAC-Timestamp');
+      
+      if (!hmacSignature || !hmacTimestamp) {
+        console.error('🔐 HMAC validation failed: Missing HMAC headers');
         return new Response(
-          JSON.stringify({ ok: false, error: 'Unauthorized: ' + validation.error }),
+          JSON.stringify({ ok: false, error: 'Unauthorized: Missing HMAC headers' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Validar timestamp (não mais de 5 minutos)
+      const timestamp = parseInt(hmacTimestamp);
+      const now = Date.now();
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      
+      if (Math.abs(now - timestamp) > FIVE_MINUTES) {
+        console.error('🔐 HMAC validation failed: Timestamp expired');
+        return new Response(
+          JSON.stringify({ ok: false, error: 'Unauthorized: Timestamp expired' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validar assinatura
+      const { signPayload } = await import('../_shared/hmac.ts');
+      const expectedSignature = await signPayload(JSON.stringify(requestBody), HMAC_SECRET);
+      
+      if (hmacSignature !== expectedSignature) {
+        console.error('🔐 HMAC validation failed: Invalid signature');
+        return new Response(
+          JSON.stringify({ ok: false, error: 'Unauthorized: Invalid signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       console.log('✅ HMAC validated');
     }
-
-    const { method, path, query, body } = await req.json() as IXCProxyRequest;
 
     console.log(`📡 IXC Proxy: ${method} ${path}${query ? '?' + query : ''}`);
 
