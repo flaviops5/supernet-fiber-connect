@@ -7,8 +7,6 @@ import { useScrollToHash } from '@/hooks/useScrollToHash';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
-import TelemedicinaAgentWidget from '@/components/TelemedicinaAgentWidget';
-import TelemedicinaChatWidget from '@/components/TelemedicinaChatWidget';
 import { useEffect } from 'react';
 
 
@@ -640,11 +638,6 @@ const Telemedicina = () => {
         </div>
       </section>
 
-      {/* Agent Widget */}
-      <TelemedicinaAgentWidget />
-      
-      {/* Chat Widget */}
-      <TelemedicinaChatWidget chatbotId="zyFH0AihcEAIixsQekuvr" />
     </div>
   );
 };
