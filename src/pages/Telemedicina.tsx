@@ -24,10 +24,12 @@ const Telemedicina = () => {
   useEffect(() => {
     // Configurar o widget
     (window as any).IXCLoginConfig = {
-      apiUrl: 'https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1',
-      apiKey: 'telemedicina-auth',
+      apiUrl: 'https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/telemedicina-auth',
+      apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I',
+      theme: 'default',
+      language: 'pt-BR',
       buttonText: '🔐 Área do Cliente',
-      buttonStyle: 'secondary', // Usar estilo secundário para diferenciar
+      buttonStyle: 'secondary',
       onSuccess: function(userData: any, telemedicinUrl: string) {
         console.log('✅ Login realizado:', userData);
         
