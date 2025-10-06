@@ -639,8 +639,26 @@ const Telemedicina = () => {
         </div>
       </section>
 
-      {/* Chat Agent */}
-      <TelemedicinaChatAgent />
+      {/* Chat Section - Fixed like main page */}
+      <section className="py-16 bg-gradient-to-br from-background via-muted/30 to-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold font-varela uppercase text-foreground mb-4">
+              Fale com nosso{' '}
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Assistente de Telemedicina
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Tire suas dúvidas sobre planos, especialidades médicas e como funciona nosso atendimento 24/7
+            </p>
+          </div>
+          
+          <div className="max-w-5xl mx-auto">
+            <TelemedicinaChatAgent />
+          </div>
+        </div>
+      </section>
 
     </div>
   );

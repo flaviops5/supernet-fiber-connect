@@ -139,9 +139,9 @@ export const TelemedicinaChatAgent = ({ onImageSelected, onAudioTranscribed }: T
   };
 
   return (
-    <Card className={`fixed bottom-6 right-6 w-96 shadow-2xl border-2 border-primary/20 transition-all duration-300 ${
+    <Card className={`w-full shadow-2xl border-2 border-primary/20 transition-all duration-300 ${
       isMinimized ? 'h-16' : 'h-[600px]'
-    } flex flex-col bg-card z-50`}>
+    } flex flex-col bg-card`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-t-lg">
         <div className="flex items-center gap-3">
