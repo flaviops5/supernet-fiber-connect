@@ -51,6 +51,9 @@ verify_jwt = false
 [functions.telemedicina-auth]
 verify_jwt = false
 
+[functions.telemedicina-forgot-password]
+verify_jwt = false
+
 [functions.voice-to-text]
 verify_jwt = false
 
