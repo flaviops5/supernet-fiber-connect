@@ -18,6 +18,7 @@ import SimulacaoCompleta from "./pages/SimulacaoCompleta";
 import TesteFonteQueimada from "./pages/TesteFonteQueimada";
 import GPT5 from "./pages/GPT5";
 import SystemMetrics from "./pages/SystemMetrics";
+import CodigoFonte from "./pages/CodigoFonte";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -62,6 +63,7 @@ const App = () => {
                     <Route path="/teste_fonte_queimada" element={<TesteFonteQueimada />} />
                     <Route path="/gpt_5" element={<GPT5 />} />
                     <Route path="/system-metrics" element={<SystemMetrics />} />
+                    <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="*" element={<NotFound />} />
