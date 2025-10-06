@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle, LogIn } from 'lucide-react';
+import { Clock, MessageCircle, User, Smartphone, Phone, Heart, CheckCircle, Video, Stethoscope, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useScrollToHash } from '@/hooks/useScrollToHash';
 import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
-import { useEffect } from 'react';
 import { TelemedicinaChatAgent } from '@/components/TelemedicinaChatAgent';
+import { TelemedicinLoginSection } from '@/components/TelemedicinLoginSection';
 
 
 const Telemedicina = () => {
@@ -19,50 +19,6 @@ const Telemedicina = () => {
   const handleConsultar = () => {
     window.open('https://api.whatsapp.com/send/?phone=61999475886&text=Ol%C3%A1!%20Vi%20os%20planos%20de%20telemedicina%20e%20gostaria%20de%20consultar!', '_blank');
   };
-
-  // Configurar widget IXC Login para telemedicina
-  useEffect(() => {
-    // Configurar o widget
-    (window as any).IXCLoginConfig = {
-      apiUrl: 'https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/telemedicina-auth',
-      apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I',
-      theme: 'default',
-      language: 'pt-BR',
-      buttonText: '🔐 Área do Cliente',
-      buttonStyle: 'secondary',
-      onSuccess: function(userData: any, telemedicinUrl: string) {
-        console.log('✅ Login realizado:', userData);
-        
-        if (userData.possui_telemedicina && telemedicinUrl) {
-          // Cliente tem telemedicina - abrir portal
-          window.open(telemedicinUrl, '_blank');
-        } else {
-          // Cliente não tem telemedicina - mostrar opções
-          alert(`Olá ${userData.nome}!\n\nVocê ainda não possui um plano de telemedicina ativo.\n\nDeseja contratar? Entre em contato conosco!`);
-          handleConsultar();
-        }
-      },
-      onError: function(error: any) {
-        console.error('❌ Erro no login:', error);
-        alert('Não foi possível fazer login. Verifique seu CPF e senha.');
-      },
-      debug: true
-    };
-
-    // Carregar script do widget
-    const script = document.createElement('script');
-    script.src = 'https://ixc-api.k1.mesotec.cloud/widget/ixc-login-widget.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      // Limpar script ao desmontar
-      if (script.parentNode) {
-        document.body.removeChild(script);
-      }
-      delete (window as any).IXCLoginConfig;
-    };
-  }, [handleConsultar]);
 
   const features = [
     {
@@ -206,9 +162,6 @@ const Telemedicina = () => {
                 >
                   Consultar
                 </Button>
-                
-                {/* Widget Login Button Container */}
-                <div id="ixc-login-container" className="w-full sm:w-auto"></div>
               </div>
             </div>
 
@@ -236,6 +189,9 @@ const Telemedicina = () => {
           </div>
         </div>
       </section>
+
+      {/* Login Section */}
+      <TelemedicinLoginSection />
 
       {/* Features Section */}
       <section className="py-16 px-4 bg-background">
