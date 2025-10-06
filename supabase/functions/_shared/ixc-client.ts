@@ -2,6 +2,8 @@
 // IXC CLIENT - Retry Logic + Circuit Breaker
 // ============================================
 
+import { addHMACHeaders } from './hmac.ts';
+
 interface RetryConfig {
   maxRetries: number;
   initialDelayMs: number;
@@ -113,10 +115,18 @@ export async function callIxcWithRetry(
       console.log(`🔄 IXC call attempt ${attempt + 1}/${retryConfig.maxRetries + 1}: ${method} ${path}`);
       
       const startTime = Date.now();
+      const requestBody = { method, path, body, query };
+
+      // Assinatura HMAC se secret configurado
+      const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
+      const signedHeaders = HMAC_SECRET
+        ? await addHMACHeaders(requestBody, HMAC_SECRET)
+        : { 'Content-Type': 'application/json' };
+
       const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, path, body, query })
+        headers: signedHeaders,
+        body: JSON.stringify(requestBody)
       });
       
       const duration = Date.now() - startTime;
