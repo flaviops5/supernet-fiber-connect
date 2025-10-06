@@ -23,9 +23,9 @@ serve(async (req) => {
       throw new Error('Missing Evolution API credentials');
     }
 
-    // Test instance status
-    const instanceName = phoneNumber?.replace(/\D/g, '') || 'default';
-    const response = await fetch(`${baseUrl}/instance/fetchInstances`, {
+    // Test instance status with SDR2
+    const instanceName = 'SDR2';
+    const response = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
       method: 'GET',
       headers: {
         'apikey': apiKey,
