@@ -38,6 +38,7 @@ import { CampaignManagement } from '@/components/CampaignManagement';
 import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
+import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -87,6 +88,9 @@ const Dashboard = () => {
 
       {/* Alert Card for Mass Outages */}
       <MassOutageAlertCard />
+
+      {/* IXC Connection Tester */}
+      <IXCConnectionTester />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
