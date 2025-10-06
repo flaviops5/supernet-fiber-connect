@@ -23,11 +23,11 @@ serve(async (req) => {
       );
     }
 
-    // Usar proxy centralizado do IXC
+    // Usar proxy centralizado do IXC com HMAC
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const proxyUrl = `${supabaseUrl}/functions/v1/ixc-proxy`;
     
-    console.log('🔧 Usando IXC Proxy centralizado');
+    console.log('🔧 Usando IXC Proxy centralizado com autenticação HMAC');
 
     // Remove formatação do CPF
     const cleanCpf = cpf.replace(/\D/g, '');
