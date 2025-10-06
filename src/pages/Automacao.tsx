@@ -18,6 +18,7 @@ import {
 import { useScrollToHash } from '@/hooks/useScrollToHash';
 import automacaoHero from '@/assets/automacao-hero.jpg';
 import AutomacaoChatWidget from '@/components/AutomacaoChatWidget';
+import { AutomacaoAgentChat } from '@/components/AutomacaoAgentChat';
 
 const Automacao = () => {
   useScrollToHash();
@@ -437,8 +438,10 @@ const Automacao = () => {
         </div>
       </section>
 
-      {/* Chat Widget */}
-      <AutomacaoChatWidget />
+      {/* Chat Integrado com Agente IA */}
+      <AutomacaoAgentChat />
+
+      {/* Chat Widget Flutuante (removido - usando chat integrado) */}
     </div>
   );
 };
