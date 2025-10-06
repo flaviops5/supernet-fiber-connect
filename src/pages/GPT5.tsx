@@ -616,6 +616,357 @@ CREATE INDEX IF NOT EXISTS idx_conversations_customer_cpf
               testes e variáveis de ambiente, consulte o código-fonte desta página ou a documentação interna do projeto.
             </p>
           </section>
+
+          {/* 🆕 SEÇÃO DEBUG - TELEMEDICINA */}
+          <section className="bg-red-500/10 p-6 rounded-lg border border-red-500/20 mt-8">
+            <h2 className="text-2xl font-semibold text-foreground mb-4">
+              🔍 DEBUG: Telemedicina Auth + IXC Proxy
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Arquitetura do Fluxo */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">📋 Arquitetura do Fluxo</h3>
+                <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs">
+{`Cliente (CPF + Senha)
+    ↓
+TelemedicinLoginSection.tsx
+    ↓
+supabase.functions.invoke('telemedicina-auth')
+    ↓
+telemedicina-auth/index.ts
+    ↓
+callIxcWithRetry() → ixc-proxy/index.ts
+    ↓
+IXC API (Basic Auth)
+    ↓
+Resposta JSON ou HTML (ERROR!)`}
+                </pre>
+              </div>
+
+              {/* Estado Atual - ERRO */}
+              <div className="bg-card/50 p-4 rounded-lg border-2 border-red-500/50">
+                <h3 className="text-xl font-semibold mb-3 text-red-500">❌ Erro Atual</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-mono text-xs mb-2">Console Log:</p>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`FunctionsHttpError: Edge Function returned a non-2xx status code
+at handleLogin (TelemedicinLoginSection.tsx:64:25)`}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <p className="font-mono text-xs mb-2">Edge Function Log:</p>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`❌ IXC call failed after 4 attempts: 
+IXC Error: Non-JSON response from IXC (preview): 
+<html lang="pt">
+<head>
+    <meta http-equiv="Content-Security-Policy"
+          content="style-src 'self' * 'unsafe-inline';...`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Análise do Problema */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">🔎 Análise do Problema</h3>
+                <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+                  <li><strong>Sintoma:</strong> IXC retorna HTML ao invés de JSON</li>
+                  <li><strong>Causa provável #1:</strong> Credenciais de autenticação incorretas (IXC_API_USERNAME / IXC_API_PASSWORD)</li>
+                  <li><strong>Causa provável #2:</strong> URL base do IXC incorreta (IXC_API_BASE_URL)</li>
+                  <li><strong>Causa provável #3:</strong> Endpoint /webservice/v1/cliente não existe ou requer método diferente</li>
+                  <li><strong>Causa provável #4:</strong> Headers faltando (ixcsoft: listar)</li>
+                  <li><strong>Causa provável #5:</strong> IP não autorizado na whitelist do IXC</li>
+                </ul>
+              </div>
+
+              {/* Código Atual - telemedicina-auth */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">📄 telemedicina-auth/index.ts</h3>
+                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`// Buscar cliente no IXC pelo CPF
+const cleanCpf = cpf.replace(/\\D/g, '');
+
+const searchBody = {
+  qtype: 'cliente.cnpj_cpf',
+  query: cleanCpf,
+  oper: '=',
+  page: '1',
+  rp: '1',
+  sortname: 'cliente.id',
+  sortorder: 'desc'
+};
+
+const searchData = await callIxcWithRetry(
+  proxyUrl,
+  'POST',
+  '/webservice/v1/cliente',
+  searchBody
+);`}
+                </pre>
+              </div>
+
+              {/* Código Atual - ixc-proxy */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">📄 ixc-proxy/index.ts</h3>
+                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`const ixcHeaders: Record<string, string> = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'Authorization': \`Basic \${btoa(\`\${IXC_USERNAME}:\${IXC_PASSWORD}\`)}\`
+};
+
+// Alguns endpoints do IXC exigem este header para listagens
+if (method === 'POST' && path.startsWith('/webservice/v1/')) {
+  ixcHeaders['ixcsoft'] = 'listar';
+}
+
+const ixcResponse = await fetch(url, {
+  method,
+  headers: ixcHeaders,
+  body: body ? JSON.stringify(body) : undefined
+});`}
+                </pre>
+              </div>
+
+              {/* Checklist de Debug */}
+              <div className="bg-card/50 p-4 rounded-lg border-2 border-yellow-500/50">
+                <h3 className="text-xl font-semibold mb-3 text-yellow-500">✅ Checklist de Debug</h3>
+                <ol className="list-decimal list-inside space-y-2 text-sm">
+                  <li>
+                    <strong>Verificar secrets no Supabase:</strong>
+                    <pre className="bg-muted p-2 rounded text-xs mt-1 ml-5">
+{`IXC_API_BASE_URL = https://seu-ixc.com.br
+IXC_API_USERNAME = seu_usuario
+IXC_API_PASSWORD = sua_senha`}
+                    </pre>
+                  </li>
+                  <li>
+                    <strong>Testar endpoint IXC diretamente (curl):</strong>
+                    <pre className="bg-muted p-2 rounded text-xs mt-1 ml-5">
+{`curl -X POST "https://seu-ixc.com.br/webservice/v1/cliente" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -H "ixcsoft: listar" \\
+  -u "usuario:senha" \\
+  -d '{
+    "qtype": "cliente.cnpj_cpf",
+    "query": "12345678900",
+    "oper": "=",
+    "page": "1",
+    "rp": "1",
+    "sortname": "cliente.id",
+    "sortorder": "desc"
+  }'`}
+                    </pre>
+                  </li>
+                  <li>
+                    <strong>Verificar se IXC aceita POST ou precisa GET:</strong>
+                    <pre className="bg-muted p-2 rounded text-xs mt-1 ml-5">
+{`# Tentar GET com query params
+curl -X GET "https://seu-ixc.com.br/webservice/v1/cliente?qtype=cliente.cnpj_cpf&query=12345678900&oper==&page=1&rp=1" \\
+  -H "Accept: application/json" \\
+  -u "usuario:senha"`}
+                    </pre>
+                  </li>
+                  <li>
+                    <strong>Verificar IP na whitelist do IXC:</strong>
+                    <ul className="ml-5 mt-1 text-xs list-disc list-inside">
+                      <li>Ir em IXC → Configurações → API → IPs Permitidos</li>
+                      <li>Adicionar range de IPs do Supabase Edge Functions</li>
+                      <li>Ou liberar todos os IPs (não recomendado para produção)</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Testar o ixc-proxy diretamente:</strong>
+                    <pre className="bg-muted p-2 rounded text-xs mt-1 ml-5">
+{`// Em um edge function ou UI
+const { data, error } = await supabase.functions.invoke('ixc-proxy', {
+  body: {
+    method: 'GET',
+    path: '/webservice/v1/ping'
+  }
+});
+
+console.log(data); // Deve retornar { ok: true, status: 200 }`}
+                    </pre>
+                  </li>
+                  <li>
+                    <strong>Logs do ixc-proxy (Supabase Dashboard):</strong>
+                    <ul className="ml-5 mt-1 text-xs list-disc list-inside">
+                      <li>Ir em Edge Functions → ixc-proxy → Logs</li>
+                      <li>Verificar: "✅ IXC Response: 200" ou erro</li>
+                      <li>Verificar: Se HMAC está validando corretamente</li>
+                    </ul>
+                  </li>
+                </ol>
+              </div>
+
+              {/* Possíveis Soluções */}
+              <div className="bg-card/50 p-4 rounded-lg border-2 border-green-500/50">
+                <h3 className="text-xl font-semibold mb-3 text-green-500">💡 Possíveis Soluções</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Solução 1: Usar GET ao invés de POST</h4>
+                    <pre className="bg-muted p-2 rounded text-xs">
+{`// Em telemedicina-auth/index.ts
+const searchQuery = new URLSearchParams({
+  qtype: 'cliente.cnpj_cpf',
+  query: cleanCpf,
+  oper: '=',
+  page: '1',
+  rp: '1'
+}).toString();
+
+const searchData = await callIxcWithRetry(
+  proxyUrl,
+  'GET',
+  '/webservice/v1/cliente',
+  undefined,
+  searchQuery
+);`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Solução 2: Adicionar token ao invés de Basic Auth</h4>
+                    <pre className="bg-muted p-2 rounded text-xs">
+{`// Em ixc-proxy/index.ts
+const IXC_API_TOKEN = Deno.env.get('IXC_API_TOKEN');
+
+const ixcHeaders: Record<string, string> = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'Authorization': \`Bearer \${IXC_API_TOKEN}\`
+};`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Solução 3: Remover HMAC validation temporariamente</h4>
+                    <pre className="bg-muted p-2 rounded text-xs">
+{`// Em ixc-proxy/index.ts - linha 30
+// Comentar temporariamente para debug
+if (HMAC_SECRET) {
+  console.warn('🔐 HMAC desabilitado temporariamente para debug');
+  // ... resto do código HMAC comentado
+}`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Solução 4: Adicionar mais logs para debug</h4>
+                    <pre className="bg-muted p-2 rounded text-xs">
+{`// Em ixc-proxy/index.ts - antes do fetch
+console.log('🔍 DEBUG IXC Request:', {
+  url,
+  method,
+  headers: ixcHeaders,
+  body
+});
+
+// Depois do fetch
+console.log('🔍 DEBUG IXC Response:', {
+  status: ixcResponse.status,
+  contentType,
+  preview: rawText?.slice(0, 500)
+});`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Links Úteis */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">🔗 Links Úteis</h3>
+                <ul className="space-y-2 text-sm">
+                  <li>
+                    <a 
+                      href="https://supabase.com/dashboard/project/mxdupkbpxjcfxdgrwknp/functions/ixc-proxy/logs" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      📊 Logs do ixc-proxy
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="https://supabase.com/dashboard/project/mxdupkbpxjcfxdgrwknp/functions/telemedicina-auth/logs" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      📊 Logs do telemedicina-auth
+                    </a>
+                  </li>
+                  <li>
+                    <a 
+                      href="https://supabase.com/dashboard/project/mxdupkbpxjcfxdgrwknp/settings/functions" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      🔐 Secrets do Supabase
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Status dos Logs Edge Functions */}
+              <div className="bg-card/50 p-4 rounded-lg">
+                <h3 className="text-xl font-semibold mb-3">📋 Últimos Logs (Edge Functions)</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-mono text-xs mb-1 text-yellow-500">⚠️ telemedicina-auth:</p>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
+{`❌ Erro na autenticação: Error: IXC call failed after 4 attempts
+⏱️ IXC call duration: 292ms
+❌ IXC call failed on attempt 4
+🔄 IXC call attempt 4/4: POST /webservice/v1/cliente
+⏳ Waiting 4000ms before retry...
+🔍 Buscando cliente no IXC: 61953890130`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <p className="font-mono text-xs mb-1 text-blue-500">ℹ️ ixc-proxy:</p>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
+{`✅ IXC Response: 200 (200ms)
+📡 IXC Proxy: GET /webservice/v1/ping
+🔐 HMAC headers ausentes - prosseguindo em modo compatibilidade
+✅ IXC Response: 200 (190ms)
+📡 IXC Proxy: POST /webservice/v1/cliente
+✅ HMAC validated`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conclusão */}
+              <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 p-4 rounded-lg border border-red-500/30">
+                <h3 className="text-xl font-semibold mb-3">🎯 Conclusão</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  O erro indica que o IXC está retornando HTML (provavelmente página de login) ao invés de JSON. 
+                  Isso acontece quando:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                  <li>As credenciais Basic Auth estão incorretas</li>
+                  <li>O endpoint não existe ou requer autenticação diferente</li>
+                  <li>O IP não está na whitelist do IXC</li>
+                  <li>O método HTTP está errado (POST vs GET)</li>
+                </ol>
+                <p className="text-sm text-muted-foreground mt-3 font-semibold">
+                  ✅ Próximos passos: Testar o endpoint IXC diretamente com curl e verificar as credenciais no Supabase.
+                </p>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
