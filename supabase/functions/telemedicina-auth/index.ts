@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,104 +23,73 @@ serve(async (req) => {
       );
     }
 
-    const rawBase = Deno.env.get('IXC_API_BASE_URL')?.trim();
-    const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
-    const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
-
-    let IXC_API_BASE_URL: string;
-    try {
-      if (!rawBase || !rawBase.startsWith('http')) throw new Error('IXC base sem protocolo');
-      const parsed = new URL(rawBase);
-      // Normaliza para origin e remove barras finais
-      IXC_API_BASE_URL = parsed.origin.replace(/\/+$/, '');
-    } catch (_) {
-      console.warn('⚠️ IXC_API_BASE_URL inválido ou ausente, aplicando fallback');
-      IXC_API_BASE_URL = 'https://central.supernetfibra.com.br';
-    }
-
-    console.log('🔧 IXC URL base normalizado:', IXC_API_BASE_URL);
-
-    if (!IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      throw new Error('Credenciais do IXC não encontradas');
-    }
+    // Usar proxy centralizado do IXC
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const proxyUrl = `${supabaseUrl}/functions/v1/ixc-proxy`;
+    
+    console.log('🔧 Usando IXC Proxy centralizado');
 
     // Remove formatação do CPF
     const cleanCpf = cpf.replace(/\D/g, '');
 
-    // 1. Buscar cliente no IXC pelo CPF
+    // 1. Buscar cliente no IXC pelo CPF usando o proxy
     console.log('🔍 Buscando cliente no IXC:', cleanCpf);
     
-    const searchParams = new URLSearchParams({
-      token: `${IXC_API_USERNAME}:${IXC_API_PASSWORD}`,
+    const searchQuery = new URLSearchParams({
       cpf_cnpj: cleanCpf,
       qtype: 'cliente.id',
       rp: '1'
-    });
+    }).toString();
 
-    const searchResponse = await fetch(
-      `${IXC_API_BASE_URL}/webservice/v1/cliente?${searchParams}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+    const searchData = await callIxcWithRetry(
+      proxyUrl,
+      'GET',
+      '/webservice/v1/cliente',
+      undefined,
+      searchQuery
     );
 
-    if (!searchResponse.ok) {
-      console.error('❌ Erro ao buscar cliente no IXC:', searchResponse.status);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao buscar cliente' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log('📦 Resposta da busca:', searchData.data);
 
-    const searchData = await searchResponse.json();
-    console.log('📦 Resposta da busca:', searchData);
-
-    if (!searchData || !searchData.registros || searchData.registros.length === 0) {
+    if (!searchData.data || !searchData.data.registros || searchData.data.registros.length === 0) {
       return new Response(
         JSON.stringify({ error: 'Cliente não encontrado' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const cliente = searchData.registros[0];
+    const cliente = searchData.data.registros[0];
     console.log('✅ Cliente encontrado:', cliente.razao);
 
     // 2. Validar senha (simplificado - em produção deve usar hash)
     // Por enquanto, apenas verificamos se a senha foi fornecida
     // O IXC tem sua própria validação de senha no sistema de área do cliente
 
-    // 3. Buscar contratos do cliente
-    const contratoParams = new URLSearchParams({
-      token: `${IXC_API_USERNAME}:${IXC_API_PASSWORD}`,
+    // 3. Buscar contratos do cliente usando o proxy
+    const contratoQuery = new URLSearchParams({
       id_cliente: cliente.id,
       qtype: 'cliente_contrato.id',
       rp: '100'
-    });
-
-    const contratoResponse = await fetch(
-      `${IXC_API_BASE_URL}/webservice/v1/cliente_contrato?${contratoParams}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    }).toString();
 
     let possuiTelemedicina = false;
     let planoTelemedicina = '';
     let telemedicinUrl = '';
 
-    if (contratoResponse.ok) {
-      const contratoData = await contratoResponse.json();
-      console.log('📋 Contratos encontrados:', contratoData.total);
+    try {
+      const contratoData = await callIxcWithRetry(
+        proxyUrl,
+        'GET',
+        '/webservice/v1/cliente_contrato',
+        undefined,
+        contratoQuery
+      );
 
-      if (contratoData.registros && contratoData.registros.length > 0) {
+      console.log('📋 Contratos encontrados:', contratoData.data?.total || 0);
+
+      if (contratoData.data?.registros && contratoData.data.registros.length > 0) {
         // Verificar se algum contrato tem produto TELEMEDICINA
-        for (const contrato of contratoData.registros) {
+        for (const contrato of contratoData.data.registros) {
           const plano = contrato.plano || contrato.descricao_plano || '';
           
           if (plano.toUpperCase().includes('TELEMEDICINA')) {
@@ -127,7 +97,6 @@ serve(async (req) => {
             planoTelemedicina = plano;
             
             // Gerar URL de telemedicina com autenticação
-            // A URL real virá da configuração do widget IXC
             telemedicinUrl = `https://telemedicina.supernet.com.br/auth?cpf=${cleanCpf}&token=${btoa(`${cliente.id}:${Date.now()}`)}`;
             
             console.log('✅ Cliente possui telemedicina:', planoTelemedicina);
@@ -135,10 +104,12 @@ serve(async (req) => {
           }
         }
       }
+    } catch (error) {
+      console.warn('⚠️ Erro ao buscar contratos:', error);
+      // Continuar mesmo sem contratos
     }
 
     // 4. Registrar acesso no histórico
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (supabaseUrl && supabaseServiceKey) {
