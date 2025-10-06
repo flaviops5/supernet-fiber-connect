@@ -8,6 +8,7 @@ import telemedicinaHero from '@/assets/telemedicina-hero-new.png';
 import telemedicinaMobile from '@/assets/telemedicina-mobile.jpg';
 import telemedicinaFamily from '@/assets/telemedicina-family.jpg';
 import { useEffect } from 'react';
+import { TelemedicinaChatAgent } from '@/components/TelemedicinaChatAgent';
 
 
 const Telemedicina = () => {
@@ -637,6 +638,9 @@ const Telemedicina = () => {
           </div>
         </div>
       </section>
+
+      {/* Chat Agent */}
+      <TelemedicinaChatAgent />
 
     </div>
   );
