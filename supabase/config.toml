@@ -92,3 +92,6 @@ verify_jwt = true
 
 [functions.test-hmac]
 verify_jwt = false
+
+[functions.test-evolution-api]
+verify_jwt = false
