@@ -95,6 +95,42 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_metrics: {
+        Row: {
+          action_type: string
+          agent_name: string
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          success: boolean
+        }
+        Insert: {
+          action_type: string
+          agent_name: string
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          success: boolean
+        }
+        Update: {
+          action_type?: string
+          agent_name?: string
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       agent_presence: {
         Row: {
           created_at: string | null
@@ -183,6 +219,83 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_config: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          notification_channels: Json
+          threshold_value: number
+          updated_at: string
+          window_minutes: number
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notification_channels?: Json
+          threshold_value: number
+          updated_at?: string
+          window_minutes?: number
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notification_channels?: Json
+          threshold_value?: number
+          updated_at?: string
+          window_minutes?: number
+        }
+        Relationships: []
+      }
+      alert_history: {
+        Row: {
+          alert_config_id: string | null
+          alert_type: string
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          notified_at: string | null
+          resolved_at: string | null
+          severity: string
+        }
+        Insert: {
+          alert_config_id?: string | null
+          alert_type: string
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity: string
+        }
+        Update: {
+          alert_config_id?: string | null
+          alert_type?: string
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notified_at?: string | null
+          resolved_at?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_history_alert_config_id_fkey"
+            columns: ["alert_config_id"]
+            isOneToOne: false
+            referencedRelation: "alert_config"
             referencedColumns: ["id"]
           },
         ]
@@ -1245,6 +1358,65 @@ export type Database = {
         }
         Relationships: []
       }
+      failed_actions: {
+        Row: {
+          action_log_id: string | null
+          action_payload: Json
+          action_type: string
+          agent_name: string
+          client_cpf: string | null
+          created_at: string
+          error_message: string
+          id: string
+          last_retry_at: string | null
+          max_retries: number
+          resolved_at: string | null
+          retry_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_log_id?: string | null
+          action_payload: Json
+          action_type: string
+          agent_name: string
+          client_cpf?: string | null
+          created_at?: string
+          error_message: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number
+          resolved_at?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_log_id?: string | null
+          action_payload?: Json
+          action_type?: string
+          agent_name?: string
+          client_cpf?: string | null
+          created_at?: string
+          error_message?: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number
+          resolved_at?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failed_actions_action_log_id_fkey"
+            columns: ["action_log_id"]
+            isOneToOne: false
+            referencedRelation: "action_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faqs: {
         Row: {
           active: boolean
@@ -2033,6 +2205,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_tracking: {
+        Row: {
+          blocked_until: string | null
+          cpf: string
+          created_at: string
+          id: string
+          request_count: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          blocked_until?: string | null
+          cpf: string
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          blocked_until?: string | null
+          cpf?: string
+          created_at?: string
+          id?: string
+          request_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action_type: string
@@ -2157,6 +2359,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_health: {
+        Row: {
+          component: string
+          created_at: string
+          error_message: string | null
+          id: string
+          last_check: string
+          metadata: Json | null
+          status: string
+        }
+        Insert: {
+          component: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_check?: string
+          metadata?: Json | null
+          status: string
+        }
+        Update: {
+          component?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_check?: string
+          metadata?: Json | null
+          status?: string
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {

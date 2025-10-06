@@ -38,6 +38,7 @@ import {
   FlaskConical,
   Bell,
   DollarSign,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -124,6 +125,11 @@ const agentsItems = [
     title: "Monitoramento IXC",
     url: "/admin/monitoramento",
     icon: Monitor,
+  },
+  {
+    title: "Métricas do Sistema",
+    url: "/system-metrics",
+    icon: Activity,
   },
 ];
 

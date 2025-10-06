@@ -27,6 +27,15 @@ verify_jwt = false
 [functions.ixc-proxy]
 verify_jwt = false
 
+[functions.system-health]
+verify_jwt = false
+
+[functions.metrics-collector]
+verify_jwt = true
+
+[functions.retry-failed-actions]
+verify_jwt = true
+
 [functions.ixc-list-contracts]
 verify_jwt = true
 
