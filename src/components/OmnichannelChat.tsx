@@ -24,11 +24,12 @@ interface OmnichannelChatProps {
   };
 }
 
-const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, customerData }) => {
+const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initialConversationId, customerData }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentAgent, setCurrentAgent] = useState<string>('routing');
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -117,6 +118,30 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
     setIsLoading(true);
 
     try {
+      // Se não temos conversationId, criar uma nova conversa
+      let activeConversationId = conversationId;
+      
+      if (!activeConversationId) {
+        const { data: newConversation, error: convError } = await supabase
+          .from('conversations')
+          .insert({
+            channel: 'chatbot',
+            customer_name: customerData?.name || 'Visitante',
+            customer_email: customerData?.email,
+            customer_phone: customerData?.phone,
+            customer_cpf: customerData?.cpf,
+            status: 'active',
+          })
+          .select()
+          .single();
+
+        if (convError) throw convError;
+        
+        activeConversationId = newConversation.id;
+        setConversationId(activeConversationId);
+        console.log('Nova conversa criada:', activeConversationId);
+      }
+
       let finalAgent = currentAgent;
       let responseMessage = '';
 
@@ -125,7 +150,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
         const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
           body: {
             message: userMessage.content,
-            conversationId,
+            conversationId: activeConversationId,
             context: customerData,
           }
         });
@@ -140,7 +165,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
           setCurrentAgent(finalAgent);
           
           // Se foi atribuído um agente especializado, atualizar o departamento na conversation
-          if (conversationId && finalAgent !== 'routing') {
+          if (activeConversationId && finalAgent !== 'routing') {
             const deptMap: Record<string, 'comercial' | 'tecnico' | 'financeiro'> = {
               'sales': 'comercial',
               'support_tech': 'tecnico',
@@ -151,7 +176,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
               await supabase
                 .from('conversations')
                 .update({ department: dept })
-                .eq('id', conversationId);
+                .eq('id', activeConversationId);
               
               console.log('Department updated to:', dept, 'for agent:', finalAgent);
             }
@@ -171,7 +196,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
         const { data: agentData, error: agentError } = await supabase.functions.invoke(endpoint, {
           body: {
             message: userMessage.content,
-            conversationId,
+            conversationId: activeConversationId,
             customerData,
             messages: messages.map(m => ({ role: m.role, content: m.content }))
           }
@@ -193,7 +218,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
       setMessages(prev => [...prev, assistantMessage]);
 
       // Persistir no banco
-      if (conversationId) {
+      if (activeConversationId) {
         const agentLabelMap: Record<string, string> = {
           routing: 'Cloé',
           sales: 'Vicente - Vendas',
@@ -203,13 +228,13 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId, custo
         
         await supabase.from('conversation_messages').insert([
           {
-            conversation_id: conversationId,
+            conversation_id: activeConversationId,
             sender_type: 'customer',
             sender_name: customerData?.name || 'Cliente',
             content: userMessage.content
           },
           {
-            conversation_id: conversationId,
+            conversation_id: activeConversationId,
             sender_type: 'agent',
             sender_name: agentLabelMap[finalAgent] || finalAgent,
             content: responseMessage,
