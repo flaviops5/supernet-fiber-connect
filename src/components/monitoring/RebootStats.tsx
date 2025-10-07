@@ -32,7 +32,7 @@ export const RebootStats = () => {
         last24h: last24hResult.count || 0
       };
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   const statCards = [
