@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,33 +33,49 @@ Deno.serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+    const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
+    const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
+
+    if (!IXC_USERNAME || !IXC_PASSWORD || !IXC_API_BASE) {
+      throw new Error('Credenciais IXC não configuradas');
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
     // 1. Buscar clientes online do IXC
     console.log('📡 Consultando clientes online no IXC...');
-    let radiusResponse;
     
-    try {
-      radiusResponse = await callIxcWithRetry(
-        IXC_PROXY_URL,
-        'GET',
-        '/webservice/v1/radusuarios',
-        undefined,
-        'qtype=radusuarios.online&oper==&page=1&rp=999999&sortname=radusuarios.acctstarttime&sortorder=desc'
-      );
-    } catch (error: any) {
-      console.error('❌ Erro detalhado ao consultar radusuarios:', error);
-      throw new Error(`Falha ao consultar clientes online: ${error.message}`);
-    }
+    const bodyRad = JSON.stringify({
+      qtype: 'radusuarios.id',
+      query: '1',
+      oper: '>=',
+      page: '1',
+      rp: '5000',
+      sortname: 'radusuarios.id',
+      sortorder: 'desc',
+    });
+
+    const radiusResponse = await fetch(`https://${IXC_API_BASE}/webservice/v1/radusuarios`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+        'ixcsoft': 'listar',
+      },
+      body: bodyRad,
+    });
 
     if (!radiusResponse.ok) {
-      console.error('❌ Resposta IXC com erro:', radiusResponse.error);
-      throw new Error(radiusResponse.error || 'Falha ao consultar radusuarios');
+      const errorText = await radiusResponse.text();
+      console.error('❌ Erro na API IXC:', radiusResponse.status, errorText);
+      throw new Error(`Erro ao buscar radusuarios: ${radiusResponse.status}`);
     }
+
+    const radiusData = await radiusResponse.json();
     
-    if (!radiusResponse.data?.registros) {
+    if (!radiusData?.registros) {
       console.warn('⚠️ IXC retornou resposta válida mas sem registros');
       return new Response(
         JSON.stringify({
@@ -73,7 +88,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const onlineUsers: RadiusUser[] = radiusResponse.data.registros;
+    const onlineUsers: RadiusUser[] = Array.isArray(radiusData.registros) 
+      ? radiusData.registros 
+      : Object.values(radiusData.registros || {});
+    
     console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
 
     // 2. Buscar blacklist
@@ -107,17 +125,23 @@ Deno.serve(async (req) => {
         let isBlocked = false;
 
         try {
-          const clientResponse = await callIxcWithRetry(
-            IXC_PROXY_URL,
-            'GET',
-            '/webservice/v1/cliente',
-            undefined,
-            `qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1&sortname=cliente.id&sortorder=asc`
+          const clientResponse = await fetch(
+            `https://${IXC_API_BASE}/webservice/v1/cliente?qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Basic ${credentials}`,
+                'Content-Type': 'application/json',
+              },
+            }
           );
 
-          if (clientResponse.ok && clientResponse.data?.registros?.[0]) {
-            clientData = clientResponse.data.registros[0];
-            isBlocked = clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S';
+          if (clientResponse.ok) {
+            const clientJson = await clientResponse.json();
+            if (clientJson?.registros?.[0]) {
+              clientData = clientJson.registros[0];
+              isBlocked = clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S';
+            }
           }
         } catch (err) {
           console.error(`Erro ao buscar cliente ${user.id_cliente}:`, err);
