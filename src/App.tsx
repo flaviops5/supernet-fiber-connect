@@ -15,6 +15,7 @@ import Atendimento from "./pages/Atendimento";
 import Monitoramento from "./pages/Monitoramento";
 import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
+import NetworkMaintenance from "./pages/NetworkMaintenance";
 import Roteamento from "./pages/Roteamento";
 import SimulacaoCompleta from "./pages/SimulacaoCompleta";
 import TesteFonteQueimada from "./pages/TesteFonteQueimada";
@@ -67,7 +68,8 @@ const App = () => {
                     <Route path="/gpt_5" element={<GPT5 />} />
                     <Route path="/system-metrics" element={<SystemMetrics />} />
                     <Route path="/codigo_f" element={<CodigoFonte />} />
-                    <Route path="/autoreboot" element={<AutoRebootDocs />} />
+          <Route path="/autoreboot" element={<AutoRebootDocs />} />
+          <Route path="/manutencao" element={<NetworkMaintenance />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="*" element={<NotFound />} />

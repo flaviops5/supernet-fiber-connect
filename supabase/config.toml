@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.auto-reboot-frozen-equipment]
 verify_jwt = true
+
+[functions.network-maintenance-executor]
+verify_jwt = true
