@@ -26,6 +26,9 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
   const navigate = useNavigate();
 
   useEffect(() => {
+    let retryCount = 0;
+    const maxRetries = 3;
+
     const checkAuth = async () => {
       try {
         console.log('AuthGuard: Checking authentication...');
@@ -50,16 +53,34 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         setUser(session.user);
         setSession(session);
 
-        // Check user role
-        const { data: roleData, error: roleError } = await supabase
+        // Check user role with timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout')), 10000);
+        });
+
+        const rolePromise = supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
+        const { data: roleData, error: roleError } = await Promise.race([
+          rolePromise,
+          timeoutPromise
+        ]) as any;
+
         if (roleError) {
           console.error('Role error:', roleError);
-          setError('Erro ao verificar permissões');
+          
+          // Retry logic for network errors
+          if (roleError.message?.includes('fetch') && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying auth check (${retryCount}/${maxRetries})...`);
+            setTimeout(() => checkAuth(), 1000 * retryCount);
+            return;
+          }
+          
+          setError('Erro ao verificar permissões. Recarregue a página.');
           setLoading(false);
           return;
         }
@@ -76,11 +97,22 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
           console.log('AuthGuard: User not authorized for this area');
           setError(`Acesso negado. Você precisa ter permissão de ${requiredRoles.join(' ou ')} para acessar esta área.`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('AuthGuard error:', err);
-        setError('Erro interno de autenticação');
+        
+        // Retry on timeout or network errors
+        if ((err.message?.includes('timeout') || err.message?.includes('fetch')) && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying auth check (${retryCount}/${maxRetries})...`);
+          setTimeout(() => checkAuth(), 1000 * retryCount);
+          return;
+        }
+        
+        setError('Erro interno de autenticação. Recarregue a página.');
       } finally {
-        setLoading(false);
+        if (retryCount >= maxRetries || authorized || error) {
+          setLoading(false);
+        }
       }
     };
 
