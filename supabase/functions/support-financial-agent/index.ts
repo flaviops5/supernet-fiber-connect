@@ -99,7 +99,7 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
       const { data: actionLog } = await supabase
         .from('action_log')
         .insert({
-          agent_name: 'Júlia Martins',
+          agent_name: 'Julia',
           client_cpf: customerData?.cpf,
           action_type: 'unblock_attempt',
           action_payload: {
@@ -554,7 +554,7 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
         const { data: escalationLog } = await supabase
           .from('action_log')
           .insert({
-            agent_name: 'Júlia Martins',
+            agent_name: 'Julia',
             client_cpf: customerData?.cpf,
             action_type: 'create_ticket',
             action_payload: {
