@@ -1783,6 +1783,39 @@ export type Database = {
           },
         ]
       }
+      maintenance_cron_control: {
+        Row: {
+          created_at: string | null
+          cron_name: string
+          cron_schedule: string
+          id: string
+          is_active: boolean
+          last_disabled_at: string | null
+          last_enabled_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cron_name?: string
+          cron_schedule?: string
+          id?: string
+          is_active?: boolean
+          last_disabled_at?: string | null
+          last_enabled_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cron_name?: string
+          cron_schedule?: string
+          id?: string
+          is_active?: boolean
+          last_disabled_at?: string | null
+          last_enabled_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       maintenance_execution_log: {
         Row: {
           created_at: string | null
@@ -2811,6 +2844,14 @@ export type Database = {
           window_minutes?: number
         }
         Returns: Json
+      }
+      disable_maintenance_cron: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      enable_maintenance_cron: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       generate_contract_number: {
         Args: Record<PropertyKey, never>

@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Power, Play } from "lucide-react";
 
 export const MaintenanceSettings = () => {
   const queryClient = useQueryClient();
@@ -24,11 +26,30 @@ export const MaintenanceSettings = () => {
     }
   });
 
+  const { data: cronControl } = useQuery({
+    queryKey: ['cron-control'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('maintenance_cron_control')
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const [formData, setFormData] = useState<any>(null);
+  const [cronSchedule, setCronSchedule] = useState('');
 
   // Sincronizar formData quando settings carrega
   if (settings && !formData) {
     setFormData(settings);
+  }
+
+  // Sincronizar cronSchedule
+  if (cronControl && !cronSchedule) {
+    setCronSchedule(cronControl.cron_schedule);
   }
 
   const updateSettings = useMutation({
@@ -49,6 +70,39 @@ export const MaintenanceSettings = () => {
     }
   });
 
+  const updateCronSchedule = useMutation({
+    mutationFn: async (schedule: string) => {
+      const { error } = await supabase
+        .from('maintenance_cron_control')
+        .update({ cron_schedule: schedule })
+        .eq('id', cronControl?.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-control'] });
+      toast.success('Intervalo do cron atualizado');
+    },
+    onError: () => {
+      toast.error('Erro ao atualizar intervalo');
+    }
+  });
+
+  const toggleCron = useMutation({
+    mutationFn: async (enable: boolean) => {
+      const functionName = enable ? 'enable_maintenance_cron' : 'disable_maintenance_cron';
+      const { error } = await supabase.rpc(functionName);
+      if (error) throw error;
+    },
+    onSuccess: (_, enable) => {
+      queryClient.invalidateQueries({ queryKey: ['cron-control'] });
+      toast.success(enable ? 'Cron job ativado' : 'Cron job desativado');
+    },
+    onError: () => {
+      toast.error('Erro ao controlar cron job');
+    }
+  });
+
   const runMaintenance = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke('network-maintenance-executor');
@@ -63,10 +117,66 @@ export const MaintenanceSettings = () => {
     }
   });
 
-  if (!settings || !formData) return null;
+  if (!settings || !formData || !cronControl) return null;
 
   return (
     <div className="space-y-6">
+      {/* Controle do Cron Job */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Power className="h-5 w-5" />
+            Controle do Cron Job
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Execução Automática</span>
+                <Badge variant={cronControl.is_active ? 'default' : 'secondary'}>
+                  {cronControl.is_active ? 'Ativo' : 'Inativo'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Intervalo atual: {cronControl.cron_schedule}
+              </p>
+              {cronControl.last_enabled_at && (
+                <p className="text-xs text-muted-foreground">
+                  Última ativação: {new Date(cronControl.last_enabled_at).toLocaleString()}
+                </p>
+              )}
+            </div>
+            <Switch
+              checked={cronControl.is_active}
+              onCheckedChange={(checked) => toggleCron.mutate(checked)}
+              disabled={toggleCron.isPending}
+            />
+          </div>
+
+          <div>
+            <Label>Intervalo do Cron (formato cron)</Label>
+            <div className="flex gap-2">
+              <Input
+                value={cronSchedule}
+                onChange={(e) => setCronSchedule(e.target.value)}
+                placeholder="*/5 * * * *"
+              />
+              <Button 
+                onClick={() => updateCronSchedule.mutate(cronSchedule)}
+                disabled={updateCronSchedule.isPending}
+              >
+                Atualizar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Formato: minuto hora dia mês dia-da-semana (ex: */5 * * * * = a cada 5 min)
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Configurações do Sistema */}
       <Card>
         <CardHeader>
           <CardTitle>Configurações do Sistema</CardTitle>
@@ -189,6 +299,7 @@ export const MaintenanceSettings = () => {
               onClick={() => runMaintenance.mutate()}
               disabled={runMaintenance.isPending}
             >
+              <Play className="h-4 w-4 mr-2" />
               Executar Agora
             </Button>
           </div>

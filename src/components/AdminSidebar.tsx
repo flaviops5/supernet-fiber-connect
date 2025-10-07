@@ -40,6 +40,7 @@ import {
   DollarSign,
   Activity,
   MessageCircle,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -136,6 +137,11 @@ const agentsItems = [
     title: "Auto-Reboot",
     url: "/admin/auto-reboot",
     icon: Activity,
+  },
+  {
+    title: "Manutenção Inteligente",
+    url: "/manutencao",
+    icon: Wrench,
   },
   {
     title: "Métricas do Sistema",
