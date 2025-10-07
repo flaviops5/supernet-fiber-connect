@@ -1783,6 +1783,104 @@ export type Database = {
           },
         ]
       }
+      maintenance_execution_log: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          execution_end: string | null
+          execution_start: string
+          id: string
+          metadata: Json | null
+          priority: Database["public"]["Enums"]["maintenance_priority"]
+          result: Json | null
+          retry_attempt: number | null
+          status: Database["public"]["Enums"]["task_status"]
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_end?: string | null
+          execution_start?: string
+          id?: string
+          metadata?: Json | null
+          priority: Database["public"]["Enums"]["maintenance_priority"]
+          result?: Json | null
+          retry_attempt?: number | null
+          status?: Database["public"]["Enums"]["task_status"]
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_end?: string | null
+          execution_start?: string
+          id?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"]
+          result?: Json | null
+          retry_attempt?: number | null
+          status?: Database["public"]["Enums"]["task_status"]
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_execution_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "network_maintenance_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_settings: {
+        Row: {
+          alert_email: string | null
+          alert_webhook: string | null
+          auto_escalate_failures: boolean
+          enabled: boolean
+          high_priority_interval_minutes: number
+          id: string
+          low_priority_interval_minutes: number
+          max_concurrent_tasks: number
+          medium_priority_interval_minutes: number
+          network_stable_threshold_minutes: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          alert_email?: string | null
+          alert_webhook?: string | null
+          auto_escalate_failures?: boolean
+          enabled?: boolean
+          high_priority_interval_minutes?: number
+          id?: string
+          low_priority_interval_minutes?: number
+          max_concurrent_tasks?: number
+          medium_priority_interval_minutes?: number
+          network_stable_threshold_minutes?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          alert_email?: string | null
+          alert_webhook?: string | null
+          auto_escalate_failures?: boolean
+          enabled?: boolean
+          high_priority_interval_minutes?: number
+          id?: string
+          low_priority_interval_minutes?: number
+          max_concurrent_tasks?: number
+          medium_priority_interval_minutes?: number
+          network_stable_threshold_minutes?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       mass_outage_events: {
         Row: {
           affected_count: number
@@ -1824,6 +1922,60 @@ export type Database = {
           region_pattern?: string
           resolved_at?: string | null
           status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      network_maintenance_tasks: {
+        Row: {
+          command: string
+          created_at: string | null
+          description: string | null
+          enabled: boolean
+          execution_interval_minutes: number
+          id: string
+          last_execution: string | null
+          metadata: Json | null
+          name: string
+          next_execution: string | null
+          priority: Database["public"]["Enums"]["maintenance_priority"]
+          retry_count: number
+          task_type: string
+          timeout_seconds: number
+          updated_at: string | null
+        }
+        Insert: {
+          command: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          execution_interval_minutes?: number
+          id?: string
+          last_execution?: string | null
+          metadata?: Json | null
+          name: string
+          next_execution?: string | null
+          priority: Database["public"]["Enums"]["maintenance_priority"]
+          retry_count?: number
+          task_type: string
+          timeout_seconds?: number
+          updated_at?: string | null
+        }
+        Update: {
+          command?: string
+          created_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          execution_interval_minutes?: number
+          id?: string
+          last_execution?: string | null
+          metadata?: Json | null
+          name?: string
+          next_execution?: string | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"]
+          retry_count?: number
+          task_type?: string
+          timeout_seconds?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -2739,6 +2891,7 @@ export type Database = {
         | "paused"
         | "resolved"
         | "transferred"
+      maintenance_priority: "high" | "medium" | "low"
       recipient_status:
         | "pending"
         | "sent"
@@ -2747,6 +2900,7 @@ export type Database = {
         | "opened"
         | "clicked"
         | "replied"
+      task_status: "pending" | "running" | "completed" | "failed" | "skipped"
       user_role: "admin" | "editor" | "viewer"
     }
     CompositeTypes: {
@@ -2920,6 +3074,7 @@ export const Constants = {
         "resolved",
         "transferred",
       ],
+      maintenance_priority: ["high", "medium", "low"],
       recipient_status: [
         "pending",
         "sent",
@@ -2929,6 +3084,7 @@ export const Constants = {
         "clicked",
         "replied",
       ],
+      task_status: ["pending", "running", "completed", "failed", "skipped"],
       user_role: ["admin", "editor", "viewer"],
     },
   },

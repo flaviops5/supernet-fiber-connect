@@ -452,7 +452,7 @@ SELECT cron.schedule(
           {/* Logic Flow */}
           <Card>
             <CardHeader>
-              <CardTitle>Fluxo de Funcionamento</CardTitle>
+              <CardTitle>Fluxo de Funcionamento - Auto Reboot</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose prose-sm max-w-none">
@@ -466,6 +466,47 @@ SELECT cron.schedule(
                   <li><strong>Reboot:</strong> Envia comando via API IXC</li>
                   <li><strong>Validação:</strong> Aguarda 2 minutos e verifica se a banda melhorou</li>
                   <li><strong>Registro:</strong> Atualiza status (success/failed) no banco de dados</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Novo Sistema de Manutenção Inteligente */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sistema de Manutenção Inteligente com Prioridades</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="prose prose-sm max-w-none">
+                <h3 className="text-lg font-semibold">🟥 PRIORIDADE ALTA - Execução Obrigatória</h3>
+                <ul>
+                  <li>Monitoramento de Disponibilidade (routers, OLT, ONU, PPPoE)</li>
+                  <li>Validação de Latência e Perda de Pacotes</li>
+                  <li>Correção Automática de Serviços Críticos</li>
+                </ul>
+
+                <h3 className="text-lg font-semibold mt-4">🟧 PRIORIDADE MÉDIA - Execução Condicional</h3>
+                <ul>
+                  <li>Coleta de Métricas de Desempenho</li>
+                  <li>Verificação de Versões de Firmware</li>
+                  <li>Backup Programado de Configuração</li>
+                </ul>
+
+                <h3 className="text-lg font-semibold mt-4">🟩 PRIORIDADE BAIXA - Manutenção Preventiva</h3>
+                <ul>
+                  <li>Análise Preditiva de Falhas</li>
+                  <li>Relatório de Status Diário</li>
+                  <li>Limpeza de Logs Antigos</li>
+                </ul>
+
+                <h3 className="text-lg font-semibold mt-4">⚡ Lógica de Execução</h3>
+                <ol>
+                  <li>Executar todas as rotinas de PRIORIDADE ALTA</li>
+                  <li>Se falha detectada → interromper demais prioridades</li>
+                  <li>Com rede estável, seguir para PRIORIDADE MÉDIA</li>
+                  <li>Se houver recursos, executar PRIORIDADE BAIXA</li>
+                  <li>Auto-escalação de falhas recorrentes para prioridade alta</li>
+                  <li>Repetir ciclo a cada intervalo configurado</li>
                 </ol>
               </div>
             </CardContent>
