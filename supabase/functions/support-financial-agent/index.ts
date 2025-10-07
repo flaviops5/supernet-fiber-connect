@@ -404,7 +404,6 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
         ],
         tools: tools,
         tool_choice: "auto",
-        modalities: ['text', 'image'],
         temperature: parseFloat(agentConfig.temperature),
         max_tokens: agentConfig.max_tokens,
       }),

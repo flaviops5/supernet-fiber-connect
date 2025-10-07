@@ -151,7 +151,7 @@ serve(async (req) => {
         .insert({
           conversation_id: conversationId,
           sender_type: 'agent',
-          sender_name: 'Cloé - Atendimento',
+          sender_name: 'Cloé Martins',
           content: routingResponse.message,
           ai_suggestion: true
         });

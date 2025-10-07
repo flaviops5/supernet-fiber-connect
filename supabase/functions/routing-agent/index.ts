@@ -106,7 +106,7 @@ serve(async (req) => {
           .insert({
             conversation_id: conversationId,
             sender_type: 'agent',
-            sender_name: 'Cloé (Atendente Virtual)',
+            sender_name: 'Cloé Martins',
             content: transferMessage,
             ai_suggestion: true,
           });
@@ -128,7 +128,7 @@ serve(async (req) => {
       
       // Solicitar CPF com identificação da Cloé
       const askMessage = attempts === 0 
-        ? 'Olá! Sou a Cloé, assistente virtual da SUPERNET FIBRA 😊\n\nPara começarmos, você poderia me informar seu CPF?'
+        ? 'Olá! Sou a Cloé, da SUPERNET FIBRA 😊\n\nPara começarmos, você poderia me informar seu CPF?'
         : 'Por favor, informe um CPF válido no formato: 000.000.000-00';
       
       // Incrementar contador de tentativas
@@ -178,15 +178,15 @@ serve(async (req) => {
           const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
           const transferMessage = `CPF inválido. Vou transferir você para nossa equipe que poderá auxiliar! ⏳\n\n📋 *Protocolo:* ${protocol}`;
           
-          await supabase
-            .from('conversation_messages')
-            .insert({
-              conversation_id: conversationId,
-              sender_type: 'agent',
-              sender_name: 'Cloé (Atendente Virtual)',
-              content: transferMessage,
-              ai_suggestion: true,
-            });
+      await supabase
+        .from('conversation_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_type: 'agent',
+          sender_name: 'Cloé Martins',
+          content: transferMessage,
+          ai_suggestion: true,
+        });
           
           return new Response(
             JSON.stringify({
@@ -234,7 +234,7 @@ serve(async (req) => {
           .insert({
             conversation_id: conversationId,
             sender_type: 'agent',
-            sender_name: 'Cloé (Atendente Virtual)',
+            sender_name: 'Cloé Martins',
             content: blockedMessage,
             ai_suggestion: true,
           });
@@ -434,7 +434,7 @@ serve(async (req) => {
                 .insert({
                   conversation_id: conversationId,
                   sender_type: 'agent',
-                  sender_name: 'Cloé (Atendente Virtual)',
+                  sender_name: 'Cloé Martins',
                   content: cloeTransferMessage,
                   ai_suggestion: true,
                 });
@@ -528,7 +528,7 @@ serve(async (req) => {
                   .insert({
                     conversation_id: conversationId,
                     sender_type: 'agent',
-                    sender_name: 'Cloé (Atendente Virtual)',
+                    sender_name: 'Cloé Martins',
                     content: outageMessage,
                     ai_suggestion: true,
                   });
@@ -568,7 +568,7 @@ serve(async (req) => {
                 .insert({
                   conversation_id: conversationId,
                   sender_type: 'agent',
-                  sender_name: 'Cloé (Atendente Virtual)',
+                  sender_name: 'Cloé Martins',
                   content: cloeTransferMessage,
                   ai_suggestion: true,
                 });
@@ -905,7 +905,7 @@ serve(async (req) => {
               .insert({
                 conversation_id: conversationId,
                 sender_type: 'agent',
-                sender_name: 'Cloé (Atendente Virtual)',
+                sender_name: 'Cloé Martins',
                 content: cloeTransferMessage,
                 ai_suggestion: true,
               });
@@ -1039,7 +1039,7 @@ serve(async (req) => {
                   .insert({
                     conversation_id: conversationId,
                     sender_type: 'agent',
-                    sender_name: 'Cloé (Atendente Virtual)',
+                    sender_name: 'Cloé Martins',
                     content: massOutageMessage,
                     ai_suggestion: true,
                   });
@@ -1170,7 +1170,7 @@ serve(async (req) => {
               .insert({
                 conversation_id: conversationId,
                 sender_type: 'agent',
-                sender_name: 'Cloé (Atendente Virtual)',
+                sender_name: 'Cloé Martins',
                 content: cloeTransferMessage,
                 ai_suggestion: true,
               });
