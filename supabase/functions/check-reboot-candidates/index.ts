@@ -38,18 +38,61 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Buscar clientes online do IXC
-    console.log('📡 Consultando clientes online no IXC...');
-    const radiusResponse = await callIxcWithRetry(
-      IXC_PROXY_URL,
-      'GET',
-      '/webservice/v1/radusuarios',
-      undefined,
-      'qtype=radusuarios.online&oper==&page=1&rp=999999&sortname=radusuarios.acctstarttime&sortorder=desc'
-    );
+    // 1. Testar conexão com IXC primeiro
+    console.log('🔍 Testando conexão com IXC...');
+    try {
+      const pingResponse = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'GET',
+        '/webservice/v1/ping',
+        undefined,
+        undefined
+      );
+      
+      if (!pingResponse.ok) {
+        console.error('❌ Falha no teste de conexão IXC:', pingResponse.error);
+        throw new Error('IXC não está acessível. Verifique as credenciais e configurações.');
+      }
+      
+      console.log('✅ Conexão IXC OK');
+    } catch (error: any) {
+      console.error('❌ Erro ao testar conexão:', error.message);
+      throw new Error(`IXC não acessível: ${error.message}`);
+    }
 
-    if (!radiusResponse.ok || !radiusResponse.data?.registros) {
-      throw new Error('Falha ao consultar radusuarios');
+    // 2. Buscar clientes online do IXC
+    console.log('📡 Consultando clientes online no IXC...');
+    let radiusResponse;
+    
+    try {
+      radiusResponse = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'GET',
+        '/webservice/v1/radusuarios',
+        undefined,
+        'qtype=radusuarios.online&oper==&page=1&rp=999999&sortname=radusuarios.acctstarttime&sortorder=desc'
+      );
+    } catch (error: any) {
+      console.error('❌ Erro detalhado ao consultar radusuarios:', error);
+      throw new Error(`Falha ao consultar clientes online: ${error.message}`);
+    }
+
+    if (!radiusResponse.ok) {
+      console.error('❌ Resposta IXC com erro:', radiusResponse.error);
+      throw new Error(radiusResponse.error || 'Falha ao consultar radusuarios');
+    }
+    
+    if (!radiusResponse.data?.registros) {
+      console.warn('⚠️ IXC retornou resposta válida mas sem registros');
+      return new Response(
+        JSON.stringify({
+          candidates: [],
+          total: 0,
+          timestamp: new Date().toISOString(),
+          message: 'Nenhum cliente online encontrado no momento'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const onlineUsers: RadiusUser[] = radiusResponse.data.registros;
