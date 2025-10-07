@@ -1366,15 +1366,15 @@ async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: s
   try {
     console.log(`🔓 Tentando desbloqueio de confiança para contrato: ${contractId}`);
     
-    const response = await fetch(`${baseUrl}/desbloqueio_confianca`, {
-      method: 'POST',
+    // Usar PUT no endpoint cliente_contrato conforme documentação IXC
+    const response = await fetch(`${baseUrl}/cliente_contrato/${contractId}`, {
+      method: 'PUT',
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
-        'ixcsoft': 'inserir'
       },
       body: JSON.stringify({
-        id: contractId
+        desbloqueio_confianca_ativo: 'S'
       })
     });
 
@@ -1387,6 +1387,8 @@ async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: s
       let errorMessage = `Erro HTTP ${response.status}`;
       if (rawText.includes('Ocorreu um erro')) {
         errorMessage = 'IXC não permitiu o desbloqueio - verifique as condições do contrato';
+      } else if (rawText.includes('não encontrado')) {
+        errorMessage = 'Contrato não encontrado no sistema';
       }
       
       return { 

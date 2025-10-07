@@ -126,7 +126,10 @@ Olá João! Verifiquei sua situação:
 ```
 
 **3. Tentar Desbloqueio (se aplicável)**
-- Sistema tenta automaticamente via endpoint `ixc-integration` com action `desbloqueioConfianca`
+- Sistema tenta automaticamente via:
+  - Endpoint: `PUT /webservice/v1/cliente_contrato/{id}`
+  - Payload: `{ "desbloqueio_confianca_ativo": "S" }`
+  - Via função: `ixc-integration` com action `desbloqueioConfianca`
 - Julia informa o resultado
 
 **4. SEMPRE Fornecer Dados de Pagamento (PIX e Boleto)**

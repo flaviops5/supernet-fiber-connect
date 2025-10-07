@@ -122,7 +122,10 @@ graph TD
 - **Bloqueado/Atraso**: Julia Martins (Financeiro) 
   - Recebe dados completos do status do cliente da Cloé
   - Informa IMEDIATAMENTE o status (ONLINE/OFFLINE, BLOQUEADO/motivo)
-  - Tenta desbloqueio automático via endpoint `ixc-integration` (action: `desbloqueioConfianca`)
+  - Tenta desbloqueio automático via:
+    - Endpoint: `PUT /webservice/v1/cliente_contrato/{id}`
+    - Payload: `{ "desbloqueio_confianca_ativo": "S" }`
+    - Via função: `ixc-integration` com action `desbloqueioConfianca`
   - Informa resultado (sucesso ou motivo da falha)
   - **SEMPRE** fornece dados de pagamento (PIX e Boleto) após desbloqueio bem-sucedido
 - **Offline**: 
