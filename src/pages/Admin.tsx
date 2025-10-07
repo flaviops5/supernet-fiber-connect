@@ -40,6 +40,7 @@ import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import WhatsAppConversations from '@/components/WhatsAppConversations';
+import WhatsAppTester from '@/components/WhatsAppTester';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -1817,6 +1818,7 @@ const Admin = () => {
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/whatsapp" element={<WhatsAppConversations />} />
+                <Route path="/whatsapp-test" element={<WhatsAppTester />} />
                 <Route path="/profile" element={<ProfileManagement />} />
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

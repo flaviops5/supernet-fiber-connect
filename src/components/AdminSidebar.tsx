@@ -118,14 +118,14 @@ const agentsItems = [
     icon: MessageCircle,
   },
   {
+    title: "Testar WhatsApp",
+    url: "/admin/whatsapp-test",
+    icon: FlaskConical,
+  },
+  {
     title: "Integração IXC",
     url: "/admin/ixc-integration",
     icon: Database,
-  },
-  {
-    title: "Testador de Chat",
-    url: "/admin/chat-tester",
-    icon: FlaskConical,
   },
   {
     title: "Monitoramento IXC",
