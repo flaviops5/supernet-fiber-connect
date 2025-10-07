@@ -50,21 +50,38 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         setUser(session.user);
         setSession(session);
 
-        // Check user role
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+        // Check user role (prefer RPC to avoid RLS recursion)
+        let role: 'admin' | 'editor' | 'viewer' = 'viewer';
+        try {
+          const checkRoleViaRPC = async (r: 'admin' | 'editor' | 'viewer') => {
+            const { data, error } = await supabase.rpc('has_role', {
+              _user_id: session.user.id,
+              _role: r
+            });
+            if (error) throw error;
+            return data === true;
+          };
 
-        if (roleError) {
-          console.error('Role error:', roleError);
-          setError('Erro ao verificar permissões');
-          setLoading(false);
-          return;
+          if (await checkRoleViaRPC('admin')) role = 'admin';
+          else if (await checkRoleViaRPC('editor')) role = 'editor';
+          else role = 'viewer';
+        } catch (rpcErr) {
+          // Fallback to direct table read
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (roleError) {
+            console.error('Role error:', roleError);
+            setError('Erro ao verificar permissões');
+            setLoading(false);
+            return;
+          }
+          role = (roleData?.role as any) || 'viewer';
         }
 
-        const role = roleData?.role || 'viewer';
         console.log('AuthGuard: User role:', role);
         setUserRole(role);
 
