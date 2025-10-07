@@ -88,19 +88,6 @@ const marketingItems = [
   },
 ];
 
-const monitoringItems = [
-  {
-    title: "Métricas do Sistema",
-    url: "/system-metrics",
-    icon: Activity,
-  },
-  {
-    title: "Auto-Reboot",
-    url: "/admin/auto-reboot",
-    icon: Activity,
-  },
-];
-
 const documentationItems = [
   {
     title: "Documentos",
@@ -144,6 +131,11 @@ const agentsItems = [
     title: "Monitoramento IXC",
     url: "/admin/monitoramento",
     icon: Monitor,
+  },
+  {
+    title: "Auto-Reboot",
+    url: "/admin/auto-reboot",
+    icon: Activity,
   },
   {
     title: "Métricas do Sistema",
