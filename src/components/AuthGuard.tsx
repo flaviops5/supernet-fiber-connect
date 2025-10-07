@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Shield, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Session, User } from '@supabase/supabase-js';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -16,14 +17,13 @@ interface UserRole {
 }
 
 export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: AuthGuardProps) => {
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<'admin' | 'editor' | 'viewer' | null>(null);
   const [authorized, setAuthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
+  const { role: userRole, isLoading: roleLoading } = useUserRole();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,13 +35,11 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         if (sessionError) {
           console.error('Session error:', sessionError);
           setError('Erro ao verificar sessão');
-          setLoading(false);
           return;
         }
 
         if (!session?.user) {
           console.log('AuthGuard: No user session found, redirecting to auth');
-          setLoading(false);
           navigate('/auth');
           return;
         }
@@ -49,55 +47,9 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         console.log('AuthGuard: User found:', session.user.email);
         setUser(session.user);
         setSession(session);
-
-        // Check user role (prefer RPC to avoid RLS recursion)
-        let role: 'admin' | 'editor' | 'viewer' = 'viewer';
-        try {
-          const checkRoleViaRPC = async (r: 'admin' | 'editor' | 'viewer') => {
-            const { data, error } = await supabase.rpc('has_role', {
-              _user_id: session.user.id,
-              _role: r
-            });
-            if (error) throw error;
-            return data === true;
-          };
-
-          if (await checkRoleViaRPC('admin')) role = 'admin';
-          else if (await checkRoleViaRPC('editor')) role = 'editor';
-          else role = 'viewer';
-        } catch (rpcErr) {
-          // Fallback to direct table read
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-
-          if (roleError) {
-            console.error('Role error:', roleError);
-            setError('Erro ao verificar permissões');
-            setLoading(false);
-            return;
-          }
-          role = (roleData?.role as any) || 'viewer';
-        }
-
-        console.log('AuthGuard: User role:', role);
-        setUserRole(role);
-
-        // Check if user has required role
-        if (requiredRoles.includes(role)) {
-          console.log('AuthGuard: User authorized');
-          setAuthorized(true);
-        } else {
-          console.log('AuthGuard: User not authorized for this area');
-          setError(`Acesso negado. Você precisa ter permissão de ${requiredRoles.join(' ou ')} para acessar esta área.`);
-        }
       } catch (err) {
         console.error('AuthGuard error:', err);
         setError('Erro interno de autenticação');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -114,15 +66,29 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         }
 
         if (event === 'SIGNED_IN' && session) {
-          // Recheck auth when user signs in
-          setLoading(true);
           checkAuth();
         }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, requiredRoles]);
+  }, [navigate]);
+
+  // Check authorization whenever role changes
+  useEffect(() => {
+    if (!roleLoading && user) {
+      console.log('AuthGuard: User role:', userRole);
+      if (requiredRoles.includes(userRole)) {
+        console.log('AuthGuard: User authorized');
+        setAuthorized(true);
+        setError(null);
+      } else {
+        console.log('AuthGuard: User not authorized for this area');
+        setError(`Acesso negado. Você precisa ter permissão de ${requiredRoles.join(' ou ')} para acessar esta área.`);
+        setAuthorized(false);
+      }
+    }
+  }, [userRole, roleLoading, user, requiredRoles]);
 
   const handleGoBack = () => {
     navigate('/');
@@ -132,7 +98,7 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
     navigate('/auth');
   };
 
-  if (loading) {
+  if (roleLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-96">
