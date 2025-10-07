@@ -44,6 +44,17 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
+    // Normalizar IXC_API_BASE: remover protocolo e caminhos
+    const normalizeBase = (raw: string) => {
+      const trimmed = raw.trim();
+      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
+      const host = noProtocol.split('/')[0];
+      return host;
+    };
+    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
+
+    console.log('IXC_API_BASE normalizado:', IXC_BASE_HOST);
+
     // 1. Buscar clientes online do IXC
     console.log('📡 Consultando clientes online no IXC...');
     
@@ -57,7 +68,7 @@ Deno.serve(async (req) => {
       sortorder: 'desc',
     });
 
-    const radiusResponse = await fetch(`https://${IXC_API_BASE}/webservice/v1/radusuarios`, {
+    const radiusResponse = await fetch(`https://${IXC_BASE_HOST}/webservice/v1/radusuarios`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -126,7 +137,7 @@ Deno.serve(async (req) => {
 
         try {
           const clientResponse = await fetch(
-            `https://${IXC_API_BASE}/webservice/v1/cliente?qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`,
+            `https://${IXC_BASE_HOST}/webservice/v1/cliente?qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`,
             {
               method: 'GET',
               headers: {
