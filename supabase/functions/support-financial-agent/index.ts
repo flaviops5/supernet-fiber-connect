@@ -282,6 +282,46 @@ O sistema IXC não permitiu a liberação automática. Oriente o cliente a regul
       }
     }
 
+    // Extract status information from customerData
+    const clientStatus = customerData?.metadata?.cliente_status;
+    let statusMessage = '';
+    
+    if (clientStatus && routeReason === 'blocked_or_overdue') {
+      const isOnline = clientStatus.isOnline;
+      const contracts = clientStatus.contracts || [];
+      const accessStatus = clientStatus.accessStatus;
+      
+      // Determinar status de bloqueio
+      let isBlocked = false;
+      let blockReason = '';
+      
+      for (const contract of contracts) {
+        const statusInternet = String(contract.status_internet || '').toUpperCase();
+        const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+        
+        if (financialBlockStatus.includes(statusInternet)) {
+          isBlocked = true;
+          blockReason = statusInternet === 'CA' ? 'Cancelado por Atraso' :
+                       statusInternet === 'CM' ? 'Cortado Manualmente' :
+                       statusInternet === 'CB' ? 'Cortado por Bloqueio' :
+                       statusInternet === 'FA' ? 'Financeiro em Atraso' : 'Bloqueado';
+          break;
+        }
+      }
+      
+      statusMessage = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 STATUS ATUAL DO CLIENTE (INFORME AO CLIENTE):
+
+🌐 Status de Conexão: ${isOnline ? '✅ ONLINE' : '❌ OFFLINE'}
+${isBlocked ? `🔒 Status de Acesso: ❌ BLOQUEADO (${blockReason})` : '✅ Status de Acesso: LIBERADO'}
+${accessStatus?.statusDeAcesso ? `📋 Status da Conta: ${accessStatus.statusDeAcesso}` : ''}
+
+INSTRUÇÃO CRÍTICA: INICIE sua resposta informando CLARAMENTE esses status ao cliente.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+    }
+
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
@@ -303,6 +343,8 @@ ${customerData?.email ? `E-mail: ${customerData.email}` : ''}
 ${customerData?.phone ? `Telefone: ${customerData.phone}` : ''}
 ${customerData?.cpf ? `CPF: ${customerData.cpf}` : ''}
 ${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
+
+${statusMessage}
 
 ${desbloqueioInfo ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
