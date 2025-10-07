@@ -42,15 +42,8 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
     if (conversationId) {
       loadConversationMessages();
       loadConversationAgent();
-    } else {
-      // Initial greeting
-      setMessages([{
-        role: 'assistant',
-        content: 'Olá! Tudo bem? Meu nome é Cloé, atendente da SUPERNET FIBRA. Como posso ajudar hoje?\n\n🛒 Vendas — Contratar planos, consultar preços\n🔧 Suporte Técnico — Problemas de conexão\n💰 Financeiro — Boletos e pagamentos',
-        agent: 'routing',
-        timestamp: new Date()
-      }]);
     }
+    // Chat começa vazio - Cloé responde quando o usuário envia a primeira mensagem
   }, [conversationId]);
 
   const loadConversationAgent = async () => {
