@@ -1358,6 +1358,93 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment_reboot_blacklist: {
+        Row: {
+          added_by: string | null
+          client_name: string | null
+          created_at: string | null
+          id: string
+          ixc_client_id: string
+          reason: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          id?: string
+          ixc_client_id: string
+          reason?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          id?: string
+          ixc_client_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      equipment_reboots: {
+        Row: {
+          bandwidth_after_kbps: number | null
+          bandwidth_before_kbps: number | null
+          client_ip: string | null
+          client_login: string | null
+          client_name: string | null
+          created_at: string | null
+          detection_timestamp: string
+          error_message: string | null
+          id: string
+          ixc_client_id: string
+          metadata: Json | null
+          reboot_completed_at: string | null
+          reboot_timestamp: string | null
+          skip_reason: string | null
+          status: string
+          updated_at: string | null
+          verification_count: number | null
+        }
+        Insert: {
+          bandwidth_after_kbps?: number | null
+          bandwidth_before_kbps?: number | null
+          client_ip?: string | null
+          client_login?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          detection_timestamp: string
+          error_message?: string | null
+          id?: string
+          ixc_client_id: string
+          metadata?: Json | null
+          reboot_completed_at?: string | null
+          reboot_timestamp?: string | null
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string | null
+          verification_count?: number | null
+        }
+        Update: {
+          bandwidth_after_kbps?: number | null
+          bandwidth_before_kbps?: number | null
+          client_ip?: string | null
+          client_login?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          detection_timestamp?: string
+          error_message?: string | null
+          id?: string
+          ixc_client_id?: string
+          metadata?: Json | null
+          reboot_completed_at?: string | null
+          reboot_timestamp?: string | null
+          skip_reason?: string | null
+          status?: string
+          updated_at?: string | null
+          verification_count?: number | null
+        }
+        Relationships: []
+      }
       failed_actions: {
         Row: {
           action_log_id: string | null
