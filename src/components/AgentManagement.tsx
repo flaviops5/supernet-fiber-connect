@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, ShoppingCart, Wrench, DollarSign, RefreshCw, TestTube2, Settings } from 'lucide-react';
+import { Bot, ShoppingCart, Wrench, DollarSign, RefreshCw, TestTube2, Settings, Heart } from 'lucide-react';
 import OmnichannelChat from './OmnichannelChat';
 import AgentConfigEditor from './AgentConfigEditor';
 
@@ -35,6 +35,7 @@ const AgentManagement = () => {
     sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+    telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
   });
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
@@ -181,6 +182,21 @@ const AgentManagement = () => {
         'Desbloqueio automático após pagamento',
         'Orientações sobre formas de pagamento',
       ]
+    },
+    {
+      id: 'telemedicina',
+      name: 'Agente de Telemedicina',
+      icon: Heart,
+      color: 'bg-pink-500',
+      description: 'Assistente de telemedicina e saúde',
+      capabilities: [
+        'Explicação sobre telemedicina',
+        'Apresentação de planos e especialidades',
+        'Informações sobre consultas 24h',
+        'Orientações sobre receitas digitais',
+        'Esclarecimento sobre especialidades disponíveis',
+        'Suporte para contratação do serviço',
+      ]
     }
   ];
 
@@ -231,7 +247,7 @@ const AgentManagement = () => {
       )}
 
       {/* Agent Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {agents.map(agent => (
           <Card key={agent.id} className="relative overflow-hidden">
             <div className={`absolute top-0 left-0 right-0 h-1 ${agent.color}`} />
@@ -244,99 +260,71 @@ const AgentManagement = () => {
               <CardDescription>{agent.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total de conversas</span>
-                  <span className="font-medium">{stats[agent.id]?.totalConversations || 0}</span>
+              <div className="space-y-4">
+                {/* Stats */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total de conversas</span>
+                    <span className="font-medium">{stats[agent.id]?.totalConversations || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Resolvidas hoje</span>
+                    <span className="font-medium">{stats[agent.id]?.resolvedToday || 0}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Resolvidas hoje</span>
-                  <span className="font-medium">{stats[agent.id]?.resolvedToday || 0}</span>
-                </div>
-              <Button
-                variant="ghost"
-                className="w-full mt-2"
-                onClick={() => {
-                  const config = configs[agent.id];
-                  if (config) {
-                    setEditingConfig(config);
-                  }
-                }}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar
-              </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
-      {/* Agent Details Tabs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhes dos Agentes</CardTitle>
-          <CardDescription>
-            Capacidades e configurações de cada agente especializado
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue={agents[0].id}>
-            <TabsList className="grid w-full grid-cols-4">
-              {agents.map(agent => (
-                <TabsTrigger key={agent.id} value={agent.id}>
-                  <agent.icon className="w-4 h-4 mr-2" />
-                  {agent.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {agents.map(agent => (
-              <TabsContent key={agent.id} value={agent.id} className="space-y-4">
+                {/* Capabilities */}
                 <div>
-                  <h3 className="font-semibold mb-2">Capacidades:</h3>
-                  <ul className="space-y-2">
+                  <h4 className="text-sm font-semibold mb-2">Capacidades:</h4>
+                  <ul className="space-y-1">
                     {agent.capabilities.map((capability, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <Badge variant="outline" className="mt-0.5">
-                          {index + 1}
-                        </Badge>
+                      <li key={index} className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <span className="text-primary mt-0.5">•</span>
                         <span>{capability}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
+                {/* Config Info */}
                 {configs[agent.id] && (
-                  <div className="mt-4 p-4 border rounded-lg space-y-2">
-                    <h4 className="font-semibold">Configuração Atual:</h4>
-                    <div className="grid gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Modelo:</span>
-                        <span className="font-mono">{configs[agent.id].model}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Temperatura:</span>
-                        <span>{configs[agent.id].temperature}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Max Tokens:</span>
-                        <span>{configs[agent.id].max_tokens}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Status:</span>
-                        <Badge variant={configs[agent.id].is_active ? 'default' : 'secondary'}>
-                          {configs[agent.id].is_active ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </div>
+                  <div className="pt-3 border-t space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Modelo:</span>
+                      <span className="font-mono text-xs">{configs[agent.id].model}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Temperatura:</span>
+                      <span>{configs[agent.id].temperature}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge variant={configs[agent.id].is_active ? 'default' : 'secondary'} className="text-xs">
+                        {configs[agent.id].is_active ? 'Ativo' : 'Inativo'}
+                      </Badge>
                     </div>
                   </div>
                 )}
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    const config = configs[agent.id];
+                    if (config) {
+                      setEditingConfig(config);
+                    }
+                  }}
+                >
+                  <Settings className="w-3 h-3 mr-2" />
+                  Configurar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Config Editor Dialog */}
       <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
