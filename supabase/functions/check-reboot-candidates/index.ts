@@ -38,29 +38,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 1. Testar conexão com IXC primeiro
-    console.log('🔍 Testando conexão com IXC...');
-    try {
-      const pingResponse = await callIxcWithRetry(
-        IXC_PROXY_URL,
-        'GET',
-        '/webservice/v1/ping',
-        undefined,
-        undefined
-      );
-      
-      if (!pingResponse.ok) {
-        console.error('❌ Falha no teste de conexão IXC:', pingResponse.error);
-        throw new Error('IXC não está acessível. Verifique as credenciais e configurações.');
-      }
-      
-      console.log('✅ Conexão IXC OK');
-    } catch (error: any) {
-      console.error('❌ Erro ao testar conexão:', error.message);
-      throw new Error(`IXC não acessível: ${error.message}`);
-    }
-
-    // 2. Buscar clientes online do IXC
+    // 1. Buscar clientes online do IXC
     console.log('📡 Consultando clientes online no IXC...');
     let radiusResponse;
     
