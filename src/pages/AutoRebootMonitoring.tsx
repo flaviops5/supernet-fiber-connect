@@ -6,6 +6,7 @@ import { RebootBlacklist } from "@/components/monitoring/RebootBlacklist";
 import { RebootSettings } from "@/components/monitoring/RebootSettings";
 import { RebootStats } from "@/components/monitoring/RebootStats";
 import { RebootCandidates } from "@/components/monitoring/RebootCandidates";
+import { ClientStats } from "@/components/monitoring/ClientStats";
 import { Activity } from "lucide-react";
 
 const AutoRebootMonitoring = () => {
@@ -24,7 +25,10 @@ const AutoRebootMonitoring = () => {
             </div>
           </div>
 
-          {/* Estatísticas */}
+          {/* Estatísticas de Clientes IXC */}
+          <ClientStats />
+
+          {/* Estatísticas de Reboot */}
           <RebootStats />
 
           {/* Candidatos em Tempo Real */}
