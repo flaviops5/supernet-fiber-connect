@@ -1,10 +1,13 @@
-# Fluxograma Cloé - Validação de CPF com Histórico de Contatos
+# Fluxograma Cloé Martins - Validação de CPF com Histórico de Contatos
+
+## 👤 Sobre a Cloé
+Cloé Martins é a primeira atendente humana da SUPERNET FIBRA. Ela é responsável pelo roteamento inicial, validação de CPF e análise de situação do cliente. Com uma comunicação empática e profissional, Cloé identifica rapidamente a necessidade do cliente e o direciona para o setor adequado.
 
 ```mermaid
 graph TD
     Start([Cliente entra em contato]) --> CheckMessage{Mensagem contém<br/>CPF?}
     
-    CheckMessage -->|Não| AnalyzeIntent[Cloé analisa intenção<br/>via AI]
+    CheckMessage -->|Não| AnalyzeIntent[Cloé Martins analisa intenção<br/>via AI]
     AnalyzeIntent --> NeedsCPF{Intenção requer<br/>validação?}
     NeedsCPF -->|Não - Vendas| Sales[Vicente - Vendas]
     NeedsCPF -->|Sim| AskCPF[Cloé: 'Para verificar sua situação,<br/>preciso do seu CPF']
@@ -48,29 +51,29 @@ graph TD
     
     GetStatus --> CheckBlocked{Cliente está<br/>BLOQUEADO ou<br/>em ATRASO?}
     
-    CheckBlocked -->|✅ SIM| RouteFinancial["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé: 'Perfeito! Transferindo você<br/>para nosso Suporte Financeiro.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    CheckBlocked -->|✅ SIM| RouteFinancial["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito! Transferindo você<br/>para nosso Suporte Financeiro.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
     
     RouteFinancial --> TransferFinancial[🔄 Julia Martins<br/>Suporte Financeiro]
-    TransferFinancial --> FinancialDesbloqueio{Julia tenta<br/>desbloqueio<br/>automático?}
-    FinancialDesbloqueio -->|Sucesso| FinancialSuccess["✅ Julia:<br/>'Consegui desbloquear sua conexão!<br/>Seu PIX/QR Code para pagamento:<br/>[dados]'"]
-    FinancialDesbloqueio -->|Falha| FinancialManual["⚠️ Julia:<br/>'Identifiquei o problema. Vou te ajudar<br/>a resolver sua pendência financeira.'"]
+    TransferFinancial --> FinancialDesbloqueio{Julia tenta<br/>desbloqueio<br/>automático<br/>IMEDIATAMENTE?}
+    FinancialDesbloqueio -->|Sucesso| FinancialSuccess["✅ Julia informa STATUS e resultado:<br/>'Olá! Identifiquei sua situação:<br/>🌐 Status: OFFLINE/ONLINE<br/>🔒 Acesso: BLOQUEADO (motivo)<br/><br/>Consegui desbloquear sua conexão!<br/>Teste já sua navegação.<br/><br/>Para regularizar:<br/>💳 PIX: [código]<br/>🔢 Código de barras: [...]'"]
+    FinancialDesbloqueio -->|Falha| FinancialManual["⚠️ Julia informa STATUS e motivo:<br/>'Olá! Sua situação atual:<br/>🌐 Status: OFFLINE/ONLINE<br/>🔒 Acesso: BLOQUEADO (motivo)<br/><br/>Não foi possível o desbloqueio<br/>automático porque: [motivo do IXC].<br/><br/>Vou te ajudar a resolver!'"]
     FinancialSuccess --> End2([FIM - Resolvido])
     FinancialManual --> End2
     
     CheckBlocked -->|❌ NÃO| CheckOnline{Cliente está<br/>ONLINE?}
     
-    CheckOnline -->|❌ NÃO - OFFLINE| CheckMassOutage{🔍 Cloé verifica:<br/>Login PPPoE está em<br/>affected_logins da<br/>mass_outage_events?}
+    CheckOnline -->|❌ NÃO - OFFLINE| CheckMassOutage{🔍 Cloé Martins verifica:<br/>Login PPPoE está em<br/>affected_logins da<br/>mass_outage_events?}
     
-    CheckMassOutage -->|✅ SIM - Cliente Afetado| MassOutageAlert["🚨 CLOÉ INFORMA DIRETAMENTE<br/><br/>Olá [Nome]! 👋<br/><br/>🚨 INTERRUPÇÃO EM MASSA DETECTADA<br/><br/>Identifiquei que você está afetado<br/>por uma interrupção na sua região.<br/><br/>📊 Situação atual:<br/>• X clientes afetados<br/>• Detectado em: [timestamp]<br/>• Causa: [se identificada]<br/><br/>✅ Nossa equipe técnica já está<br/>trabalhando na solução.<br/><br/>NÃO É PROBLEMA NO SEU EQUIPAMENTO.<br/>Pedimos desculpas pelo transtorno! 🙏"]
+    CheckMassOutage -->|✅ SIM - Cliente Afetado| MassOutageAlert["🚨 CLOÉ MARTINS INFORMA DIRETAMENTE<br/><br/>Olá [Nome]! 👋<br/><br/>🚨 INTERRUPÇÃO EM MASSA DETECTADA<br/><br/>Identifiquei que você está afetado<br/>por uma interrupção na sua região.<br/><br/>📊 Situação atual:<br/>• X clientes afetados<br/>• Detectado em: [timestamp]<br/>• Causa: [se identificada]<br/><br/>✅ Nossa equipe técnica já está<br/>trabalhando na solução.<br/><br/>NÃO É PROBLEMA NO SEU EQUIPAMENTO.<br/>Pedimos desculpas pelo transtorno! 🙏"]
     
-    CheckMassOutage -->|❌ NÃO - Cliente OK| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé: 'Perfeito! Transferindo você<br/>para nosso Suporte Técnico.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    CheckMassOutage -->|❌ NÃO - Cliente OK| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito! Transferindo você<br/>para nosso Suporte Técnico.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
     
     MassOutageAlert --> End3([FIM - Aguarda Normalização])
     RouteSupport --> TransferSupport[🔄 Luan Silva<br/>Suporte Técnico N1]
     TransferSupport --> SupportAnalysis["Luan analisa problema<br/>e oferece soluções técnicas"]
     SupportAnalysis --> End3
     
-    CheckOnline -->|✅ SIM - ONLINE| ConfirmOnline["✅ Cloé:<br/>'Obrigado, [Nome]!<br/>Verifiquei aqui e está tudo certo<br/>com sua conexão.<br/><br/>Como posso ajudá-lo? 😊'"]
+    CheckOnline -->|✅ SIM - ONLINE| ConfirmOnline["✅ Cloé Martins:<br/>'Obrigado, [Nome]!<br/>Verifiquei aqui e está tudo certo<br/>com sua conexão.<br/><br/>Como posso ajudá-lo? 😊'"]
     ConfirmOnline --> AnalyzeNextIntent[Aguarda próxima mensagem<br/>e analisa intenção]
     AnalyzeNextIntent --> RouteByIntent{Qual a intenção?}
     RouteByIntent -->|Suporte Técnico| TransferSupport
@@ -93,24 +96,40 @@ graph TD
 
 ## Legendas
 
+### 👤 Equipe de Atendimento:
+- **Cloé Martins**: Primeira atendente, responsável pelo roteamento e validação inicial
+- **Julia Martins**: Suporte Financeiro N1, especialista em cobranças e desbloqueios
+- **Luan Silva**: Suporte Técnico N1, especialista em conexões e troubleshooting
+- **Vicente**: Vendas, especialista em novos contratos e upgrades
+
+**IMPORTANTE**: Todos os atendentes são HUMANOS e trabalham com apoio de IA.
+
 ### 🆕 Novidades nesta versão:
+- **Tom Humanizado**: Cloé Martins é humana, não mais "assistente virtual"
+- **Informação de Status**: Julia **SEMPRE** informa o status do cliente (ONLINE/OFFLINE, BLOQUEADO/LIBERADO) antes de qualquer ação
+- **Desbloqueio Imediato**: Julia tenta desbloqueio automático IMEDIATAMENTE ao receber o cliente
 - **Histórico de Contatos**: Consulta banco de dados ANTES do IXC para personalizar atendimento
 - **Contador de Tentativas**: Registra todas as tentativas de validação de CPF
-- **Transferência Humana**: Após 3 tentativas sem sucesso, transfere para atendente humano
+- **Transferência Entre Setores**: Após 3 tentativas sem sucesso, transfere para outro setor
 - **Mensagens Progressivas**: Mensagens de erro mais detalhadas a cada tentativa
 - **Personalização**: Saudações personalizadas para clientes recorrentes
-- **🚨 Verificação de Quedas em Massa**: Cloé verifica `affected_logins` e informa cliente diretamente
+- **🚨 Verificação de Quedas em Massa**: Cloé Martins verifica `affected_logins` e informa cliente diretamente
   - Verifica se `pppoeLogin` está em `mass_outage_events.affected_logins`
   - Se afetado: informa sobre a queda e **NÃO transfere** para técnico
   - Se não afetado: transfere para Luan para troubleshooting
 
 ### 🔴 Roteamento Automático:
-- **Bloqueado/Atraso**: Julia Martins (Financeiro) com tentativa de desbloqueio automático
+- **Bloqueado/Atraso**: Julia Martins (Financeiro) 
+  - Recebe dados completos do status do cliente da Cloé
+  - Informa IMEDIATAMENTE o status (ONLINE/OFFLINE, BLOQUEADO/motivo)
+  - Tenta desbloqueio automático
+  - Informa resultado (sucesso ou motivo da falha)
+  - Fornece dados de pagamento se aplicável
 - **Offline**: 
-  - **1º**: Cloé verifica queda em massa (consulta `mass_outage_events.affected_logins`)
+  - **1º**: Cloé Martins verifica queda em massa (consulta `mass_outage_events.affected_logins`)
   - **Se afetado**: Cloé informa diretamente e **NÃO** transfere
   - **Se não afetado**: Transfere para Luan Silva (Técnico N1)
-- **Online**: Continua com Cloé até identificar intenção específica
+- **Online**: Continua com Cloé Martins até identificar intenção específica
 
 ### 📊 Banco de Dados:
 - Tabela: `customer_contact_history`

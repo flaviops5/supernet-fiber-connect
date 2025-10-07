@@ -186,12 +186,21 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         const endpoint = agentEndpointMap[currentAgent];
         if (!endpoint) throw new Error(`Agente desconhecido: ${currentAgent}`);
 
+        // Preparar mensagens no formato esperado pelos agentes
+        const conversationMessages = messages.map(m => ({ 
+          role: m.role === 'user' ? 'user' : 'assistant', 
+          content: m.content 
+        }));
+
         const { data: agentData, error: agentError } = await supabase.functions.invoke(endpoint, {
           body: {
-            message: userMessage.content,
+            messages: [
+              ...conversationMessages,
+              { role: 'user', content: userMessage.content }
+            ],
             conversationId: activeConversationId,
-            customerData,
-            messages: messages.map(m => ({ role: m.role, content: m.content }))
+            customerData: customerData || {},
+            routeReason: currentAgent === 'support_financial' ? 'blocked_or_overdue' : undefined
           }
         });
 
