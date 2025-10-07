@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, ShoppingCart, Wrench, DollarSign, RefreshCw, TestTube2, Settings, Heart } from 'lucide-react';
@@ -314,11 +314,18 @@ const AgentManagement = () => {
                     const config = configs[agent.id];
                     if (config) {
                       setEditingConfig(config);
+                    } else {
+                      toast({
+                        title: 'Configuração não encontrada',
+                        description: `A configuração do ${agent.name} não foi encontrada. Recarregue a página.`,
+                        variant: 'destructive',
+                      });
                     }
                   }}
+                  disabled={!configs[agent.id]}
                 >
                   <Settings className="w-3 h-3 mr-2" />
-                  Configurar
+                  {configs[agent.id] ? 'Configurar' : 'Sem configuração'}
                 </Button>
               </div>
             </CardContent>
@@ -329,6 +336,12 @@ const AgentManagement = () => {
       {/* Config Editor Dialog */}
       <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configuração do Agente</DialogTitle>
+            <DialogDescription>
+              Configure o comportamento, modelo e parâmetros do agente de IA
+            </DialogDescription>
+          </DialogHeader>
           {editingConfig && (
             <AgentConfigEditor
               config={editingConfig}
