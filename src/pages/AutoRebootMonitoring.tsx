@@ -5,6 +5,7 @@ import { RebootHistory } from "@/components/monitoring/RebootHistory";
 import { RebootBlacklist } from "@/components/monitoring/RebootBlacklist";
 import { RebootSettings } from "@/components/monitoring/RebootSettings";
 import { RebootStats } from "@/components/monitoring/RebootStats";
+import { RebootCandidates } from "@/components/monitoring/RebootCandidates";
 import { Activity } from "lucide-react";
 
 const AutoRebootMonitoring = () => {
@@ -25,6 +26,9 @@ const AutoRebootMonitoring = () => {
 
           {/* Estatísticas */}
           <RebootStats />
+
+          {/* Candidatos em Tempo Real */}
+          <RebootCandidates />
 
           {/* Tabs */}
           <Tabs defaultValue="history" className="space-y-4">
