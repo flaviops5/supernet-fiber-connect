@@ -52,64 +52,74 @@ export const TelemedicinaChatAgent = ({ onImageSelected, onAudioTranscribed }: T
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('telemedicina-agent', {
-        body: { 
-          messages: [...messages, userMessage].map(m => ({ 
-            role: m.role, 
-            content: m.content 
-          }))
+      const response = await fetch(
+        `https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/telemedicina-agent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I'}`
+          },
+          body: JSON.stringify({
+            messages: [...messages, userMessage].map(m => ({
+              role: m.role,
+              content: m.content
+            }))
+          })
         }
-      });
+      );
 
-      if (error) {
-        if (error.message?.includes('429')) {
+      if (!response.ok) {
+        if (response.status === 429) {
           toast.error('Limite de requisições excedido. Aguarde um momento e tente novamente.');
-        } else if (error.message?.includes('402')) {
+          return;
+        } else if (response.status === 402) {
           toast.error('Serviço temporariamente indisponível. Tente novamente mais tarde.');
-        } else {
-          throw error;
+          return;
         }
-        return;
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      if (data) {
-        const reader = data.getReader();
-        const decoder = new TextDecoder();
-        let assistantMessage = '';
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
 
-        const assistantMsg: Message = {
-          role: 'assistant',
-          content: '',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMsg]);
+      const decoder = new TextDecoder();
+      let assistantMessage = '';
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: '',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, assistantMsg]);
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
 
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  assistantMessage += content;
-                  setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].content = assistantMessage;
-                    return newMessages;
-                  });
-                }
-              } catch (e) {
-                console.error('Error parsing SSE:', e);
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                assistantMessage += content;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1].content = assistantMessage;
+                  return newMessages;
+                });
               }
+            } catch (e) {
+              console.error('Error parsing SSE:', e);
             }
           }
         }
