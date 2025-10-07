@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
 import Monitoramento from "./pages/Monitoramento";
+import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import Roteamento from "./pages/Roteamento";
 import SimulacaoCompleta from "./pages/SimulacaoCompleta";
 import TesteFonteQueimada from "./pages/TesteFonteQueimada";
@@ -46,6 +47,7 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/atendimento" element={<Atendimento />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
+            <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
             
             {/* Public routes with header/footer */}
             <Route path="/*" element={

@@ -300,6 +300,48 @@ export type Database = {
           },
         ]
       }
+      auto_reboot_settings: {
+        Row: {
+          bandwidth_threshold_kbps: number
+          cooldown_hours: number
+          cron_interval_minutes: number
+          enabled: boolean
+          exclude_hours_end: number
+          exclude_hours_start: number
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+          verification_count: number
+          verification_interval_seconds: number
+        }
+        Insert: {
+          bandwidth_threshold_kbps?: number
+          cooldown_hours?: number
+          cron_interval_minutes?: number
+          enabled?: boolean
+          exclude_hours_end?: number
+          exclude_hours_start?: number
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          verification_count?: number
+          verification_interval_seconds?: number
+        }
+        Update: {
+          bandwidth_threshold_kbps?: number
+          cooldown_hours?: number
+          cron_interval_minutes?: number
+          enabled?: boolean
+          exclude_hours_end?: number
+          exclude_hours_start?: number
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          verification_count?: number
+          verification_interval_seconds?: number
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string

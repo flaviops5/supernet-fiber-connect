@@ -88,6 +88,19 @@ const marketingItems = [
   },
 ];
 
+const monitoringItems = [
+  {
+    title: "Métricas do Sistema",
+    url: "/system-metrics",
+    icon: Activity,
+  },
+  {
+    title: "Auto-Reboot",
+    url: "/admin/auto-reboot",
+    icon: Activity,
+  },
+];
+
 const documentationItems = [
   {
     title: "Documentos",
