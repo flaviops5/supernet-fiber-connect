@@ -29,14 +29,12 @@ import { AuthGuard } from "./components/AuthGuard";
 
 const queryClient = new QueryClient();
 
-// Admin wrapper component for debugging
+// Admin wrapper component
 const AdminWrapper = () => {
-  console.log('Admin route accessed');
   return <Admin />;
 };
 
 const App = () => {
-  console.log('App loading...');
   return (
   <QueryClientProvider client={queryClient}>
     <TestimonialsProvider>

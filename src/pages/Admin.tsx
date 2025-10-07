@@ -294,18 +294,14 @@ const UsersManagement = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        console.log('Loading users...');
         // First get all profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*');
 
         if (profilesError) {
-          console.error('Profiles error:', profilesError);
           throw profilesError;
         }
-
-        console.log('Profiles loaded:', profilesData);
 
         // Then get user roles for each profile
         const usersWithRoles = await Promise.all(
@@ -314,9 +310,7 @@ const UsersManagement = () => {
               .from('user_roles')
               .select('role')
               .eq('user_id', profile.user_id)
-              .maybeSingle(); // Use maybeSingle to avoid errors when no role found
-
-            console.log(`Role for user ${profile.user_id}:`, roleData);
+              .maybeSingle();
 
             return {
               ...profile,
@@ -325,10 +319,8 @@ const UsersManagement = () => {
           })
         );
 
-        console.log('Users with roles:', usersWithRoles);
         setUsers(usersWithRoles);
       } catch (error) {
-        console.error('Error loading users:', error);
         toast.error('Erro ao carregar usuários');
       } finally {
         setLoading(false);
@@ -355,7 +347,6 @@ const UsersManagement = () => {
       
       toast.success('Permissão atualizada com sucesso!');
     } catch (error) {
-      console.error('Error updating role:', error);
       toast.error('Erro ao atualizar permissão');
     }
   };

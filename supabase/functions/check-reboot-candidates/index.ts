@@ -129,6 +129,18 @@ Deno.serve(async (req) => {
       const totalBytes = inputBytes + outputBytes;
       const bandwidthKbps = (totalBytes * 8) / (sessionTime * 1024);
 
+      // Log para debug de clientes específicos
+      if (user.login.toUpperCase().includes('IN-MC-53-BAR')) {
+        console.log(`🔍 Debug cliente ${user.login}:`, {
+          online: user.online,
+          inputBytes,
+          outputBytes,
+          sessionTime,
+          totalBytes,
+          bandwidthKbps: Math.round(bandwidthKbps * 100) / 100
+        });
+      }
+
       // Detectar banda anormalmente baixa
       if (bandwidthKbps < 900 && bandwidthKbps > 0) {
         // Verificar status do cliente
@@ -155,7 +167,7 @@ Deno.serve(async (req) => {
             }
           }
         } catch (err) {
-          console.error(`Erro ao buscar cliente ${user.id_cliente}:`, err);
+          // Erro silencioso
         }
 
         // Verificar cooldown (reboot recente)

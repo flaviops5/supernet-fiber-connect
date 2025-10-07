@@ -8,19 +8,15 @@ interface TelemedicinaChatWidgetProps {
 }
 
 const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: TelemedicinaChatWidgetProps) => {
-  console.log('TelemedicinaChatWidget loading with chatbotId:', chatbotId);
   const [sessionCount, setSessionCount] = useState(1);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log('Setting up iframe with URL:', `https://www.chatbase.co/chatbot-iframe/${chatbotId}`);
-    
     // Listen for messages from iframe
     const handleMessage = (event: MessageEvent) => {
-      console.log('Received iframe message:', event);
       if (event.data && event.data.type === 'chatbase-response') {
-        console.log('Received message from telemedicina chatbot:', event.data);
+        // Handle chatbot response
       }
     };
 

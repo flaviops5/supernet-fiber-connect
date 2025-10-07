@@ -28,27 +28,21 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('AuthGuard: Checking authentication...');
-        
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
           setError('Erro ao verificar sessão');
           return;
         }
 
         if (!session?.user) {
-          console.log('AuthGuard: No user session found, redirecting to auth');
           navigate('/auth');
           return;
         }
 
-        console.log('AuthGuard: User found:', session.user.email);
         setUser(session.user);
         setSession(session);
       } catch (err) {
-        console.error('AuthGuard error:', err);
         setError('Erro interno de autenticação');
       }
     };
@@ -58,8 +52,6 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AuthGuard: Auth state changed:', event);
-        
         if (event === 'SIGNED_OUT' || !session) {
           navigate('/auth');
           return;
@@ -77,13 +69,10 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
   // Check authorization whenever role changes
   useEffect(() => {
     if (!roleLoading && user) {
-      console.log('AuthGuard: User role:', userRole);
       if (requiredRoles.includes(userRole)) {
-        console.log('AuthGuard: User authorized');
         setAuthorized(true);
         setError(null);
       } else {
-        console.log('AuthGuard: User not authorized for this area');
         setError(`Acesso negado. Você precisa ter permissão de ${requiredRoles.join(' ou ')} para acessar esta área.`);
         setAuthorized(false);
       }

@@ -83,7 +83,6 @@ const CepChecker = ({ onLocationFound }: CepCheckerProps) => {
         .single();
 
       if (error) {
-        console.log('CEP não encontrado na base:', error);
         // CEP não encontrado - retornar como não atendido
         setResult({
           available: false,
@@ -113,7 +112,6 @@ const CepChecker = ({ onLocationFound }: CepCheckerProps) => {
         }
       }
     } catch (err) {
-      console.error('Erro ao consultar CEP:', err);
       toast({
         title: "Erro na consulta",
         description: "Ocorreu um erro ao verificar a cobertura. Tente novamente.",
