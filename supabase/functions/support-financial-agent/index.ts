@@ -263,20 +263,79 @@ ${paymentInfo || '⚠️ Dados de pagamento não disponíveis - solicite manualm
                       result: {
                         success: false,
                         error: unblockData.data?.error,
-                        contract_id: blockedContract.id
+                        contract_id: blockedContract.id,
+                        contract_data: blockedContract
                       }
                     })
                     .eq('id', actionLog.id);
                 }
                 
-                desbloqueioInfo = `
+                // Função para formatar data no padrão brasileiro
+                const formatarData = (data: string | null | undefined): string => {
+                  if (!data) return 'Data não disponível';
+                  try {
+                    const d = new Date(data);
+                    if (isNaN(d.getTime())) return 'Data inválida';
+                    const dia = String(d.getDate()).padStart(2, '0');
+                    const mes = String(d.getMonth() + 1).padStart(2, '0');
+                    const ano = d.getFullYear();
+                    return `${dia}/${mes}/${ano}`;
+                  } catch {
+                    return 'Data inválida';
+                  }
+                };
+                
+                // Calcular data de liberação do desbloqueio (primeiro vencimento após nao_bloquear_ate)
+                const calcularDataLiberacao = (nao_bloquear_ate: string | null | undefined): string => {
+                  if (!nao_bloquear_ate) return 'quando houver pagamento';
+                  try {
+                    const dataBase = new Date(nao_bloquear_ate);
+                    if (isNaN(dataBase.getTime())) return 'quando houver pagamento';
+                    // Adiciona 1 dia para ser "após"
+                    dataBase.setDate(dataBase.getDate() + 1);
+                    return formatarData(dataBase.toISOString());
+                  } catch {
+                    return 'quando houver pagamento';
+                  }
+                };
+                
+                // Verificar se é erro de desbloqueio já usado (verificando campos do contrato)
+                const dtUltimoDesbloqueio = blockedContract.dt_ult_des_bloq_conf;
+                const naoBloquearAte = blockedContract.nao_bloquear_ate;
+                const desbloqueioAtivoRecentemente = blockedContract.desbloqueio_confianca_ativo === 'S';
+                
+                // Se tem informações de desbloqueio anterior, usa mensagem padrão
+                if (dtUltimoDesbloqueio && naoBloquearAte) {
+                  const dataLiberacao = calcularDataLiberacao(naoBloquearAte);
+                  
+                  desbloqueioInfo = `
+❌ DESBLOQUEIO DE CONFIANÇA NÃO DISPONÍVEL
+
+O desbloqueio de confiança não está disponível para o contrato #${blockedContract.id}, este recurso foi usado no dia ${formatarData(dtUltimoDesbloqueio)} e não foi realizado o pagamento até o dia ${formatarData(naoBloquearAte)}, este recurso será habilitado novamente quando o título que vence após o dia ${dataLiberacao} for pago.
+
+📋 INFORME AO CLIENTE:
+Para restabelecer o acesso, é necessário regularizar o pagamento pendente. Após a confirmação do pagamento no sistema, o serviço será liberado automaticamente.
+`;
+                } else if (desbloqueioAtivoRecentemente) {
+                  desbloqueioInfo = `
+❌ DESBLOQUEIO DE CONFIANÇA JÁ ATIVO
+
+O contrato #${blockedContract.id} já possui um desbloqueio de confiança ativo. O cliente tem até ${formatarData(naoBloquearAte)} para regularizar o pagamento.
+
+📋 INFORME AO CLIENTE:
+Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento para evitar novo bloqueio.
+`;
+                } else {
+                  // Mensagem genérica para outros tipos de erro
+                  desbloqueioInfo = `
 ❌ TENTATIVA DE DESBLOQUEIO NÃO FOI POSSÍVEL
 
 📋 Contrato: ${blockedContract.id}
-⚠️ Motivo: ${unblockData.data?.error || 'Erro desconhecido'}
+⚠️ Motivo: ${unblockData.data?.error || 'Sistema IXC não permitiu o desbloqueio'}
 
 O sistema IXC não permitiu a liberação automática. Oriente o cliente a regularizar o pagamento para ter o acesso restabelecido.
 `;
+                }
               }
             }
           }

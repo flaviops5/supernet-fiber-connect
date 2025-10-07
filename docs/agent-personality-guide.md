@@ -130,7 +130,11 @@ Olá João! Verifiquei sua situação:
   - Endpoint: `PUT /webservice/v1/cliente_contrato/{id}`
   - Payload: `{ "desbloqueio_confianca_ativo": "S" }`
   - Via função: `ixc-integration` com action `desbloqueioConfianca`
-- Julia informa o resultado
+- Julia informa o resultado:
+  - ✅ **Sucesso**: Fornece dados de pagamento (PIX + Boleto)
+  - ❌ **Já usado**: Mensagem padrão com datas:
+    - "O desbloqueio de confiança não está disponível para o contrato #id_contrato#, este recurso foi usado no dia #ultimo_desbloqueio_de_confianca# e não foi realizado o pagamento até o dia #nao_bloquear_ate#, este recurso será habilitado novamente quando o título que vence após o dia #data_liberacao_desbloqueio# for pago."
+  - ❌ **Outro erro**: Informa motivo e orienta regularização
 
 **4. SEMPRE Fornecer Dados de Pagamento (PIX e Boleto)**
 CRÍTICO: Após desbloqueio bem-sucedido, Julia SEMPRE deve enviar:

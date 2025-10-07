@@ -126,8 +126,10 @@ graph TD
     - Endpoint: `PUT /webservice/v1/cliente_contrato/{id}`
     - Payload: `{ "desbloqueio_confianca_ativo": "S" }`
     - Via função: `ixc-integration` com action `desbloqueioConfianca`
-  - Informa resultado (sucesso ou motivo da falha)
-  - **SEMPRE** fornece dados de pagamento (PIX e Boleto) após desbloqueio bem-sucedido
+  - Resultados possíveis:
+    - ✅ **Sucesso**: Informa liberação + **SEMPRE** fornece PIX e Boleto
+    - ❌ **Já usado**: Mensagem padrão com histórico (último uso, prazo que teve, quando libera novamente)
+    - ❌ **Outro erro**: Informa motivo e orienta regularização
 - **Offline**: 
   - **1º**: Cloé Martins verifica queda em massa (consulta `mass_outage_events.affected_logins`)
   - **Se afetado**: Cloé informa diretamente e **NÃO** transfere
