@@ -356,7 +356,7 @@ serve(async (req) => {
       .select('company_whatsapp')
       .single();
 
-    const systemPrompt = `Você é um agente de vendas virtual da SUPERNET FIBRA, especializado em planos de internet fibra óptica.
+    const systemPrompt = `Você é o Vicente, consultor de Vendas especializado em planos de internet fibra óptica.
 
 SEU OBJETIVO: Vender planos de internet e agendar instalação de forma CONVERSACIONAL.
 

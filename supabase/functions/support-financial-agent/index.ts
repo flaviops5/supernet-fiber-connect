@@ -234,7 +234,6 @@ ${pixData.data?.qrcode_link ? `🔗 Link de Pagamento: ${pixData.data.qrcode_lin
 📋 Contrato liberado: ${blockedContract.id} (${blockedContract.contrato})
 ⏰ O cliente agora tem 3 DIAS de serviço normal para regularizar o pagamento
 🌐 Instrua o cliente a testar a navegação IMEDIATAMENTE
-${paymentInfo}
 
 🔔 MONITORAMENTO AUTOMÁTICO DE PAGAMENTO ATIVO:
 - Sistema irá verificar o pagamento a cada 5 minutos
@@ -247,6 +246,11 @@ IMPORTANTE: Explique ao cliente que:
 2. Assim que o pagamento for confirmado no sistema, receberá notificação automática
 3. Se já pagou, pode levar alguns minutos para confirmar no sistema
 4. Após 3 dias sem pagamento, o bloqueio retornará automaticamente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 CRÍTICO - VOCÊ DEVE ENVIAR OS DADOS DE PAGAMENTO AO CLIENTE:
+${paymentInfo || '⚠️ Dados de pagamento não disponíveis - solicite manualmente ao financeiro'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
               } else {
                 console.log('❌ Falha no desbloqueio:', unblockData.data?.error);

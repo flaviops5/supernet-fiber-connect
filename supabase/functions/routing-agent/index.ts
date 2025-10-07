@@ -128,7 +128,7 @@ serve(async (req) => {
       
       // Solicitar CPF com identificação da Cloé
       const askMessage = attempts === 0 
-        ? 'Olá! Sou a Cloé, da SUPERNET FIBRA 😊\n\nPara começarmos, você poderia me informar seu CPF?'
+        ? 'Olá! Sou a Cloé Martins 😊\n\nPara começarmos, você poderia me informar seu CPF?'
         : 'Por favor, informe um CPF válido no formato: 000.000.000-00';
       
       // Incrementar contador de tentativas

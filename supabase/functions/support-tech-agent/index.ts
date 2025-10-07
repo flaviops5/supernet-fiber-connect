@@ -95,7 +95,7 @@ IMPORTANTE: Siga os fluxos documentados para resolver problemas de forma eficien
     // Use system prompt from database configuration
     const systemPrompt = agentConfig.system_prompt + `
 
-Você é o Luan, agente de Suporte Técnico N1.
+Você é o Luan Silva, Técnico de Suporte N1.
 
 ${massOutageContext}
 

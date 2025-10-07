@@ -55,7 +55,7 @@ graph TD
     
     RouteFinancial --> TransferFinancial[🔄 Julia Martins<br/>Suporte Financeiro]
     TransferFinancial --> FinancialDesbloqueio{Julia tenta<br/>desbloqueio<br/>automático<br/>IMEDIATAMENTE?}
-    FinancialDesbloqueio -->|Sucesso| FinancialSuccess["✅ Julia informa STATUS e resultado:<br/>'Olá! Identifiquei sua situação:<br/>🌐 Status: OFFLINE/ONLINE<br/>🔒 Acesso: BLOQUEADO (motivo)<br/><br/>Consegui desbloquear sua conexão!<br/>Teste já sua navegação.<br/><br/>Para regularizar:<br/>💳 PIX: [código]<br/>🔢 Código de barras: [...]'"]
+    FinancialDesbloqueio -->|Sucesso| FinancialSuccess["✅ Julia SEMPRE envia STATUS, resultado e PAGAMENTO:<br/>'Olá! Identifiquei sua situação:<br/>🌐 Status: OFFLINE/ONLINE<br/>🔒 Acesso: BLOQUEADO (motivo)<br/><br/>✅ Consegui desbloquear sua conexão!<br/>Teste já sua navegação.<br/><br/>📄 Para regularizar seu pagamento:<br/>💵 Valor: R$ XX,XX<br/>📅 Vencimento: DD/MM/AAAA<br/>🔢 Código de barras: [código]<br/><br/>🏦 PIX COPIA E COLA:<br/>[código PIX completo]<br/><br/>📎 Link do Boleto: [link]'"]
     FinancialDesbloqueio -->|Falha| FinancialManual["⚠️ Julia informa STATUS e motivo:<br/>'Olá! Sua situação atual:<br/>🌐 Status: OFFLINE/ONLINE<br/>🔒 Acesso: BLOQUEADO (motivo)<br/><br/>Não foi possível o desbloqueio<br/>automático porque: [motivo do IXC].<br/><br/>Vou te ajudar a resolver!'"]
     FinancialSuccess --> End2([FIM - Resolvido])
     FinancialManual --> End2
@@ -122,9 +122,9 @@ graph TD
 - **Bloqueado/Atraso**: Julia Martins (Financeiro) 
   - Recebe dados completos do status do cliente da Cloé
   - Informa IMEDIATAMENTE o status (ONLINE/OFFLINE, BLOQUEADO/motivo)
-  - Tenta desbloqueio automático
+  - Tenta desbloqueio automático via endpoint `ixc-integration` (action: `desbloqueioConfianca`)
   - Informa resultado (sucesso ou motivo da falha)
-  - Fornece dados de pagamento se aplicável
+  - **SEMPRE** fornece dados de pagamento (PIX e Boleto) após desbloqueio bem-sucedido
 - **Offline**: 
   - **1º**: Cloé Martins verifica queda em massa (consulta `mass_outage_events.affected_logins`)
   - **Se afetado**: Cloé informa diretamente e **NÃO** transfere
