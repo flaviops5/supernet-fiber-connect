@@ -237,12 +237,9 @@ serve(async (req) => {
           }
         }
         
-        console.log(`⚡ Total de grupos com Dying Gasp: ${dyingGaspEvents.size}`);
-        for (const [key, data] of dyingGaspEvents) {
-          console.log(`   ${key}: ${data.count} ONUs com perda de energia`);
-        }
-      } else {
-        console.log('⚠️ Endpoint pon_onu não disponível ou sem dados');
+      console.log(`⚡ Total de grupos com Dying Gasp: ${dyingGaspEvents.size}`);
+      for (const [key, data] of dyingGaspEvents) {
+        console.log(`   ${key}: ${data.count} ONUs com perda de energia`);
       }
     } catch (error) {
       console.error('Erro ao verificar Dying Gasp:', error);
