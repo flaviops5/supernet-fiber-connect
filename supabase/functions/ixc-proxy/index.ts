@@ -123,12 +123,20 @@ serve(async (req) => {
     });
 
     // Tentar parsear como JSON; caso contrário, capturar texto (ex.: HTML de login)
-    const contentType = ixcResponse.headers.get('content-type') || '';
+    const contentType = (ixcResponse.headers.get('content-type') || '').toLowerCase();
     let ixcData: any = null;
     let rawText: string | undefined;
     try {
-      if (contentType.includes('application/json')) {
-        ixcData = await ixcResponse.json();
+      const looksJson = contentType.includes('json');
+      if (looksJson) {
+        try {
+          ixcData = await ixcResponse.json();
+        } catch {
+          // Alguns IXC retornam text/x-json com JSON válido em texto
+          const txt = await ixcResponse.text();
+          rawText = txt;
+          try { ixcData = JSON.parse(txt); } catch { /* permanece como texto */ }
+        }
       } else {
         rawText = await ixcResponse.text();
       }
