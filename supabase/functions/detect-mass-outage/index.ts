@@ -37,8 +37,8 @@ serve(async (req) => {
     const allRadUsers: RadUser[] = [];
 
     try {
-      // Buscar apenas clientes offline
-      while (page <= 10) { // Limitar a 10 páginas
+      // Buscar apenas clientes offline - SEM LIMITE DE PÁGINAS
+      while (true) {
         const bodyRad = {
           qtype: 'radusuarios.online',
           query: 'N',
@@ -103,6 +103,39 @@ serve(async (req) => {
     const MAX_CLIENTS_TO_ENRICH = 500;
     const MAX_CLIENTS_PER_PON = 128; // Capacidade máxima de uma porta PON
     
+    // CONTROLE DE CONCORRÊNCIA: Limitar requisições paralelas ao IXC
+    const MAX_CONCURRENT_REQUESTS = 10; // Reduzido de 20 para 10
+    const INITIAL_BACKOFF_MS = 1000;
+    const MAX_BACKOFF_MS = 10000;
+    
+    // Função auxiliar para delay com jitter
+    const delayWithJitter = (ms: number) => {
+      const jitter = Math.random() * 0.3 * ms; // 30% jitter
+      return new Promise(resolve => setTimeout(resolve, ms + jitter));
+    };
+    
+    // Função auxiliar para retry com backoff exponencial
+    const retryWithBackoff = async <T>(
+      fn: () => Promise<T>,
+      maxRetries = 3,
+      baseDelay = INITIAL_BACKOFF_MS
+    ): Promise<T> => {
+      let lastError: any;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          return await fn();
+        } catch (error) {
+          lastError = error;
+          if (i < maxRetries - 1) {
+            const delay = Math.min(baseDelay * Math.pow(2, i), MAX_BACKOFF_MS);
+            console.log(`⚠️ Retry ${i + 1}/${maxRetries} após ${delay}ms...`);
+            await delayWithJitter(delay);
+          }
+        }
+      }
+      throw lastError;
+    };
+    
     // Ordenar por prioridade: clientes com id_cliente primeiro (mais chance de ter PON)
     const sortedUsers = allRadUsers.sort((a, b) => {
       if (a.id_cliente && !b.id_cliente) return -1;
@@ -121,8 +154,8 @@ serve(async (req) => {
     console.log('🔍 Buscando informações de porta PON e localização...');
     const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }> = [];
     
-    // OTIMIZAÇÃO: Processar em chunks paralelos (20 clientes por vez)
-    const CHUNK_SIZE = 20;
+    // OTIMIZAÇÃO: Processar em chunks com concorrência limitada
+    const CHUNK_SIZE = MAX_CONCURRENT_REQUESTS;
     const chunks: RadUser[][] = [];
     for (let i = 0; i < usersToEnrich.length; i += CHUNK_SIZE) {
       chunks.push(usersToEnrich.slice(i, i + CHUNK_SIZE));
@@ -143,39 +176,41 @@ serve(async (req) => {
           }
 
           try {
-            // OTIMIZAÇÃO: Executar ambas as chamadas em paralelo
-            const [clientData, equipData] = await Promise.all([
-              // Buscar dados do cliente (incluindo bairro)
-              callIxcWithRetry(
-                IXC_PROXY_URL,
-                'POST',
-                '/webservice/v1/cliente',
-                {
-                  qtype: 'cliente.id',
-                  query: clientId,
-                  oper: '=',
-                  page: '1',
-                  rp: '1',
-                  sortname: 'cliente.id',
-                  sortorder: 'desc',
-                }
-              ),
-              // Buscar equipamento/ONU do cliente
-              callIxcWithRetry(
-                IXC_PROXY_URL,
-                'POST',
-                '/webservice/v1/cliente_equipamento',
-                {
-                  qtype: 'cliente_equipamento.id_cliente',
-                  query: clientId,
-                  oper: '=',
-                  page: '1',
-                  rp: '50',
-                  sortname: 'cliente_equipamento.id',
-                  sortorder: 'desc',
-                }
-              )
-            ]);
+            // OTIMIZAÇÃO: Executar ambas as chamadas em paralelo com retry e backoff
+            const [clientData, equipData] = await retryWithBackoff(() =>
+              Promise.all([
+                // Buscar dados do cliente (incluindo bairro)
+                callIxcWithRetry(
+                  IXC_PROXY_URL,
+                  'POST',
+                  '/webservice/v1/cliente',
+                  {
+                    qtype: 'cliente.id',
+                    query: clientId,
+                    oper: '=',
+                    page: '1',
+                    rp: '1',
+                    sortname: 'cliente.id',
+                    sortorder: 'desc',
+                  }
+                ),
+                // Buscar equipamento/ONU do cliente
+                callIxcWithRetry(
+                  IXC_PROXY_URL,
+                  'POST',
+                  '/webservice/v1/cliente_equipamento',
+                  {
+                    qtype: 'cliente_equipamento.id_cliente',
+                    query: clientId,
+                    oper: '=',
+                    page: '1',
+                    rp: '50',
+                    sortname: 'cliente_equipamento.id',
+                    sortorder: 'desc',
+                  }
+                )
+              ])
+            );
 
             // Processar dados do cliente (bairro)
             let bairro = '';
@@ -397,26 +432,19 @@ serve(async (req) => {
           : '❓ Causa desconhecida';
         console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
 
-        // Verificar se já existe evento ativo para este grupo hoje
-        const { data: existingEvent } = await supabase
+        // UPSERT: Usar ON CONFLICT para evitar race conditions
+        const { data: upsertedEvent, error: upsertError } = await supabase
           .from('mass_outage_events')
-          .select('*')
-          .eq('event_key', eventKey)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (!existingEvent) {
-          // Criar novo evento
-          const { data: newEvent, error: insertError } = await supabase
-            .from('mass_outage_events')
-            .insert({
+          .upsert(
+            {
               event_key: eventKey,
               region_pattern: groupKey,
               affected_count: clientsData.length,
               affected_logins: affectedLogins,
               status: 'active',
               metadata: {
-                detection_time: new Date().toISOString(),
+                detection_time: existingEvent?.metadata?.detection_time || new Date().toISOString(),
+                last_update: new Date().toISOString(),
                 threshold,
                 group_type: groupType,
                 group_identifier: groupIdentifier,
@@ -431,47 +459,21 @@ serve(async (req) => {
                   ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
                   : undefined
               }
-            })
-            .select()
-            .single();
+            },
+            {
+              onConflict: 'event_key',
+              ignoreDuplicates: false
+            }
+          )
+          .select()
+          .single();
 
-          if (insertError) {
-            console.error('Erro ao criar evento:', insertError);
-          } else {
-            massOutages.push(newEvent);
-            console.log(`✅ Evento criado: ${eventKey}`);
-          }
+        if (upsertError) {
+          console.error('Erro ao upsert evento:', upsertError);
         } else {
-          // Atualizar evento existente
-          const { error: updateError } = await supabase
-            .from('mass_outage_events')
-            .update({
-              affected_count: clientsData.length,
-              affected_logins: affectedLogins,
-              updated_at: new Date().toISOString(),
-              metadata: {
-                ...existingEvent.metadata,
-                last_update: new Date().toISOString(),
-                threshold,
-                group_type: groupType,
-                group_identifier: groupIdentifier,
-                bairros: bairrosAfetados.length > 0 ? bairrosAfetados : undefined,
-                power_outage: powerOutageCause,
-                dying_gasp_count: dyingGaspCount,
-                affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
-                outage_cause: powerOutageCause ? 'power_outage_dying_gasp' : 'unknown',
-                power_outage_description: powerOutageCause 
-                  ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
-                  : undefined
-              }
-            })
-            .eq('id', existingEvent.id);
-
-          if (updateError) {
-            console.error('Erro ao atualizar evento:', updateError);
-          } else {
-            console.log(`📝 Evento atualizado: ${eventKey}`);
-          }
+          massOutages.push(upsertedEvent);
+          const action = existingEvent ? 'atualizado' : 'criado';
+          console.log(`✅ Evento ${action}: ${eventKey}`);
         }
       }
     }

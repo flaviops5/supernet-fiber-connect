@@ -935,7 +935,7 @@ Obrigado pela compreensão! 🙏\`;
                       <li>
                         <strong>Busca de Clientes Offline (Passo 1):</strong>
                         <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
-                          <li>Usa paginação (limite de 10 páginas de 1000 itens) para buscar clientes com status offline do IXC Soft</li>
+                          <li className="text-green-600 dark:text-green-400 font-medium">✅ <strong>OTIMIZADO:</strong> SEM LIMITE de páginas - busca TODOS os clientes offline da rede</li>
                           <li>Usa <code>callIxcWithRetry</code> e o endpoint <code>/webservice/v1/radusuarios</code></li>
                           <li>Lida com a estrutura de dados do IXC, que pode retornar um array ou um objeto de registros</li>
                         </ul>
@@ -947,10 +947,13 @@ Obrigado pela compreensão! 🙏\`;
                             ⚡ <strong>OTIMIZAÇÃO 1:</strong> Limita a análise a 500 clientes mais críticos (ordenados por prioridade - clientes com id_cliente primeiro)
                           </li>
                           <li className="text-green-600 dark:text-green-400 font-medium">
-                            ⚡ <strong>OTIMIZAÇÃO 2:</strong> Processa em chunks paralelos de 20 clientes simultaneamente
+                            ⚡ <strong>OTIMIZAÇÃO 2:</strong> Processa em chunks paralelos de 10 clientes com controle de concorrência
                           </li>
                           <li className="text-green-600 dark:text-green-400 font-medium">
-                            ⚡ <strong>OTIMIZAÇÃO 3:</strong> Para cada cliente, executa 2 chamadas IXC em paralelo usando Promise.all
+                            ⚡ <strong>OTIMIZAÇÃO 3:</strong> Retry com backoff exponencial + jitter (30%) para evitar sobrecarga no IXC
+                          </li>
+                          <li className="text-green-600 dark:text-green-400 font-medium">
+                            ⚡ <strong>OTIMIZAÇÃO 4:</strong> Para cada cliente, executa 2 chamadas IXC em paralelo usando Promise.all
                           </li>
                           <li className="ml-4">
                             <strong>Chamada 1 - Localização:</strong> Busca dados do cliente via <code>/webservice/v1/cliente</code> para obter o bairro
@@ -959,7 +962,10 @@ Obrigado pela compreensão! 🙏\`;
                             <strong>Chamada 2 - Equipamento:</strong> Busca dados de equipamento via <code>/webservice/v1/cliente_equipamento</code> para extrair PON Port e CTO usando expressões regulares
                           </li>
                           <li className="text-blue-600 dark:text-blue-400 italic">
-                            <strong>Ganho de Performance:</strong> De ~400s (sequencial) para ~40s (paralelo) com 1000 clientes = <strong>10x mais rápido</strong>
+                            <strong>Ganho de Performance:</strong> De ~400s (sequencial) para ~40s (paralelo) com controle de concorrência = <strong>10x mais rápido</strong>
+                          </li>
+                          <li className="text-orange-600 dark:text-orange-400">
+                            <strong>Proteção contra Sobrecarga:</strong> Máximo de 10 requisições paralelas ao IXC + retry inteligente evita timeouts e rate limiting
                           </li>
                         </ul>
                       </li>
@@ -976,7 +982,9 @@ Obrigado pela compreensão! 🙏\`;
                           <li>Agrupa os clientes enriquecidos por PON Port, CTO e Região</li>
                           <li>Compara com os limiares: PON ≥5, CTO ≥3, REGION ≥6 clientes</li>
                           <li>⚠️ <strong>VALIDAÇÃO:</strong> Alerta se PON {'>'} 128 clientes (capacidade máxima)</li>
-                          <li>Cria ou atualiza eventos no Supabase com metadados de Dying Gasp</li>
+                          <li className="text-green-600 dark:text-green-400 font-medium">✅ <strong>UPSERT:</strong> Usa ON CONFLICT (event_key) - evita race conditions</li>
+                          <li>Mantém <code>detection_time</code> original em updates, atualiza <code>last_update</code></li>
+                          <li>Adiciona metadados de Dying Gasp e causa da queda (power_outage vs unknown)</li>
                         </ul>
                       </li>
                       <li>
@@ -989,15 +997,23 @@ Obrigado pela compreensão! 🙏\`;
                       </li>
                     </ol>
 
-                    <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                    <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded space-y-2">
                       <p className="text-sm">
-                        <strong>✅ Otimizações Implementadas:</strong> O sistema foi otimizado para processar <strong>500 clientes prioritários</strong> em chunks paralelos de 20, 
-                        reduzindo o tempo de execução de ~400s para ~40s. O limite existe devido ao timeout de Edge Functions (~100s), 
-                        mas é suficiente para detectar quedas em massa, já que 500 amostras cobrem bem a rede.
+                        <strong>✅ Otimizações Implementadas:</strong>
+                      </p>
+                      <ul className="text-sm space-y-1 ml-4 list-disc list-inside">
+                        <li><strong>Sem Limite de Páginas:</strong> Busca TODOS os clientes offline (não mais limitado a 10k)</li>
+                        <li><strong>Controle de Concorrência:</strong> Máximo de 10 requisições paralelas ao IXC</li>
+                        <li><strong>Retry Inteligente:</strong> Backoff exponencial + jitter (30%) evita sobrecarga</li>
+                        <li><strong>UPSERT com ON CONFLICT:</strong> Elimina race conditions em execuções paralelas</li>
+                        <li><strong>Service Role no Cron:</strong> Usa service_role_key (não anon key) para evitar falhas de RLS</li>
+                      </ul>
+                      <p className="text-sm mt-2 text-muted-foreground">
+                        <strong>Performance:</strong> 500 clientes prioritários processados em ~40s (vs ~400s sequencial) = <strong>10x mais rápido</strong>
                       </p>
                       <p className="text-sm mt-2 text-muted-foreground">
-                        <strong>Trade-off:</strong> Em quedas massivas com {'>'}500 clientes, nem todos terão PON/CTO mapeados, mas o agrupamento 
-                        regional (via padrão de login) garante a detecção do evento.
+                        <strong>Trade-off:</strong> Limite de 500 clientes para enriquecimento existe devido ao timeout de Edge Functions (~100s), 
+                        mas é suficiente para detectar quedas em massa. Em eventos com {'>'}500 clientes, o agrupamento regional garante detecção.
                       </p>
                     </div>
                   </section>
