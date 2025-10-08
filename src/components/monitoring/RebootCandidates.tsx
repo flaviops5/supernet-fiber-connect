@@ -37,7 +37,7 @@ export const RebootCandidates = () => {
         setIsScanning(false);
       }
     },
-    enabled: false, // Só executa quando o usuário clicar em "Verificar"
+    refetchInterval: 60000, // Atualiza a cada 60 segundos
     retry: false
   });
 
