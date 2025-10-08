@@ -13,13 +13,24 @@ serve(async (req) => {
   }
 
   try {
-    const { planIds } = await req.json();
+    const requestBody = await req.json();
+    console.log('📦 Body recebido:', JSON.stringify(requestBody));
     
-    if (!Array.isArray(planIds) || planIds.length === 0) {
-      throw new Error('planIds deve ser um array com pelo menos um ID');
+    const { planIds } = requestBody;
+    
+    if (!planIds) {
+      throw new Error('planIds é obrigatório no body da requisição');
+    }
+    
+    if (!Array.isArray(planIds)) {
+      throw new Error(`planIds deve ser um array, recebido: ${typeof planIds}`);
+    }
+    
+    if (planIds.length === 0) {
+      throw new Error('planIds não pode ser um array vazio');
     }
 
-    console.log(`Sincronizando planos IXC: ${planIds.join(', ')}`);
+    console.log(`✅ Sincronizando ${planIds.length} planos IXC: ${planIds.join(', ')}`);
 
     // Inicializar Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
