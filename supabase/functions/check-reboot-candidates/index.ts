@@ -61,13 +61,13 @@ Deno.serve(async (req) => {
     // URL do proxy centralizado
     const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
-    // 1. Buscar clientes online do IXC via proxy
-    console.log('📡 Consultando radusuarios via IXC proxy...');
+    // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
+    console.log('📡 Buscando clientes ONLINE via IXC proxy (filtro direto)...');
     
-    const bodyRad = {
-      qtype: 'radusuarios.id',
-      query: '1',
-      oper: '>=',
+    const bodyOnline = {
+      qtype: 'radusuarios.online',
+      query: 'S',
+      oper: '=',
       page: '1',
       rp: '5000',
       sortname: 'radusuarios.id',
@@ -80,11 +80,12 @@ Deno.serve(async (req) => {
         IXC_PROXY_URL,
         'POST',
         '/webservice/v1/radusuarios',
-        bodyRad
+        bodyOnline
       );
+      console.log('✅ Clientes online obtidos com sucesso (filtro direto aplicado)');
     } catch (error: any) {
-      console.error('❌ Erro detalhado ao consultar radusuarios:', error.message);
-      throw new Error(`Falha ao buscar radusuarios via proxy: ${error.message}`);
+      console.error('❌ Erro ao buscar clientes online:', error.message);
+      throw new Error(`Falha ao buscar clientes online via proxy: ${error.message}`);
     }
     
     if (!radiusData?.data?.registros) {
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
       ? radiusData.data.registros 
       : Object.values(radiusData.data.registros || {});
     
-    console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
+    console.log(`👥 ${onlineUsers.length} clientes ONLINE encontrados (já filtrados pela query)`);
 
     // 2. Buscar blacklist
     const { data: blacklist } = await supabase
@@ -117,8 +118,11 @@ Deno.serve(async (req) => {
     const candidates = [];
 
     for (const user of onlineUsers) {
-      // Ignorar se não está realmente online
-      if (user.online !== 'S' && user.online !== 'SS') continue;
+      // Query já filtra apenas online='S', mas validar por segurança
+      if (user.online !== 'S' && user.online !== 'SS') {
+        console.warn(`⚠️ Cliente ${user.login} retornado com status ${user.online} (esperado S/SS)`);
+        continue;
+      }
 
       // O IXC não atualiza acctinputoctets/acctoutputoctets em tempo real
       // Esses campos só são atualizados quando a sessão termina

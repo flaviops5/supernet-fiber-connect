@@ -17,107 +17,142 @@ serve(async (req) => {
     console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');
 
     let page = 1;
-    let hasMorePages = true;
     const itemsPerPage = 1000;
-    const allRadUsers: any[] = [];
+    const allOnlineUsers: any[] = [];
+    const allOfflineUsers: any[] = [];
 
-    while (hasMorePages) {
-      console.log(`📄 Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
+    // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
+    try {
+      console.log('📡 Buscando clientes ONLINE (filtro direto na query IXC)...');
+      
+      while (page <= 5) { // Limitar a 5 páginas para online
+        const bodyOnline = {
+          qtype: 'radusuarios.online',
+          query: 'S',
+          oper: '=',
+          page: String(page),
+          rp: String(itemsPerPage),
+          sortname: 'radusuarios.id',
+          sortorder: 'desc',
+        };
 
-      const bodyRad = {
-        qtype: 'radusuarios.id',
-        query: '1',
-        oper: '>=',
-        page: String(page),
-        rp: String(itemsPerPage),
-        sortname: 'radusuarios.id',
-        sortorder: 'desc',
-      };
+        const onlineData = await callIxcWithRetry(
+          IXC_PROXY_URL,
+          'POST',
+          '/webservice/v1/radusuarios',
+          bodyOnline
+        );
 
-      // Usar o proxy centralizado com retry/circuit breaker
-      const radData = await callIxcWithRetry(
-        IXC_PROXY_URL,
-        'POST',
-        '/webservice/v1/radusuarios',
-        bodyRad
-      );
+        const onlineRegistros: any[] = Array.isArray(onlineData?.data?.registros)
+          ? onlineData.data.registros
+          : (onlineData?.data?.registros ? Object.values(onlineData.data.registros) : []);
 
-      const radRegistrosRaw = radData?.data?.registros;
-      const radRegistros: any[] = Array.isArray(radRegistrosRaw)
-        ? radRegistrosRaw
-        : (radRegistrosRaw ? Object.values(radRegistrosRaw) : []);
+        if (!onlineRegistros || onlineRegistros.length === 0) {
+          console.log(`✅ Sem mais clientes online na página ${page}`);
+          break;
+        }
 
-      if (!radRegistros || radRegistros.length === 0) {
-        hasMorePages = false;
-        break;
-      }
+        allOnlineUsers.push(...onlineRegistros);
+        console.log(`📊 Página ${page}: ${onlineRegistros.length} online (total: ${allOnlineUsers.length})`);
 
-      allRadUsers.push(...radRegistros);
-      console.log(`✅ Página ${page}: ${radRegistros.length} registros encontrados`);
-
-      const totalNaResposta = Number(radData?.data?.total ?? 0);
-      if (radRegistros.length < itemsPerPage || (totalNaResposta && page * itemsPerPage >= totalNaResposta)) {
-        hasMorePages = false;
-      } else {
+        if (onlineRegistros.length < itemsPerPage) break;
         page++;
       }
+    } catch (error) {
+      console.error('❌ Erro ao buscar clientes online:', error);
+      if (allOnlineUsers.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Não foi possível buscar clientes online do IXC',
+            details: error.message,
+            total_clientes: 0,
+            detalhes: { online: 0, offline: 0, total: 0 }
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      console.log(`⚠️ Continuando com ${allOnlineUsers.length} clientes online obtidos`);
     }
 
-    console.log(`Total de registros radusuarios carregados: ${allRadUsers.length}`);
-
-    // Primeiro, vamos ver quais campos realmente existem
-    if (allRadUsers.length > 0) {
-      console.log('Campos disponíveis no primeiro registro:', Object.keys(allRadUsers[0]));
-      console.log('Exemplo de registro completo:', JSON.stringify(allRadUsers[0], null, 2));
-    }
-
-    // Agrupar por login e pegar apenas o registro mais recente de cada login
-    const latestByLogin = new Map<string, any>();
-    
-    for (const rad of allRadUsers) {
-      const login = String(rad.login ?? '').toLowerCase().trim();
-      if (!login) continue;
+    // 🔥 OTIMIZAÇÃO: Buscar apenas clientes OFFLINE direto na query
+    page = 1;
+    try {
+      console.log('📡 Buscando clientes OFFLINE (filtro direto na query IXC)...');
       
-      const current = latestByLogin.get(login);
-      if (!current) {
-        latestByLogin.set(login, rad);
+      while (page <= 5) { // Limitar a 5 páginas para offline
+        const bodyOffline = {
+          qtype: 'radusuarios.online',
+          query: 'N',
+          oper: '=',
+          page: String(page),
+          rp: String(itemsPerPage),
+          sortname: 'radusuarios.id',
+          sortorder: 'desc',
+        };
+
+        const offlineData = await callIxcWithRetry(
+          IXC_PROXY_URL,
+          'POST',
+          '/webservice/v1/radusuarios',
+          bodyOffline
+        );
+
+        const offlineRegistros: any[] = Array.isArray(offlineData?.data?.registros)
+          ? offlineData.data.registros
+          : (offlineData?.data?.registros ? Object.values(offlineData.data.registros) : []);
+
+        if (!offlineRegistros || offlineRegistros.length === 0) {
+          console.log(`✅ Sem mais clientes offline na página ${page}`);
+          break;
+        }
+
+        allOfflineUsers.push(...offlineRegistros);
+        console.log(`📊 Página ${page}: ${offlineRegistros.length} offline (total: ${allOfflineUsers.length})`);
+
+        if (offlineRegistros.length < itemsPerPage) break;
+        page++;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar clientes offline:', error);
+      console.log(`⚠️ Continuando com ${allOfflineUsers.length} clientes offline obtidos`);
+    }
+
+    // Agrupar por login (deduplicar)
+    const uniqueOnline = new Map<string, any>();
+    const uniqueOffline = new Map<string, any>();
+    
+    for (const user of allOnlineUsers) {
+      const login = String(user.login ?? '').toLowerCase().trim();
+      if (login && !uniqueOnline.has(login)) {
+        uniqueOnline.set(login, user);
       }
     }
-
-    // Classificar por online/offline usando o campo 'online' do IXC
-    let online = 0;
-    let offline = 0;
     
-    for (const [login, rad] of latestByLogin) {
-      // O IXC usa o campo 'online' com valores 'S', 'SS', 'N', etc.
-      const onlineStatus = String(rad.online || '').toUpperCase();
-      
-      if (onlineStatus === 'S' || onlineStatus === 'SS') {
-        online++;
-      } else {
-        offline++;
+    for (const user of allOfflineUsers) {
+      const login = String(user.login ?? '').toLowerCase().trim();
+      if (login && !uniqueOffline.has(login) && !uniqueOnline.has(login)) {
+        uniqueOffline.set(login, user);
       }
     }
 
     const clientDetails = {
-      online,
-      offline,
-      total: latestByLogin.size,
+      online: uniqueOnline.size,
+      offline: uniqueOffline.size,
+      total: uniqueOnline.size + uniqueOffline.size,
     };
 
-    console.log('Amostra de status (até 5):', Array.from(latestByLogin.entries()).slice(0,5).map(([l, r]) => ({ 
-      login: l, 
-      online: r.online,
-      ultima_atualizacao: r.ultima_atualizacao 
-    })));
-    console.log('Resumo final:', clientDetails);
+    console.log('📊 Resumo otimizado (filtros diretos):');
+    console.log(`   Online: ${clientDetails.online}`);
+    console.log(`   Offline: ${clientDetails.offline}`);
+    console.log(`   Total: ${clientDetails.total}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         total_clientes: clientDetails.total,
         detalhes: clientDetails,
-        paginas_consultadas: page - 1,
+        optimization: 'Filtros aplicados direto na query IXC',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
