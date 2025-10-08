@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,35 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
-    const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
-    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL'); // ex: central.supernetfibra.com.br
+    const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/ixc-proxy`;
 
-    if (!IXC_USERNAME || !IXC_PASSWORD) {
-      throw new Error('Credenciais IXC não configuradas');
-    }
-
-    if (!IXC_API_BASE) {
-      throw new Error('IXC_API_BASE_URL não configurado');
-    }
-
-    // Normalize IXC base: strip protocol and any path (we only need the host)
-    const normalizeBase = (raw: string) => {
-      const trimmed = raw.trim();
-      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
-      const host = noProtocol.split('/')[0];
-      return host;
-    };
-    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
-
-    const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
-
-    console.log('Focando apenas no radusuarios para detectar online/offline por última sessão.');
-    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE);
-    console.log('IXC_API_BASE_URL (normalized host):', IXC_BASE_HOST);
-
-    const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
-    console.log(`Buscando radusuarios em: ${apiUrlRadusuarios}`);
+    console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');
 
     let page = 1;
     let hasMorePages = true;
@@ -47,9 +22,9 @@ serve(async (req) => {
     const allRadUsers: any[] = [];
 
     while (hasMorePages) {
-      console.log(`Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
+      console.log(`📄 Consultando radusuarios: página ${page}, limite ${itemsPerPage}`);
 
-      const bodyRad = JSON.stringify({
+      const bodyRad = {
         qtype: 'radusuarios.id',
         query: '1',
         oper: '>=',
@@ -57,26 +32,17 @@ serve(async (req) => {
         rp: String(itemsPerPage),
         sortname: 'radusuarios.id',
         sortorder: 'desc',
-      });
+      };
 
-      const radResponse = await fetch(apiUrlRadusuarios, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'ixcsoft': 'listar',
-        },
-        body: bodyRad,
-      });
+      // Usar o proxy centralizado com retry/circuit breaker
+      const radData = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'POST',
+        '/webservice/v1/radusuarios',
+        bodyRad
+      );
 
-      if (!radResponse.ok) {
-        const errorText = await radResponse.text();
-        console.error('Erro na API IXC radusuarios:', radResponse.status, errorText);
-        throw new Error(`Erro ao buscar radusuarios no IXC: ${radResponse.status}`);
-      }
-
-      const radData = await radResponse.json();
-      const radRegistrosRaw = radData?.registros;
+      const radRegistrosRaw = radData?.data?.registros;
       const radRegistros: any[] = Array.isArray(radRegistrosRaw)
         ? radRegistrosRaw
         : (radRegistrosRaw ? Object.values(radRegistrosRaw) : []);
@@ -87,9 +53,9 @@ serve(async (req) => {
       }
 
       allRadUsers.push(...radRegistros);
-      console.log(`Página ${page}: ${radRegistros.length} registros encontrados`);
+      console.log(`✅ Página ${page}: ${radRegistros.length} registros encontrados`);
 
-      const totalNaResposta = Number(radData?.total ?? 0);
+      const totalNaResposta = Number(radData?.data?.total ?? 0);
       if (radRegistros.length < itemsPerPage || (totalNaResposta && page * itemsPerPage >= totalNaResposta)) {
         hasMorePages = false;
       } else {

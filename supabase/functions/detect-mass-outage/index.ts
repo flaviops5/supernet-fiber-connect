@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,15 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
-    const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
-    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!IXC_USERNAME || !IXC_PASSWORD || !IXC_API_BASE) {
-      throw new Error('Credenciais IXC não configuradas');
-    }
+    const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Credenciais Supabase não configuradas');
@@ -34,27 +29,16 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Normalizar base URL
-    const normalizeBase = (raw: string) => {
-      const trimmed = raw.trim();
-      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
-      const host = noProtocol.split('/')[0];
-      return host;
-    };
-    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
-    const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
+    console.log('🔍 Iniciando detecção de quedas em massa via proxy...');
 
-    console.log('🔍 Iniciando detecção de quedas em massa...');
-
-    // Buscar clientes offline do IXC
-    const apiUrlRadusuarios = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
+    // Buscar clientes offline do IXC via proxy
     let page = 1;
     const itemsPerPage = 1000;
     const allRadUsers: RadUser[] = [];
 
     // Buscar apenas clientes offline
     while (true) {
-      const bodyRad = JSON.stringify({
+      const bodyRad = {
         qtype: 'radusuarios.online',
         query: 'N',
         oper: '=',
@@ -62,27 +46,18 @@ serve(async (req) => {
         rp: String(itemsPerPage),
         sortname: 'radusuarios.id',
         sortorder: 'desc',
-      });
+      };
 
-      const radResponse = await fetch(apiUrlRadusuarios, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'ixcsoft': 'listar',
-        },
-        body: bodyRad,
-      });
+      const radData = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'POST',
+        '/webservice/v1/radusuarios',
+        bodyRad
+      );
 
-      if (!radResponse.ok) {
-        console.error('Erro ao buscar clientes offline:', radResponse.status);
-        break;
-      }
-
-      const radData = await radResponse.json();
-      const radRegistros = Array.isArray(radData?.registros)
-        ? radData.registros
-        : (radData?.registros ? Object.values(radData.registros) : []);
+      const radRegistros = Array.isArray(radData?.data?.registros)
+        ? radData.data.registros
+        : (radData?.data?.registros ? Object.values(radData.data.registros) : []);
 
       if (!radRegistros || radRegistros.length === 0) {
         break;
@@ -111,9 +86,8 @@ serve(async (req) => {
       }
 
       try {
-        // Buscar dados do cliente (incluindo bairro)
-        const clientUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente`;
-        const clientBody = JSON.stringify({
+        // Buscar dados do cliente (incluindo bairro) via proxy
+        const clientBody = {
           qtype: 'cliente.id',
           query: clientId,
           oper: '=',
@@ -121,34 +95,27 @@ serve(async (req) => {
           rp: '1',
           sortname: 'cliente.id',
           sortorder: 'desc',
-        });
+        };
 
         let bairro = '';
-        const clientResponse = await fetch(clientUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/json',
-            'ixcsoft': 'listar',
-          },
-          body: clientBody,
-        });
+        const clientData = await callIxcWithRetry(
+          IXC_PROXY_URL,
+          'POST',
+          '/webservice/v1/cliente',
+          clientBody
+        );
 
-        if (clientResponse.ok) {
-          const clientData = await clientResponse.json();
-          const clientes = Array.isArray(clientData?.registros)
-            ? clientData.registros
-            : (clientData?.registros ? Object.values(clientData.registros) : []);
-          
-          if (clientes.length > 0) {
-            const cliente = clientes[0];
-            bairro = cliente.bairro || cliente.endereco_bairro || '';
-          }
+        const clientes = Array.isArray(clientData?.data?.registros)
+          ? clientData.data.registros
+          : (clientData?.data?.registros ? Object.values(clientData.data.registros) : []);
+        
+        if (clientes.length > 0) {
+          const cliente = clientes[0];
+          bairro = cliente.bairro || cliente.endereco_bairro || '';
         }
 
-        // Buscar equipamento/ONU do cliente
-        const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
-        const equipBody = JSON.stringify({
+        // Buscar equipamento/ONU do cliente via proxy
+        const equipBody = {
           qtype: 'cliente_equipamento.id_cliente',
           query: clientId,
           oper: '=',
@@ -156,23 +123,18 @@ serve(async (req) => {
           rp: '50',
           sortname: 'cliente_equipamento.id',
           sortorder: 'desc',
-        });
+        };
 
-        const equipResponse = await fetch(equipUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/json',
-            'ixcsoft': 'listar',
-          },
-          body: equipBody,
-        });
+        const equipData = await callIxcWithRetry(
+          IXC_PROXY_URL,
+          'POST',
+          '/webservice/v1/cliente_equipamento',
+          equipBody
+        );
 
-        if (equipResponse.ok) {
-          const equipData = await equipResponse.json();
-          const equipamentos = Array.isArray(equipData?.registros)
-            ? equipData.registros
-            : (equipData?.registros ? Object.values(equipData.registros) : []);
+        const equipamentos = Array.isArray(equipData?.data?.registros)
+          ? equipData.data.registros
+          : (equipData?.data?.registros ? Object.values(equipData.data.registros) : []);
 
           // Procurar informações de PON/ONU nos equipamentos
           let ponPort = '';
@@ -191,15 +153,12 @@ serve(async (req) => {
             if (ponPort) break;
           }
 
-          clientsWithPon.push({ 
-            user, 
-            ponPort: ponPort || undefined,
-            cto: cto || undefined,
-            bairro: bairro || undefined
-          });
-        } else {
-          clientsWithPon.push({ user, bairro: bairro || undefined });
-        }
+        clientsWithPon.push({ 
+          user, 
+          ponPort: ponPort || undefined,
+          cto: cto || undefined,
+          bairro: bairro || undefined
+        });
       } catch (error) {
         console.error(`Erro ao buscar equipamento do cliente ${clientId}:`, error);
         clientsWithPon.push({ user });
@@ -213,9 +172,8 @@ serve(async (req) => {
     const dyingGaspEvents = new Map<string, { count: number; onus: string[]; lastEvent?: string }>();
     
     try {
-      // Buscar eventos PON recentes - Dying Gasp indica perda de energia na ONU
-      const ponEventUrl = `https://${IXC_BASE_HOST}/webservice/v1/pon_onu`;
-      const ponEventBody = JSON.stringify({
+      // Buscar eventos PON recentes - Dying Gasp indica perda de energia na ONU via proxy
+      const ponEventBody = {
         qtype: 'pon_onu.ultimo_evento',
         query: 'Dying',
         oper: 'LIKE',
@@ -223,23 +181,18 @@ serve(async (req) => {
         rp: '500',
         sortname: 'pon_onu.data_ultimo_evento',
         sortorder: 'desc',
-      });
+      };
 
-      const ponEventResponse = await fetch(ponEventUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'ixcsoft': 'listar',
-        },
-        body: ponEventBody,
-      });
+      const ponEventData = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'POST',
+        '/webservice/v1/pon_onu',
+        ponEventBody
+      );
 
-      if (ponEventResponse.ok) {
-        const ponEventData = await ponEventResponse.json();
-        const ponEvents = Array.isArray(ponEventData?.registros)
-          ? ponEventData.registros
-          : (ponEventData?.registros ? Object.values(ponEventData.registros) : []);
+      const ponEvents = Array.isArray(ponEventData?.data?.registros)
+        ? ponEventData.data.registros
+        : (ponEventData?.data?.registros ? Object.values(ponEventData.data.registros) : []);
 
         console.log(`📊 Total de eventos PON encontrados: ${ponEvents.length}`);
 

@@ -39,6 +39,7 @@ import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
+import { TechnicalTasksCard } from '@/components/TechnicalTasksCard';
 import WhatsAppConversations from '@/components/WhatsAppConversations';
 import WhatsAppTester from '@/components/WhatsAppTester';
 import { toast } from "sonner";
@@ -90,6 +91,9 @@ const Dashboard = () => {
 
       {/* Alert Card for Mass Outages */}
       <MassOutageAlertCard />
+
+      {/* Technical Tasks Reminder */}
+      <TechnicalTasksCard />
 
       {/* IXC Connection Tester */}
       <IXCConnectionTester />
