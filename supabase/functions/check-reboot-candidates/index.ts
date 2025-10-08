@@ -104,6 +104,22 @@ Deno.serve(async (req) => {
       : Object.values(radiusData.registros || {});
     
     console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
+    
+    // Debug: procurar o cliente específico
+    const targetClient = onlineUsers.find(u => u.login.toUpperCase().includes('IN-MC-53-BAR'));
+    if (targetClient) {
+      console.log('🎯 Cliente IN-MC-53-BAR encontrado:', {
+        login: targetClient.login,
+        online: targetClient.online,
+        id_cliente: targetClient.id_cliente,
+        acctinputoctets: targetClient.acctinputoctets,
+        acctoutputoctets: targetClient.acctoutputoctets,
+        acctsessiontime: targetClient.acctsessiontime
+      });
+    } else {
+      console.log('❌ Cliente IN-MC-53-BAR NÃO encontrado na lista de online users');
+      console.log('📋 Primeiros 5 logins encontrados:', onlineUsers.slice(0, 5).map(u => u.login));
+    }
 
     // 2. Buscar blacklist
     const { data: blacklist } = await supabase
