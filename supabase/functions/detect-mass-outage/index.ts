@@ -341,52 +341,92 @@ serve(async (req) => {
     }
 
     // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
+    // IMPORTANTE: Cada cliente pode estar em múltiplos níveis (PON -> CTO -> Região)
     const ponGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }>>();
+    const ctoGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }>>();
+    const regionGroups = new Map<string, Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }>>();
     const bairrosMap = new Map<string, string[]>(); // Mapear grupos para bairros
+    
+    // Mapear CTOs para suas PONs (hierarquia)
+    const ctoToPonMap = new Map<string, string>();
+    const regionToPonMap = new Map<string, string>();
+    const regionToCtoMap = new Map<string, string>();
     
     for (const clientData of clientsWithPon) {
       const login = String(clientData.user.login || '').toUpperCase().trim();
       if (!login) continue;
 
-      let groupKey = '';
+      // Extrair todos os níveis de agrupamento
+      const ponKey = clientData.ponPort ? `PON:${clientData.ponPort}` : null;
+      const ctoKey = clientData.cto ? `CTO:${clientData.cto}` : null;
       
-      // Prioridade 1: Agrupar por porta PON completa (mais preciso)
-      if (clientData.ponPort) {
-        groupKey = `PON:${clientData.ponPort}`;
-      }
-      // Prioridade 2: Agrupar por CTO
-      else if (clientData.cto) {
-        groupKey = `CTO:${clientData.cto}`;
-      }
-      // Prioridade 3: Agrupar por padrão de login (local-bloco)
-      else {
-        const parts = login.split('-');
-        if (parts.length >= 2) {
-          groupKey = `REGION:${parts[0]}-${parts[1]}`;
-        }
+      let regionKey = null;
+      const parts = login.split('-');
+      if (parts.length >= 2) {
+        regionKey = `REGION:${parts[0]}-${parts[1]}`;
       }
 
-      if (groupKey) {
-        if (!ponGroups.has(groupKey)) {
-          ponGroups.set(groupKey, []);
-          bairrosMap.set(groupKey, []);
+      // Adicionar cliente em TODOS os níveis onde ele se aplica
+      if (ponKey) {
+        if (!ponGroups.has(ponKey)) {
+          ponGroups.set(ponKey, []);
+          bairrosMap.set(ponKey, []);
         }
-        ponGroups.get(groupKey)!.push(clientData);
+        ponGroups.get(ponKey)!.push(clientData);
         
-        // Adicionar bairro ao mapa se disponível
         if (clientData.bairro) {
-          const bairros = bairrosMap.get(groupKey)!;
+          const bairros = bairrosMap.get(ponKey)!;
           if (!bairros.includes(clientData.bairro)) {
             bairros.push(clientData.bairro);
           }
         }
       }
+
+      if (ctoKey) {
+        if (!ctoGroups.has(ctoKey)) {
+          ctoGroups.set(ctoKey, []);
+          bairrosMap.set(ctoKey, []);
+        }
+        ctoGroups.get(ctoKey)!.push(clientData);
+        
+        if (clientData.bairro) {
+          const bairros = bairrosMap.get(ctoKey)!;
+          if (!bairros.includes(clientData.bairro)) {
+            bairros.push(clientData.bairro);
+          }
+        }
+        
+        // Mapear CTO -> PON se ambos existem
+        if (ponKey && !ctoToPonMap.has(ctoKey)) {
+          ctoToPonMap.set(ctoKey, ponKey);
+        }
+      }
+
+      if (regionKey) {
+        if (!regionGroups.has(regionKey)) {
+          regionGroups.set(regionKey, []);
+          bairrosMap.set(regionKey, []);
+        }
+        regionGroups.get(regionKey)!.push(clientData);
+        
+        if (clientData.bairro) {
+          const bairros = bairrosMap.get(regionKey)!;
+          if (!bairros.includes(clientData.bairro)) {
+            bairros.push(clientData.bairro);
+          }
+        }
+        
+        // Mapear Região -> PON/CTO se existem
+        if (ponKey && !regionToPonMap.has(regionKey)) {
+          regionToPonMap.set(regionKey, ponKey);
+        }
+        if (ctoKey && !regionToCtoMap.has(regionKey)) {
+          regionToCtoMap.set(regionKey, ctoKey);
+        }
+      }
     }
 
     // Definir limiar para queda em massa
-    // - Porta PON: 5+ clientes (mais preciso, indica problema na OLT/Splitter)
-    // - CTO: 3+ clientes (problema em caixa de terminação)
-    // - Região: 6+ clientes (menos preciso, pode ser problema maior)
     const MASS_OUTAGE_THRESHOLDS = {
       PON_PORT: 5,
       CTO: 3,
@@ -394,107 +434,214 @@ serve(async (req) => {
     };
     
     const massOutages: any[] = [];
+    const createdEventKeys = new Set<string>(); // Rastrear eventos criados para evitar duplicatas
 
+    // HIERARQUIA DE PRIORIDADE: PON > CTO > Região
+    // Se uma PON tem queda, não criar eventos para CTOs/Regiões que fazem parte dela
+    const ponEventsDetected = new Set<string>();
+    const ctoEventsDetected = new Set<string>();
+
+    // Processar PONs primeiro (maior prioridade)
     for (const [groupKey, clientsData] of ponGroups) {
-      const isPonGroup = groupKey.startsWith('PON:');
-      const isCtoGroup = groupKey.startsWith('CTO:');
-      const threshold = isPonGroup ? MASS_OUTAGE_THRESHOLDS.PON_PORT : 
-                       (isCtoGroup ? MASS_OUTAGE_THRESHOLDS.CTO : MASS_OUTAGE_THRESHOLDS.REGION);
+      const threshold = MASS_OUTAGE_THRESHOLDS.PON_PORT;
       
       // VALIDAÇÃO: Uma porta PON tem capacidade máxima de 128 clientes
-      if (isPonGroup && clientsData.length > MAX_CLIENTS_PER_PON) {
+      if (clientsData.length > MAX_CLIENTS_PER_PON) {
         console.warn(`⚠️ ALERTA: PON ${groupKey} tem ${clientsData.length} clientes (máx: ${MAX_CLIENTS_PER_PON}). Possível erro no agrupamento!`);
       }
       
       if (clientsData.length >= threshold) {
-        const affectedLogins = clientsData.map(c => c.user.login);
-        const eventKey = `${groupKey}_${new Date().toISOString().split('T')[0]}`;
-        
-        const groupType = isPonGroup ? 'Porta PON' : (isCtoGroup ? 'CTO' : 'Região');
-        const groupIdentifier = groupKey.split(':')[1];
-        const bairrosAfetados = bairrosMap.get(groupKey) || [];
-        
-        // Verificar se há Dying Gasp (perda de energia) para este grupo
-        let powerOutageCause = false;
-        let dyingGaspCount = 0;
-        let affectedOnus: string[] = [];
-        
-        const gaspData = dyingGaspEvents.get(groupKey);
-        if (gaspData && gaspData.count >= 2) {
-          // Se temos 2+ ONUs com Dying Gasp no mesmo grupo, é falta de energia
-          powerOutageCause = true;
-          dyingGaspCount = gaspData.count;
-          affectedOnus = gaspData.onus;
-        }
-        
-        const causeType = powerOutageCause 
-          ? `⚡ FALTA DE ENERGIA (${dyingGaspCount} ONUs com Dying Gasp)` 
-          : '❓ Causa desconhecida';
-        console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
-
-        // UPSERT: Usar ON CONFLICT para evitar race conditions
-        const { data: upsertedEvent, error: upsertError } = await supabase
-          .from('mass_outage_events')
-          .upsert(
-            {
-              event_key: eventKey,
-              region_pattern: groupKey,
-              affected_count: clientsData.length,
-              affected_logins: affectedLogins,
-              status: 'active',
-              metadata: {
-                detection_time: existingEvent?.metadata?.detection_time || new Date().toISOString(),
-                last_update: new Date().toISOString(),
-                threshold,
-                group_type: groupType,
-                group_identifier: groupIdentifier,
-                pon_port: isPonGroup ? groupIdentifier : undefined,
-                cto: isCtoGroup ? groupIdentifier : undefined,
-                bairros: bairrosAfetados.length > 0 ? bairrosAfetados : undefined,
-                power_outage: powerOutageCause,
-                dying_gasp_count: dyingGaspCount,
-                affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
-                outage_cause: powerOutageCause ? 'power_outage_dying_gasp' : 'unknown',
-                power_outage_description: powerOutageCause 
-                  ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
-                  : undefined
-              }
-            },
-            {
-              onConflict: 'event_key',
-              ignoreDuplicates: false
-            }
-          )
-          .select()
-          .single();
-
-        if (upsertError) {
-          console.error('Erro ao upsert evento:', upsertError);
-        } else {
-          massOutages.push(upsertedEvent);
-          const action = existingEvent ? 'atualizado' : 'criado';
-          console.log(`✅ Evento ${action}: ${eventKey}`);
-        }
+        ponEventsDetected.add(groupKey);
+        await createOrUpdateEvent(
+          groupKey, 
+          clientsData, 
+          'Porta PON', 
+          threshold, 
+          bairrosMap, 
+          dyingGaspEvents, 
+          supabase, 
+          massOutages, 
+          createdEventKeys
+        );
       }
     }
 
-    // Marcar eventos como resolvidos se não há mais clientes offline no grupo
+    // Processar CTOs (média prioridade) - apenas se não houver evento PON pai
+    for (const [ctoKey, clientsData] of ctoGroups) {
+      const threshold = MASS_OUTAGE_THRESHOLDS.CTO;
+      
+      // Verificar se este CTO faz parte de uma PON que já tem evento
+      const parentPon = ctoToPonMap.get(ctoKey);
+      if (parentPon && ponEventsDetected.has(parentPon)) {
+        console.log(`⏩ Ignorando CTO ${ctoKey} - já coberto por PON ${parentPon}`);
+        continue;
+      }
+      
+      if (clientsData.length >= threshold) {
+        ctoEventsDetected.add(ctoKey);
+        await createOrUpdateEvent(
+          ctoKey, 
+          clientsData, 
+          'CTO', 
+          threshold, 
+          bairrosMap, 
+          dyingGaspEvents, 
+          supabase, 
+          massOutages, 
+          createdEventKeys
+        );
+      }
+    }
+
+    // Processar Regiões (menor prioridade) - apenas se não houver evento PON ou CTO pai
+    for (const [regionKey, clientsData] of regionGroups) {
+      const threshold = MASS_OUTAGE_THRESHOLDS.REGION;
+      
+      // Verificar se esta Região faz parte de uma PON ou CTO que já tem evento
+      const parentPon = regionToPonMap.get(regionKey);
+      const parentCto = regionToCtoMap.get(regionKey);
+      
+      if (parentPon && ponEventsDetected.has(parentPon)) {
+        console.log(`⏩ Ignorando Região ${regionKey} - já coberto por PON ${parentPon}`);
+        continue;
+      }
+      
+      if (parentCto && ctoEventsDetected.has(parentCto)) {
+        console.log(`⏩ Ignorando Região ${regionKey} - já coberto por CTO ${parentCto}`);
+        continue;
+      }
+      
+      if (clientsData.length >= threshold) {
+        await createOrUpdateEvent(
+          regionKey, 
+          clientsData, 
+          'Região', 
+          threshold, 
+          bairrosMap, 
+          dyingGaspEvents, 
+          supabase, 
+          massOutages, 
+          createdEventKeys
+        );
+      }
+    }
+
+    // Função auxiliar para criar/atualizar eventos
+    async function createOrUpdateEvent(
+      groupKey: string,
+      clientsData: any[],
+      groupType: string,
+      threshold: number,
+      bairrosMap: Map<string, string[]>,
+      dyingGaspEvents: Map<string, any>,
+      supabase: any,
+      massOutages: any[],
+      createdEventKeys: Set<string>
+    ) {
+      const affectedLogins = clientsData.map(c => c.user.login);
+      const eventKey = `${groupKey}_${new Date().toISOString().split('T')[0]}`;
+      
+      if (createdEventKeys.has(eventKey)) return;
+      
+      const groupIdentifier = groupKey.split(':')[1];
+      const bairrosAfetados = bairrosMap.get(groupKey) || [];
+      
+      // Verificar se há Dying Gasp (perda de energia) para este grupo
+      let powerOutageCause = false;
+      let dyingGaspCount = 0;
+      let affectedOnus: string[] = [];
+      
+      const gaspData = dyingGaspEvents.get(groupKey);
+      if (gaspData && gaspData.count >= 2) {
+        powerOutageCause = true;
+        dyingGaspCount = gaspData.count;
+        affectedOnus = gaspData.onus;
+      }
+      
+      const causeType = powerOutageCause 
+        ? `⚡ FALTA DE ENERGIA (${dyingGaspCount} ONUs com Dying Gasp)` 
+        : '❓ Causa desconhecida';
+      console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
+
+      // Buscar evento existente
+      const { data: existingEvent } = await supabase
+        .from('mass_outage_events')
+        .select('*')
+        .eq('event_key', eventKey)
+        .maybeSingle();
+
+      const isPonGroup = groupKey.startsWith('PON:');
+      const isCtoGroup = groupKey.startsWith('CTO:');
+
+      // UPSERT
+      const { data: upsertedEvent, error: upsertError } = await supabase
+        .from('mass_outage_events')
+        .upsert(
+          {
+            event_key: eventKey,
+            region_pattern: groupKey,
+            affected_count: clientsData.length,
+            affected_logins: affectedLogins,
+            status: 'active',
+            metadata: {
+              detection_time: existingEvent?.metadata?.detection_time || new Date().toISOString(),
+              last_update: new Date().toISOString(),
+              threshold,
+              group_type: groupType,
+              group_identifier: groupIdentifier,
+              pon_port: isPonGroup ? groupIdentifier : undefined,
+              cto: isCtoGroup ? groupIdentifier : undefined,
+              bairros: bairrosAfetados.length > 0 ? bairrosAfetados : undefined,
+              power_outage: powerOutageCause,
+              dying_gasp_count: dyingGaspCount,
+              affected_onus: affectedOnus.length > 0 ? affectedOnus : undefined,
+              outage_cause: powerOutageCause ? 'power_outage_dying_gasp' : 'unknown',
+              power_outage_description: powerOutageCause 
+                ? `Dying Gasp detectado em ${dyingGaspCount} ONUs - Perda de energia confirmada` 
+                : undefined
+            }
+          },
+          {
+            onConflict: 'event_key',
+            ignoreDuplicates: false
+          }
+        )
+        .select()
+        .single();
+
+      if (upsertError) {
+        console.error('Erro ao upsert evento:', upsertError);
+      } else {
+        massOutages.push(upsertedEvent);
+        createdEventKeys.add(eventKey);
+        const action = existingEvent ? 'atualizado' : 'criado';
+        console.log(`✅ Evento ${action}: ${eventKey}`);
+      }
+    }
+
+    // RESOLUÇÃO DE EVENTOS COM HIERARQUIA CRUZADA
+    // Se PON é resolvida -> resolver também CTOs e Regiões filhos
     const { data: activeEvents } = await supabase
       .from('mass_outage_events')
       .select('*')
       .eq('status', 'active');
 
     if (activeEvents) {
+      const allGroups = new Map([...ponGroups, ...ctoGroups, ...regionGroups]);
+      
       for (const event of activeEvents) {
         const groupKey = event.region_pattern;
-        const stillOffline = ponGroups.get(groupKey);
+        const stillOffline = allGroups.get(groupKey);
         
         const isPonGroup = groupKey.startsWith('PON:');
         const isCtoGroup = groupKey.startsWith('CTO:');
         const threshold = isPonGroup ? MASS_OUTAGE_THRESHOLDS.PON_PORT : 
                          (isCtoGroup ? MASS_OUTAGE_THRESHOLDS.CTO : MASS_OUTAGE_THRESHOLDS.REGION);
         
-        if (!stillOffline || stillOffline.length < threshold) {
+        // Verificar se evento deve ser resolvido
+        const shouldResolve = !stillOffline || stillOffline.length < threshold;
+        
+        if (shouldResolve) {
           await supabase
             .from('mass_outage_events')
             .update({
@@ -504,6 +651,88 @@ serve(async (req) => {
             .eq('id', event.id);
           
           console.log(`✅ Evento resolvido: ${groupKey}`);
+          
+          // RESOLUÇÃO CRUZADA: Se resolveu PON, resolver também CTOs e Regiões filhos
+          if (isPonGroup) {
+            // Encontrar CTOs que fazem parte desta PON
+            const childCtos = Array.from(ctoToPonMap.entries())
+              .filter(([_, ponKey]) => ponKey === groupKey)
+              .map(([ctoKey, _]) => ctoKey);
+            
+            // Encontrar Regiões que fazem parte desta PON
+            const childRegions = Array.from(regionToPonMap.entries())
+              .filter(([_, ponKey]) => ponKey === groupKey)
+              .map(([regionKey, _]) => regionKey);
+            
+            // Resolver eventos filhos
+            const childKeys = [...childCtos, ...childRegions];
+            if (childKeys.length > 0) {
+              const today = new Date().toISOString().split('T')[0];
+              const childEventKeys = childKeys.map(key => `${key}_${today}`);
+              
+              const { data: childEvents } = await supabase
+                .from('mass_outage_events')
+                .select('*')
+                .in('event_key', childEventKeys)
+                .eq('status', 'active');
+              
+              if (childEvents && childEvents.length > 0) {
+                for (const childEvent of childEvents) {
+                  await supabase
+                    .from('mass_outage_events')
+                    .update({
+                      status: 'resolved',
+                      resolved_at: new Date().toISOString(),
+                      metadata: {
+                        ...childEvent.metadata,
+                        resolved_by_parent: groupKey,
+                        resolution_note: `Resolvido automaticamente pois PON pai ${groupKey} foi resolvida`
+                      }
+                    })
+                    .eq('id', childEvent.id);
+                  
+                  console.log(`✅ Evento filho resolvido automaticamente: ${childEvent.event_key} (pai: ${groupKey})`);
+                }
+              }
+            }
+          }
+          
+          // Se resolveu CTO, resolver também Regiões filhas
+          if (isCtoGroup) {
+            const childRegions = Array.from(regionToCtoMap.entries())
+              .filter(([_, ctoKey]) => ctoKey === groupKey)
+              .map(([regionKey, _]) => regionKey);
+            
+            if (childRegions.length > 0) {
+              const today = new Date().toISOString().split('T')[0];
+              const childEventKeys = childRegions.map(key => `${key}_${today}`);
+              
+              const { data: childEvents } = await supabase
+                .from('mass_outage_events')
+                .select('*')
+                .in('event_key', childEventKeys)
+                .eq('status', 'active');
+              
+              if (childEvents && childEvents.length > 0) {
+                for (const childEvent of childEvents) {
+                  await supabase
+                    .from('mass_outage_events')
+                    .update({
+                      status: 'resolved',
+                      resolved_at: new Date().toISOString(),
+                      metadata: {
+                        ...childEvent.metadata,
+                        resolved_by_parent: groupKey,
+                        resolution_note: `Resolvido automaticamente pois CTO pai ${groupKey} foi resolvido`
+                      }
+                    })
+                    .eq('id', childEvent.id);
+                  
+                  console.log(`✅ Evento filho resolvido automaticamente: ${childEvent.event_key} (pai: ${groupKey})`);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -516,10 +745,11 @@ serve(async (req) => {
         mass_outages_detected: massOutages.length,
         mass_outages: massOutages,
         groups_analyzed: {
-          total: ponGroups.size,
-          by_pon_port: Array.from(ponGroups.keys()).filter(k => k.startsWith('PON:')).length,
-          by_cto: Array.from(ponGroups.keys()).filter(k => k.startsWith('CTO:')).length,
-          by_region: Array.from(ponGroups.keys()).filter(k => k.startsWith('REGION:')).length
+          total: ponGroups.size + ctoGroups.size + regionGroups.size,
+          by_pon_port: ponGroups.size,
+          by_cto: ctoGroups.size,
+          by_region: regionGroups.size,
+          hierarchy_applied: true
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

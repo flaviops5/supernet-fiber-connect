@@ -979,7 +979,12 @@ Obrigado pela compreensão! 🙏\`;
                       <li>
                         <strong>Agrupamento e Detecção de Quedas (Passo 4):</strong>
                         <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
-                          <li>Agrupa os clientes enriquecidos por PON Port, CTO e Região</li>
+                          <li className="text-purple-600 dark:text-purple-400 font-medium">🎯 <strong>HIERARQUIA DE PRIORIDADE:</strong> PON {'>'} CTO {'>'} Região - evita alertas redundantes</li>
+                          <li>Cada cliente é mapeado em TODOS os níveis (PON, CTO, Região) onde se aplica</li>
+                          <li>Cria mapeamento hierárquico: CTO → PON, Região → PON/CTO</li>
+                          <li>Detecta quedas primeiro em PONs, depois CTOs, depois Regiões</li>
+                          <li>Se PON tem queda → ignora CTOs e Regiões filhos (já cobertos pela PON)</li>
+                          <li>Se CTO tem queda → ignora Regiões filhas (já cobertas pelo CTO)</li>
                           <li>Compara com os limiares: PON ≥5, CTO ≥3, REGION ≥6 clientes</li>
                           <li>⚠️ <strong>VALIDAÇÃO:</strong> Alerta se PON {'>'} 128 clientes (capacidade máxima)</li>
                           <li className="text-green-600 dark:text-green-400 font-medium">✅ <strong>UPSERT:</strong> Usa ON CONFLICT (event_key) - evita race conditions</li>
@@ -991,8 +996,12 @@ Obrigado pela compreensão! 🙏\`;
                         <strong>Resolução de Eventos (Passo 5):</strong>
                         <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
                           <li>Busca todos os eventos ativos no Supabase</li>
-                          <li>Verifica a contagem atual de clientes offline no grupo</li>
+                          <li>Verifica a contagem atual de clientes offline em cada grupo</li>
                           <li>Se a contagem cair abaixo do limiar, o evento é marcado como resolved</li>
+                          <li className="text-purple-600 dark:text-purple-400 font-medium">🔗 <strong>RESOLUÇÃO CRUZADA:</strong> Quando PON é resolvida → resolve automaticamente CTOs e Regiões filhos</li>
+                          <li className="text-purple-600 dark:text-purple-400 font-medium">🔗 Quando CTO é resolvido → resolve automaticamente Regiões filhas</li>
+                          <li>Eventos filhos recebem metadata adicional: <code>resolved_by_parent</code> e <code>resolution_note</code></li>
+                          <li>Evita alertas órfãos e mantém consistência hierárquica na resolução</li>
                         </ul>
                       </li>
                     </ol>
@@ -1007,6 +1016,8 @@ Obrigado pela compreensão! 🙏\`;
                         <li><strong>Retry Inteligente:</strong> Backoff exponencial + jitter (30%) evita sobrecarga</li>
                         <li><strong>UPSERT com ON CONFLICT:</strong> Elimina race conditions em execuções paralelas</li>
                         <li><strong>Service Role no Cron:</strong> Usa service_role_key (não anon key) para evitar falhas de RLS</li>
+                        <li className="text-purple-600 dark:text-purple-400 font-medium"><strong>🎯 Hierarquia de Prioridade:</strong> PON {'>'} CTO {'>'} Região - elimina alertas redundantes</li>
+                        <li className="text-purple-600 dark:text-purple-400 font-medium"><strong>🔗 Resolução Cruzada:</strong> PON resolvida → resolve CTOs/Regiões filhos automaticamente</li>
                       </ul>
                       <p className="text-sm mt-2 text-muted-foreground">
                         <strong>Performance:</strong> 500 clientes prioritários processados em ~40s (vs ~400s sequencial) = <strong>10x mais rápido</strong>
@@ -1014,6 +1025,10 @@ Obrigado pela compreensão! 🙏\`;
                       <p className="text-sm mt-2 text-muted-foreground">
                         <strong>Trade-off:</strong> Limite de 500 clientes para enriquecimento existe devido ao timeout de Edge Functions (~100s), 
                         mas é suficiente para detectar quedas em massa. Em eventos com {'>'}500 clientes, o agrupamento regional garante detecção.
+                      </p>
+                      <p className="text-sm mt-2 text-orange-600 dark:text-orange-400">
+                        <strong>🎯 Benefício da Hierarquia:</strong> Se uma PON com 50 clientes cai, o sistema cria <strong>APENAS 1 evento</strong> (da PON), 
+                        não 5+ eventos redundantes (PON + CTOs + Regiões). Focando no ponto de falha mais específico.
                       </p>
                     </div>
                   </section>
