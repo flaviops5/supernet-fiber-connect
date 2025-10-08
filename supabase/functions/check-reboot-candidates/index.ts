@@ -28,6 +28,22 @@ interface ClientStatus {
   bloqueado_financeiro: string;
 }
 
+// Helper para converter tempo de sessão (aceita segundos ou formato HH:MM:SS)
+function parseSessionSeconds(user: RadiusUser): number {
+  const fromAcct = parseInt(user.acctsessiontime || '0');
+  if (!Number.isNaN(fromAcct) && fromAcct > 0) return fromAcct;
+  const t = (user.tempo_conexao || '').trim();
+  // Alguns IXC retornam "H:MM:SS" ou "HH:MM:SS"
+  const match = t.match(/^\s*(\d{1,2}):(\d{2}):(\d{2})\s*$/);
+  if (match) {
+    const h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const s = parseInt(match[3]);
+    return (h * 3600) + (m * 60) + s;
+  }
+  return 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -133,7 +149,7 @@ Deno.serve(async (req) => {
       
       const inputBytes = parseInt(user.acctinputoctets || '0');
       const outputBytes = parseInt(user.acctoutputoctets || '0');
-      const sessionTime = parseInt(user.acctsessiontime || '0');
+      const sessionTime = parseSessionSeconds(user);
       
       // Sessão ativa há mais de 24 horas (86400 segundos)
       if (sessionTime < 86400) continue;
