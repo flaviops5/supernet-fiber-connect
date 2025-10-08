@@ -138,7 +138,17 @@ export async function callIxcWithRetry(
         throw new Error(`IXC Proxy HTTP ${response.status}: ${errorText}`);
       }
       
-      const data = await response.json();
+      // Ler resposta como texto primeiro para poder tratar erros de JSON
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        // Resposta não é JSON - pode ser HTML de erro
+        const preview = responseText.substring(0, 200);
+        throw new Error(`IXC Error: Non-JSON response from IXC (preview): ${preview}`);
+      }
       
       if (!data.ok) {
         // IXC retornou erro - pode ser temporário

@@ -36,40 +36,65 @@ serve(async (req) => {
     const itemsPerPage = 1000;
     const allRadUsers: RadUser[] = [];
 
-    // Buscar apenas clientes offline
-    while (true) {
-      const bodyRad = {
-        qtype: 'radusuarios.online',
-        query: 'N',
-        oper: '=',
-        page: String(page),
-        rp: String(itemsPerPage),
-        sortname: 'radusuarios.id',
-        sortorder: 'desc',
-      };
+    try {
+      // Buscar apenas clientes offline
+      while (page <= 10) { // Limitar a 10 páginas
+        const bodyRad = {
+          qtype: 'radusuarios.online',
+          query: 'N',
+          oper: '=',
+          page: String(page),
+          rp: String(itemsPerPage),
+          sortname: 'radusuarios.id',
+          sortorder: 'desc',
+        };
 
-      const radData = await callIxcWithRetry(
-        IXC_PROXY_URL,
-        'POST',
-        '/webservice/v1/radusuarios',
-        bodyRad
-      );
+        console.log(`📄 Buscando página ${page} de clientes offline...`);
 
-      const radRegistros = Array.isArray(radData?.data?.registros)
-        ? radData.data.registros
-        : (radData?.data?.registros ? Object.values(radData.data.registros) : []);
+        const radData = await callIxcWithRetry(
+          IXC_PROXY_URL,
+          'POST',
+          '/webservice/v1/radusuarios',
+          bodyRad
+        );
 
-      if (!radRegistros || radRegistros.length === 0) {
-        break;
+        const radRegistros = Array.isArray(radData?.data?.registros)
+          ? radData.data.registros
+          : (radData?.data?.registros ? Object.values(radData.data.registros) : []);
+
+        if (!radRegistros || radRegistros.length === 0) {
+          console.log(`✅ Sem mais registros na página ${page}`);
+          break;
+        }
+
+        allRadUsers.push(...radRegistros);
+        console.log(`📊 Página ${page}: ${radRegistros.length} clientes offline (total: ${allRadUsers.length})`);
+
+        if (radRegistros.length < itemsPerPage) {
+          break;
+        }
+        page++;
       }
-
-      allRadUsers.push(...radRegistros);
-      console.log(`Página ${page}: ${radRegistros.length} clientes offline`);
-
-      if (radRegistros.length < itemsPerPage) {
-        break;
+    } catch (error) {
+      console.error('❌ Erro ao buscar clientes offline do IXC:', error);
+      
+      // Se falhou completamente, retornar erro informativo
+      if (allRadUsers.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Não foi possível buscar dados do IXC',
+            details: error.message,
+            suggestion: 'Verifique as credenciais IXC e conexão com API',
+            total_offline: 0,
+            mass_outages_detected: 0
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      page++;
+      
+      // Se temos dados parciais, continuar
+      console.log(`⚠️ Continuando com ${allRadUsers.length} registros obtidos antes do erro`);
     }
 
     console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
