@@ -44,8 +44,9 @@ serve(async (req) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          method: 'GET',
-          path: '/webservice/v1/ping'
+          method: 'POST',
+          path: '/webservice/v1/cliente',
+          body: { page: '1', rp: '1' }
         })
       });
       
