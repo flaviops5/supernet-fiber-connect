@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Activity, AlertCircle, CheckCircle, Clock, TrendingUp, XCircle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SystemRobustnessScore } from '@/components/SystemRobustnessScore';
+import { TechnicalTasksCard } from '@/components/TechnicalTasksCard';
 
 export default function SystemMetrics() {
   const [health, setHealth] = useState<any>(null);
@@ -89,6 +90,9 @@ export default function SystemMetrics() {
 
         {/* Robustness Score Card */}
         <SystemRobustnessScore />
+
+        {/* Technical Tasks Card */}
+        <TechnicalTasksCard />
 
         {/* Overall Health */}
         <Card>
