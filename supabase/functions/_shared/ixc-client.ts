@@ -133,25 +133,41 @@ export async function callIxcWithRetry(
       console.log(`⏱️ IXC call duration: ${duration}ms`);
       
       if (!response.ok) {
-        // Status HTTP de erro - pode ser temporário
         const errorText = await response.text();
-        throw new Error(`IXC Proxy HTTP ${response.status}: ${errorText}`);
+        const isConfigError = response.status === 401 || response.status === 403 || response.status === 404;
+        const errorMsg = `IXC Proxy HTTP ${response.status}: ${errorText}`;
+        
+        // Não fazer retry em erros de configuração
+        if (isConfigError) {
+          console.error(`❌ Configuration error detected - aborting retries`);
+          throw new Error(`[NO_RETRY] ${errorMsg}`);
+        }
+        
+        throw new Error(errorMsg);
       }
       
-      // Ler resposta como texto primeiro para poder tratar erros de JSON
       const responseText = await response.text();
+      
+      // Detectar resposta HTML (erro de configuração/autenticação)
+      if (responseText.trim().startsWith('<')) {
+        const isLoginPage = responseText.includes('login') || responseText.includes('autenticar');
+        const errorMsg = isLoginPage 
+          ? 'IXC retornou página de login - verifique URL, usuário e senha do IXC'
+          : 'IXC retornou HTML ao invés de JSON - verifique a configuração da API';
+        
+        console.error(`❌ HTML response detected - aborting retries`);
+        throw new Error(`[NO_RETRY] ${errorMsg}`);
+      }
       
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (jsonError) {
-        // Resposta não é JSON - pode ser HTML de erro
         const preview = responseText.substring(0, 200);
-        throw new Error(`IXC Error: Non-JSON response from IXC (preview): ${preview}`);
+        throw new Error(`[NO_RETRY] Resposta inválida do IXC: ${preview}`);
       }
       
       if (!data.ok) {
-        // IXC retornou erro - pode ser temporário
         throw new Error(`IXC Error: ${data.error || 'Unknown error'}`);
       }
       
@@ -163,6 +179,13 @@ export async function callIxcWithRetry(
     } catch (error) {
       lastError = error as Error;
       console.error(`❌ IXC call failed on attempt ${attempt + 1}:`, lastError.message);
+      
+      // Se for erro de configuração (marcado com [NO_RETRY]), abortar imediatamente
+      if (lastError.message.includes('[NO_RETRY]')) {
+        const cleanMessage = lastError.message.replace('[NO_RETRY] ', '');
+        recordFailure();
+        throw new Error(cleanMessage);
+      }
       
       // Se for último retry, não esperar
       if (attempt < retryConfig.maxRetries) {
