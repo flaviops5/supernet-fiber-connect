@@ -105,20 +105,21 @@ Deno.serve(async (req) => {
     
     console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
     
-    // Debug: procurar o cliente específico
+    // Debug: procurar o cliente específico e ver TODOS os campos disponíveis
     const targetClient = onlineUsers.find(u => u.login.toUpperCase().includes('IN-MC-53-BAR'));
     if (targetClient) {
-      console.log('🎯 Cliente IN-MC-53-BAR encontrado:', {
-        login: targetClient.login,
-        online: targetClient.online,
-        id_cliente: targetClient.id_cliente,
+      console.log('🎯 Cliente IN-MC-53-BAR - REGISTRO COMPLETO:', JSON.stringify(targetClient, null, 2));
+      console.log('🔍 Campos relacionados a tráfego:', {
         acctinputoctets: targetClient.acctinputoctets,
         acctoutputoctets: targetClient.acctoutputoctets,
-        acctsessiontime: targetClient.acctsessiontime
+        acctsessiontime: targetClient.acctsessiontime,
+        download_atual: (targetClient as any).download_atual,
+        upload_atual: (targetClient as any).upload_atual,
+        tempo_conectado: (targetClient as any).tempo_conectado,
+        franquia_consumo: (targetClient as any).franquia_consumo
       });
     } else {
       console.log('❌ Cliente IN-MC-53-BAR NÃO encontrado na lista de online users');
-      console.log('📋 Primeiros 5 logins encontrados:', onlineUsers.slice(0, 5).map(u => u.login));
     }
 
     // 2. Buscar blacklist
