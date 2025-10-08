@@ -79,10 +79,10 @@ export function MassOutageMonitor() {
   useEffect(() => {
     loadEvents();
     
-    // Detecção automática inicial após 5 segundos
+    // Detecção automática inicial após 15 segundos (aguarda cold start)
     const initialDetection = setTimeout(() => {
       detectOutages();
-    }, 5000);
+    }, 15000);
     
     // Pooling automático a cada 3 minutos
     const detectionInterval = setInterval(() => {
