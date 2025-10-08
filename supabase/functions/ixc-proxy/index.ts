@@ -147,9 +147,25 @@ serve(async (req) => {
 
     const ok = ixcResponse.ok && !!ixcData;
 
+    // Determinar status HTTP correto baseado no tipo de erro
+    let responseStatus = ixcResponse.status;
+    
+    // Se IXC retornou 200 mas não é JSON válido, é um erro de configuração (502 Bad Gateway)
+    if (ixcResponse.ok && !ixcData && rawText) {
+      responseStatus = 502; // Bad Gateway - resposta inválida do IXC
+    }
+    // Se IXC retornou erro (4XX/5XX), manter o status original
+    else if (!ixcResponse.ok) {
+      responseStatus = ixcResponse.status;
+    }
+    // Se tudo OK, 200
+    else if (ok) {
+      responseStatus = 200;
+    }
+
     const response: IXCProxyResponse = {
       ok,
-      status: ixcResponse.status,
+      status: responseStatus,
       data: ixcData,
       error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error'))
     };
@@ -157,7 +173,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ ...response, duration_ms: duration }),
       {
-        status: ixcResponse.status, // ✅ CORREÇÃO CRÍTICA: Usar status real do IXC ao invés de sempre 200
+        status: responseStatus, // ✅ Status HTTP reflete o erro real detectado
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
