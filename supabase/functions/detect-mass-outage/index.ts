@@ -99,95 +99,130 @@ serve(async (req) => {
 
     console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
 
+    // OTIMIZAÇÃO: Limitar a 500 clientes mais críticos para evitar timeout
+    const MAX_CLIENTS_TO_ENRICH = 500;
+    const MAX_CLIENTS_PER_PON = 128; // Capacidade máxima de uma porta PON
+    
+    // Ordenar por prioridade: clientes com id_cliente primeiro (mais chance de ter PON)
+    const sortedUsers = allRadUsers.sort((a, b) => {
+      if (a.id_cliente && !b.id_cliente) return -1;
+      if (!a.id_cliente && b.id_cliente) return 1;
+      return 0;
+    });
+    
+    const usersToEnrich = sortedUsers.slice(0, MAX_CLIENTS_TO_ENRICH);
+    const skippedCount = allRadUsers.length - usersToEnrich.length;
+    
+    if (skippedCount > 0) {
+      console.log(`⚠️ Limitando análise a ${MAX_CLIENTS_TO_ENRICH} clientes prioritários (${skippedCount} ignorados)`);
+    }
+
     // Buscar informações de porta PON e bairro para cada cliente offline
     console.log('🔍 Buscando informações de porta PON e localização...');
     const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }> = [];
     
-    for (const user of allRadUsers) {
-      const clientId = user.id_cliente;
-      if (!clientId) {
-        clientsWithPon.push({ user });
-        continue;
-      }
-
-      try {
-        // Buscar dados do cliente (incluindo bairro) via proxy
-        const clientBody = {
-          qtype: 'cliente.id',
-          query: clientId,
-          oper: '=',
-          page: '1',
-          rp: '1',
-          sortname: 'cliente.id',
-          sortorder: 'desc',
-        };
-
-        let bairro = '';
-        const clientData = await callIxcWithRetry(
-          IXC_PROXY_URL,
-          'POST',
-          '/webservice/v1/cliente',
-          clientBody
-        );
-
-        const clientes = Array.isArray(clientData?.data?.registros)
-          ? clientData.data.registros
-          : (clientData?.data?.registros ? Object.values(clientData.data.registros) : []);
-        
-        if (clientes.length > 0) {
-          const cliente = clientes[0];
-          bairro = cliente.bairro || cliente.endereco_bairro || '';
-        }
-
-        // Buscar equipamento/ONU do cliente via proxy
-        const equipBody = {
-          qtype: 'cliente_equipamento.id_cliente',
-          query: clientId,
-          oper: '=',
-          page: '1',
-          rp: '50',
-          sortname: 'cliente_equipamento.id',
-          sortorder: 'desc',
-        };
-
-        const equipData = await callIxcWithRetry(
-          IXC_PROXY_URL,
-          'POST',
-          '/webservice/v1/cliente_equipamento',
-          equipBody
-        );
-
-        const equipamentos = Array.isArray(equipData?.data?.registros)
-          ? equipData.data.registros
-          : (equipData?.data?.registros ? Object.values(equipData.data.registros) : []);
-
-          // Procurar informações de PON/ONU nos equipamentos
-          let ponPort = '';
-          let cto = '';
-          
-          for (const equip of equipamentos) {
-            // Tentar extrair informações de porta PON
-            if (equip.pon_porta) ponPort = String(equip.pon_porta);
-            if (equip.pon_slot) ponPort = `${equip.pon_slot}/${ponPort}`;
-            if (equip.pon_olt) ponPort = `${equip.pon_olt}/${ponPort}`;
-            
-            // Extrair CTO
-            if (equip.cto) cto = String(equip.cto);
-            if (equip.fibra_cto) cto = String(equip.fibra_cto);
-            
-            if (ponPort) break;
+    // OTIMIZAÇÃO: Processar em chunks paralelos (20 clientes por vez)
+    const CHUNK_SIZE = 20;
+    const chunks: RadUser[][] = [];
+    for (let i = 0; i < usersToEnrich.length; i += CHUNK_SIZE) {
+      chunks.push(usersToEnrich.slice(i, i + CHUNK_SIZE));
+    }
+    
+    console.log(`📦 Processando ${chunks.length} chunks de ${CHUNK_SIZE} clientes em paralelo...`);
+    
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      const chunk = chunks[chunkIndex];
+      console.log(`📦 Chunk ${chunkIndex + 1}/${chunks.length}: ${chunk.length} clientes`);
+      
+      // Processar todos os clientes do chunk em paralelo
+      const chunkResults = await Promise.all(
+        chunk.map(async (user) => {
+          const clientId = user.id_cliente;
+          if (!clientId) {
+            return { user };
           }
 
-        clientsWithPon.push({ 
-          user, 
-          ponPort: ponPort || undefined,
-          cto: cto || undefined,
-          bairro: bairro || undefined
-        });
-      } catch (error) {
-        console.error(`Erro ao buscar equipamento do cliente ${clientId}:`, error);
-        clientsWithPon.push({ user });
-      }
+          try {
+            // OTIMIZAÇÃO: Executar ambas as chamadas em paralelo
+            const [clientData, equipData] = await Promise.all([
+              // Buscar dados do cliente (incluindo bairro)
+              callIxcWithRetry(
+                IXC_PROXY_URL,
+                'POST',
+                '/webservice/v1/cliente',
+                {
+                  qtype: 'cliente.id',
+                  query: clientId,
+                  oper: '=',
+                  page: '1',
+                  rp: '1',
+                  sortname: 'cliente.id',
+                  sortorder: 'desc',
+                }
+              ),
+              // Buscar equipamento/ONU do cliente
+              callIxcWithRetry(
+                IXC_PROXY_URL,
+                'POST',
+                '/webservice/v1/cliente_equipamento',
+                {
+                  qtype: 'cliente_equipamento.id_cliente',
+                  query: clientId,
+                  oper: '=',
+                  page: '1',
+                  rp: '50',
+                  sortname: 'cliente_equipamento.id',
+                  sortorder: 'desc',
+                }
+              )
+            ]);
+
+            // Processar dados do cliente (bairro)
+            let bairro = '';
+            const clientes = Array.isArray(clientData?.data?.registros)
+              ? clientData.data.registros
+              : (clientData?.data?.registros ? Object.values(clientData.data.registros) : []);
+            
+            if (clientes.length > 0) {
+              const cliente = clientes[0];
+              bairro = cliente.bairro || cliente.endereco_bairro || '';
+            }
+
+            // Processar dados de equipamento (PON/CTO)
+            const equipamentos = Array.isArray(equipData?.data?.registros)
+              ? equipData.data.registros
+              : (equipData?.data?.registros ? Object.values(equipData.data.registros) : []);
+
+            let ponPort = '';
+            let cto = '';
+            
+            for (const equip of equipamentos) {
+              // Tentar extrair informações de porta PON
+              if (equip.pon_porta) ponPort = String(equip.pon_porta);
+              if (equip.pon_slot) ponPort = `${equip.pon_slot}/${ponPort}`;
+              if (equip.pon_olt) ponPort = `${equip.pon_olt}/${ponPort}`;
+              
+              // Extrair CTO
+              if (equip.cto) cto = String(equip.cto);
+              if (equip.fibra_cto) cto = String(equip.fibra_cto);
+              
+              if (ponPort) break;
+            }
+
+            return { 
+              user, 
+              ponPort: ponPort || undefined,
+              cto: cto || undefined,
+              bairro: bairro || undefined
+            };
+          } catch (error) {
+            console.error(`❌ Erro ao buscar dados do cliente ${clientId}:`, error);
+            return { user };
+          }
+        })
+      );
+      
+      clientsWithPon.push(...chunkResults);
     }
 
     console.log(`📊 Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
@@ -314,15 +349,27 @@ serve(async (req) => {
     }
 
     // Definir limiar para queda em massa
-    // - Porta PON: 3+ clientes (mais preciso, indica problema na OLT/Splitter)
-    // - CTO: 4+ clientes (problema em caixa de terminação)
-    // - Região: 5+ clientes (menos preciso, pode ser problema maior)
+    // - Porta PON: 5+ clientes (mais preciso, indica problema na OLT/Splitter)
+    // - CTO: 3+ clientes (problema em caixa de terminação)
+    // - Região: 6+ clientes (menos preciso, pode ser problema maior)
+    const MASS_OUTAGE_THRESHOLDS = {
+      PON_PORT: 5,
+      CTO: 3,
+      REGION: 6
+    };
+    
     const massOutages: any[] = [];
 
     for (const [groupKey, clientsData] of ponGroups) {
       const isPonGroup = groupKey.startsWith('PON:');
       const isCtoGroup = groupKey.startsWith('CTO:');
-      const threshold = isPonGroup ? 3 : (isCtoGroup ? 4 : 5);
+      const threshold = isPonGroup ? MASS_OUTAGE_THRESHOLDS.PON_PORT : 
+                       (isCtoGroup ? MASS_OUTAGE_THRESHOLDS.CTO : MASS_OUTAGE_THRESHOLDS.REGION);
+      
+      // VALIDAÇÃO: Uma porta PON tem capacidade máxima de 128 clientes
+      if (isPonGroup && clientsData.length > MAX_CLIENTS_PER_PON) {
+        console.warn(`⚠️ ALERTA: PON ${groupKey} tem ${clientsData.length} clientes (máx: ${MAX_CLIENTS_PER_PON}). Possível erro no agrupamento!`);
+      }
       
       if (clientsData.length >= threshold) {
         const affectedLogins = clientsData.map(c => c.user.login);
@@ -442,7 +489,8 @@ serve(async (req) => {
         
         const isPonGroup = groupKey.startsWith('PON:');
         const isCtoGroup = groupKey.startsWith('CTO:');
-        const threshold = isPonGroup ? 3 : (isCtoGroup ? 4 : 5);
+        const threshold = isPonGroup ? MASS_OUTAGE_THRESHOLDS.PON_PORT : 
+                         (isCtoGroup ? MASS_OUTAGE_THRESHOLDS.CTO : MASS_OUTAGE_THRESHOLDS.REGION);
         
         if (!stillOffline || stillOffline.length < threshold) {
           await supabase
