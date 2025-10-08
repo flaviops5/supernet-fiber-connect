@@ -11,6 +11,11 @@ interface RadiusUser {
   login: string;
   online: string;
   framedipaddress?: string;
+  ip?: string;
+  upload_atual?: string;
+  download_atual?: string;
+  tempo_conexao?: string;
+  // Campos legados (alguns IXC ainda usam)
   acctinputoctets?: string;
   acctoutputoctets?: string;
   acctsessiontime?: string;
@@ -104,23 +109,6 @@ Deno.serve(async (req) => {
       : Object.values(radiusData.registros || {});
     
     console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
-    
-    // Debug: procurar o cliente específico e ver TODOS os campos disponíveis
-    const targetClient = onlineUsers.find(u => u.login.toUpperCase().includes('IN-MC-53-BAR'));
-    if (targetClient) {
-      console.log('🎯 Cliente IN-MC-53-BAR - REGISTRO COMPLETO:', JSON.stringify(targetClient, null, 2));
-      console.log('🔍 Campos relacionados a tráfego:', {
-        acctinputoctets: targetClient.acctinputoctets,
-        acctoutputoctets: targetClient.acctoutputoctets,
-        acctsessiontime: targetClient.acctsessiontime,
-        download_atual: (targetClient as any).download_atual,
-        upload_atual: (targetClient as any).upload_atual,
-        tempo_conectado: (targetClient as any).tempo_conectado,
-        franquia_consumo: (targetClient as any).franquia_consumo
-      });
-    } else {
-      console.log('❌ Cliente IN-MC-53-BAR NÃO encontrado na lista de online users');
-    }
 
     // 2. Buscar blacklist
     const { data: blacklist } = await supabase
@@ -136,29 +124,17 @@ Deno.serve(async (req) => {
       // Ignorar se não está realmente online
       if (user.online !== 'S' && user.online !== 'SS') continue;
 
-      // Calcular banda instantânea
-      const inputBytes = parseInt(user.acctinputoctets || '0');
-      const outputBytes = parseInt(user.acctoutputoctets || '0');
-      const sessionTime = parseInt(user.acctsessiontime || '1');
+      // Calcular banda - suportar ambos formatos de API do IXC
+      const inputBytes = parseInt(user.upload_atual || user.acctinputoctets || '0');
+      const outputBytes = parseInt(user.download_atual || user.acctoutputoctets || '0');
+      const sessionTime = parseInt(user.tempo_conexao || user.acctsessiontime || '1');
 
       if (sessionTime === 0) continue;
 
       const totalBytes = inputBytes + outputBytes;
       const bandwidthKbps = (totalBytes * 8) / (sessionTime * 1024);
 
-      // Log para debug de clientes específicos
-      if (user.login.toUpperCase().includes('IN-MC-53-BAR')) {
-        console.log(`🔍 Debug cliente ${user.login}:`, {
-          online: user.online,
-          inputBytes,
-          outputBytes,
-          sessionTime,
-          totalBytes,
-          bandwidthKbps: Math.round(bandwidthKbps * 100) / 100
-        });
-      }
-
-      // Detectar banda anormalmente baixa
+      // Detectar banda anormalmente baixa (< 900 Kbps)
       if (bandwidthKbps < 900 && bandwidthKbps > 0) {
         // Verificar status do cliente
         let clientData: ClientStatus | null = null;
@@ -198,7 +174,7 @@ Deno.serve(async (req) => {
         candidates.push({
           clientId: user.id_cliente,
           login: user.login,
-          ip: user.framedipaddress || '',
+          ip: user.ip || user.framedipaddress || '',
           bandwidthKbps: Math.round(bandwidthKbps * 100) / 100,
           clientName: clientData?.razao,
           isBlocked,
