@@ -280,39 +280,41 @@ serve(async (req) => {
         const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
         console.log('Atendimento criado no IXC com ID:', atendimentoId);
 
-        // 4. Criar registro local do agendamento
-        const { data: appointment, error } = await supabase
-          .from('installation_appointments')
-          .insert({
-            customer_name: orderData.name,
-            customer_cpf: orderData.cpf,
-            customer_email: orderData.email,
-            customer_phone: orderData.phone,
-            customer_birth_date: orderData.birthDate || new Date().toISOString().split('T')[0],
-            customer_address: orderData.address,
-            customer_cep: orderData.cep,
-            plan_name: plan.name,
-            plan_speed: plan.speed,
-            plan_price: plan.price,
-            payment_day: Number(orderData.paymentDay) || 10,
-            appointment_date: orderData.appointmentDate,
-            appointment_period: orderData.appointmentPeriod,
-            status: 'pendente',
-            ixc_contract_id: contractId,
-            observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`,
-          })
-          .select()
-          .single();
+        // 4. Criar registro local do agendamento usando RPC seguro
+        const addressParts = orderData.address.split(',').map((s: string) => s.trim());
+        const { data: appointmentId, error } = await supabase.rpc('create_installation_appointment', {
+          p_customer_name: orderData.name,
+          p_customer_cpf: orderData.cpf,
+          p_customer_email: orderData.email,
+          p_customer_phone: orderData.phone,
+          p_customer_birthdate: orderData.birthDate || new Date().toISOString().split('T')[0],
+          p_address_street: addressParts[0] || orderData.address,
+          p_address_number: addressParts[1] || '',
+          p_address_complement: addressParts[2] || '',
+          p_address_neighborhood: addressParts[3] || '',
+          p_address_city: addressParts[4] || '',
+          p_address_state: addressParts[5] || '',
+          p_address_zipcode: orderData.cep,
+          p_plan_id: plan.id,
+          p_plan_name: plan.name,
+          p_plan_speed: plan.speed,
+          p_plan_price: plan.price,
+          p_installation_date: orderData.appointmentDate,
+          p_installation_period: orderData.appointmentPeriod,
+          p_ixc_contract_id: contractId,
+          p_contract_number: null
+        });
 
         if (error) {
           console.error('Erro ao criar agendamento local:', error);
+          throw new Error('Falha ao criar agendamento: ' + error.message);
         }
 
         return new Response(
           JSON.stringify({
             success: true,
             correlation_id: correlationId,
-            appointment_id: appointment?.id,
+            appointment_id: appointmentId,
             ixc_customer_id: customerId,
             ixc_contract_id: contractId,
             ixc_atendimento_id: atendimentoId,
