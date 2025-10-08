@@ -39,8 +39,10 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL não configurado');
     }
 
+    // Normalizar URL removendo /adm.php e protocol duplicado
+    const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '').replace(/^https?:\/\//, '');
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
-    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
+    const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
 
     // Buscar TODOS os planos do IXC com paginação
     console.log('🔄 Iniciando busca paginada de planos...');
