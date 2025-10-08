@@ -12,7 +12,8 @@ interface Candidate {
   clientId: string;
   login: string;
   ip: string;
-  bandwidthKbps: number;
+  sessionHours: number;
+  totalDataMB: number;
   clientName?: string;
   isBlocked?: boolean;
   isBlacklisted?: boolean;
@@ -43,7 +44,7 @@ export const RebootCandidates = () => {
   const handleScan = () => {
     toast({
       title: "Verificando clientes...",
-      description: "Buscando clientes com banda baixa no sistema IXC"
+      description: "Buscando equipamentos congelados no sistema IXC"
     });
     refetch();
   };
@@ -55,7 +56,7 @@ export const RebootCandidates = () => {
           <div>
             <CardTitle>Candidatos para Reboot</CardTitle>
             <CardDescription>
-              Clientes online com banda {'< 900 Kbps'} neste momento
+              Clientes online há {'> 24h'} com tráfego {'< 100MB'} (equipamento congelado)
             </CardDescription>
           </div>
           <Button 
@@ -81,7 +82,7 @@ export const RebootCandidates = () => {
         {!candidates && !isLoading && (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Clique em "Verificar Agora" para buscar clientes com problemas de banda</p>
+            <p>Clique em "Verificar Agora" para buscar clientes com equipamento congelado</p>
           </div>
         )}
 
@@ -94,10 +95,10 @@ export const RebootCandidates = () => {
         {candidates && candidates.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-lg font-medium text-green-600">
-              ✅ Nenhum cliente com problema detectado no momento
+              ✅ Nenhum equipamento congelado detectado no momento
             </p>
             <p className="text-sm mt-2">
-              Todos os clientes online estão com banda acima de 900 Kbps
+              Todos os clientes estão com atividade de rede normal
             </p>
           </div>
         )}
@@ -106,7 +107,7 @@ export const RebootCandidates = () => {
           <>
             <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-                ⚠️ {candidates.length} cliente{candidates.length > 1 ? 's' : ''} com banda baixa detectado{candidates.length > 1 ? 's' : ''}
+                ⚠️ {candidates.length} equipamento{candidates.length > 1 ? 's' : ''} congelado{candidates.length > 1 ? 's' : ''} detectado{candidates.length > 1 ? 's' : ''}
               </p>
             </div>
 
@@ -117,7 +118,8 @@ export const RebootCandidates = () => {
                     <TableHead>Cliente</TableHead>
                     <TableHead>Login</TableHead>
                     <TableHead>IP</TableHead>
-                    <TableHead>Banda Atual</TableHead>
+                    <TableHead>Tempo Online</TableHead>
+                    <TableHead>Dados Transmitidos</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -132,8 +134,13 @@ export const RebootCandidates = () => {
                         {candidate.ip || 'N/A'}
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline" className="font-mono">
+                          {candidate.sessionHours}h
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="destructive" className="font-mono">
-                          {candidate.bandwidthKbps.toFixed(2)} Kbps
+                          {candidate.totalDataMB} MB
                         </Badge>
                       </TableCell>
                       <TableCell>

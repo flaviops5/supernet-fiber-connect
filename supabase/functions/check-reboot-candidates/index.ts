@@ -124,18 +124,25 @@ Deno.serve(async (req) => {
       // Ignorar se não está realmente online
       if (user.online !== 'S' && user.online !== 'SS') continue;
 
-      // Calcular banda - suportar ambos formatos de API do IXC
-      const inputBytes = parseInt(user.upload_atual || user.acctinputoctets || '0');
-      const outputBytes = parseInt(user.download_atual || user.acctoutputoctets || '0');
-      const sessionTime = parseInt(user.tempo_conexao || user.acctsessiontime || '1');
-
-      if (sessionTime === 0) continue;
-
+      // O IXC não atualiza acctinputoctets/acctoutputoctets em tempo real
+      // Esses campos só são atualizados quando a sessão termina
+      // Por isso, vamos detectar equipamentos congelados por:
+      // 1. Cliente está online (online = S ou SS)
+      // 2. Tempo de sessão muito longo (> 24 horas)
+      // 3. Bytes transmitidos = 0 ou muito baixo (< 100MB)
+      
+      const inputBytes = parseInt(user.acctinputoctets || '0');
+      const outputBytes = parseInt(user.acctoutputoctets || '0');
+      const sessionTime = parseInt(user.acctsessiontime || '0');
+      
+      // Sessão ativa há mais de 24 horas (86400 segundos)
+      if (sessionTime < 86400) continue;
+      
       const totalBytes = inputBytes + outputBytes;
-      const bandwidthKbps = (totalBytes * 8) / (sessionTime * 1024);
-
-      // Detectar banda anormalmente baixa (< 900 Kbps)
-      if (bandwidthKbps < 900 && bandwidthKbps > 0) {
+      const totalMB = totalBytes / (1024 * 1024);
+      
+      // Se está online há mais de 24h mas transmitiu menos de 100MB, provavelmente está congelado
+      if (totalMB < 100) {
         // Verificar status do cliente
         let clientData: ClientStatus | null = null;
         let isBlocked = false;
@@ -175,7 +182,8 @@ Deno.serve(async (req) => {
           clientId: user.id_cliente,
           login: user.login,
           ip: user.ip || user.framedipaddress || '',
-          bandwidthKbps: Math.round(bandwidthKbps * 100) / 100,
+          sessionHours: Math.round((sessionTime / 3600) * 10) / 10,
+          totalDataMB: Math.round(totalMB * 10) / 10,
           clientName: clientData?.razao,
           isBlocked,
           isBlacklisted: blacklistedIds.has(user.id_cliente),
