@@ -80,7 +80,7 @@ serve(async (req) => {
 
     const auth = btoa(`${username}:${password}`);
     const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
-    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE, 'normalized:', IXC_BASE_HOST);
+    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE, 'normalized:', cleanBaseUrl);
 
     let result: any = null;
 
