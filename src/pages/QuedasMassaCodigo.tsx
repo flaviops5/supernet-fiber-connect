@@ -1031,6 +1031,24 @@ Obrigado pela compreensão! 🙏\`;
                         não 5+ eventos redundantes (PON + CTOs + Regiões). Focando no ponto de falha mais específico.
                       </p>
                     </div>
+
+                    <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded space-y-2">
+                      <p className="text-sm">
+                        <strong>🔒 Segurança e Robustez:</strong>
+                      </p>
+                      <ul className="text-sm space-y-1 ml-4 list-disc list-inside">
+                        <li><strong>Validação de PON/CTO:</strong> Campos estruturados do IXC (pon_porta, pon_slot, cto) + validação alfanumérica</li>
+                        <li><strong>Sanitização:</strong> Regex <code>/^[a-zA-Z0-9_-]+$/</code> previne injection attacks</li>
+                        <li><strong>Logs de Anomalias:</strong> Detecta e registra formatos inválidos do IXC para monitoramento</li>
+                        <li><strong>Service Role Protegido:</strong> Função valida authorization header - apenas CRON/interno pode executar</li>
+                        <li><strong>RLS Policy:</strong> Camada adicional - apenas <code>auth.role() = 'service_role'</code> pode INSERT/UPDATE</li>
+                        <li><strong>Princípio do Menor Privilégio:</strong> Admins/Editors têm apenas SELECT (não podem manipular eventos)</li>
+                      </ul>
+                      <p className="text-sm mt-2 text-muted-foreground italic">
+                        <strong>Por que Service Role é aceitável aqui:</strong> CRON jobs não têm usuário autenticado. 
+                        A função é privada (não exposta via JWT), valida origem, e o RLS adiciona camada extra de proteção.
+                      </p>
+                    </div>
                   </section>
 
                   <section className="border-l-4 border-primary pl-4">

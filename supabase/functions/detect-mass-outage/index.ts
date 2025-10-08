@@ -19,6 +19,23 @@ serve(async (req) => {
   }
 
   try {
+    // ===================================================================
+    // VALIDAÇÃO DE ORIGEM: Garantir que apenas chamadas internas/CRON
+    // ===================================================================
+    const authHeader = req.headers.get('authorization');
+    const isServiceRole = authHeader?.includes('service_role');
+    
+    if (!isServiceRole) {
+      console.warn('⚠️ Tentativa de acesso sem service role key');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized: Esta função é apenas para uso interno/CRON',
+          success: false 
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
@@ -232,14 +249,45 @@ serve(async (req) => {
             let cto = '';
             
             for (const equip of equipamentos) {
-              // Tentar extrair informações de porta PON
-              if (equip.pon_porta) ponPort = String(equip.pon_porta);
-              if (equip.pon_slot) ponPort = `${equip.pon_slot}/${ponPort}`;
-              if (equip.pon_olt) ponPort = `${equip.pon_olt}/${ponPort}`;
+              // Validação e sanitização robusta dos campos PON
+              // Usar campos estruturados do IXC (não regex)
+              const rawPonPorta = equip.pon_porta ? String(equip.pon_porta).trim() : '';
+              const rawPonSlot = equip.pon_slot ? String(equip.pon_slot).trim() : '';
+              const rawPonOlt = equip.pon_olt ? String(equip.pon_olt).trim() : '';
               
-              // Extrair CTO
-              if (equip.cto) cto = String(equip.cto);
-              if (equip.fibra_cto) cto = String(equip.fibra_cto);
+              // Validar formato: apenas alfanuméricos, hífens e underscores
+              const isValidPonComponent = (val: string) => /^[a-zA-Z0-9_-]+$/.test(val);
+              
+              // Construir PON Port com validação
+              if (rawPonPorta && isValidPonComponent(rawPonPorta)) {
+                ponPort = rawPonPorta;
+                
+                if (rawPonSlot && isValidPonComponent(rawPonSlot)) {
+                  ponPort = `${rawPonSlot}/${ponPort}`;
+                }
+                
+                if (rawPonOlt && isValidPonComponent(rawPonOlt)) {
+                  ponPort = `${rawPonOlt}/${ponPort}`;
+                }
+              }
+              
+              // Extrair CTO com validação
+              const rawCto = equip.cto ? String(equip.cto).trim() : '';
+              const rawFibraCto = equip.fibra_cto ? String(equip.fibra_cto).trim() : '';
+              
+              if (rawCto && isValidPonComponent(rawCto)) {
+                cto = rawCto;
+              } else if (rawFibraCto && isValidPonComponent(rawFibraCto)) {
+                cto = rawFibraCto;
+              }
+              
+              // Log de dados inválidos para monitoramento
+              if (equip.pon_porta && !isValidPonComponent(rawPonPorta)) {
+                console.warn(`⚠️ PON porta com formato inválido: ${equip.pon_porta}`);
+              }
+              if (equip.cto && !isValidPonComponent(rawCto)) {
+                console.warn(`⚠️ CTO com formato inválido: ${equip.cto}`);
+              }
               
               if (ponPort) break;
             }
