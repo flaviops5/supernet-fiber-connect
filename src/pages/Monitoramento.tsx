@@ -9,8 +9,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 import { MassOutageMonitor } from '@/components/MassOutageMonitor';
 import { PonPortsMonitor } from '@/components/PonPortsMonitor';
 import { RadioMonitor } from '@/components/RadioMonitor';
-import { ElevationappTester } from '@/components/ElevationappTester';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, TestTube } from 'lucide-react';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
@@ -149,7 +148,7 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status dos Clientes
@@ -165,10 +164,6 @@ export default function Monitoramento() {
               <TabsTrigger value="outages" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 Quedas em Massa
-              </TabsTrigger>
-              <TabsTrigger value="elevationapp" className="gap-2">
-                <TestTube className="h-4 w-4" />
-                Elevationapp
               </TabsTrigger>
             </TabsList>
 
@@ -291,10 +286,6 @@ export default function Monitoramento() {
 
             <TabsContent value="outages">
               <MassOutageMonitor />
-            </TabsContent>
-
-            <TabsContent value="elevationapp">
-              <ElevationappTester />
             </TabsContent>
           </Tabs>
         </div>
