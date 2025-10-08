@@ -1,12 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, BookOpen, Network, Shield } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { FileText, BookOpen, Network, Shield, ClipboardList, Wrench } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
+import { toast } from "sonner";
 
 const TechnicalDocs = () => {
   const [activeDoc, setActiveDoc] = useState("complete");
+  const [analysisNotes, setAnalysisNotes] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Load saved notes from localStorage
+  useEffect(() => {
+    const savedNotes = localStorage.getItem("technical-analysis-notes");
+    if (savedNotes) {
+      setAnalysisNotes(savedNotes);
+    }
+  }, []);
+
+  // Save notes to localStorage when they change
+  const handleNotesChange = (value: string) => {
+    setAnalysisNotes(value);
+    localStorage.setItem("technical-analysis-notes", value);
+  };
+
+  // Handle the "Fazer ajuste" button click
+  const handleMakeAdjustments = () => {
+    if (!analysisNotes.trim()) {
+      toast.error("Por favor, adicione anotações antes de solicitar ajustes");
+      return;
+    }
+
+    setIsProcessing(true);
+    toast.success("Análise iniciada! Por favor, aguarde enquanto leio o documento e faço os ajustes necessários.", {
+      duration: 5000
+    });
+    
+    // Create a message for the AI to read and process
+    const message = `Leia as seguintes anotações de erros e faça os ajustes necessários no sistema:
+
+${analysisNotes}
+
+Por favor, analise cada erro mencionado, localize o problema no código e faça as correções necessárias.`;
+
+    // Copy to clipboard so user can paste in chat
+    navigator.clipboard.writeText(message);
+    
+    toast.info("Mensagem copiada! Cole no chat para que eu faça os ajustes.", {
+      duration: 5000
+    });
+    
+    setIsProcessing(false);
+  };
 
   const docs = [
     {
@@ -36,6 +84,13 @@ const TechnicalDocs = () => {
       icon: BookOpen,
       file: "operational-guide.md",
       description: "Procedimentos operacionais e manutenção"
+    },
+    {
+      id: "analysis",
+      title: "Análise",
+      icon: ClipboardList,
+      file: "error-analysis.md",
+      description: "Verificação dos erros nas funcionalidades"
     }
   ];
 
@@ -2302,15 +2357,68 @@ Este guia operacional cobre as principais tarefas diárias e procedimentos do si
           {/* Content Display */}
           <Card className="border-none shadow-xl">
             <CardContent className="p-0">
-              <ScrollArea className="h-[calc(100vh-400px)]">
-                <div className="p-6 md:p-8">
-                  <div className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:pb-2 prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-8 prose-h3:text-xl prose-h3:font-semibold prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:text-slate-100">
-                    <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                      {getDocContent(activeDoc)}
-                    </pre>
+              {activeDoc === "analysis" ? (
+                // Analysis Notes Editor
+                <div className="p-6 md:p-8 space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Análise</h2>
+                    <p className="text-muted-foreground">Verificação dos erros nas funcionalidades</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="text-sm font-medium text-slate-700">
+                      Anote os erros encontrados durante os testes:
+                    </label>
+                    <Textarea
+                      value={analysisNotes}
+                      onChange={(e) => handleNotesChange(e.target.value)}
+                      placeholder="Exemplo:
+
+1. Página de planos - Botão de contratação não está funcionando
+2. Dashboard Admin - Gráfico de receitas não carrega
+3. Chat de vendas - Não está buscando CEP corretamente
+
+Descreva cada erro de forma detalhada para que eu possa fazer os ajustes necessários."
+                      className="min-h-[400px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      As anotações são salvas automaticamente no navegador
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setAnalysisNotes("");
+                        localStorage.removeItem("technical-analysis-notes");
+                        toast.success("Anotações limpas com sucesso");
+                      }}
+                    >
+                      Limpar Anotações
+                    </Button>
+                    <Button
+                      onClick={handleMakeAdjustments}
+                      disabled={isProcessing || !analysisNotes.trim()}
+                      className="gap-2"
+                    >
+                      <Wrench className="h-4 w-4" />
+                      Fazer Ajuste
+                    </Button>
                   </div>
                 </div>
-              </ScrollArea>
+              ) : (
+                // Regular documentation display
+                <ScrollArea className="h-[calc(100vh-400px)]">
+                  <div className="p-6 md:p-8">
+                    <div className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:pb-2 prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-8 prose-h3:text-xl prose-h3:font-semibold prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:text-slate-100">
+                      <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {getDocContent(activeDoc)}
+                      </pre>
+                    </div>
+                  </div>
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </div>
