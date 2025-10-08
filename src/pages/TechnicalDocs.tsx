@@ -2385,27 +2385,6 @@ Descreva cada erro de forma detalhada para que eu possa fazer os ajustes necess�
                       As anotações são salvas automaticamente no navegador
                     </p>
                   </div>
-
-                  <div className="flex items-center justify-end gap-3 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setAnalysisNotes("");
-                        localStorage.removeItem("technical-analysis-notes");
-                        toast.success("Anotações limpas com sucesso");
-                      }}
-                    >
-                      Limpar Anotações
-                    </Button>
-                    <Button
-                      onClick={handleMakeAdjustments}
-                      disabled={isProcessing || !analysisNotes.trim()}
-                      className="gap-2"
-                    >
-                      <Wrench className="h-4 w-4" />
-                      Fazer Ajuste
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 // Regular documentation display
