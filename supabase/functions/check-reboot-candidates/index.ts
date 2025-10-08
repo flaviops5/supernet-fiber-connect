@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,32 +55,16 @@ Deno.serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
-    const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
-    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
-
-    if (!IXC_USERNAME || !IXC_PASSWORD || !IXC_API_BASE) {
-      throw new Error('Credenciais IXC não configuradas');
-    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
-
-    // Normalizar IXC_API_BASE: remover protocolo e caminhos
-    const normalizeBase = (raw: string) => {
-      const trimmed = raw.trim();
-      const noProtocol = trimmed.replace(/^https?:\/\//i, '');
-      const host = noProtocol.split('/')[0];
-      return host;
-    };
-    const IXC_BASE_HOST = normalizeBase(IXC_API_BASE);
-
-    console.log('IXC_API_BASE normalizado:', IXC_BASE_HOST);
-
-    // 1. Buscar clientes online do IXC
-    console.log('📡 Consultando clientes online no IXC...');
     
-    const bodyRad = JSON.stringify({
+    // URL do proxy centralizado
+    const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+
+    // 1. Buscar clientes online do IXC via proxy
+    console.log('📡 Consultando radusuarios via IXC proxy...');
+    
+    const bodyRad = {
       qtype: 'radusuarios.id',
       query: '1',
       oper: '>=',
@@ -87,27 +72,22 @@ Deno.serve(async (req) => {
       rp: '5000',
       sortname: 'radusuarios.id',
       sortorder: 'desc',
-    });
+    };
 
-    const radiusResponse = await fetch(`https://${IXC_BASE_HOST}/webservice/v1/radusuarios`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-        'ixcsoft': 'listar',
-      },
-      body: bodyRad,
-    });
-
-    if (!radiusResponse.ok) {
-      const errorText = await radiusResponse.text();
-      console.error('❌ Erro na API IXC:', radiusResponse.status, errorText);
-      throw new Error(`Erro ao buscar radusuarios: ${radiusResponse.status}`);
+    let radiusData;
+    try {
+      radiusData = await callIxcWithRetry(
+        IXC_PROXY_URL,
+        'POST',
+        '/webservice/v1/radusuarios',
+        bodyRad
+      );
+    } catch (error: any) {
+      console.error('❌ Erro detalhado ao consultar radusuarios:', error.message);
+      throw new Error(`Falha ao buscar radusuarios via proxy: ${error.message}`);
     }
-
-    const radiusData = await radiusResponse.json();
     
-    if (!radiusData?.registros) {
+    if (!radiusData?.data?.registros) {
       console.warn('⚠️ IXC retornou resposta válida mas sem registros');
       return new Response(
         JSON.stringify({
@@ -120,9 +100,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const onlineUsers: RadiusUser[] = Array.isArray(radiusData.registros) 
-      ? radiusData.registros 
-      : Object.values(radiusData.registros || {});
+    const onlineUsers: RadiusUser[] = Array.isArray(radiusData.data.registros) 
+      ? radiusData.data.registros 
+      : Object.values(radiusData.data.registros || {});
     
     console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
 
@@ -159,31 +139,25 @@ Deno.serve(async (req) => {
       
       // Se está online há mais de 24h mas transmitiu menos de 100MB, provavelmente está congelado
       if (totalMB < 100) {
-        // Verificar status do cliente
+        // Verificar status do cliente via proxy
         let clientData: ClientStatus | null = null;
         let isBlocked = false;
 
         try {
-          const clientResponse = await fetch(
-            `https://${IXC_BASE_HOST}/webservice/v1/cliente?qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`,
-            {
-              method: 'GET',
-              headers: {
-                'Authorization': `Basic ${credentials}`,
-                'Content-Type': 'application/json',
-              },
-            }
+          const clientResponse = await callIxcWithRetry(
+            IXC_PROXY_URL,
+            'GET',
+            '/webservice/v1/cliente',
+            undefined,
+            `qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`
           );
 
-          if (clientResponse.ok) {
-            const clientJson = await clientResponse.json();
-            if (clientJson?.registros?.[0]) {
-              clientData = clientJson.registros[0];
-              isBlocked = clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S';
-            }
+          if (clientResponse?.data?.registros?.[0]) {
+            clientData = clientResponse.data.registros[0];
+            isBlocked = clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S';
           }
         } catch (err) {
-          // Erro silencioso
+          console.warn(`⚠️ Erro ao buscar dados do cliente ${user.id_cliente}:`, (err as Error).message);
         }
 
         // Verificar cooldown (reboot recente)
