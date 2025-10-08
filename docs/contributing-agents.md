@@ -14,6 +14,143 @@ Como adicionar ou modificar agentes no sistema multiagente da SUPERNET FIBRA.
 
 ---
 
+## 🔒 REGRAS OBRIGATÓRIAS PARA NOVOS AGENTES
+
+**CRITICAL**: Todo novo agente DEVE seguir estas regras para manter consistência e qualidade:
+
+### 1. Estrutura de Arquivos (OBRIGATÓRIO)
+
+```
+supabase/functions/[agent-name]/
+├── index.ts          # Entry point principal
+├── prompts.ts        # System prompts e mensagens
+├── config.ts         # Configurações e constantes
+└── README.md         # Documentação específica do agente
+```
+
+### 2. Arquivo prompts.ts (TEMPLATE OBRIGATÓRIO)
+
+```typescript
+/**
+ * [Agent Name] - System Prompts & Instructions
+ */
+
+export const [AGENT]_SYSTEM_PROMPT = `Você é o Agente de [Função] da SUPERNET FIBRA...
+
+## 🎯 OBJETIVO PRINCIPAL
+[Descrever objetivo claro e mensurável]
+
+## 🤝 PERSONALIDADE
+- [Traço 1]
+- [Traço 2]
+- [Traço 3]
+
+## 📋 FLUXO DE ATENDIMENTO OBRIGATÓRIO
+[Passo a passo detalhado]
+
+## 🛠️ FERRAMENTAS DISPONÍVEIS
+[Lista de tools com quando usar]
+
+## 💬 TRATAMENTO DE SITUAÇÕES
+[Casos comuns e como lidar]
+
+## ⚠️ REGRAS CRÍTICAS
+1. **SEMPRE** [regra]
+2. **NUNCA** [anti-padrão]
+
+## 🚨 SITUAÇÕES DE ESCALAÇÃO
+[Quando e para quem escalar]
+
+## 📊 METAS
+[KPIs esperados]
+`;
+
+export const [AGENT]_WELCOME_MESSAGE = `[Mensagem inicial acolhedora]`;
+
+export const [AGENT]_ERROR_MESSAGE = `[Mensagem de erro amigável]`;
+```
+
+### 3. Arquivo config.ts (TEMPLATE OBRIGATÓRIO)
+
+```typescript
+/**
+ * [Agent Name] - Configuration
+ */
+
+export const [AGENT]_CONFIG = {
+  // Model settings (OBRIGATÓRIO)
+  model: "gpt-4o-mini", // Default, ajustar se necessário
+  temperature: 0.7, // 0.3-0.9 conforme necessidade
+  maxTokens: 2000, // Ajustar conforme complexidade
+  
+  // Agent behavior (OBRIGATÓRIO)
+  maxMessagesInContext: 10, // Quantidade de mensagens no histórico
+  enableToolCalling: true, // false apenas se não usar tools
+  
+  // Available tools (OBRIGATÓRIO se enableToolCalling = true)
+  allowedTools: [
+    "tool_name_1",
+    "tool_name_2",
+  ],
+  
+  // Business rules (ESPECÍFICO DO AGENTE)
+  [regrasDeNegocio]: { ... },
+  
+  // Timeouts (OBRIGATÓRIO)
+  responseTimeout: 30000, // 30s padrão
+  toolTimeout: 10000, // 10s padrão
+};
+```
+
+### 4. Características Funcionais Obrigatórias
+
+Todo agente DEVE implementar:
+
+✅ **CORS handling** completo
+✅ **Error handling** robusto (429, 402, 500, etc.)
+✅ **Logging** estruturado (console.log/error com contexto)
+✅ **Rate limiting** awareness (tratar erro 429)
+✅ **Timeout** configuration
+✅ **Validation** de input
+✅ **Graceful degradation** (fallbacks)
+✅ **Security** (sanitização, não expor secrets)
+
+### 5. Checklist de Qualidade (VALIDAR ANTES DE MERGE)
+
+- [ ] Arquivos `prompts.ts`, `config.ts`, `index.ts` criados
+- [ ] System prompt segue template obrigatório com todas as seções
+- [ ] Config tem todos os campos obrigatórios
+- [ ] CORS headers presentes no index.ts
+- [ ] Error handling completo (429, 402, 500)
+- [ ] Logging adequado (info + error)
+- [ ] Documentação atualizada (`agent-tools-matrix.md`)
+- [ ] Testado manualmente no Supabase Functions UI
+- [ ] Logs verificados (sem erros críticos)
+- [ ] Rate limiting considerado
+
+### 6. Anti-Padrões (NUNCA FAZER)
+
+❌ **Hardcoded prompts** no index.ts
+❌ **Magic numbers** (usar config.ts)
+❌ **Falta de error handling**
+❌ **Logs insuficientes**
+❌ **Ignorar CORS**
+❌ **Expor secrets** no código
+❌ **Misturar responsabilidades** (lógica de negócio no index.ts)
+❌ **Não documentar** tools e behavior
+
+### 7. Exemplos de Referência
+
+Para criar um novo agente, use como base:
+- **Vendas**: `sales-agent/` (completo, com tools)
+- **Roteamento**: `routing-agent/` (simples, sem tools)
+- **Técnico**: `support-tech-agent/` (troubleshooting complexo)
+- **Financeiro**: `support-financial-agent/` (regras de negócio)
+- **Automação**: `automacao-agent/` (catálogo de produtos)
+- **Telemedicina**: `telemedicina-agent/` (agendamentos)
+
+---
+
 ## 🎯 Antes de Começar
 
 ### Pré-requisitos
