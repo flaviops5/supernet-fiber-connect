@@ -23,6 +23,7 @@ import GPT5 from "./pages/GPT5";
 import SystemMetrics from "./pages/SystemMetrics";
 import CodigoFonte from "./pages/CodigoFonte";
 import Codigo from "./pages/Codigo";
+import QuedasMassaCodigo from "./pages/QuedasMassaCodigo";
 import TechnicalDocs from "./pages/TechnicalDocs";
 import Apresentacao from "./pages/Apresentacao";
 import NotFound from "./pages/NotFound";
@@ -70,6 +71,7 @@ const App = () => {
                     <Route path="/system-metrics" element={<SystemMetrics />} />
                     <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/codigo" element={<Codigo />} />
+                    <Route path="/quedas-massa-codigo" element={<QuedasMassaCodigo />} />
                     <Route path="/technical-docs" element={<TechnicalDocs />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<AutoRebootDocs />} />
