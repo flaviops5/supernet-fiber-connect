@@ -66,7 +66,7 @@ serve(async (req) => {
         console.log(`🔎 Testando endpoint: ${endpoint}`);
         
         const response = await fetch(`https://${normalizedUrl}/webservice/v1/${endpoint}`, {
-          method: 'GET',
+          method: 'POST',
           headers: {
             'Authorization': `Basic ${basicAuth}`,
             'Content-Type': 'application/json',
