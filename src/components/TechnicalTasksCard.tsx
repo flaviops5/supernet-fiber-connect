@@ -27,21 +27,13 @@ const tasks: Task[] = [
     priority: 'medium',
     status: 'pending',
     category: 'AI Agents'
-  },
-  {
-    id: 'ixc-critical-refactor',
-    title: 'Refatoração crítica: ixc-count-clients e detect-mass-outage',
-    description: 'Migrar funções críticas para usar proxy centralizado (CONCLUÍDO)',
-    priority: 'high',
-    status: 'done',
-    category: 'IXC Integration'
   }
 ];
 
 export function TechnicalTasksCard() {
-  const pendingTasks = tasks.filter(t => t.status === 'pending');
-  const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-  const doneTasks = tasks.filter(t => t.status === 'done');
+  const activeTasks = tasks.filter(t => t.status !== 'done');
+  const pendingTasks = activeTasks.filter(t => t.status === 'pending');
+  const inProgressTasks = activeTasks.filter(t => t.status === 'in-progress');
 
   return (
     <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20">
@@ -53,13 +45,13 @@ export function TechnicalTasksCard() {
               Tarefas Técnicas Pendentes
             </CardTitle>
             <CardDescription className="mt-1">
-              {pendingTasks.length} pendente{pendingTasks.length !== 1 ? 's' : ''} • {inProgressTasks.length} em progresso • {doneTasks.length} concluída{doneTasks.length !== 1 ? 's' : ''}
+              {pendingTasks.length} pendente{pendingTasks.length !== 1 ? 's' : ''} • {inProgressTasks.length} em progresso
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {tasks.map((task) => (
+        {activeTasks.map((task) => (
           <div
             key={task.id}
             className="p-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 space-y-2"
