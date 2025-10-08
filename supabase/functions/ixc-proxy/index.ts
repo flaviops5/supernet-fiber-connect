@@ -98,8 +98,11 @@ serve(async (req) => {
       throw new Error('IXC credentials not configured');
     }
 
+    // ✅ Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_BASE_URL.replace(/\/adm\.php$/, '');
+
     // Construir URL
-    const url = `${IXC_BASE_URL}${path}${query ? '?' + query : ''}`;
+    const url = `${cleanBaseUrl}${path}${query ? '?' + query : ''}`;
     
     // Fazer requisição ao IXC
     const ixcHeaders: Record<string, string> = {

@@ -23,6 +23,9 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL não configurado');
     }
 
+    // ✅ Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '');
+
     const credentials = btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
     
     console.log('Buscando contratos e receita no IXC...');
@@ -45,7 +48,7 @@ serve(async (req) => {
 
     while (hasMorePages) {
       const response = await fetch(
-        `https://${IXC_API_BASE}/webservice/v1/cliente_contrato?page=${page}&rp=${contractsPerPage}`,
+        `${cleanBaseUrl}/webservice/v1/cliente_contrato?page=${page}&rp=${contractsPerPage}`,
         {
           method: 'GET',
           headers: {

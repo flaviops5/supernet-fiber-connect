@@ -19,7 +19,8 @@ serve(async (req) => {
       throw new Error('Credenciais do IXC não configuradas');
     }
 
-    const IXC_BASE_HOST = IXC_API_BASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // ✅ Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
     const credentials = btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`);
 
     console.log('📻 Buscando status dos equipamentos rádio...');
@@ -53,7 +54,7 @@ serve(async (req) => {
     const maxPages = 10;
 
     while (page <= maxPages) {
-      const radioUrl = `https://${IXC_BASE_HOST}/webservice/v1/radpop_radio`;
+      const radioUrl = `${cleanBaseUrl}/webservice/v1/radpop_radio`;
       const radioBody = JSON.stringify({
         qtype: 'radpop_radio.id',
         query: '1',
@@ -185,7 +186,7 @@ serve(async (req) => {
     if (radioMap.size === 0) {
       console.log('⚠️ Nenhum equipamento via radpop_radio. Tentando fallback com cliente_equipamento...');
 
-      const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
+      const equipUrl = `${cleanBaseUrl}/webservice/v1/cliente_equipamento`;
       const equipBody = JSON.stringify({
         qtype: 'cliente_equipamento.id',
         query: '1',
@@ -215,7 +216,7 @@ serve(async (req) => {
         console.log(`📡 cliente_equipamento retornou ${equipRegistros.length} registros`);
 
         // Buscar status online/offline via radusuarios
-        const radUrl = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
+        const radUrl = `${cleanBaseUrl}/webservice/v1/radusuarios`;
         const radBody = JSON.stringify({
           qtype: 'radusuarios.id',
           query: '1',

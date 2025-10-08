@@ -24,6 +24,9 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL not configured');
     }
 
+    // ✅ Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '');
+
     const bodyJson = await req.json().catch(() => ({} as Record<string, unknown>));
 
     const page = Number((bodyJson as any).page) > 0 ? Number((bodyJson as any).page) : 1;
@@ -31,7 +34,7 @@ serve(async (req) => {
     const search = typeof (bodyJson as any).search === 'string' ? String((bodyJson as any).search) : '';
 
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
-    const baseUrl = `https://${IXC_API_BASE}/webservice/v1`;
+    const baseUrl = `${cleanBaseUrl}/webservice/v1`;
 
     // Helper to POST with IXC conventions
     const postIXC = async (endpoint: string, form: Record<string, string>) => {

@@ -39,8 +39,11 @@ serve(async (req) => {
       );
     }
 
+    // ✅ Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
+
     // Teste 1: Ping endpoint (mais simples e confiável)
-    const pingUrl = `${IXC_API_BASE_URL}/webservice/v1/ping`;
+    const pingUrl = `${cleanBaseUrl}/webservice/v1/ping`;
     console.log('🌐 Testando endpoint PING:', pingUrl);
 
     const pingResponse = await fetch(pingUrl, {
