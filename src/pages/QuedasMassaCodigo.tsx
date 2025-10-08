@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, AlertTriangle, Activity, Database } from "lucide-react";
+import { Copy, Check, AlertTriangle, Activity, Database, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 const QuedasMassaCodigo = () => {
@@ -879,8 +879,12 @@ Obrigado pela compreensão! 🙏\`;
           </p>
         </div>
 
-        <Tabs defaultValue="detection" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="explanation" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="explanation">
+              <FileText className="mr-2 h-4 w-4" />
+              Explicação
+            </TabsTrigger>
             <TabsTrigger value="detection">
               <AlertTriangle className="mr-2 h-4 w-4" />
               Detecção
@@ -898,6 +902,200 @@ Obrigado pela compreensão! 🙏\`;
               Integração Cloé
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="explanation" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Visão Geral do Sistema de Quedas em Massa</CardTitle>
+                <CardDescription>
+                  Explicação completa da arquitetura e funcionamento do sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+                <div className="space-y-6">
+                  <section>
+                    <p className="text-base">
+                      Este conjunto de códigos forma um sistema completo e robusto para{" "}
+                      <strong>Detecção, Monitoramento e Resposta Automática a Quedas em Massa</strong>{" "}
+                      (Mass Outages) em uma <strong>rede de provedor de internet (ISP)</strong> que utiliza o sistema{" "}
+                      <strong>IXC Soft</strong> e a plataforma <strong>Supabase</strong> como backend.
+                    </p>
+                    <p className="text-muted-foreground">
+                      O sistema é dividido em três partes principais: uma Edge Function para detecção, um Componente React 
+                      para monitoramento (frontend) e o Esquema de Banco de Dados e uma Integração com um Agente de Roteamento (Cloé).
+                    </p>
+                  </section>
+
+                  <section className="border-l-4 border-primary pl-4">
+                    <h3 className="text-xl font-semibold mb-3">1. Edge Function (DETECT MASS OUTAGE) - Deno/TypeScript</h3>
+                    <p>Esta função é o <strong>motor de detecção</strong> e é projetada para ser executada periodicamente (via Cron Job).</p>
+                    
+                    <h4 className="font-semibold mt-4 mb-2">Ações Principais</h4>
+                    <ol className="space-y-3 list-decimal list-inside">
+                      <li>
+                        <strong>Busca de Clientes Offline (Passo 1):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Usa paginação (limite de 10 páginas de 1000 itens) para buscar clientes com status offline do IXC Soft</li>
+                          <li>Usa <code>callIxcWithRetry</code> e o endpoint <code>/webservice/v1/radusuarios</code></li>
+                          <li>Lida com a estrutura de dados do IXC, que pode retornar um array ou um objeto de registros</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Enriquecimento de Dados (Passo 2):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Limita a análise a 100 clientes offline (restrição de performance em Edge Functions)</li>
+                          <li>Para cada cliente, faz chamadas adicionais ao IXC para obter:</li>
+                          <li><strong>Localização:</strong> Busca dados do cliente para obter o bairro</li>
+                          <li><strong>Equipamento:</strong> Busca dados de equipamento para extrair a PON Port e a CTO usando regex</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Detecção de Dying Gasp (Passo 3):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Consulta o IXC para eventos Dying Gasp (sinal de perda de energia) nas últimas 2 horas</li>
+                          <li>Agrupa esses eventos por PON para determinar se uma queda foi causada por falta de energia</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Agrupamento e Detecção de Quedas (Passo 4):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Agrupa os clientes enriquecidos por PON Port, CTO e Região</li>
+                          <li>Verifica os limiares definidos:</li>
+                          <li className="ml-4">• PON_PORT: ≥ 5 clientes</li>
+                          <li className="ml-4">• CTO: ≥ 3 clientes</li>
+                          <li className="ml-4">• REGION: ≥ 6 clientes</li>
+                          <li>Se um limiar for atingido, atualiza ou cria um novo evento no Supabase</li>
+                          <li>Adiciona metadados (is_power_outage, dying_gasp_count) no evento de PON quando aplicável</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Resolução de Eventos (Passo 5):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Busca todos os eventos ativos no Supabase</li>
+                          <li>Verifica a contagem atual de clientes offline no grupo</li>
+                          <li>Se a contagem cair abaixo do limiar, o evento é marcado como resolved</li>
+                        </ul>
+                      </li>
+                    </ol>
+
+                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                      <p className="text-sm">
+                        <strong>⚠️ Ponto de Atenção:</strong> O limite de <code>offlineUsers.slice(0, 100)</code> no Passo 2 
+                        pode fazer com que quedas em massa que afetem mais de 100 clientes não tenham todos os clientes 
+                        analisados com seus detalhes de PON/CTO, impactando a precisão do agrupamento.
+                      </p>
+                    </div>
+                  </section>
+
+                  <section className="border-l-4 border-primary pl-4">
+                    <h3 className="text-xl font-semibold mb-3">2. Componente React (MassOutageMonitor)</h3>
+                    <p>Este componente é a <strong>interface de monitoramento</strong> (frontend) para a visualização dos eventos.</p>
+                    
+                    <h4 className="font-semibold mt-4 mb-2">Funcionalidades</h4>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li><strong>Carregamento de Eventos:</strong> Busca os 10 eventos mais recentes do Supabase</li>
+                      <li><strong>Execução da Detecção:</strong> Permite executar a Edge Function manualmente</li>
+                      <li>
+                        <strong>Ciclo de Vida (useEffect):</strong>
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>Carrega eventos na montagem</li>
+                          <li>Agenda a execução automática da detecção a cada 3 minutos</li>
+                          <li>Atualização em Tempo Real via supabase.channel</li>
+                        </ul>
+                      </li>
+                      <li><strong>Interface:</strong> Exibe alertas para quedas ativas e listas separadas para quedas ativas e resolvidas</li>
+                      <li>Usa ícones e badges para diferenciar o tipo de grupo (PON/CTO/REGION)</li>
+                      <li>Indica se é uma queda de energia (ícone Zap)</li>
+                    </ul>
+                  </section>
+
+                  <section className="border-l-4 border-primary pl-4">
+                    <h3 className="text-xl font-semibold mb-3">3. Esquema de Banco de Dados (PostgreSQL/Supabase)</h3>
+                    <p>Define a estrutura da tabela <code>mass_outage_events</code> para persistir os eventos.</p>
+                    
+                    <h4 className="font-semibold mt-4 mb-2">Detalhes do Schema</h4>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li><strong>Campos Chave:</strong> event_key (única), region_pattern, affected_count</li>
+                      <li><strong>Status:</strong> active ou resolved (com verificação de restrição CHECK)</li>
+                      <li><strong>affected_logins:</strong> Armazena um array de logins dos clientes afetados</li>
+                      <li>
+                        <strong>metadata:</strong> Campo JSONB que armazena detalhes importantes:
+                        <ul className="ml-6 mt-1 space-y-1 list-disc list-inside text-muted-foreground">
+                          <li>group_type, group_id</li>
+                          <li>is_power_outage, dying_gasp_count</li>
+                        </ul>
+                      </li>
+                      <li><strong>Segurança (RLS):</strong> Implementa Row Level Security com políticas baseadas em roles</li>
+                      <li><strong>Realtime:</strong> Habilita a tabela para atualizações em tempo real</li>
+                      <li><strong>pg_cron:</strong> Configura o agendamento de execução da Edge Function a cada 3 minutos</li>
+                    </ul>
+                  </section>
+
+                  <section className="border-l-4 border-primary pl-4">
+                    <h3 className="text-xl font-semibold mb-3">4. Integração com Cloé (Agente de Roteamento)</h3>
+                    <p>Demonstra um caso de uso para o sistema de detecção em um agente de atendimento automático.</p>
+                    
+                    <h4 className="font-semibold mt-4 mb-2">Lógica</h4>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>A função <code>checkMassOutageForClient</code> verifica se o customerLogin está presente no array affected_logins</li>
+                      <li>Se o cliente for afetado, o agente interrompe o fluxo normal de atendimento</li>
+                      <li>Retorna uma mensagem informativa padronizada sobre a queda em massa</li>
+                      <li>A mensagem utiliza os dados do evento para fornecer uma resposta clara e proativa</li>
+                      <li><strong>Objetivo:</strong> Reduzir chamados desnecessários e melhorar a experiência do cliente</li>
+                    </ul>
+                  </section>
+
+                  <section className="border-l-4 border-blue-500 pl-4 bg-blue-500/5 p-4 rounded">
+                    <h3 className="text-xl font-semibold mb-3">Análise Geral do Sistema</h3>
+                    <p className="mb-3">
+                      O sistema é um <strong>excelente exemplo</strong> de arquitetura de{" "}
+                      <strong>monitoramento proativo</strong> em um ISP, utilizando a plataforma{" "}
+                      <strong>Serverless/PaaS (Supabase/Deno)</strong> para baixo custo e alta escalabilidade.
+                    </p>
+
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-border">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-4 py-2 text-left text-sm font-semibold">Aspecto</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold">Pontos Fortes</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold">Pontos a Melhorar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          <tr>
+                            <td className="px-4 py-2 font-medium">Arquitetura</td>
+                            <td className="px-4 py-2 text-sm">Usa Edge Function (Deno) para execução rápida e pg_cron para agendamento confiável</td>
+                            <td className="px-4 py-2 text-sm">A dependência do proxy do IXC pode ser um ponto de falha ou lentidão</td>
+                          </tr>
+                          <tr className="bg-muted/20">
+                            <td className="px-4 py-2 font-medium">Detecção</td>
+                            <td className="px-4 py-2 text-sm">Implementa multi-nível de agrupamento (PON, CTO, Região) para cobrir diferentes tipos de falhas</td>
+                            <td className="px-4 py-2 text-sm">O limite de 100 clientes enriquecidos no Passo 2 pode ignorar a origem de grandes quedas</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-2 font-medium">Respostas</td>
+                            <td className="px-4 py-2 text-sm">Integração com Dying Gasp para diferenciar queda de energia de falha de fibra/equipamento</td>
+                            <td className="px-4 py-2 text-sm">-</td>
+                          </tr>
+                          <tr className="bg-muted/20">
+                            <td className="px-4 py-2 font-medium">UX/Monitoramento</td>
+                            <td className="px-4 py-2 text-sm">Componente React limpo, com Realtime e execução manual/automática da detecção</td>
+                            <td className="px-4 py-2 text-sm">-</td>
+                          </tr>
+                          <tr>
+                            <td className="px-4 py-2 font-medium">Integração</td>
+                            <td className="px-4 py-2 text-sm">Exemplo prático de como a detecção pode ser usada para autossuporte (Cloé), aliviando a equipe</td>
+                            <td className="px-4 py-2 text-sm">-</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="detection" className="space-y-4">
             <Card>
