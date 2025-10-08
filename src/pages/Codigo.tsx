@@ -628,6 +628,94 @@ serve(async (req) => {
             </TabsContent>
           </Tabs>
 
+          <Card className="mt-6 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🔑 Credenciais Necessárias do IXC
+              </CardTitle>
+              <CardDescription>
+                Configure estes secrets no Supabase para conectar ao sistema IXC
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg space-y-2">
+                  <div className="font-semibold text-lg">1. IXC_API_BASE_URL</div>
+                  <p className="text-sm text-muted-foreground">
+                    URL base da API do IXC (ex: https://seu-servidor.ixcsoft.com.br)
+                  </p>
+                  <div className="p-2 bg-muted rounded text-xs font-mono">
+                    https://seuservidor.ixcsoft.com.br
+                  </div>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ NÃO incluir /webservice/v1 no final - apenas a URL base
+                  </p>
+                </div>
+
+                <div className="p-4 border rounded-lg space-y-2">
+                  <div className="font-semibold text-lg">2. IXC_API_USERNAME</div>
+                  <p className="text-sm text-muted-foreground">
+                    Usuário de API do IXC (não o usuário de login web)
+                  </p>
+                  <div className="p-2 bg-muted rounded text-xs font-mono">
+                    api_user
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    💡 Criar em: IXC → Configurações → Usuários de API
+                  </p>
+                </div>
+
+                <div className="p-4 border rounded-lg space-y-2">
+                  <div className="font-semibold text-lg">3. IXC_API_PASSWORD</div>
+                  <p className="text-sm text-muted-foreground">
+                    Senha do usuário de API
+                  </p>
+                  <div className="p-2 bg-muted rounded text-xs font-mono">
+                    ••••••••••••
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg space-y-2 border-dashed">
+                  <div className="font-semibold text-lg">4. HMAC_SHARED_SECRET <span className="text-sm text-muted-foreground">(Opcional)</span></div>
+                  <p className="text-sm text-muted-foreground">
+                    Chave para assinatura HMAC (segurança adicional)
+                  </p>
+                  <div className="p-2 bg-muted rounded text-xs font-mono">
+                    string_aleatoria_segura
+                  </div>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    ✅ Recomendado, mas não obrigatório
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-100">
+                  ⚠️ Checklist de Segurança IXC
+                </h4>
+                <ul className="text-sm space-y-1 text-amber-800 dark:text-amber-200">
+                  <li>✓ Criar usuário específico de API (não usar admin)</li>
+                  <li>✓ Adicionar IP do servidor Supabase na whitelist do IXC</li>
+                  <li>✓ Limitar permissões do usuário de API ao mínimo necessário</li>
+                  <li>✓ Usar HTTPS na URL base (nunca HTTP)</li>
+                  <li>✓ Testar a conexão após configurar</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h4 className="font-semibold mb-2 text-blue-900 dark:text-blue-100">
+                  📍 Como configurar no Supabase
+                </h4>
+                <ol className="text-sm space-y-1 text-blue-800 dark:text-blue-200 list-decimal list-inside">
+                  <li>Acesse: Supabase Dashboard → Project Settings → Edge Functions</li>
+                  <li>Clique em "Add new secret"</li>
+                  <li>Adicione cada uma das credenciais acima</li>
+                  <li>Salve e teste a conexão usando o botão acima</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="mt-6">
             <IXCConnectionTester />
           </div>
