@@ -65,8 +65,9 @@ serve(async (req) => {
 
     // 1. Test ixc-proxy (fundamental - todas dependem dele)
     results.push(await testFunction('ixc-proxy', {
-      method: 'GET',
-      path: '/webservice/v1/ping'
+      method: 'POST',
+      path: '/webservice/v1/cliente',
+      body: { page: '1', rp: '1' }
     }));
 
     // 2. Test test-ixc-connection

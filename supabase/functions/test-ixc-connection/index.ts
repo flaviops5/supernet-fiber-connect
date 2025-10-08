@@ -42,29 +42,31 @@ serve(async (req) => {
     // ✅ Normalizar URL removendo /adm.php
     const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
 
-    // Teste 1: Ping endpoint (mais simples e confiável)
-    const pingUrl = `${cleanBaseUrl}/webservice/v1/ping`;
-    console.log('🌐 Testando endpoint PING:', pingUrl);
+    // Teste 1: Endpoint cliente (com limite de 1 registro)
+    const testUrl = `${cleanBaseUrl}/webservice/v1/cliente`;
+    console.log('🌐 Testando endpoint:', testUrl);
 
-    const pingResponse = await fetch(pingUrl, {
-      method: 'GET',
+    const testResponse = await fetch(testUrl, {
+      method: 'POST',
       headers: {
         'Authorization': 'Basic ' + btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`),
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'listar'
+      },
+      body: new URLSearchParams({ page: '1', rp: '1' })
     });
 
-    const pingText = await pingResponse.text();
-    const isHtml = pingText.trim().startsWith('<');
+    const responseText = await testResponse.text();
+    const isHtml = responseText.trim().startsWith('<');
     
-    console.log('📥 Status:', pingResponse.status);
-    console.log('📝 Content-Type:', pingResponse.headers.get('content-type'));
+    console.log('📥 Status:', testResponse.status);
+    console.log('📝 Content-Type:', testResponse.headers.get('content-type'));
     console.log('📄 É HTML?', isHtml);
-    console.log('📄 Preview:', pingText.substring(0, 300));
+    console.log('📄 Preview:', responseText.substring(0, 300));
 
     // Se retornou HTML, é erro de autenticação/configuração
     if (isHtml) {
-      const isLoginPage = pingText.includes('login') || pingText.includes('autenticar') || pingText.includes('senha');
+      const isLoginPage = responseText.includes('login') || responseText.includes('autenticar') || responseText.includes('senha');
       
       return new Response(
         JSON.stringify({ 
@@ -73,14 +75,14 @@ serve(async (req) => {
             ? '❌ IXC retornou página de login - credenciais inválidas ou IP bloqueado'
             : '❌ IXC retornou HTML ao invés de JSON - verifique a URL da API',
           details: {
-            status: pingResponse.status,
+            status: testResponse.status,
             response_type: 'HTML',
             is_login_page: isLoginPage,
             base_url: IXC_API_BASE_URL,
-            endpoint_tested: '/webservice/v1/ping',
-            html_preview: pingText.substring(0, 500),
+            endpoint_tested: '/webservice/v1/cliente',
+            html_preview: responseText.substring(0, 500),
             possible_causes: [
-              'URL base incorreta (deve terminar com /webservice/v1)',
+              'URL base incorreta',
               'Credenciais inválidas (usuário/senha)',
               'IP do servidor não está na whitelist do IXC',
               'Problema de CORS ou segurança no IXC'
@@ -94,15 +96,15 @@ serve(async (req) => {
     // Tentar parsear JSON
     let responseData;
     try {
-      responseData = JSON.parse(pingText);
+      responseData = JSON.parse(responseText);
     } catch (jsonError) {
       return new Response(
         JSON.stringify({ 
           success: false,
           message: '❌ Resposta inválida do IXC (não é JSON nem HTML válido)',
           details: {
-            status: pingResponse.status,
-            response_preview: pingText.substring(0, 500),
+            status: testResponse.status,
+            response_preview: responseText.substring(0, 500),
             parse_error: jsonError instanceof Error ? jsonError.message : 'Erro ao parsear JSON'
           }
         }),
@@ -116,13 +118,13 @@ serve(async (req) => {
         success: true,
         message: '✅ Conexão com IXC estabelecida com sucesso!',
         details: {
-          status: pingResponse.status,
+          status: testResponse.status,
           response_type: 'JSON',
           base_url_configured: true,
           credentials_valid: true,
           hmac_configured: !!HMAC_SECRET,
           base_url: IXC_API_BASE_URL,
-          endpoint_tested: '/webservice/v1/ping',
+          endpoint_tested: '/webservice/v1/cliente',
           response_data: responseData
         }
       }),
