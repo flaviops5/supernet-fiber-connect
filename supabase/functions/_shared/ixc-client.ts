@@ -180,10 +180,11 @@ export async function callIxcWithRetry(
       lastError = error as Error;
       console.error(`❌ IXC call failed on attempt ${attempt + 1}:`, lastError.message);
       
+      // ✅ CORREÇÃO: Erros de configuração NÃO devem disparar circuit breaker
       // Se for erro de configuração (marcado com [NO_RETRY]), abortar imediatamente
       if (lastError.message.includes('[NO_RETRY]')) {
         const cleanMessage = lastError.message.replace('[NO_RETRY] ', '');
-        recordFailure();
+        // NÃO chamar recordFailure() aqui - erros persistentes não devem abrir o circuit breaker
         throw new Error(cleanMessage);
       }
       

@@ -154,7 +154,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ ...response, duration_ms: duration }),
       {
-        status: 200,
+        status: ixcResponse.status, // ✅ CORREÇÃO CRÍTICA: Usar status real do IXC ao invés de sempre 200
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

@@ -59,20 +59,10 @@ serve(async (req) => {
         page++;
       }
     } catch (error) {
+      // ✅ CORREÇÃO: Não interromper prematuramente - buscar offline e retornar resultado parcial
       console.error('❌ Erro ao buscar clientes online:', error);
-      if (allOnlineUsers.length === 0) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Não foi possível buscar clientes online do IXC',
-            details: error.message,
-            total_clientes: 0,
-            detalhes: { online: 0, offline: 0, total: 0 }
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       console.log(`⚠️ Continuando com ${allOnlineUsers.length} clientes online obtidos`);
+      // Remover o return early - continuar para buscar offline
     }
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes OFFLINE direto na query
