@@ -92,7 +92,9 @@ serve(async (req) => {
     }));
 
     // 6. Test ixc-sync-plans
-    results.push(await testFunction('ixc-sync-plans'));
+    results.push(await testFunction('ixc-sync-plans', {
+      planIds: [29, 30, 31] // IDs de exemplo para teste
+    }));
 
     // 7. Test ixc-pon-status
     results.push(await testFunction('ixc-pon-status'));
