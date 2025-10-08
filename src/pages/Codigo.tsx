@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
+import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
 
 const Codigo = () => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -749,7 +750,8 @@ serve(async (req) => {
             </CardContent>
           </Card>
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-6">
+            <IXCFunctionsTester />
             <IXCConnectionTester />
           </div>
 
