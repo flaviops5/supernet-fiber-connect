@@ -638,6 +638,17 @@ serve(async (req) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg mb-4">
+                <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-100">
+                  🔒 Sobre as Credenciais Atuais
+                </h4>
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  Por segurança, não posso exibir os valores dos secrets configurados. 
+                  Use o botão "Testar Conexão" abaixo para verificar se as credenciais estão funcionando.
+                  Para ver ou alterar os valores, acesse o Supabase Dashboard.
+                </p>
+              </div>
+
               <div className="space-y-4">
                 <div className="p-4 border rounded-lg space-y-2">
                   <div className="font-semibold text-lg">1. IXC_API_BASE_URL</div>
@@ -689,6 +700,28 @@ serve(async (req) => {
                 </div>
               </div>
 
+              <div className="mt-6 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                <h4 className="font-semibold mb-3 text-red-900 dark:text-red-100">
+                  🔧 Funções que Dependem Destas Credenciais (11 funções)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <div className="p-2 bg-background rounded">• ixc-proxy</div>
+                  <div className="p-2 bg-background rounded">• ixc-count-clients</div>
+                  <div className="p-2 bg-background rounded">• ixc-integration</div>
+                  <div className="p-2 bg-background rounded">• ixc-list-contracts</div>
+                  <div className="p-2 bg-background rounded">• ixc-sync-plans</div>
+                  <div className="p-2 bg-background rounded">• ixc-pon-status</div>
+                  <div className="p-2 bg-background rounded">• ixc-radio-status</div>
+                  <div className="p-2 bg-background rounded">• ixc-revenue-stats</div>
+                  <div className="p-2 bg-background rounded">• ixc-financial-analytics</div>
+                  <div className="p-2 bg-background rounded">• ixc-discover-gpon-endpoints</div>
+                  <div className="p-2 bg-background rounded">• telemedicina-forgot-password</div>
+                </div>
+                <p className="text-xs text-red-800 dark:text-red-200 mt-3">
+                  ⚠️ Se as credenciais estiverem incorretas, TODAS estas funções falharão!
+                </p>
+              </div>
+
               <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
                 <h4 className="font-semibold mb-2 text-amber-900 dark:text-amber-100">
                   ⚠️ Checklist de Segurança IXC
@@ -710,7 +743,7 @@ serve(async (req) => {
                   <li>Acesse: Supabase Dashboard → Project Settings → Edge Functions</li>
                   <li>Clique em "Add new secret"</li>
                   <li>Adicione cada uma das credenciais acima</li>
-                  <li>Salve e teste a conexão usando o botão acima</li>
+                  <li>Salve e teste a conexão usando o botão abaixo</li>
                 </ol>
               </div>
             </CardContent>
