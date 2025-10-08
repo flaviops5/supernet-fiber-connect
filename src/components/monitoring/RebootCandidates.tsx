@@ -23,7 +23,7 @@ interface Candidate {
 export const RebootCandidates = () => {
   const [isScanning, setIsScanning] = useState(false);
 
-  const { data: candidates, isLoading, refetch } = useQuery({
+  const { data: candidates, isLoading, refetch, error } = useQuery({
     queryKey: ['reboot-candidates'],
     queryFn: async () => {
       setIsScanning(true);
@@ -37,8 +37,9 @@ export const RebootCandidates = () => {
         setIsScanning(false);
       }
     },
-    refetchInterval: 60000, // Atualiza a cada 60 segundos
-    retry: false
+    enabled: false, // Não carrega automaticamente
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const handleScan = () => {
@@ -79,7 +80,18 @@ export const RebootCandidates = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {!candidates && !isLoading && (
+        {error && (
+          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm font-medium text-destructive">
+              ❌ Erro ao verificar candidatos
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {(error as Error)?.message || 'Falha na comunicação com o IXC'}
+            </p>
+          </div>
+        )}
+
+        {!candidates && !isLoading && !error && (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Clique em "Verificar Agora" para buscar clientes com equipamento congelado</p>

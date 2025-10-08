@@ -6,14 +6,16 @@ import { Users, UserCheck, UserX, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function ClientStats() {
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data, isLoading, refetch, isFetching, error } = useQuery({
     queryKey: ['ixc-client-stats'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('ixc-count-clients');
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // Atualiza a cada minuto
+    refetchInterval: 60000,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const handleRefresh = () => {
@@ -32,6 +34,40 @@ export function ClientStats() {
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24" />
             ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || data?.success === false) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Estatísticas de Clientes IXC</CardTitle>
+            <CardDescription className="text-destructive">
+              ❌ Erro ao buscar dados do IXC
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            Tentar Novamente
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm text-destructive font-medium">
+              {data?.error || (error as Error)?.message || 'Falha na comunicação com o IXC'}
+            </p>
+            {data?.details && (
+              <p className="text-xs text-muted-foreground mt-2">{data.details}</p>
+            )}
           </div>
         </CardContent>
       </Card>
