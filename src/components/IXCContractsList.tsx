@@ -29,6 +29,8 @@ export const IXCContractsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [localPlans, setLocalPlans] = useState<{ id: string; name: string }[]>([]);
   const [selectedMap, setSelectedMap] = useState<Record<string, string>>({});
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
+  const [showAllPlans, setShowAllPlans] = useState(false);
   const { toast } = useToast();
 
   const loadLocalPlans = async () => {
@@ -117,6 +119,35 @@ export const IXCContractsList = () => {
     }
   };
 
+  const listAllPlans = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-list-plans');
+
+      if (error) throw error;
+
+      if (data.success) {
+        setAvailablePlans(data.plans);
+        setShowAllPlans(true);
+        toast({
+          title: "Planos carregados",
+          description: `${data.total} planos encontrados no IXC.`,
+        });
+      } else {
+        throw new Error(data.error || 'Erro ao listar planos');
+      }
+    } catch (error) {
+      console.error('Error listing plans:', error);
+      toast({
+        title: "Erro ao listar planos",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredContracts = contracts.filter(contract =>
     (contract.descricao?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (contract.download?.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -135,6 +166,16 @@ export const IXCContractsList = () => {
           )}
         </div>
         <div className="flex gap-2">
+          <Button onClick={listAllPlans} disabled={loading} variant="secondary">
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              "Ver Todos os Planos"
+            )}
+          </Button>
           <Button onClick={syncPlans} disabled={loading} variant="default">
             {loading ? (
               <>
@@ -226,6 +267,33 @@ export const IXCContractsList = () => {
         <Card className="p-12 text-center">
           <p className="text-muted-foreground">
             Nenhum plano encontrado com os filtros aplicados.
+          </p>
+        </Card>
+      )}
+
+      {showAllPlans && availablePlans.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Todos os Planos Disponíveis no IXC</h3>
+            <Button variant="ghost" size="sm" onClick={() => setShowAllPlans(false)}>
+              Fechar
+            </Button>
+          </div>
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {availablePlans.map((plan) => (
+              <div key={plan.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                  <p className="font-medium">{plan.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {plan.download}/{plan.upload} Mbps • R$ {plan.price.toFixed(2)}
+                  </p>
+                </div>
+                <Badge variant="secondary">ID: {plan.id}</Badge>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            💡 Use esses IDs na função syncPlans() para sincronizar planos específicos com o banco local.
           </p>
         </Card>
       )}
