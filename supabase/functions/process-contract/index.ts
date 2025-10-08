@@ -63,28 +63,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Salvar agendamento usando RPC seguro
-    const addressParts = customerData.address.split(',').map((s: string) => s.trim());
     const { data: appointmentId, error: dbError } = await supabase.rpc('create_installation_appointment', {
       p_customer_name: customerData.name,
       p_customer_cpf: customerData.cpf,
       p_customer_email: customerData.email,
       p_customer_phone: customerData.phone,
-      p_customer_birthdate: customerData.birthDate,
-      p_address_street: addressParts[0] || customerData.address,
-      p_address_number: addressParts[1] || '',
-      p_address_complement: addressParts[2] || '',
-      p_address_neighborhood: addressParts[3] || '',
-      p_address_city: addressParts[4] || '',
-      p_address_state: addressParts[5] || '',
-      p_address_zipcode: customerData.cep,
-      p_plan_id: plan.id,
+      p_customer_birth_date: customerData.birthDate,
+      p_customer_address: customerData.address,
+      p_customer_cep: customerData.cep,
       p_plan_name: planData.name,
       p_plan_speed: planData.speed,
       p_plan_price: planData.price,
-      p_installation_date: customerData.appointmentDate,
-      p_installation_period: customerData.appointmentPeriod,
-      p_ixc_contract_id: null,
-      p_contract_number: null
+      p_payment_day: parseInt(customerData.paymentDay),
+      p_appointment_date: customerData.appointmentDate,
+      p_appointment_period: customerData.appointmentPeriod,
+      p_observations: customerData.observations || null,
     });
 
     if (dbError) {

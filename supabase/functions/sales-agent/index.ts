@@ -281,28 +281,21 @@ serve(async (req) => {
         console.log('Atendimento criado no IXC com ID:', atendimentoId);
 
         // 4. Criar registro local do agendamento usando RPC seguro
-        const addressParts = orderData.address.split(',').map((s: string) => s.trim());
         const { data: appointmentId, error } = await supabase.rpc('create_installation_appointment', {
           p_customer_name: orderData.name,
           p_customer_cpf: orderData.cpf,
           p_customer_email: orderData.email,
           p_customer_phone: orderData.phone,
-          p_customer_birthdate: orderData.birthDate || new Date().toISOString().split('T')[0],
-          p_address_street: addressParts[0] || orderData.address,
-          p_address_number: addressParts[1] || '',
-          p_address_complement: addressParts[2] || '',
-          p_address_neighborhood: addressParts[3] || '',
-          p_address_city: addressParts[4] || '',
-          p_address_state: addressParts[5] || '',
-          p_address_zipcode: orderData.cep,
-          p_plan_id: plan.id,
+          p_customer_birth_date: (orderData.birthDate || new Date().toISOString().split('T')[0]),
+          p_customer_address: orderData.address,
+          p_customer_cep: orderData.cep,
           p_plan_name: plan.name,
           p_plan_speed: plan.speed,
           p_plan_price: plan.price,
-          p_installation_date: orderData.appointmentDate,
-          p_installation_period: orderData.appointmentPeriod,
-          p_ixc_contract_id: contractId,
-          p_contract_number: null
+          p_payment_day: Number(orderData.paymentDay) || 10,
+          p_appointment_date: orderData.appointmentDate,
+          p_appointment_period: orderData.appointmentPeriod,
+          p_observations: `Cliente IXC ID: ${customerId}${contractId ? `, Contrato IXC ID: ${contractId}` : ''}, Atendimento IXC ID: ${atendimentoId}`,
         });
 
         if (error) {

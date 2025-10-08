@@ -2846,28 +2846,45 @@ export type Database = {
         Returns: Json
       }
       create_installation_appointment: {
-        Args: {
-          p_address_city: string
-          p_address_complement: string
-          p_address_neighborhood: string
-          p_address_number: string
-          p_address_state: string
-          p_address_street: string
-          p_address_zipcode: string
-          p_contract_number?: string
-          p_customer_birthdate: string
-          p_customer_cpf: string
-          p_customer_email: string
-          p_customer_name: string
-          p_customer_phone: string
-          p_installation_date: string
-          p_installation_period: string
-          p_ixc_contract_id?: string
-          p_plan_id: string
-          p_plan_name: string
-          p_plan_price: number
-          p_plan_speed: string
-        }
+        Args:
+          | {
+              p_address_city: string
+              p_address_complement: string
+              p_address_neighborhood: string
+              p_address_number: string
+              p_address_state: string
+              p_address_street: string
+              p_address_zipcode: string
+              p_contract_number?: string
+              p_customer_birthdate: string
+              p_customer_cpf: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_installation_date: string
+              p_installation_period: string
+              p_ixc_contract_id?: string
+              p_plan_id: string
+              p_plan_name: string
+              p_plan_price: number
+              p_plan_speed: string
+            }
+          | {
+              p_appointment_date: string
+              p_appointment_period: string
+              p_customer_address: string
+              p_customer_birth_date: string
+              p_customer_cep: string
+              p_customer_cpf: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_observations?: string
+              p_payment_day: number
+              p_plan_name: string
+              p_plan_price: number
+              p_plan_speed: string
+            }
         Returns: string
       }
       disable_maintenance_cron: {
