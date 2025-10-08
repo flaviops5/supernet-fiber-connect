@@ -153,7 +153,7 @@ serve(async (req) => {
         .from('plans')
         .select('id')
         .eq('ixc_plan_id', ixcId)
-        .single();
+        .maybeSingle();
 
       const planData = {
         name,
@@ -200,14 +200,17 @@ serve(async (req) => {
       }
     }
 
+    const hasErrors = syncResults.some(r => r.status === 'error');
+    const responseStatus = hasErrors ? 207 : 200; // 207 Multi-Status se houver erros parciais
+
     return new Response(
       JSON.stringify({
-        success: true,
+        success: !hasErrors,
         results: syncResults,
         synced: syncResults.filter(r => r.status !== 'error').length,
         errors: syncResults.filter(r => r.status === 'error').length,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: responseStatus },
     );
 
   } catch (error) {
@@ -215,7 +218,7 @@ serve(async (req) => {
     const msg = (error as Error)?.message || 'Erro desconhecido';
     return new Response(
       JSON.stringify({ success: false, error: msg }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
     );
   }
 });
