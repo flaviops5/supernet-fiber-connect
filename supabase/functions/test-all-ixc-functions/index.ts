@@ -78,11 +78,7 @@ serve(async (req) => {
 
     // 4. Test ixc-integration
     results.push(await testFunction('ixc-integration', {
-      qtype: 'cliente.id',
-      query: '1',
-      oper: '=',
-      page: '1',
-      rp: '1'
+      action: 'testConnection'
     }));
 
     // 5. Test ixc-list-contracts
