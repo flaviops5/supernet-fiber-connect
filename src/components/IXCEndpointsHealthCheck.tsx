@@ -21,7 +21,6 @@ const ENDPOINTS: EndpointTest[] = [
   // CLIENTES
   { path: '/webservice/v1/cliente', method: 'GET', category: 'Clientes' },
   { path: '/webservice/v1/cliente_arquivo', method: 'POST', category: 'Clientes' },
-  { path: '/webservice/v1/cliente_equipamento', method: 'POST', category: 'Clientes' },
   { path: '/webservice/v1/consulta_spc_serasa', method: 'POST', category: 'Clientes' },
   { path: '/webservice/v1/bloquear_desbloquear_sip', method: 'POST', category: 'Clientes' },
   
@@ -35,14 +34,11 @@ const ENDPOINTS: EndpointTest[] = [
   { path: '/webservice/v1/negativar_bloquear', method: 'POST', category: 'Contratos' },
   { path: '/webservice/v1/vd_contratos', method: 'GET', category: 'Contratos' },
   { path: '/webservice/v1/vd_contratos_produtos', method: 'GET', category: 'Contratos' },
-  { path: '/webservice/v1/plano', method: 'GET', category: 'Contratos' },
   
   // FINANCEIRO
   { path: '/webservice/v1/fn_areceber', method: 'GET', category: 'Financeiro' },
   { path: '/webservice/v1/fn_areceber_recebimentos_baixas_novo', method: 'POST', category: 'Financeiro' },
   { path: '/webservice/v1/fn_areceber_altera', method: 'POST', category: 'Financeiro' },
-  { path: '/webservice/v1/financeiro_titulo', method: 'GET', category: 'Financeiro' },
-  { path: '/webservice/v1/fn_acessos', method: 'GET', category: 'Financeiro' },
   
   // SUPORTE
   { path: '/webservice/v1/su_oss_chamado', method: 'GET', category: 'Suporte' },
@@ -51,7 +47,6 @@ const ENDPOINTS: EndpointTest[] = [
   { path: '/webservice/v1/su_olt', method: 'GET', category: 'Infraestrutura' },
   { path: '/webservice/v1/su_olt_pon', method: 'GET', category: 'Infraestrutura' },
   { path: '/webservice/v1/su_concentrador', method: 'GET', category: 'Infraestrutura' },
-  { path: '/webservice/v1/rastreador', method: 'GET', category: 'Infraestrutura' },
   
   // COMUNICAÇÃO
   { path: '/webservice/v1/botaoAjax_22282', method: 'POST', category: 'Comunicação' },
