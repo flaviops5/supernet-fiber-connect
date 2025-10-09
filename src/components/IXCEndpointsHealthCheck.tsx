@@ -71,9 +71,8 @@ export function IXCEndpointsHealthCheck() {
       const { data, error } = await supabase.functions.invoke('ixc-proxy', {
         body: {
           method: endpoint.method,
-          endpoint: endpoint.path,
-          data: endpoint.method === 'GET' ? {} : {},
-          headers: endpoint.method === 'GET' ? { ixcsoft: 'listar' } : {},
+          path: endpoint.path,
+          body: endpoint.method === 'POST' ? {} : undefined,
         },
       });
 
