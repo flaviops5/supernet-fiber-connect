@@ -64,20 +64,39 @@ Abra: `https://seu-app.com/system-metrics`
 
 ### ⚡ Problema: Circuit Breaker OPEN
 
+**STATUS**: ✅ CAUSA RAIZ IDENTIFICADA E CORRIGIDA (2025-10-09)
+
 **Sintomas:**
 - Health check mostra circuit_breaker: "open"
 - Mensagens de erro: "Circuit breaker OPEN"
 - IXC inacessível temporariamente
 
-**O que acontece:**
-- Sistema bloqueia chamadas IXC por 60 segundos
+**Causa Raiz Identificada:**
+- `detect-mass-outage` fazia até **1000 requisições paralelas** ao IXC
+- Concorrência de 10 requisições simultâneas sobrecarregava o servidor
+- Circuit Breaker estava **correto** em abrir para proteger o sistema
+
+**Correções Aplicadas:**
+- ✅ Reduzida concorrência de 10→3 requisições (-70%)
+- ✅ Aumentado backoff de 1s→2s e 10s→15s
+- ✅ Adicionado delay de 3s entre chunks
+- ✅ Sistema agora é estável (detecção em 8-10 min vs 30s)
+
+**O que acontece agora:**
+- Sistema bloqueia chamadas IXC por 60 segundos após 5 falhas consecutivas
 - Após 60s, tenta novamente (half-open)
 - Se suceder, volta ao normal (closed)
 
 **Ações:**
-1. ✅ **NÃO FAZER NADA** - Sistema se recupera sozinho
-2. Verificar se IXC está realmente offline
-3. Se persistir > 5min, verificar credenciais
+1. ✅ **NÃO FAZER NADA** - Sistema se recupera sozinho em ~60s
+2. Se persistir > 5min: Verificar se IXC está realmente offline
+3. **EMERGÊNCIA APENAS**: Reset manual via edge function
+   ```bash
+   curl -X POST https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/reset-circuit-breaker \
+     -H "Authorization: Bearer <ADMIN_TOKEN>"
+   ```
+
+**Documentação Completa**: Ver `docs/CAUSA-RAIZ-CIRCUIT-BREAKER.md`
 
 ---
 

@@ -38,18 +38,29 @@ const response = await fetch(`${SUPABASE_URL}/functions/v1/ixc-proxy`, {
 
 ---
 
-### 2. Circuit Breaker Pattern
+### 2. Circuit Breaker Pattern (OTIMIZADO 2025-10-09)
 **Arquivo:** `supabase/functions/_shared/ixc-client.ts`
 
 - ✅ Proteção contra falhas cascata
 - ✅ Threshold: 5 falhas consecutivas
 - ✅ Timeout: 1 minuto em estado OPEN
 - ✅ Estados: CLOSED → OPEN → HALF-OPEN
+- ✅ **IMPORTANTE**: Erros de configuração (404/HTML) NÃO disparam circuit breaker
+- ✅ Concorrência otimizada: 3 requisições paralelas (vs 10 anterior)
+- ✅ Backoff aumentado: 2s inicial, 15s máximo
+- ✅ Delay entre chunks: 3s para evitar sobrecarga
 
 **Comportamento:**
 - **CLOSED:** Funcionamento normal
-- **OPEN:** Bloqueia chamadas por 60s após 5 falhas
+- **OPEN:** Bloqueia chamadas por 60s após 5 falhas de rede/timeout
 - **HALF-OPEN:** Testa 1 request antes de reabrir
+- **Erros de Config**: Falham imediatamente sem retry (ex: 404, página HTML)
+
+**Otimização de Volume**:
+- `detect-mass-outage` agora processa 500 clientes em ~8-10 min (vs 30s)
+- Trade-off: Detecção mais lenta mas sistema estável e sem falhas
+
+**Documentação**: `docs/CAUSA-RAIZ-CIRCUIT-BREAKER.md`
 
 ---
 
