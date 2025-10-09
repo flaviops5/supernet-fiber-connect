@@ -24,7 +24,6 @@ import SystemMetrics from "./pages/SystemMetrics";
 import CodigoFonte from "./pages/CodigoFonte";
 import Codigo from "./pages/Codigo";
 import QuedasMassaCodigo from "./pages/QuedasMassaCodigo";
-import TechnicalDocs from "./pages/TechnicalDocs";
 import Apresentacao from "./pages/Apresentacao";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
@@ -72,7 +71,7 @@ const App = () => {
                     <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/codigo" element={<Codigo />} />
                     <Route path="/quedas-massa-codigo" element={<QuedasMassaCodigo />} />
-                    <Route path="/technical-docs" element={<TechnicalDocs />} />
+                    <Route path="/technical-docs" element={<Navigate to="/admin/knowledge" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<AutoRebootDocs />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />

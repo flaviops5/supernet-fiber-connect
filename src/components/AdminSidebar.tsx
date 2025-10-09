@@ -100,11 +100,6 @@ const documentationItems = [
     url: "/admin/knowledge",
     icon: BookOpen,
   },
-  {
-    title: "Documentação Técnica",
-    url: "/technical-docs",
-    icon: FileText,
-  },
 ];
 
 const agentsItems = [

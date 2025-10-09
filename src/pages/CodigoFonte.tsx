@@ -127,9 +127,9 @@ CREATE TABLE telemedicina_appointments (
           <CardContent className="pt-6">
             <div className="flex gap-4">
               <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all">
-                <a href="/technical-docs">
+                <a href="/admin/knowledge">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Docs Completas
+                  Base de Conhecimento
                 </a>
               </Button>
               <Button variant="outline" size="sm" asChild>

@@ -201,15 +201,9 @@ if (massOutageInfo) {
           <CardContent className="pt-6">
             <div className="flex gap-4 flex-wrap">
               <Button variant="outline" size="sm" asChild className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all">
-                <a href="/technical-docs">
+                <a href="/admin/knowledge">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Docs Completas
-                </a>
-              </Button>
-              <Button variant="outline" size="sm" asChild className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all">
-                <a href="/technical-docs">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Docs Completas
+                  Base de Conhecimento
                 </a>
               </Button>
               <Button variant="outline" size="sm" asChild>
