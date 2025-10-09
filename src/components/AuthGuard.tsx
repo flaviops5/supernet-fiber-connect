@@ -19,7 +19,7 @@ interface UserRole {
 export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: AuthGuardProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean | null>(null); // null = verificando, true = autorizado, false = negado
   const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
@@ -87,7 +87,8 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
     navigate('/auth');
   };
 
-  if (roleLoading || !user) {
+  // Mostrar loading se ainda não temos user OU se authorized ainda é null (verificando)
+  if (roleLoading || !user || authorized === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-96">
@@ -103,7 +104,8 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
     );
   }
 
-  if (error || !authorized) {
+  // Só mostra erro se authorized é explicitamente false
+  if (error || authorized === false) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-96">
