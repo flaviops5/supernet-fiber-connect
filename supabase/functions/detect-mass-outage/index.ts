@@ -19,23 +19,6 @@ serve(async (req) => {
   }
 
   try {
-    // ===================================================================
-    // VALIDAÇÃO DE ORIGEM: Garantir que apenas chamadas internas/CRON
-    // ===================================================================
-    const authHeader = req.headers.get('authorization');
-    const isServiceRole = authHeader?.includes('service_role');
-    
-    if (!isServiceRole) {
-      console.warn('⚠️ Tentativa de acesso sem service role key');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Unauthorized: Esta função é apenas para uso interno/CRON',
-          success: false 
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
