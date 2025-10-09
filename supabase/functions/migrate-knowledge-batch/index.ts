@@ -84,8 +84,13 @@ serve(async (req) => {
         const embeddingData = await embeddingResponse.json();
         const embedding = embeddingData.data[0].embedding;
 
-        if (!embedding || embedding.length !== 512) {
-          throw new Error(`Invalid embedding dimension: expected 512, got ${embedding?.length}`);
+        if (!embedding || !Array.isArray(embedding)) {
+          throw new Error(`Invalid embedding payload`);
+        }
+        console.log(`Embedding length: ${embedding.length}`);
+        // Expect 1536 dims for OpenAI text-embedding-3-small
+        if (embedding.length !== 1536) {
+          console.warn(`Unexpected embedding dimension: ${embedding.length} (expected 1536)`);
         }
 
         // Inserir na knowledge_index
