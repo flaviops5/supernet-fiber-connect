@@ -1728,6 +1728,7 @@ export type Database = {
           is_folder: boolean
           migrated_at: string | null
           parent_id: string | null
+          source: string | null
           source_document_id: string | null
           tags: string[] | null
           title: string
@@ -1746,6 +1747,7 @@ export type Database = {
           is_folder?: boolean
           migrated_at?: string | null
           parent_id?: string | null
+          source?: string | null
           source_document_id?: string | null
           tags?: string[] | null
           title: string
@@ -1764,6 +1766,7 @@ export type Database = {
           is_folder?: boolean
           migrated_at?: string | null
           parent_id?: string | null
+          source?: string | null
           source_document_id?: string | null
           tags?: string[] | null
           title?: string

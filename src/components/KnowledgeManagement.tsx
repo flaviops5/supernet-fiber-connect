@@ -157,6 +157,36 @@ const KnowledgeManagement = () => {
     }
   };
 
+  const syncGithubDocs = async () => {
+    try {
+      setLoading(true);
+      toast({
+        title: "Sincronizando do GitHub",
+        description: "Buscando todos os arquivos .md do repositório...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('sync-github-docs');
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Sincronização GitHub concluída",
+        description: `${data.synced_items} documentos sincronizados do GitHub`,
+      });
+
+      loadKnowledgeItems();
+    } catch (error: any) {
+      console.error('Error syncing GitHub docs:', error);
+      toast({
+        title: "Erro ao sincronizar GitHub",
+        description: error.message || 'Verifique as configurações do GitHub',
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getFilteredItems = () => {
     const items = getCurrentItems();
     if (!searchTerm) return items;
@@ -376,6 +406,10 @@ const KnowledgeManagement = () => {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button onClick={syncGithubDocs} variant="default" size="sm" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Sincronizar GitHub
+          </Button>
           <Button onClick={syncMarkdownDocs} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Sincronizar Docs
