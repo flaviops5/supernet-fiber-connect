@@ -41,6 +41,7 @@ import {
   Activity,
   MessageCircle,
   Wrench,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,6 +91,11 @@ const marketingItems = [
 ];
 
 const documentationItems = [
+  {
+    title: "Prompts",
+    url: "/admin/prompts",
+    icon: Sparkles,
+  },
   {
     title: "Documentos",
     url: "/admin/documents",

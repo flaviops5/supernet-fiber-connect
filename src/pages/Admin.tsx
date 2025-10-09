@@ -20,6 +20,7 @@ import { FAQForm } from "@/components/FAQForm";
 import BlogManagementComponent from "@/components/BlogManagement";
 import DocumentManagement from "@/components/DocumentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
+import AdminPrompts from "@/pages/AdminPrompts";
 import CorporateAI from "@/components/CorporateAI";
 import AgentManagement from "@/components/AgentManagement";
 import ChatFlowTester from "@/components/ChatFlowTester";
@@ -1800,6 +1801,7 @@ const Admin = () => {
                 <Route path="/agents" element={<AgentManagement />} />
                 <Route path="/chat-tester" element={<ChatFlowTester />} />
                 <Route path="/reviews" element={<ReviewsManagement />} />
+                <Route path="/prompts" element={<AdminPrompts />} />
                 <Route path="/documents" element={<DocumentManagement />} />
                 <Route path="/knowledge" element={<KnowledgeManagement />} />
                 <Route path="/corporate-ai" element={<CorporateAI />} />
