@@ -166,9 +166,9 @@ serve(async (req) => {
     const requestBody = await req.json().catch(() => ({}));
     
     // Parâmetros configuráveis (com valores padrão)
-    // ⚠️ CONFIGURE AQUI: Informe o owner e repo do seu projeto GitHub
-    const owner = requestBody.owner || 'SEU_GITHUB_USERNAME'; // Ex: 'supernet-fibra'
-    const repo = requestBody.repo || 'SEU_REPO_NAME'; // Ex: 'supernet-lovable'
+    // ✅ CONFIGURADO: flaviops5/supernet-fiber-connect
+    const owner = requestBody.owner || 'flaviops5';
+    const repo = requestBody.repo || 'supernet-fiber-connect';
     const branch = requestBody.branch || 'main';
     const docsPath = requestBody.path || 'docs';
 
