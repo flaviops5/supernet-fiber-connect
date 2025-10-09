@@ -36,7 +36,18 @@ const ResidentialPlans = () => {
           .order('display_order', { ascending: true });
 
         if (error) throw error;
-        setPlans(data || []);
+        
+        // Ensure features is always an array
+        const normalizedPlans = (data || []).map(plan => ({
+          ...plan,
+          features: Array.isArray(plan.features) 
+            ? plan.features 
+            : typeof plan.features === 'string' 
+              ? JSON.parse(plan.features) 
+              : []
+        }));
+        
+        setPlans(normalizedPlans);
       } catch (error) {
         console.error('Error loading plans:', error);
         // Fallback to empty array if error
