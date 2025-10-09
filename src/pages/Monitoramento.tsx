@@ -92,63 +92,22 @@ export default function Monitoramento() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/admin')}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  Monitoramento IXC
-                </h1>
-                <p className="text-muted-foreground">
-                  Acompanhe métricas e status dos clientes em tempo real
-                </p>
-              </div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Monitoramento IXC
+              </h1>
+              <p className="text-muted-foreground">
+                Acompanhe métricas e status dos clientes em tempo real
+              </p>
             </div>
-
-            <Button 
-              onClick={countClients}
-              disabled={loading}
-              size="lg"
-              className="gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Contando...
-                </>
-              ) : (
-                <>
-                  <Activity className="h-4 w-4" />
-                  Atualizar Contagem
-                </>
-              )}
-            </Button>
-            
-            <Button 
-              onClick={testPonAccess}
-              disabled={loading}
-              variant="outline"
-              size="lg"
-              className="gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Testando...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4" />
-                  Testar Acesso PON
-                </>
-              )}
-            </Button>
           </div>
 
           {/* Tabs */}
