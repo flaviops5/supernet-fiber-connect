@@ -72,6 +72,7 @@ const App = () => {
                     <Route path="/codigo" element={<Codigo />} />
                     <Route path="/quedas-massa-codigo" element={<QuedasMassaCodigo />} />
                     <Route path="/technical-docs" element={<Navigate to="/admin/knowledge" replace />} />
+                    <Route path="/whatsapp-setup" element={<Navigate to="/admin/whatsapp-setup" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<AutoRebootDocs />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />
