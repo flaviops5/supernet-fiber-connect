@@ -121,7 +121,7 @@ Use o botão "Sincronizar Docs" para atualizar a base de conhecimento com os arq
         const item = {
           title: metadata.title || file.path.split('/').pop()?.replace('.md', '') || 'Documento',
           content: markdownContent,
-          content_type: 'markdown',
+          content_type: 'document',
           category: metadata.category || file.category,
           tags: [metadata.category || file.category, 'docs-sync'],
           agent_types: metadata.agent_types || file.agentTypes,
