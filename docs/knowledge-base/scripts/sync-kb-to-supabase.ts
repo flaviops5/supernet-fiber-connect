@@ -42,7 +42,7 @@ interface KnowledgeBaseRecord {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const DATA_SOURCES_PATH = "./docs/knowledge-base/data-sources";
+const DOCS_PATH = "./docs";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("❌ Erro: SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY devem estar definidas");
@@ -50,21 +50,40 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 /**
- * Extrai metadados YAML do front matter do markdown
+ * Determina a categoria baseada no caminho do arquivo
+ */
+function getCategoryFromPath(filePath: string): string {
+  if (filePath.includes('knowledge-base/data-sources/vendas')) return 'vendas';
+  if (filePath.includes('knowledge-base/data-sources/suporte')) return 'suporte';
+  if (filePath.includes('knowledge-base/data-sources/telemedicina')) return 'telemedicina';
+  if (filePath.includes('knowledge-base/data-sources/automacao')) return 'automacao';
+  if (filePath.includes('whatsapp')) return 'integracao';
+  if (filePath.includes('agent') || filePath.includes('multiagent')) return 'arquitetura';
+  if (filePath.includes('tools') || filePath.includes('operational')) return 'documentacao-tecnica';
+  if (filePath.includes('system') || filePath.includes('robustness')) return 'sistema';
+  return 'geral';
+}
+
+/**
+ * Extrai metadados YAML do front matter do markdown (opcional)
  */
 function extractFrontMatter(content: string): {
-  metadata: KnowledgeBaseMetadata;
+  metadata: Partial<KnowledgeBaseMetadata>;
   markdownContent: string;
 } {
   const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
   const match = content.match(frontMatterRegex);
 
   if (!match) {
-    throw new Error("Arquivo não contém front matter YAML válido");
+    // Se não tem front matter, retorna conteúdo completo
+    return { 
+      metadata: {}, 
+      markdownContent: content 
+    };
   }
 
   const [, yamlContent, markdownContent] = match;
-  const metadata = parseYaml(yamlContent) as KnowledgeBaseMetadata;
+  const metadata = parseYaml(yamlContent) as Partial<KnowledgeBaseMetadata>;
 
   return { metadata, markdownContent };
 }
@@ -78,21 +97,31 @@ async function processMarkdownFile(filePath: string): Promise<KnowledgeBaseRecor
   const fileContent = await Deno.readTextFile(filePath);
   const { metadata, markdownContent } = extractFrontMatter(fileContent);
 
-  // Extrair categoria do caminho (ex: data-sources/vendas/planos.md -> vendas)
-  const pathParts = filePath.split("/");
-  const categoryFromPath = pathParts[pathParts.length - 2];
+  // Extrair título do arquivo ou do metadata
+  const fileName = filePath.split("/").pop()?.replace(".md", "") || "Sem título";
+  const title = metadata.title || fileName
+    .split("-")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+  // Determinar categoria
+  const category = metadata.category || getCategoryFromPath(filePath);
+
+  // Data de atualização do arquivo
+  const fileInfo = await Deno.stat(filePath);
+  const lastUpdated = metadata.last_updated || fileInfo.mtime?.toISOString() || new Date().toISOString();
 
   return {
-    title: metadata.title,
+    title,
     content: markdownContent.trim(),
-    category: metadata.category || categoryFromPath,
+    category,
     source: filePath,
-    is_active: metadata.is_active,
+    is_active: metadata.is_active ?? true,
     metadata: {
-      agent_types: metadata.agent_types,
-      last_updated: metadata.last_updated,
-      author: metadata.author,
-      version: metadata.version,
+      agent_types: metadata.agent_types || ['geral'],
+      last_updated: lastUpdated,
+      author: metadata.author || 'SUPERNET FIBRA',
+      version: metadata.version || '1.0',
     },
   };
 }
@@ -131,10 +160,14 @@ async function main() {
   let errorCount = 0;
 
   try {
-    // Percorrer todos os arquivos .md em data-sources/
-    for await (const entry of walk(DATA_SOURCES_PATH, {
+    // Percorrer TODOS os arquivos .md na pasta docs/
+    for await (const entry of walk(DOCS_PATH, {
       exts: ["md"],
-      skip: [/README\.md$/],
+      skip: [
+        /README\.md$/,
+        /node_modules/,
+        /\.git/,
+      ],
     })) {
       totalFiles++;
 
