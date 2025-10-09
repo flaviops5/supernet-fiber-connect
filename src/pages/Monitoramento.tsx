@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +46,10 @@ export default function Monitoramento() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    countClients();
+  }, []);
 
   const testPonAccess = async () => {
     setLoading(true);
@@ -154,17 +158,17 @@ export default function Monitoramento() {
                 <Activity className="h-4 w-4" />
                 Status dos Clientes
               </TabsTrigger>
+              <TabsTrigger value="outages" className="gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Quedas em Massa
+              </TabsTrigger>
               <TabsTrigger value="pon" className="gap-2">
                 <Network className="h-4 w-4" />
                 Portas PON
               </TabsTrigger>
               <TabsTrigger value="radio" className="gap-2">
                 <TowerControl className="h-4 w-4" />
-                Torres/Rádio
-              </TabsTrigger>
-              <TabsTrigger value="outages" className="gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Quedas em Massa
+                POP
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2">
                 <Clock className="h-4 w-4" />
@@ -231,25 +235,6 @@ export default function Monitoramento() {
               </Card>
             </div>
           )}
-
-              {/* Empty State */}
-              {!clientCount && !loading && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bem-vindo ao Monitoramento IXC</CardTitle>
-                    <CardDescription>
-                      Clique no botão "Atualizar Contagem" para carregar os dados dos clientes
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                    <Users className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground max-w-md">
-                      Esta página permite monitorar em tempo real o status de todos os clientes
-                      cadastrados no sistema IXC, incluindo clientes ativos, inativos e bloqueados.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
             </TabsContent>
 
             <TabsContent value="pon">
