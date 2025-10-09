@@ -130,6 +130,11 @@ const agentsItems = [
     icon: FlaskConical,
   },
   {
+    title: "Configurar WhatsApp",
+    url: "/admin/whatsapp-setup",
+    icon: Settings,
+  },
+  {
     title: "Integração IXC",
     url: "/admin/ixc-integration",
     icon: Database,
