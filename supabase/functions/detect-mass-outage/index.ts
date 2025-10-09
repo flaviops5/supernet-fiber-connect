@@ -105,9 +105,10 @@ serve(async (req) => {
     const MAX_CLIENTS_PER_PON = 128; // Capacidade máxima de uma porta PON
     
     // CONTROLE DE CONCORRÊNCIA: Limitar requisições paralelas ao IXC
-    const MAX_CONCURRENT_REQUESTS = 10; // Reduzido de 20 para 10
-    const INITIAL_BACKOFF_MS = 1000;
-    const MAX_BACKOFF_MS = 10000;
+    const MAX_CONCURRENT_REQUESTS = 3; // CRÍTICO: Reduzido para 3 para evitar sobrecarga do IXC
+    const INITIAL_BACKOFF_MS = 2000; // Aumentado de 1s para 2s
+    const MAX_BACKOFF_MS = 15000; // Aumentado de 10s para 15s
+    const CHUNK_DELAY_MS = 3000; // 3 segundos de delay entre chunks
     
     // Função auxiliar para delay com jitter
     const delayWithJitter = (ms: number) => {
@@ -167,6 +168,12 @@ serve(async (req) => {
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
       console.log(`📦 Chunk ${chunkIndex + 1}/${chunks.length}: ${chunk.length} clientes`);
+      
+      // ⏱️ DELAY entre chunks para não sobrecarregar IXC
+      if (chunkIndex > 0) {
+        console.log(`⏳ Aguardando ${CHUNK_DELAY_MS}ms antes do próximo chunk...`);
+        await delayWithJitter(CHUNK_DELAY_MS);
+      }
       
       // Processar todos os clientes do chunk em paralelo
       const chunkResults = await Promise.all(

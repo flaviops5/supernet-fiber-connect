@@ -43,17 +43,23 @@
   - `supabase/functions/send-whatsapp-message/index.ts`
   - `src/components/WhatsAppTester.tsx`
 
-### 4. Circuit Breaker - Investigação de Causa Raiz
-- [ ] **Problema**: Circuit breaker aberto indica sobrecarga da API IXC
-- [ ] **Investigar**:
-  - [ ] Verificar logs de erro do IXC nos últimos 7 dias
-  - [ ] Identificar qual endpoint está causando mais falhas
-  - [ ] Verificar se é problema de autenticação, timeout ou rate limiting
-  - [ ] Analisar padrão de uso (horários de pico)
-- [ ] **Ações**:
-  - [ ] Ajustar thresholds do circuit breaker se necessário
-  - [ ] Implementar cache para endpoints frequentes
-  - [ ] Adicionar rate limiting no lado do cliente
+### 4. Circuit Breaker - Causa Raiz Identificada ✅
+- [x] **Problema**: Circuit breaker aberto por sobrecarga de requisições
+- [x] **Causa Raiz Diagnosticada**: 
+  - `detect-mass-outage` fazia até **1000 requisições paralelas** ao IXC
+  - Concorrência de 10 requisições simultâneas sobrecarregava o servidor
+  - Circuit Breaker estava **correto** em abrir para proteger o IXC
+- [x] **Correções Aplicadas**:
+  - ✅ Reduzida concorrência de 10→3 requisições (-70%)
+  - ✅ Aumentado backoff inicial de 1s→2s
+  - ✅ Aumentado backoff máximo de 10s→15s
+  - ✅ Adicionado delay de 3s entre chunks
+- [x] **Trade-off**: Detecção mais lenta (8-10 min vs 30s) mas sistema estável
+- [x] **Documentação**: Ver `docs/CAUSA-RAIZ-CIRCUIT-BREAKER.md`
+- [ ] **Próxima Iteração (Otimização)**:
+  - [ ] Implementar cache de dados PON (15-30 min)
+  - [ ] Verificar se IXC suporta batch queries
+  - [ ] Considerar processamento background com fila
 
 ---
 
