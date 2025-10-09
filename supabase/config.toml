@@ -107,3 +107,6 @@ verify_jwt = true
 
 [functions.network-maintenance-executor]
 verify_jwt = true
+
+[functions.reset-circuit-breaker]
+verify_jwt = true

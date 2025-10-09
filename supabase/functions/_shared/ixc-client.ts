@@ -216,3 +216,13 @@ export function getCircuitBreakerStatus() {
     timeoutMs: CIRCUIT_BREAKER_TIMEOUT
   };
 }
+
+/**
+ * Reset manual do circuit breaker (para emergências)
+ */
+export function resetCircuitBreaker() {
+  circuitBreaker.failures = 0;
+  circuitBreaker.lastFailureTime = 0;
+  circuitBreaker.state = 'closed';
+  console.log('🔧 Circuit breaker manually reset to CLOSED');
+}

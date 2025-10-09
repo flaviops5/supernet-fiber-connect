@@ -28,7 +28,11 @@ export default function Atendimento() {
           user_id: user.id,
           status: 'online' as const,
           department: agentDepartment as any,
-          last_activity: new Date().toISOString()
+          last_activity: new Date().toISOString(),
+          current_conversations: 0,
+          max_conversations: 5
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) {
