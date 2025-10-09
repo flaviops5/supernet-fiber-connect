@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import WhatsAppConversations from "./WhatsAppConversations";
+import WhatsAppTester from "./WhatsAppTester";
 
 interface InstanceStatus {
   instanceName: string;
@@ -275,6 +276,14 @@ export default function WhatsAppSetup() {
                 )}
               </Alert>
             )}
+          </div>
+
+          <Separator />
+
+          {/* Envio de Mensagens de Teste */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Enviar Mensagem de Teste</h3>
+            <WhatsAppTester />
           </div>
 
           <Separator />
