@@ -78,20 +78,32 @@ export default function WhatsAppSetup() {
         }
       });
 
-      console.log('📥 Resposta da função:', { data, error });
+      console.log('📥 Resposta completa:', { data, error });
 
       if (error) {
         console.error('❌ Erro da função:', error);
-        throw error;
+        throw new Error(error.message || 'Erro ao chamar a função');
       }
 
-      // Verificar se a resposta indica sucesso
-      if (data?.status === 'success' || data?.message === 'Message sent successfully') {
+      // Verificar se a resposta é válida
+      if (!data) {
+        throw new Error('Resposta vazia da função');
+      }
+
+      console.log('📊 Status da resposta:', data);
+
+      // Verificar múltiplos formatos de sucesso
+      const isSuccess = 
+        data?.status === 'success' || 
+        data?.message?.includes('success') ||
+        data?.data?.status === 'SENT';
+
+      if (isSuccess) {
         setWebhookConfigured(true);
         toast.success("✅ Teste concluído! Mensagem enviada com sucesso.");
       } else {
         console.warn('⚠️ Resposta inesperada:', data);
-        throw new Error(data?.error || 'Resposta inesperada da API');
+        throw new Error(data?.error || JSON.stringify(data));
       }
     } catch (error: any) {
       console.error("❌ Erro no teste de integração:", error);
@@ -100,8 +112,10 @@ export default function WhatsAppSetup() {
       let errorMessage = error.message || 'Erro desconhecido';
       
       // Mensagens de erro mais específicas
-      if (errorMessage.includes('404')) {
-        errorMessage = 'Instância não encontrada. Verifique se a instância está ativa na Evolution API.';
+      if (errorMessage.includes('JSON')) {
+        errorMessage = 'Erro de comunicação com a API. Verifique as credenciais.';
+      } else if (errorMessage.includes('404')) {
+        errorMessage = 'Instância não encontrada. Verifique se está ativa na Evolution API.';
       } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
         errorMessage = 'Erro de autenticação. Verifique as credenciais da API.';
       } else if (errorMessage.includes('500')) {

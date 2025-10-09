@@ -6,17 +6,35 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { phone, message, instanceName = 'SDR2' } = await req.json();
+    console.log('📨 Received request to send-whatsapp-message');
+    
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error('❌ Failed to parse request body:', e);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid request body' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const { phone, message, instanceName = 'SDR2' } = body;
     
     console.log('📨 Send WhatsApp Message Request:', { phone, instanceName, messageLength: message?.length });
     
     if (!phone || !message) {
-      throw new Error('Phone and message are required');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Phone and message are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     const apiKey = Deno.env.get('EVOLUTION_API_KEY');
@@ -24,19 +42,22 @@ serve(async (req) => {
 
     if (!apiKey || !baseUrl) {
       console.error('❌ Missing credentials:', { hasApiKey: !!apiKey, hasBaseUrl: !!baseUrl });
-      throw new Error('Evolution API credentials not configured');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Evolution API credentials not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
     console.log(`🔗 API URL: ${baseUrl}/message/sendText/${instanceName}`);
 
-    // Formatar número (remover caracteres especiais e garantir formato correto)
+    // Format phone number
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
 
     console.log(`📞 Formatted phone: ${formattedPhone}`);
 
-    // Enviar mensagem via Evolution API
+    // Send message via Evolution API
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers: {
@@ -55,7 +76,14 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Evolution API Error:', response.status, errorText);
-      throw new Error(`Evolution API error: ${response.status} - ${errorText}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Evolution API error: ${response.status}`,
+          details: errorText 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
     }
 
     const data = await response.json();
@@ -76,12 +104,12 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('❌ Error sending WhatsApp message:', error);
+    console.error('❌ Unexpected error:', error);
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error?.message || 'Internal server error',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
