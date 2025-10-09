@@ -21,7 +21,6 @@ const ENDPOINTS: EndpointTest[] = [
   // CLIENTES
   { path: '/webservice/v1/cliente', method: 'GET', category: 'Clientes' },
   { path: '/webservice/v1/cliente_arquivo', method: 'POST', category: 'Clientes' },
-  { path: '/webservice/v1/cliente_arquivos', method: 'GET', category: 'Clientes' },
   { path: '/webservice/v1/cliente_equipamento', method: 'POST', category: 'Clientes' },
   { path: '/webservice/v1/consulta_spc_serasa', method: 'POST', category: 'Clientes' },
   { path: '/webservice/v1/bloquear_desbloquear_sip', method: 'POST', category: 'Clientes' },
