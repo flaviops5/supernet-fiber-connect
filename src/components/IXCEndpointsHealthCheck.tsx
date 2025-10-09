@@ -132,28 +132,28 @@ export function IXCEndpointsHealthCheck() {
     setResults([]);
     setProgress(0);
 
-    const testedResults: EndpointTest[] = [];
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-endpoints-health', { body: {} });
+      if (error) {
+        toast.error(`Falha ao executar health check: ${error.message}`);
+        setTesting(false);
+        return;
+      }
 
-    for (let i = 0; i < ENDPOINTS.length; i++) {
-      const endpoint = ENDPOINTS[i];
-      console.log(`🧪 Testando (${i + 1}/${ENDPOINTS.length}): ${endpoint.path}`);
-      
-      const result = await testEndpoint(endpoint);
-      testedResults.push(result);
-      setResults([...testedResults]);
-      setProgress(Math.round(((i + 1) / ENDPOINTS.length) * 100));
-      
-      // Pequeno delay para não sobrecarregar
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const returned = (data?.results || data) as EndpointTest[];
+      setResults(returned || []);
+      setProgress(100);
+
+      const successCount = (returned || []).filter(r => r.status === 'success').length;
+      const errorCount = (returned || []).filter(r => r.status === 'error').length;
+      const notFoundCount = (returned || []).filter(r => r.status === 'not_found').length;
+      toast.success(`Testes concluídos: ${successCount} OK, ${notFoundCount} não encontrados, ${errorCount} erros`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro desconhecido';
+      toast.error(`Falha ao executar health check: ${msg}`);
+    } finally {
+      setTesting(false);
     }
-
-    setTesting(false);
-    
-    const successCount = testedResults.filter(r => r.status === 'success').length;
-    const errorCount = testedResults.filter(r => r.status === 'error').length;
-    const notFoundCount = testedResults.filter(r => r.status === 'not_found').length;
-    
-    toast.success(`Testes concluídos: ${successCount} OK, ${notFoundCount} não encontrados, ${errorCount} erros`);
   };
 
   const groupedResults = results.reduce((acc, result) => {
