@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -131,29 +130,28 @@ const VectorMigrationPanel = () => {
   const isComplete = stats?.pending_docs === 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Migração para Busca Vetorial
-            </CardTitle>
-            <CardDescription className="mt-2">
-              Sistema de embeddings com text-embedding-3-small (512 dims)
-            </CardDescription>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadStats}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Migração para Busca Vetorial
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Sistema de busca semântica inteligente
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadStats}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
+
+      <div className="space-y-4">
         {/* Status atual */}
         {stats && (
           <div className="space-y-4">
@@ -231,28 +229,8 @@ const VectorMigrationPanel = () => {
             )}
           </Button>
         </div>
-
-        {/* Informações técnicas */}
-        <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t">
-          <div className="flex justify-between">
-            <span>Modelo de embedding:</span>
-            <span className="font-mono">text-embedding-3-small</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Dimensões:</span>
-            <span className="font-mono">1536</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Índice vetorial:</span>
-            <span className="font-mono">HNSW (m=16, ef=64)</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Similaridade:</span>
-            <span className="font-mono">Cosine</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
