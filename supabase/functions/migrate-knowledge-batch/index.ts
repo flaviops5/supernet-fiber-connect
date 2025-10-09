@@ -130,7 +130,8 @@ serve(async (req) => {
         console.log(`✓ Migrado: ${doc.title} (${doc.id})`);
 
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
+        const err: any = error;
+        const errorMsg = typeof err?.message === 'string' ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
         console.error(`✗ Erro migrando ${doc.id}:`, errorMsg);
         errors.push({ id: doc.id, error: errorMsg });
       }
