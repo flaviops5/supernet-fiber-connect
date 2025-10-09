@@ -103,7 +103,7 @@ Use o botão "Sincronizar Docs" para atualizar a base de conhecimento com os arq
     const { error: deleteError } = await supabase
       .from('knowledge_base')
       .delete()
-      .eq('metadata->>source', 'docs-sync');
+      .in('category', ['documentacao']);
 
     if (deleteError) {
       console.warn('Aviso ao limpar registros:', deleteError);
@@ -123,16 +123,12 @@ Use o botão "Sincronizar Docs" para atualizar a base de conhecimento com os arq
           content: markdownContent,
           content_type: 'markdown',
           category: metadata.category || file.category,
-          tags: [metadata.category || file.category],
-          agent_type: metadata.agent_types || file.agentTypes,
+          tags: [metadata.category || file.category, 'docs-sync'],
+          agent_types: metadata.agent_types || file.agentTypes,
           is_active: metadata.is_active !== false,
-          metadata: {
-            source: 'docs-sync',
-            file_path: file.path,
-            last_updated: metadata.last_updated || new Date().toISOString().split('T')[0],
-            author: metadata.author || 'Sistema',
-            version: metadata.version || '1.0'
-          }
+          parent_id: null,
+          is_folder: false,
+          display_order: 0
         };
 
         itemsToInsert.push(item);
