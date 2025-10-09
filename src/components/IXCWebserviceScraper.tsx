@@ -25,24 +25,29 @@ export function IXCWebserviceScraper() {
     setLoading(true);
     setResults(null);
     try {
+      console.log('🔍 Iniciando scraping...');
       const { data, error } = await supabase.functions.invoke('ixc-scrape-webservice-v1', {
         body: {
           startUrls: [startUrl],
-          maxPages: 150,
+          maxPages: 30,
           sameHostOnly: true,
         },
       });
+      
+      console.log('📥 Resposta recebida:', { data, error });
+      
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || 'Falha ao executar scraping');
+      
       setResults({
         totalEndpoints: data.totalEndpoints,
         endpoints: data.endpoints,
         crawled: data.crawled,
         tookMs: data.tookMs,
       });
-      toast.success(`Scraping concluído: ${data.totalEndpoints} endpoints encontrados`);
+      toast.success(`Scraping concluído: ${data.totalEndpoints} endpoints encontrados em ${data.crawled} páginas`);
     } catch (e) {
-      console.error(e);
+      console.error('❌ Erro no scraping:', e);
       toast.error(e instanceof Error ? e.message : 'Erro ao executar scraping');
     } finally {
       setLoading(false);

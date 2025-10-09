@@ -7,17 +7,38 @@ const corsHeaders = {
 };
 
 interface EndpointHit {
-  path: string;                // normalized, starts with /webservice/v1/
-  fullUrls: string[];          // pages where it was referenced (absolute page URLs)
-  occurrences: number;         // total matches across pages
-  methods: string[];           // inferred HTTP methods near the match
-  snippets: string[];          // small content snippets around the match
+  path: string;
+  fullUrls: string[];
+  occurrences: number;
+  methods: string[];
+  snippets: string[];
 }
 
 interface ScrapeRequest {
-  startUrls?: string[];        // seeds to start crawling
-  maxPages?: number;           // limit total pages to visit
-  sameHostOnly?: boolean;      // restrict crawling to the same host(s)
+  startUrls?: string[];
+  maxPages?: number;
+  sameHostOnly?: boolean;
+}
+
+// Timeout for each fetch (5 seconds)
+const FETCH_TIMEOUT_MS = 5000;
+
+// Helper to fetch with timeout
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, { 
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return null; // Skip on timeout or error
+  }
 }
 
 function absoluteUrl(href: string, base: string): string | null {
@@ -85,6 +106,7 @@ Deno.serve(async (req) => {
   }
 
   const startedAt = Date.now();
+  const MAX_EXECUTION_TIME = 50000; // 50 seconds max (before Deno timeout)
 
   try {
     const { startUrls, maxPages, sameHostOnly }: ScrapeRequest = await req.json().catch(() => ({}));
@@ -96,8 +118,10 @@ Deno.serve(async (req) => {
           'https://demo.ixcsoft.com.br/',
         ];
 
-    const pageLimit = Math.min(Math.max(maxPages ?? 120, 1), 500);
-    const restrictSameHost = sameHostOnly !== false; // default true
+    const pageLimit = Math.min(Math.max(maxPages ?? 30, 1), 50); // Reduced limits
+    const restrictSameHost = sameHostOnly !== false;
+    
+    console.log(`🔍 Starting scrape: max ${pageLimit} pages from`, seeds);
 
     const allowedHosts = new Set<string>(seeds.map(u => {
       try { return new URL(u).host; } catch { return ''; }
@@ -111,6 +135,12 @@ Deno.serve(async (req) => {
 
     // Crawl loop (simple BFS)
     while (queue.length > 0 && visited.size < pageLimit) {
+      // Check timeout
+      if (Date.now() - startedAt > MAX_EXECUTION_TIME) {
+        console.log(`⏱️ Timeout reached after ${visited.size} pages`);
+        break;
+      }
+
       const url = queue.shift()!;
       if (visited.has(url)) continue;
       visited.add(url);
@@ -119,25 +149,17 @@ Deno.serve(async (req) => {
       if (restrictSameHost) {
         try {
           const u = new URL(url);
-          if (!allowedHosts.has(u.host)) {
-            continue;
-          }
+          if (!allowedHosts.has(u.host)) continue;
         } catch {
           continue;
         }
       }
 
-      let res: Response;
-      try {
-        res = await fetch(url, { redirect: 'follow' });
-      } catch (err) {
-        // Skip unreachable URLs
-        continue;
-      }
+      const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+      if (!res) continue; // Skip on timeout/error
 
       const ctype = res.headers.get('content-type') || '';
       if (!ctype.includes('text') && !ctype.includes('json') && !ctype.includes('javascript')) {
-        // Skip non-text content
         continue;
       }
 
@@ -182,6 +204,8 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.occurrences - a.occurrences || a.path.localeCompare(b.path));
 
     const finishedAt = Date.now();
+    
+    console.log(`✅ Scrape complete: ${visited.size} pages, ${endpoints.length} endpoints in ${finishedAt - startedAt}ms`);
 
     return new Response(
       JSON.stringify({
@@ -197,6 +221,7 @@ Deno.serve(async (req) => {
       { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     );
   } catch (error) {
+    console.error('❌ Scrape error:', error);
     return new Response(
       JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
