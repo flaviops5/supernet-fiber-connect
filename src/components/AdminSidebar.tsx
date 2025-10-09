@@ -105,6 +105,11 @@ const documentationItems = [
     url: "/admin/knowledge",
     icon: BookOpen,
   },
+  {
+    title: "IA Corporativa",
+    url: "/admin/corporate-ai",
+    icon: Brain,
+  },
 ];
 
 const agentsItems = [
@@ -112,11 +117,6 @@ const agentsItems = [
     title: "Agentes IA",
     url: "/admin/agents",
     icon: Bot,
-  },
-  {
-    title: "IA Corporativa",
-    url: "/admin/corporate-ai",
-    icon: Brain,
   },
   {
     title: "WhatsApp",

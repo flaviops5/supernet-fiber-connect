@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Send, User, Brain, MessageCircle, Clock, Trash2 } from 'lucide-react';
+import { Bot, Send, User, Brain, MessageCircle, Clock, Trash2, Plus, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -250,60 +251,93 @@ const CorporateAI = () => {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-200px)] flex gap-4">
-      {/* Sidebar com conversas */}
-      <Card className="w-80 flex flex-col">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Conversas
-            </CardTitle>
-            <Button size="sm" onClick={createNewConversation}>
-              Nova
+    <div className="container mx-auto p-6 max-w-7xl">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Brain className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">IA Corporativa</h1>
+            <p className="text-muted-foreground">
+              Assistente inteligente com acesso à base de conhecimento da empresa
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-240px)]">
+        {/* Sidebar com conversas */}
+        <Card className="lg:col-span-1 flex flex-col border-2">
+          <div className="p-4 border-b bg-muted/30">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Conversas</h2>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {conversations.length}
+              </Badge>
+            </div>
+            <Button 
+              onClick={createNewConversation} 
+              className="w-full"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Conversa
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 p-0">
-          <ScrollArea className="h-full">
+          
+          <ScrollArea className="flex-1">
             {loadingConversations ? (
-              <div className="p-4 text-center text-muted-foreground">
-                Carregando...
+              <div className="p-4 text-center">
+                <div className="animate-pulse space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-muted rounded-lg" />
+                  ))}
+                </div>
               </div>
             ) : conversations.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                Nenhuma conversa ainda
+              <div className="p-6 text-center">
+                <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma conversa ainda
+                </p>
               </div>
             ) : (
-              <div className="space-y-2 p-2">
+              <div className="p-2 space-y-1">
                 {conversations.map((conversation) => (
                   <div
                     key={conversation.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors group hover:bg-muted ${
-                      currentConversation?.id === conversation.id ? 'bg-muted' : ''
-                    }`}
+                    className={cn(
+                      "p-3 rounded-lg cursor-pointer transition-all duration-200 group relative",
+                      "hover:bg-muted hover:shadow-sm",
+                      currentConversation?.id === conversation.id && "bg-primary/10 border border-primary/20"
+                    )}
                     onClick={() => selectConversation(conversation)}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">
+                        <p className="font-medium text-sm truncate mb-1">
                           {conversation.title || 'Nova conversa'}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {new Date(conversation.updated_at).toLocaleDateString()}
+                          {new Date(conversation.updated_at).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="opacity-0 group-hover:opacity-100 p-1 h-6 w-6"
+                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteConversation(conversation.id);
                         }}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -311,47 +345,78 @@ const CorporateAI = () => {
               </div>
             )}
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </Card>
 
-      {/* Chat principal */}
-      <Card className="flex-1 flex flex-col">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            IA Corporativa da SUPERNET FIBRA
-            <Badge variant="secondary" className="ml-auto">
-              Assistente Corporativo
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-0">
-          {/* Área de mensagens */}
-          <ScrollArea className="flex-1 p-4">
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-center">
+        {/* Chat principal */}
+        <Card className="lg:col-span-3 flex flex-col border-2">
+          {/* Header do chat */}
+          <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10">
+                    <Bot className="h-5 w-5 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <Bot className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Olá! Sou sua IA Corporativa
+                  <h3 className="font-semibold flex items-center gap-2">
+                    Assistente IA
+                    <Sparkles className="h-4 w-4 text-primary" />
                   </h3>
-                  <p className="text-muted-foreground max-w-md">
-                    Posso ajudá-lo com informações sobre políticas da empresa, 
-                    procedimentos, treinamentos e muito mais. Como posso ajudar?
+                  <p className="text-xs text-muted-foreground">
+                    Online • Respondendo com base na documentação
                   </p>
                 </div>
               </div>
+              {currentConversation && (
+                <Badge variant="outline" className="text-xs">
+                  {messages.length} mensagens
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Área de mensagens */}
+          <ScrollArea className="flex-1 p-6">
+            {messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center max-w-md">
+                  <div className="mb-6 relative">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-24 w-24 bg-primary/5 rounded-full animate-pulse" />
+                    </div>
+                    <Bot className="h-20 w-20 text-primary mx-auto relative z-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">
+                    Olá! Como posso ajudar?
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Tenho acesso a toda a base de conhecimento da empresa e posso responder 
+                    suas dúvidas sobre políticas, procedimentos, produtos e muito mais.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 text-sm">
+                    <div className="p-3 bg-muted/50 rounded-lg text-left">
+                      <p className="font-medium mb-1">💡 Dica</p>
+                      <p className="text-muted-foreground text-xs">
+                        Faça perguntas específicas para obter respostas mais precisas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {messages.map((message) => (
+              <div className="space-y-6">
+                {messages.map((message, index) => (
                   <div
                     key={message.id}
-                    className={`flex gap-3 ${
+                    className={cn(
+                      "flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500",
                       message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                    }`}
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className={message.role === 'user' ? 'bg-primary/10' : 'bg-muted'}>
                         {message.role === 'user' ? (
                           <User className="h-4 w-4" />
                         ) : (
@@ -360,33 +425,40 @@ const CorporateAI = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div
-                      className={`flex-1 max-w-[80%] p-3 rounded-lg ${
+                      className={cn(
+                        "flex-1 max-w-[85%] rounded-2xl p-4 shadow-sm",
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground ml-auto'
-                          : 'bg-muted'
-                      }`}
+                          ? 'bg-primary text-primary-foreground ml-auto rounded-br-sm'
+                          : 'bg-muted rounded-bl-sm'
+                      )}
                     >
-                      <div className="text-sm whitespace-pre-wrap">
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </div>
-                      <div className="text-xs opacity-70 mt-2">
-                        {new Date(message.created_at).toLocaleTimeString()}
+                      <div className={cn(
+                        "text-xs mt-2 opacity-70",
+                        message.role === 'user' ? 'text-right' : 'text-left'
+                      )}>
+                        {new Date(message.created_at).toLocaleTimeString('pt-BR', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </div>
                     </div>
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-4">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-muted">
                         <Bot className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="bg-muted rounded-2xl rounded-bl-sm p-4">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                        <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                       </div>
                     </div>
                   </div>
@@ -397,30 +469,36 @@ const CorporateAI = () => {
           </ScrollArea>
 
           {/* Input de mensagem */}
-          <div className="border-t p-4">
-            <div className="flex gap-2">
+          <div className="border-t p-4 bg-muted/20">
+            <div className="flex gap-3">
               <Input
-                placeholder="Digite sua pergunta..."
+                placeholder="Digite sua pergunta aqui..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 h-11 bg-background"
               />
               <Button 
                 onClick={sendMessage} 
                 disabled={isLoading || !inputMessage.trim()}
-                size="icon"
+                size="lg"
+                className="px-6"
               >
-                <Send className="h-4 w-4" />
+                {isLoading ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
-            <div className="text-xs text-muted-foreground mt-2">
-              A IA tem acesso à base de conhecimento da empresa para responder suas dúvidas.
-            </div>
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              Respostas baseadas na base de conhecimento corporativa
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
