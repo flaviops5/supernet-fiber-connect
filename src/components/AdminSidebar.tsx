@@ -129,14 +129,9 @@ const agentsItems = [
     icon: Database,
   },
   {
-    title: "Monitoramento IXC",
+    title: "Monitoramento Ativo",
     url: "/admin/monitoramento",
     icon: Monitor,
-  },
-  {
-    title: "Auto-Reboot",
-    url: "/admin/auto-reboot",
-    icon: Activity,
   },
   {
     title: "Manutenção Inteligente",
@@ -164,11 +159,6 @@ const financialItems = [
   {
     title: "Templates de Notificação",
     url: "/admin/notification-templates",
-    icon: FileText,
-  },
-  {
-    title: "Templates de Email",
-    url: "/admin/email-templates",
     icon: FileText,
   },
 ];

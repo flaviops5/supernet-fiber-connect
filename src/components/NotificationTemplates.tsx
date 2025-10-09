@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Edit, Eye, Save, X, AlertCircle } from "lucide-react";
+import { FileText, Edit, Eye, Save, X, AlertCircle, Mail } from "lucide-react";
+import { EmailTemplateManagement } from './EmailTemplateManagement';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 
 interface Template {
@@ -111,11 +113,18 @@ export const NotificationTemplates = () => {
             Templates de Notificação
           </h2>
           <p className="text-muted-foreground mt-1">
-            Personalize as mensagens enviadas aos clientes
+            Personalize as mensagens e emails enviados aos clientes
           </p>
         </div>
       </div>
 
+      <Tabs defaultValue="whatsapp" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="whatsapp">WhatsApp & Email</TabsTrigger>
+          <TabsTrigger value="email">Templates de Email</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="whatsapp" className="space-y-6">
       <Card className="border-blue-200 bg-blue-50">
         <CardHeader>
           <CardTitle className="text-sm">ℹ️ Variáveis disponíveis</CardTitle>
@@ -309,6 +318,12 @@ export const NotificationTemplates = () => {
           ))}
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="email">
+          <EmailTemplateManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

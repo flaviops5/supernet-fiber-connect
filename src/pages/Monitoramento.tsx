@@ -10,7 +10,13 @@ import { MassOutageMonitor } from '@/components/MassOutageMonitor';
 import { MassOutageHistory } from '@/components/MassOutageHistory';
 import { PonPortsMonitor } from '@/components/PonPortsMonitor';
 import { RadioMonitor } from '@/components/RadioMonitor';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock } from 'lucide-react';
+import { RebootHistory } from '@/components/monitoring/RebootHistory';
+import { RebootBlacklist } from '@/components/monitoring/RebootBlacklist';
+import { RebootSettings } from '@/components/monitoring/RebootSettings';
+import { RebootStats } from '@/components/monitoring/RebootStats';
+import { RebootCandidates } from '@/components/monitoring/RebootCandidates';
+import { ClientStats } from '@/components/monitoring/ClientStats';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
@@ -102,20 +108,24 @@ export default function Monitoramento() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Monitoramento IXC
+                Monitoramento Ativo
               </h1>
               <p className="text-muted-foreground">
-                Acompanhe métricas e status dos clientes em tempo real
+                Acompanhe métricas, status dos clientes e auto-reboot em tempo real
               </p>
             </div>
           </div>
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
-                Status dos Clientes
+                Status
+              </TabsTrigger>
+              <TabsTrigger value="autoreboot" className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Auto Reboot
               </TabsTrigger>
               <TabsTrigger value="outages" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
@@ -123,7 +133,7 @@ export default function Monitoramento() {
               </TabsTrigger>
               <TabsTrigger value="pon" className="gap-2">
                 <Network className="h-4 w-4" />
-                Portas PON
+                PON
               </TabsTrigger>
               <TabsTrigger value="radio" className="gap-2">
                 <TowerControl className="h-4 w-4" />
@@ -194,6 +204,32 @@ export default function Monitoramento() {
               </Card>
             </div>
           )}
+            </TabsContent>
+
+            <TabsContent value="autoreboot" className="space-y-6">
+              <ClientStats />
+              <RebootStats />
+              <RebootCandidates />
+              
+              <Tabs defaultValue="history" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="history">Histórico</TabsTrigger>
+                  <TabsTrigger value="blacklist">Blacklist</TabsTrigger>
+                  <TabsTrigger value="settings">Configurações</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="history">
+                  <RebootHistory />
+                </TabsContent>
+
+                <TabsContent value="blacklist">
+                  <RebootBlacklist />
+                </TabsContent>
+
+                <TabsContent value="settings">
+                  <RebootSettings />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="pon">
