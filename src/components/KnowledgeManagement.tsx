@@ -126,6 +126,36 @@ const KnowledgeManagement = () => {
     }
   };
 
+  const syncMarkdownDocs = async () => {
+    try {
+      setLoading(true);
+      toast({
+        title: "Sincronizando documentos Markdown",
+        description: "Importando arquivos .md para a base de conhecimento...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('sync-knowledge-docs');
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Sincronização concluída",
+        description: `${data.synced_items} documentos foram importados com sucesso`,
+      });
+
+      loadKnowledgeItems();
+    } catch (error: any) {
+      console.error('Error syncing markdown docs:', error);
+      toast({
+        title: "Erro ao sincronizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getFilteredItems = () => {
     const items = getCurrentItems();
     if (!searchTerm) return items;
@@ -341,7 +371,11 @@ const KnowledgeManagement = () => {
             <p className="text-sm text-muted-foreground">Organize em pastas e atribua aos agentes</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={syncMarkdownDocs} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Sincronizar Docs
+          </Button>
           <Button onClick={syncIXCDocumentation} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Sincronizar IXC

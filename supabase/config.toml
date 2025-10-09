@@ -69,6 +69,9 @@ verify_jwt = false
 [functions.sync-ixc-documentation]
 verify_jwt = true
 
+[functions.sync-knowledge-docs]
+verify_jwt = true
+
 [functions.calculate-projections]
 verify_jwt = true
 
