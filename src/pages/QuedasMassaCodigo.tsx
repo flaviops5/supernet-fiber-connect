@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, BookOpen, AlertTriangle, Activity, Database, Bot, Settings, ExternalLink } from "lucide-react";
+import { Copy, Check, BookOpen, AlertTriangle, Activity, Database, Bot, Settings, ExternalLink, Sparkles, Zap, LineChart } from "lucide-react";
 import { toast } from "sonner";
 
 const QuedasMassaCodigo = () => {
@@ -167,18 +167,46 @@ if (massOutageInfo) {
             </p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500">
+            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
               ✅ Ativo
             </Badge>
-            <Badge variant="outline">v1.3.0</Badge>
+            <Badge variant="outline" className="border-destructive/20">v1.5.0</Badge>
           </div>
         </div>
 
-        {/* Quick Links */}
-        <Card className="bg-card/50 backdrop-blur border-muted">
+        {/* Quick Links com visual aprimorado */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            { icon: Zap, label: "Detecção", color: "from-destructive/30 to-red-accent/30", textColor: "text-destructive" },
+            { icon: Database, label: "Histórico", color: "from-green-500/30 to-green-600/30", textColor: "text-green-600" },
+            { icon: LineChart, label: "Monitor", color: "from-blue-500/30 to-blue-600/30", textColor: "text-blue-500" },
+            { icon: Settings, label: "Config", color: "from-purple-500/30 to-purple-600/30", textColor: "text-purple-600" }
+          ].map((item, i) => (
+            <Card key={i} className="group hover:shadow-[0_8px_30px_rgb(240,74,34,0.2)] transition-all duration-300 hover:-translate-y-2 cursor-pointer border-destructive/10 bg-gradient-to-br from-card to-muted/30">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className={`p-3 bg-gradient-to-br ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                  <item.icon className={`h-6 w-6 ${item.textColor}`} />
+                </div>
+                <div>
+                  <p className="font-semibold group-hover:text-destructive transition-colors">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">Ver código →</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Links rápidos adicionais */}
+        <Card className="bg-card/50 backdrop-blur border-destructive/10">
           <CardContent className="pt-6">
             <div className="flex gap-4 flex-wrap">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all">
+                <a href="/technical-docs">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Docs Completas
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all">
                 <a href="/technical-docs">
                   <BookOpen className="w-4 h-4 mr-2" />
                   Docs Completas

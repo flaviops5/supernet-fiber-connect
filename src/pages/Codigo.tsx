@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, BookOpen, Zap, Activity, Database, Bot, Settings, ExternalLink } from "lucide-react";
+import { Copy, Check, BookOpen, Zap, Activity, Database, Bot, Settings, ExternalLink, Sparkles, Network } from "lucide-react";
 import { toast } from "sonner";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
@@ -135,24 +135,46 @@ return {
             </p>
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500">
-              ✅ Ativo
+            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+              ✅ Conectado
             </Badge>
-            <Badge variant="outline">v3.2.0</Badge>
+            <Badge variant="outline" className="border-primary/20">v3.2.1</Badge>
           </div>
         </div>
 
-        {/* Quick Links */}
-        <Card className="bg-card/50 backdrop-blur border-muted">
+        {/* Quick Links com visual aprimorado */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            { icon: Activity, label: "IXC Client", color: "from-blue-500/30 to-blue-600/30", textColor: "text-blue-500" },
+            { icon: Zap, label: "Circuit Breaker", color: "from-orange/30 to-red-accent/30", textColor: "text-orange" },
+            { icon: Database, label: "Endpoints API", color: "from-green-500/30 to-green-600/30", textColor: "text-green-600" },
+            { icon: Settings, label: "Proxy Seguro", color: "from-purple-500/30 to-purple-600/30", textColor: "text-purple-600" }
+          ].map((item, i) => (
+            <Card key={i} className="group hover:shadow-[0_8px_30px_rgb(77,100,174,0.2)] transition-all duration-300 hover:-translate-y-2 cursor-pointer border-primary/10 bg-gradient-to-br from-card to-muted/30">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className={`p-3 bg-gradient-to-br ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                  <item.icon className={`h-6 w-6 ${item.textColor}`} />
+                </div>
+                <div>
+                  <p className="font-semibold group-hover:text-primary transition-colors">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">Ver código →</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Links rápidos adicionais */}
+        <Card className="bg-card/50 backdrop-blur border-primary/10">
           <CardContent className="pt-6">
             <div className="flex gap-4 flex-wrap">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all">
                 <a href="/technical-docs">
                   <BookOpen className="w-4 h-4 mr-2" />
                   Docs Completas
                 </a>
               </Button>
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all">
                 <a href="https://supabase.com/dashboard/project/mxdupkbpxjcfxdgrwknp/functions/ixc-proxy/logs" target="_blank">
                   <Activity className="w-4 h-4 mr-2" />
                   IXC Proxy Logs
@@ -163,21 +185,22 @@ return {
           </CardContent>
         </Card>
 
+        {/* Tabs com visual aprimorado */}
         <Tabs defaultValue="explanation" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-muted/50">
-            <TabsTrigger value="explanation">
+          <TabsList className="grid w-full grid-cols-6 bg-gradient-to-r from-muted/80 to-muted/60 p-2 rounded-2xl shadow-inner backdrop-blur-sm">
+            <TabsTrigger value="explanation" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300">
               <BookOpen className="w-4 h-4 mr-2" />
               Explicação
             </TabsTrigger>
-            <TabsTrigger value="client">
+            <TabsTrigger value="client" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300">
               <Zap className="w-4 h-4 mr-2" />
               IXC Client
             </TabsTrigger>
-            <TabsTrigger value="proxy">
+            <TabsTrigger value="proxy" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300">
               <Activity className="w-4 h-4 mr-2" />
               IXC Proxy
             </TabsTrigger>
-            <TabsTrigger value="functions">
+            <TabsTrigger value="functions" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary-light data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300">
               <Bot className="w-4 h-4 mr-2" />
               Functions
             </TabsTrigger>

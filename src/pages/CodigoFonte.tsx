@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, BookOpen, Zap, Bot, Database, Activity, Settings, ExternalLink } from "lucide-react";
+import { Copy, Check, BookOpen, Zap, Bot, Database, Activity, Settings, ExternalLink, Sparkles, Brain } from "lucide-react";
 import { toast } from "sonner";
 
 const CodigoFonte = () => {
@@ -67,31 +67,66 @@ CREATE TABLE telemedicina_appointments (
 );`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
-              📱 Sistema de Telemedicina
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Documentação técnica completa - WhatsApp + AI Agent
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="bg-green-500/10 text-green-500">
-              ✅ Ativo
-            </Badge>
-            <Badge variant="outline">v2.1.0</Badge>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header com visual aprimorado */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-orange/10 to-primary/10 rounded-3xl blur-3xl" />
+          <div className="relative flex items-start gap-6 p-8 bg-card/80 backdrop-blur-xl rounded-3xl border border-primary/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(77,100,174,0.25)] transition-all duration-500">
+            <div className="p-5 bg-gradient-to-br from-primary via-primary-light to-orange rounded-2xl shadow-lg animate-pulse">
+              <Brain className="h-14 w-14 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-orange to-red-accent bg-clip-text text-transparent">
+                  Sistema de Telemedicina
+                </h1>
+                <Badge className="bg-gradient-to-r from-primary to-orange text-primary-foreground border-0 px-4 py-1 shadow-lg">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Código-Fonte Completo
+                </Badge>
+              </div>
+              <p className="text-lg text-muted-foreground/90 leading-relaxed mb-3">
+                Arquitetura completa do sistema de telemedicina com autenticação dedicada, 
+                agente especializado e integração multi-canal (WhatsApp + Web).
+              </p>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                  ✅ Ativo
+                </Badge>
+                <Badge variant="outline" className="border-primary/20">v2.1.0</Badge>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Quick Links */}
-        <Card className="bg-card/50 backdrop-blur border-muted">
+        {/* Quick Links com visual aprimorado */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[
+            { icon: Activity, label: "WhatsApp Webhook", color: "from-green-500/30 to-green-600/30", textColor: "text-green-600", href: "/technical-docs" },
+            { icon: Bot, label: "AI Agent", color: "from-primary/30 to-primary-light/30", textColor: "text-primary", href: "/technical-docs" },
+            { icon: Database, label: "Database Schema", color: "from-purple-500/30 to-purple-600/30", textColor: "text-purple-600", href: "/technical-docs" },
+            { icon: Settings, label: "Configuração", color: "from-orange/30 to-red-accent/30", textColor: "text-orange", href: "/technical-docs" }
+          ].map((item, i) => (
+            <Card key={i} className="group hover:shadow-[0_8px_30px_rgb(77,100,174,0.2)] transition-all duration-300 hover:-translate-y-2 cursor-pointer border-primary/10 bg-gradient-to-br from-card to-muted/30">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className={`p-3 bg-gradient-to-br ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                  <item.icon className={`h-6 w-6 ${item.textColor}`} />
+                </div>
+                <div>
+                  <p className="font-semibold group-hover:text-primary transition-colors">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">Ver código →</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Links rápidos adicionais */}
+        <Card className="bg-card/50 backdrop-blur border-primary/10">
           <CardContent className="pt-6">
             <div className="flex gap-4">
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all">
                 <a href="/technical-docs">
                   <BookOpen className="w-4 h-4 mr-2" />
                   Docs Completas
