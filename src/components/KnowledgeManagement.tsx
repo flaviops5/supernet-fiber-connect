@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, FolderPlus, RefreshCw } from 'lucide-react';
+import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, FolderPlus, RefreshCw, BookOpen, Briefcase, Wrench, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import VectorMigrationPanel from './VectorMigrationPanel';
@@ -57,10 +58,43 @@ const KnowledgeManagement = () => {
     { value: 'routing', label: 'Roteamento' }
   ];
 
+  const categoryGroups = [
+    { 
+      id: 'vendas', 
+      label: 'Vendas e Comercial', 
+      icon: Briefcase,
+      categories: ['sales', 'planos', 'políticas', 'comercial'],
+      color: 'text-green-600'
+    },
+    { 
+      id: 'suporte', 
+      label: 'Suporte ao Cliente', 
+      icon: Wrench,
+      categories: ['support_financial', 'support_tech', 'atendimento'],
+      color: 'text-blue-600'
+    },
+    { 
+      id: 'tecnico', 
+      label: 'Técnico e Sistemas', 
+      icon: Settings,
+      categories: ['técnico', 'IXC_system', 'procedimentos', 'troubleshooting'],
+      color: 'text-purple-600'
+    },
+    { 
+      id: 'geral', 
+      label: 'Documentação Geral', 
+      icon: BookOpen,
+      categories: ['company', 'treinamento', 'FAQ', 'automacao', 'telemedicina'],
+      color: 'text-orange-600'
+    }
+  ];
+
   const categories = [
     'sales', 'support_financial', 'support_tech', 
     'IXC_system', 'company', 'procedimentos', 
-    'políticas', 'treinamento', 'FAQ', 'técnico'
+    'políticas', 'treinamento', 'FAQ', 'técnico',
+    'planos', 'comercial', 'atendimento', 'troubleshooting',
+    'automacao', 'telemedicina'
   ];
 
   const loadKnowledgeItems = async () => {
@@ -195,6 +229,24 @@ const KnowledgeManagement = () => {
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.content.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  };
+
+  const getItemsByCategory = (categories: string[]) => {
+    return getFilteredItems().filter(item => 
+      categories.some(cat => item.category.toLowerCase().includes(cat.toLowerCase()))
+    );
+  };
+
+  const getCategoryStats = (categories: string[]) => {
+    const items = allItems.filter(item => 
+      categories.some(cat => item.category.toLowerCase().includes(cat.toLowerCase()))
+    );
+    return {
+      total: items.length,
+      active: items.filter(i => i.is_active).length,
+      folders: items.filter(i => i.is_folder).length,
+      docs: items.filter(i => !i.is_folder).length
+    };
   };
 
   const navigateToFolder = (folderId: string | null, folderTitle: string) => {
@@ -458,85 +510,131 @@ const KnowledgeManagement = () => {
         />
       </div>
 
-      {/* Items Grid */}
-      <Card>
-        <CardContent className="p-4">
-          {loading ? (
-            <div className="text-center py-12">Carregando...</div>
-          ) : getFilteredItems().length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+      {/* Items organized by Category Groups */}
+      {loading ? (
+        <Card>
+          <CardContent className="p-12">
+            <div className="text-center">Carregando...</div>
+          </CardContent>
+        </Card>
+      ) : getFilteredItems().length === 0 ? (
+        <Card>
+          <CardContent className="p-12">
+            <div className="text-center text-muted-foreground">
               {searchTerm ? 'Nenhum item encontrado' : 'Pasta vazia'}
             </div>
-          ) : (
-            <div className="grid gap-3">
-              {getFilteredItems().map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent transition-colors group"
-                >
-                  <button
-                    onClick={() => handleItemClick(item)}
-                    className="flex items-center gap-3 flex-1 min-w-0"
-                  >
-                    {item.is_folder ? (
-                      <Folder className="h-5 w-5 text-primary flex-shrink-0" />
-                    ) : (
-                      <File className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="font-medium truncate">{item.title}</div>
-                      {!item.is_folder && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {item.category} • {item.agent_types.length === 0 ? 'Todos os agentes' : item.agent_types.join(', ')}
+          </CardContent>
+        </Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={categoryGroups.map(g => g.id)} className="space-y-4">
+          {categoryGroups.map((group) => {
+            const items = getItemsByCategory(group.categories);
+            const stats = getCategoryStats(group.categories);
+            const IconComponent = group.icon;
+            
+            if (items.length === 0 && !searchTerm) return null;
+            
+            return (
+              <AccordionItem key={group.id} value={group.id} className="border rounded-lg">
+                <Card>
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
+                        <IconComponent className={`h-5 w-5 ${group.color}`} />
+                        <div className="text-left">
+                          <div className="font-semibold text-base">{group.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {stats.docs} documentos • {stats.folders} pastas
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {items.length}
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent className="p-4 pt-0">
+                      {items.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Nenhum item nesta categoria
+                        </div>
+                      ) : (
+                        <div className="grid gap-2">
+                          {items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent transition-colors group"
+                            >
+                              <button
+                                onClick={() => handleItemClick(item)}
+                                className="flex items-center gap-3 flex-1 min-w-0"
+                              >
+                                {item.is_folder ? (
+                                  <Folder className="h-5 w-5 text-primary flex-shrink-0" />
+                                ) : (
+                                  <File className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0 text-left">
+                                  <div className="font-medium truncate">{item.title}</div>
+                                  {!item.is_folder && (
+                                    <div className="text-xs text-muted-foreground truncate">
+                                      {item.category} • {item.agent_types.length === 0 ? 'Todos os agentes' : item.agent_types.join(', ')}
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                              
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant={item.is_active ? "default" : "secondary"} className="text-xs">
+                                  {item.is_active ? 'Ativo' : 'Inativo'}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(item)}
+                                  className="opacity-0 group-hover:opacity-100"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Deseja realmente excluir "{item.title}"?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDelete(item.id)}>
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </div>
-                  </button>
-                  
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant={item.is_active ? "default" : "secondary"} className="text-xs">
-                      {item.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                      className="opacity-0 group-hover:opacity-100"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Deseja realmente excluir "{item.title}"?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(item.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      )}
 
       {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
