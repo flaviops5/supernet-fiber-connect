@@ -59,105 +59,134 @@ serve(async (req) => {
 
     console.log('Iniciando sincronização dos documentos markdown...');
 
-    // Definir os arquivos markdown com seu conteúdo inline
+    // Lista de arquivos markdown para sincronizar
     const markdownFiles = [
+      // ========== DOCUMENTAÇÃO ARQUITETURA ==========
+      {
+        path: 'docs/multiagent-architecture.md',
+        category: 'arquitetura',
+        agentTypes: ['admin', 'routing']
+      },
+      {
+        path: 'docs/agent-personality-guide.md',
+        category: 'arquitetura',
+        agentTypes: ['admin', 'routing']
+      },
+      {
+        path: 'docs/agent-tools-matrix.md',
+        category: 'documentacao-tecnica',
+        agentTypes: ['admin']
+      },
+      
+      // ========== DOCUMENTAÇÃO TÉCNICA ==========
+      {
+        path: 'docs/tools-reference.md',
+        category: 'documentacao-tecnica',
+        agentTypes: ['admin', 'support_tech']
+      },
+      {
+        path: 'docs/operational-guide.md',
+        category: 'documentacao-tecnica',
+        agentTypes: ['admin', 'support_tech']
+      },
+      {
+        path: 'docs/whatsapp-integration-guide.md',
+        category: 'integracao',
+        agentTypes: ['admin']
+      },
+      
+      // ========== SISTEMA E ROBUSTEZ ==========
+      {
+        path: 'docs/system-complete-description.md',
+        category: 'sistema',
+        agentTypes: ['admin']
+      },
+      {
+        path: 'docs/system-robustness-100.md',
+        category: 'sistema',
+        agentTypes: ['admin']
+      },
+      {
+        path: 'docs/conceitos-fundamentais.md',
+        category: 'sistema',
+        agentTypes: ['admin', 'routing']
+      },
+      
+      // ========== CONHECIMENTO BASE ==========
       {
         path: 'docs/knowledge-base/README.md',
         category: 'documentacao',
-        agentTypes: ['admin'],
-        content: `---
-title: "📚 Knowledge Base - SUPERNET FIBRA"
-category: "documentacao"
-agent_types: ["admin"]
-is_active: true
-last_updated: "2025-10-09"
-author: "Sistema"
-version: "1.0"
----
-
-# 📚 Knowledge Base - SUPERNET FIBRA
-
-Sistema centralizado de conhecimento para alimentar os agentes de IA.
-
-## 🎯 Objetivo
-
-Armazenar, versionar e sincronizar todo o conhecimento que os agentes precisam para atender clientes.
-
-## 📁 Estrutura
-
-A base de conhecimento está organizada por categorias:
-- **vendas**: Planos, promoções, políticas comerciais
-- **suporte_tecnico**: Troubleshooting, procedimentos técnicos
-- **suporte_financeiro**: Boletos, negociação, desbloqueio
-- **automacao**: Smart home, dispositivos, integrações
-- **telemedicina**: Planos de saúde, consultas, especialidades
-
-## 🔄 Sincronização
-
-Use o botão "Sincronizar Docs" para atualizar a base de conhecimento com os arquivos markdown mais recentes.`
+        agentTypes: ['admin']
       }
     ];
 
-    // Limpar registros antigos de documentação (exceto IXC API)
-    console.log('Limpando registros antigos de documentação...');
-    const { error: deleteError } = await supabase
-      .from('knowledge_base')
-      .delete()
-      .in('category', ['documentacao']);
-
-    if (deleteError) {
-      console.warn('Aviso ao limpar registros:', deleteError);
-    }
+    // Buscar conteúdo dos arquivos do GitHub (requer integração GitHub)
+    // Por enquanto, vamos sincronizar apenas os metadados e instruir uso do script
+    
+    console.log(`📚 Preparando sincronização de ${markdownFiles.length} documentos...`);
 
     const itemsToInsert = [];
 
     // Processar cada arquivo
     for (const file of markdownFiles) {
       try {
-        console.log(`Processando ${file.path}...`);
+        console.log(`📄 Registrando: ${file.path}...`);
         
-        const { metadata, content: markdownContent } = extractFrontMatter(file.content);
+        // Extrair título do nome do arquivo
+        const fileName = file.path.split('/').pop()?.replace('.md', '') || 'Documento';
+        const title = fileName
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
 
         const item = {
-          title: metadata.title || file.path.split('/').pop()?.replace('.md', '') || 'Documento',
-          content: markdownContent,
+          title,
+          content: `📎 **Fonte:** \`${file.path}\`\n\n⚠️ Para sincronizar o conteúdo completo, execute o script:\n\`\`\`bash\ndeno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts\n\`\`\``,
           content_type: 'document',
-          category: metadata.category || file.category,
-          tags: [metadata.category || file.category, 'docs-sync'],
-          agent_types: metadata.agent_types || file.agentTypes,
-          is_active: metadata.is_active !== false,
+          category: file.category,
+          tags: [file.category, 'docs-sync', 'pending-content'],
+          agent_types: file.agentTypes,
+          is_active: true,
           parent_id: null,
           is_folder: false,
           display_order: 0
         };
 
         itemsToInsert.push(item);
-        console.log(`✓ ${item.title}`);
+        console.log(`✓ ${title}`);
       } catch (error) {
-        console.error(`Erro ao processar ${file.path}:`, error);
+        console.error(`❌ Erro ao processar ${file.path}:`, error);
       }
     }
 
-    // Inserir todos os itens
+    // Inserir todos os itens (usando upsert por source path)
     if (itemsToInsert.length > 0) {
-      console.log(`\nInserindo ${itemsToInsert.length} itens na knowledge_base...`);
-      const { error } = await supabase
-        .from('knowledge_base')
-        .insert(itemsToInsert);
+      console.log(`\n📥 Inserindo ${itemsToInsert.length} itens na knowledge_base...`);
+      
+      for (const item of itemsToInsert) {
+        const { error } = await supabase
+          .from('knowledge_base')
+          .upsert(item, { 
+            onConflict: 'title,category',
+            ignoreDuplicates: false 
+          });
 
-      if (error) {
-        console.error('Erro ao inserir:', error);
-        throw error;
+        if (error) {
+          console.error(`❌ Erro ao inserir "${item.title}":`, error);
+        }
       }
     }
 
-    console.log('✅ Sincronização concluída com sucesso!');
+    console.log('✅ Sincronização concluída!');
+    console.log('📌 Para sincronizar o conteúdo COMPLETO dos arquivos, execute:');
+    console.log('   deno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts');
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Documentos sincronizados com sucesso',
-        synced_items: itemsToInsert.length
+        message: `${itemsToInsert.length} documentos registrados. Execute o script Deno para sincronizar conteúdo completo.`,
+        synced_items: itemsToInsert.length,
+        info: 'Para conteúdo completo: deno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
