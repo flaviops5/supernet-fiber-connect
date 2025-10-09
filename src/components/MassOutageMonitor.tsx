@@ -113,7 +113,6 @@ export function MassOutageMonitor() {
   }, []);
 
   const activeEvents = events.filter(e => e.status === 'active');
-  const resolvedEvents = events.filter(e => e.status === 'resolved');
 
   return (
     <div className="space-y-6">
@@ -241,71 +240,6 @@ export function MassOutageMonitor() {
                         </div>
                       </div>
                     </details>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Lista de Eventos Resolvidos */}
-      {resolvedEvents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-500">
-              <CheckCircle className="h-5 w-5" />
-              Eventos Resolvidos
-            </CardTitle>
-            <CardDescription>
-              Últimas quedas em massa que foram resolvidas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {resolvedEvents.slice(0, 5).map((event) => (
-              <Card key={event.id} className="border-green-500/20 bg-green-500/5">
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="h-5 w-5 text-green-500" />
-                        <div>
-                          <h3 className="font-bold">{event.region_pattern}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {event.affected_count} clientes foram afetados
-                            {event.metadata?.power_outage && ' - Falta de energia'}
-                          </p>
-                          {event.metadata?.bairros && event.metadata.bairros.length > 0 && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Bairros: {event.metadata.bairros.join(', ')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge variant="outline" className="border-green-500/50 text-green-500">
-                          Resolvido
-                        </Badge>
-                        {event.metadata?.power_outage && (
-                          <Badge variant="outline" className="gap-1 text-xs border-yellow-500/50 text-yellow-500">
-                            <Zap className="h-3 w-3" />
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Início: {new Date(event.detected_at).toLocaleString('pt-BR')}
-                      </div>
-                      {event.resolved_at && (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          Fim: {new Date(event.resolved_at).toLocaleString('pt-BR')}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </CardContent>
               </Card>

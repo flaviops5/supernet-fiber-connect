@@ -7,9 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { MassOutageMonitor } from '@/components/MassOutageMonitor';
+import { MassOutageHistory } from '@/components/MassOutageHistory';
 import { PonPortsMonitor } from '@/components/PonPortsMonitor';
 import { RadioMonitor } from '@/components/RadioMonitor';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl } from 'lucide-react';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
@@ -148,7 +149,7 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status dos Clientes
@@ -164,6 +165,10 @@ export default function Monitoramento() {
               <TabsTrigger value="outages" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 Quedas em Massa
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <Clock className="h-4 w-4" />
+                Histórico
               </TabsTrigger>
             </TabsList>
 
@@ -182,6 +187,9 @@ export default function Monitoramento() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Base completa de clientes
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                    Última atualização: {new Date().toLocaleString('pt-BR')} • {clientCount.paginas_consultadas} página(s) consultada(s)
                   </p>
                 </CardContent>
               </Card>
@@ -224,38 +232,6 @@ export default function Monitoramento() {
             </div>
           )}
 
-          {/* Details Card */}
-          {clientCount && clientCount.detalhes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Detalhes por Status
-                </CardTitle>
-                <CardDescription>
-                  Última atualização: {new Date().toLocaleString('pt-BR')} • {clientCount.paginas_consultadas} página(s) consultada(s)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(clientCount.detalhes).map(([status, count]: [string, any]) => (
-                    <div key={status} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="capitalize">{status}</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {count} cliente{count !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {count}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
               {/* Empty State */}
               {!clientCount && !loading && (
                 <Card>
@@ -286,6 +262,10 @@ export default function Monitoramento() {
 
             <TabsContent value="outages">
               <MassOutageMonitor />
+            </TabsContent>
+
+            <TabsContent value="history">
+              <MassOutageHistory />
             </TabsContent>
           </Tabs>
         </div>
