@@ -42,7 +42,6 @@ import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import WhatsAppConversations from '@/components/WhatsAppConversations';
-import WhatsAppTester from '@/components/WhatsAppTester';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { toast } from "sonner";
 
@@ -1819,9 +1818,9 @@ const Admin = () => {
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/whatsapp" element={<WhatsAppConversations />} />
-                <Route path="/whatsapp-test" element={<WhatsAppTester />} />
                 <Route path="/whatsapp-setup" element={<WhatsAppSetup />} />
                 <Route path="/profile" element={<ProfileManagement />} />
+
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>
             </main>

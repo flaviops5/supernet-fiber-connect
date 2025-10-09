@@ -35,7 +35,6 @@ import {
   BookOpen,
   Database,
   MessageSquare,
-  FlaskConical,
   Bell,
   DollarSign,
   Activity,
@@ -120,14 +119,9 @@ const agentsItems = [
     icon: Brain,
   },
   {
-    title: "WhatsApp",
+    title: "Conversas WhatsApp",
     url: "/admin/whatsapp",
     icon: MessageCircle,
-  },
-  {
-    title: "Testar WhatsApp",
-    url: "/admin/whatsapp-test",
-    icon: FlaskConical,
   },
   {
     title: "Configurar WhatsApp",
