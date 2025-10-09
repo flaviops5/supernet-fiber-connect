@@ -41,7 +41,6 @@ import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
-import WhatsAppConversations from '@/components/WhatsAppConversations';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { toast } from "sonner";
 
@@ -1817,8 +1816,7 @@ const Admin = () => {
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
-                <Route path="/whatsapp" element={<WhatsAppConversations />} />
-                <Route path="/whatsapp-setup" element={<WhatsAppSetup />} />
+                <Route path="/whatsapp" element={<WhatsAppSetup />} />
                 <Route path="/profile" element={<ProfileManagement />} />
 
                 <Route path="/settings" element={<SettingsManagement />} />

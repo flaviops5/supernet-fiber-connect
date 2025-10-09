@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -16,6 +17,7 @@ import {
   Webhook
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import WhatsAppConversations from "./WhatsAppConversations";
 
 interface InstanceStatus {
   instanceName: string;
@@ -106,6 +108,17 @@ export default function WhatsAppSetup() {
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="conversations" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="conversations">Conversas</TabsTrigger>
+          <TabsTrigger value="setup">Configuração</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="conversations" className="space-y-6">
+          <WhatsAppConversations />
+        </TabsContent>
+
+        <TabsContent value="setup" className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -305,6 +318,8 @@ export default function WhatsAppSetup() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

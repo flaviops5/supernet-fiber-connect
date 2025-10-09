@@ -119,14 +119,9 @@ const agentsItems = [
     icon: Brain,
   },
   {
-    title: "Conversas WhatsApp",
+    title: "WhatsApp",
     url: "/admin/whatsapp",
     icon: MessageCircle,
-  },
-  {
-    title: "Configurar WhatsApp",
-    url: "/admin/whatsapp-setup",
-    icon: Settings,
   },
   {
     title: "Integração IXC",
