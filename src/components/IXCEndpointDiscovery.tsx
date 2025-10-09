@@ -10,22 +10,30 @@ import { Loader2, Search, CheckCircle2, XCircle, AlertCircle } from "lucide-reac
 
 interface EndpointResult {
   endpoint: string;
-  status: 'EXISTS' | 'NOT_FOUND' | 'ERROR';
+  status: 'EXISTS' | 'NOT_FOUND' | 'ERROR' | 'IXC_ERROR' | 'UNKNOWN_FORMAT' | 'PARSE_ERROR';
   statusCode: number;
   recordCount?: number;
   message: string;
+  errorMessage?: string;
+  rawResponse?: string;
 }
 
 interface DiscoveryResult {
   summary: {
     total: number;
-    found: number;
+    functional: number;
     notFound: number;
-    errors: number;
+    ixcErrors: number;
+    otherErrors: number;
   };
-  existingEndpoints: Array<{
+  functionalEndpoints: Array<{
     endpoint: string;
     recordCount: number;
+  }>;
+  ixcErrorEndpoints: Array<{
+    endpoint: string;
+    errorMessage: string;
+    details: string;
   }>;
   allResults: EndpointResult[];
 }
@@ -46,7 +54,7 @@ export const IXCEndpointDiscovery = () => {
       if (data.success) {
         setResults(data);
         toast.success(
-          `Descoberta concluída! ${data.summary.found} endpoints GPON encontrados.`
+          `Descoberta concluída! ${data.summary.functional} funcionais, ${data.summary.ixcErrors} com erro IXC.`
         );
       } else {
         throw new Error(data.error || 'Erro na descoberta');
@@ -66,24 +74,33 @@ export const IXCEndpointDiscovery = () => {
       case 'EXISTS':
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
       case 'NOT_FOUND':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-gray-500" />;
+      case 'IXC_ERROR':
+        return <AlertCircle className="w-4 h-4 text-orange-500" />;
       case 'ERROR':
-        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case 'UNKNOWN_FORMAT':
+      case 'PARSE_ERROR':
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      EXISTS: 'default',
-      NOT_FOUND: 'destructive',
-      ERROR: 'secondary'
-    } as const;
+    const config = {
+      EXISTS: { variant: 'default' as const, label: 'Funcional' },
+      NOT_FOUND: { variant: 'outline' as const, label: 'Não Encontrado' },
+      IXC_ERROR: { variant: 'secondary' as const, label: 'Erro IXC' },
+      ERROR: { variant: 'destructive' as const, label: 'Erro' },
+      UNKNOWN_FORMAT: { variant: 'destructive' as const, label: 'Formato Inválido' },
+      PARSE_ERROR: { variant: 'destructive' as const, label: 'Erro Parse' },
+    };
+
+    const statusConfig = config[status as keyof typeof config] || { variant: 'secondary' as const, label: 'Desconhecido' };
 
     return (
-      <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
-        {status === 'EXISTS' ? 'Disponível' : status === 'NOT_FOUND' ? 'Não Encontrado' : 'Erro'}
+      <Badge variant={statusConfig.variant}>
+        {statusConfig.label}
       </Badge>
     );
   };
@@ -124,7 +141,7 @@ export const IXCEndpointDiscovery = () => {
             <Separator />
             
             {/* Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold">{results.summary.total}</div>
@@ -134,14 +151,22 @@ export const IXCEndpointDiscovery = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-2xl font-bold text-green-600">
-                    {results.summary.found}
+                    {results.summary.functional}
                   </div>
-                  <p className="text-xs text-muted-foreground">Encontrados</p>
+                  <p className="text-xs text-muted-foreground">Funcionais</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-red-600">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {results.summary.ixcErrors}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Erro IXC</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-gray-600">
                     {results.summary.notFound}
                   </div>
                   <p className="text-xs text-muted-foreground">Não Encontrados</p>
@@ -149,25 +174,25 @@ export const IXCEndpointDiscovery = () => {
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {results.summary.errors}
+                  <div className="text-2xl font-bold text-red-600">
+                    {results.summary.otherErrors}
                   </div>
-                  <p className="text-xs text-muted-foreground">Com Erro</p>
+                  <p className="text-xs text-muted-foreground">Outros Erros</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Existing Endpoints */}
-            {results.existingEndpoints.length > 0 && (
+            {/* Functional Endpoints */}
+            {results.functionalEndpoints.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    Endpoints GPON Disponíveis ({results.existingEndpoints.length})
+                    Endpoints GPON Funcionais ({results.functionalEndpoints.length})
                   </h3>
                   <div className="grid gap-2">
-                    {results.existingEndpoints.map((endpoint) => (
+                    {results.functionalEndpoints.map((endpoint) => (
                       <Card key={endpoint.endpoint} className="bg-green-50 dark:bg-green-950">
                         <CardContent className="py-3 flex justify-between items-center">
                           <code className="text-sm font-mono">
@@ -176,6 +201,36 @@ export const IXCEndpointDiscovery = () => {
                           <Badge variant="outline">
                             {endpoint.recordCount} registro(s)
                           </Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* IXC Error Endpoints */}
+            {results.ixcErrorEndpoints.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-orange-500" />
+                    Endpoints com Erro IXC ({results.ixcErrorEndpoints.length})
+                  </h3>
+                  <div className="grid gap-2">
+                    {results.ixcErrorEndpoints.map((endpoint) => (
+                      <Card key={endpoint.endpoint} className="bg-orange-50 dark:bg-orange-950">
+                        <CardContent className="py-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <code className="text-sm font-mono">
+                              /webservice/v1/{endpoint.endpoint}
+                            </code>
+                            <Badge variant="secondary">HTTP 200</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Erro do IXC:</strong> {endpoint.errorMessage}
+                          </p>
                         </CardContent>
                       </Card>
                     ))}
@@ -193,22 +248,34 @@ export const IXCEndpointDiscovery = () => {
                   {results.allResults.map((result, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between py-2 border-b last:border-0"
+                      className="flex flex-col gap-1 py-2 border-b last:border-0"
                     >
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(result.status)}
-                        <code className="text-sm font-mono">
-                          {result.endpoint}
-                        </code>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(result.status)}
+                          <code className="text-sm font-mono">
+                            {result.endpoint}
+                          </code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {result.recordCount !== undefined && (
+                            <span className="text-xs text-muted-foreground">
+                              {result.recordCount} reg.
+                            </span>
+                          )}
+                          {getStatusBadge(result.status)}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {result.recordCount !== undefined && (
-                          <span className="text-xs text-muted-foreground">
-                            {result.recordCount} reg.
-                          </span>
-                        )}
-                        {getStatusBadge(result.status)}
-                      </div>
+                      {result.errorMessage && (
+                        <p className="text-xs text-orange-600 ml-6">
+                          {result.errorMessage}
+                        </p>
+                      )}
+                      {result.message && result.status !== 'EXISTS' && (
+                        <p className="text-xs text-muted-foreground ml-6">
+                          {result.message}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -84,27 +84,50 @@ serve(async (req) => {
         const status = response.status;
         
         if (status === 200) {
-          const data = await response.json();
-          
-          // Verificar se é uma resposta de erro do IXC
-          if (data?.type === 'error') {
+          try {
+            const data = await response.json();
+            
+            // Verificar se é uma resposta de erro do IXC
+            if (data?.type === 'error') {
+              results.push({
+                endpoint,
+                status: 'IXC_ERROR',
+                statusCode: 200,
+                recordCount: 0,
+                errorMessage: data.message,
+                message: `⚠️ HTTP 200 mas IXC retorna erro: "${data.message}"`
+              });
+              console.log(`⚠️ ${endpoint}: IXC ERROR - ${data.message}`);
+            } else if (data?.registros !== undefined) {
+              // Resposta válida com dados
+              results.push({
+                endpoint,
+                status: 'EXISTS',
+                statusCode: 200,
+                recordCount: data.registros.length,
+                message: `✅ Endpoint disponível (${data.registros.length} registros)`
+              });
+              console.log(`✅ ${endpoint}: EXISTE (${data.registros.length} registros)`);
+            } else {
+              // Resposta 200 mas formato inesperado
+              results.push({
+                endpoint,
+                status: 'UNKNOWN_FORMAT',
+                statusCode: 200,
+                recordCount: 0,
+                message: '⚠️ Resposta em formato inesperado',
+                rawResponse: JSON.stringify(data).substring(0, 200)
+              });
+              console.log(`⚠️ ${endpoint}: FORMATO INESPERADO`);
+            }
+          } catch (parseError) {
             results.push({
               endpoint,
-              status: 'ERROR',
+              status: 'PARSE_ERROR',
               statusCode: 200,
-              recordCount: 0,
-              message: `⚠️ Endpoint responde mas retorna erro: ${data.message}`
+              message: `❌ Erro ao processar resposta: ${parseError.message}`
             });
-            console.log(`⚠️ ${endpoint}: ERRO NA RESPOSTA - ${data.message}`);
-          } else {
-            results.push({
-              endpoint,
-              status: 'EXISTS',
-              statusCode: 200,
-              recordCount: data?.registros?.length || 0,
-              message: '✅ Endpoint disponível com dados'
-            });
-            console.log(`✅ ${endpoint}: EXISTE com ${data?.registros?.length || 0} registros`);
+            console.log(`❌ ${endpoint}: ERRO NO PARSE`);
           }
         } else if (status === 404) {
           results.push({
@@ -139,25 +162,34 @@ serve(async (req) => {
 
     const existingEndpoints = results.filter(r => r.status === 'EXISTS');
     const notFoundEndpoints = results.filter(r => r.status === 'NOT_FOUND');
+    const ixcErrorEndpoints = results.filter(r => r.status === 'IXC_ERROR');
     const errorEndpoints = results.filter(r => r.status === 'ERROR');
+    const unknownEndpoints = results.filter(r => r.status === 'UNKNOWN_FORMAT' || r.status === 'PARSE_ERROR');
 
     console.log('\n📊 RESUMO DA DESCOBERTA:');
-    console.log(`✅ Endpoints encontrados: ${existingEndpoints.length}`);
+    console.log(`✅ Endpoints funcionais: ${existingEndpoints.length}`);
     console.log(`❌ Endpoints não encontrados: ${notFoundEndpoints.length}`);
-    console.log(`⚠️ Endpoints com erro: ${errorEndpoints.length}`);
+    console.log(`⚠️ Endpoints com erro IXC: ${ixcErrorEndpoints.length}`);
+    console.log(`⚠️ Endpoints com outros erros: ${errorEndpoints.length + unknownEndpoints.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         summary: {
           total: potentialEndpoints.length,
-          found: existingEndpoints.length,
+          functional: existingEndpoints.length,
           notFound: notFoundEndpoints.length,
-          errors: errorEndpoints.length
+          ixcErrors: ixcErrorEndpoints.length,
+          otherErrors: errorEndpoints.length + unknownEndpoints.length
         },
-        existingEndpoints: existingEndpoints.map(e => ({
+        functionalEndpoints: existingEndpoints.map(e => ({
           endpoint: e.endpoint,
           recordCount: e.recordCount
+        })),
+        ixcErrorEndpoints: ixcErrorEndpoints.map(e => ({
+          endpoint: e.endpoint,
+          errorMessage: e.errorMessage,
+          details: e.message
         })),
         allResults: results
       }),
