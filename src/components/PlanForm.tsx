@@ -54,10 +54,26 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     active: plan?.active ?? true,
     ctaText: plan?.cta_text || "Contratar Agora",
     displayOrder: plan?.display_order || 0,
-    features: (plan?.features || []).map((feature: any, index: number) => ({
-      ...feature,
-      order: feature.order ?? index
-    })),
+    features: (() => {
+      const raw = plan?.features as any;
+      if (Array.isArray(raw)) {
+        return raw.map((feature: any, index: number) => ({
+          ...feature,
+          order: feature.order ?? index
+        }));
+      }
+      if (typeof raw === 'string') {
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed)
+            ? parsed.map((feature: any, index: number) => ({ ...feature, order: feature.order ?? index }))
+            : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    })(),
     image_url: plan?.image_url || "",
     ixc_plan_id: plan?.ixc_plan_id || ""
   });

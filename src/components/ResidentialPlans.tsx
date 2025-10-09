@@ -9,7 +9,22 @@ const iconMap: { [key: string]: any } = {
   DollarSign, Clock, Router, Wifi
 };
 
-const ResidentialPlans = () => {
+// Normalize plan.features into an array safely
+ type FeatureItem = { text: string; icon?: string; isLink?: boolean; href?: string; order?: number };
+ const toFeaturesArray = (raw: any): FeatureItem[] => {
+   if (Array.isArray(raw)) return raw;
+   if (typeof raw === 'string') {
+     try {
+       const parsed = JSON.parse(raw);
+       return Array.isArray(parsed) ? parsed : [];
+     } catch {
+       return [];
+     }
+   }
+   return [];
+ };
+ 
+ const ResidentialPlans = () => {
   const plugin = useRef(
     Autoplay({ delay: 3000, stopOnInteraction: true })
   );
@@ -184,7 +199,7 @@ const ResidentialPlans = () => {
                     {/* Features List */}
                     <div className="mb-8 flex-1">
                       <ul className="space-y-3">
-                        {(plan.features || []).map((feature: any, featureIndex: number) => {
+                        {toFeaturesArray(plan.features).map((feature: any, featureIndex: number) => {
                           const IconComponent = iconMap[feature.icon] || Download;
                           return (
                             <li key={featureIndex} className="flex items-center space-x-3">
