@@ -43,10 +43,14 @@ export default function WhatsAppSetup() {
       const { data, error } = await supabase.functions.invoke('test-evolution-api', {
         body: { instanceName }
       });
+      const mapped: InstanceStatus = {
+        instanceName,
+        status: String((data as any)?.status ?? (data as any)?.data?.status ?? 'UNKNOWN'),
+        phoneNumber: (data as any)?.config?.phoneNumber,
+        qrCode: (data as any)?.data?.qrCode,
+      };
 
-      if (error) throw error;
-
-      setInstanceStatus(data);
+      setInstanceStatus(mapped);
       toast.success("Status da instância verificado!");
     } catch (error: any) {
       console.error("Erro ao verificar status:", error);
@@ -86,17 +90,18 @@ export default function WhatsAppSetup() {
     toast.success("Copiado para a área de transferência!");
   };
 
-  const getStatusBadge = (status?: string) => {
-    if (!status) return <Badge variant="secondary">Desconhecido</Badge>;
+  const getStatusBadge = (status?: unknown) => {
+    const safe = status == null ? '' : String(status);
+    if (!safe) return <Badge variant="secondary">Desconhecido</Badge>;
     
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes('open') || statusLower.includes('connected')) {
+    const statusLower = safe.toLowerCase();
+    if (statusLower.includes('open') || statusLower.includes('connected') || statusLower.includes('200')) {
       return <Badge className="bg-green-600">Conectado</Badge>;
     }
-    if (statusLower.includes('close') || statusLower.includes('disconnected')) {
+    if (statusLower.includes('close') || statusLower.includes('disconnected') || statusLower.startsWith('http 4') || statusLower.startsWith('http 5')) {
       return <Badge variant="destructive">Desconectado</Badge>;
     }
-    return <Badge variant="secondary">{status}</Badge>;
+    return <Badge variant="secondary">{safe}</Badge>;
   };
 
   return (
