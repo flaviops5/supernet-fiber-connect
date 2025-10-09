@@ -12,14 +12,7 @@ serve(async (req) => {
 
   try {
     const { message, conversationHistory } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-
-    if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'Lovable AI não configurada' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const GOOGLE_API_KEY = 'AIzaSyDp7M8qcIlYVKVBMNMfLbzgHWpxjd2sOb0';
 
     const systemPrompt = `Você é um analista experiente de desenvolvimento web especializado em React, TypeScript, Supabase e Tailwind CSS.
 
@@ -52,25 +45,46 @@ Contexto do projeto:
       { role: "user", content: message }
     ];
 
-    console.log('Calling Lovable AI with model: google/gemini-2.5-flash');
+    console.log('Calling Google Gemini API directly');
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Formatar mensagens para o formato do Gemini
+    const contents = messages
+      .filter(msg => msg.role !== 'system')
+      .map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+    // Adicionar system prompt como primeira mensagem do usuário
+    const systemMsg = messages.find(msg => msg.role === 'system');
+    if (systemMsg) {
+      contents.unshift({
+        role: 'user',
+        parts: [{ text: systemMsg.content }]
+      });
+      contents.splice(1, 0, {
+        role: 'model',
+        parts: [{ text: 'Entendido. Estou pronto para analisar o código e fornecer sugestões.' }]
+      });
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 2000,
+        contents: contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2000,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
+      console.error('Google Gemini API error:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -78,19 +92,12 @@ Contexto do projeto:
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
 
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta da API';
 
     return new Response(
       JSON.stringify({ response: aiResponse }),

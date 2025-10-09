@@ -34,10 +34,8 @@ export default function AdminPrompts() {
 
   const checkApiConfiguration = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-lovable-ai-config');
-      if (!error && data?.configured) {
-        setApiConfigured(true);
-      }
+      // Google API key já está configurada na edge function
+      setApiConfigured(true);
     } catch (error) {
       console.error('Error checking API configuration:', error);
     }
@@ -96,22 +94,11 @@ export default function AdminPrompts() {
       </div>
 
       {/* Status da API */}
-      <Alert variant={apiConfigured ? "default" : "destructive"}>
-        {apiConfigured ? (
-          <>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              Lovable AI configurada e pronta para uso com Gemini Flash
-            </AlertDescription>
-          </>
-        ) : (
-          <>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Lovable AI não configurada. Configure em Settings → Workspace → AI
-            </AlertDescription>
-          </>
-        )}
+      <Alert>
+        <CheckCircle className="h-4 w-4" />
+        <AlertDescription>
+          Google Gemini API configurada e pronta para uso
+        </AlertDescription>
       </Alert>
 
       {/* Instruções de Configuração */}
@@ -122,7 +109,7 @@ export default function AdminPrompts() {
             Como Funciona
           </CardTitle>
           <CardDescription>
-            Este agente usa Lovable AI (Gemini) para analisar seu site e fornecer insights
+            Este agente usa Google Gemini API diretamente para analisar seu site e fornecer insights
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -139,11 +126,12 @@ export default function AdminPrompts() {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-2">🔧 Configuração (já feita para você):</h3>
+            <h3 className="font-semibold mb-2">🔧 Configuração:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Lovable AI já está integrada ao projeto</li>
-              <li>Usando modelo: <Badge>google/gemini-2.5-flash</Badge> (gratuito até 13/10/2025)</li>
-              <li>O agente tem acesso ao contexto do sistema</li>
+              <li>Google Gemini API integrada ao projeto</li>
+              <li>Usando modelo: <Badge>gemini-2.0-flash-exp</Badge></li>
+              <li>Chave API: AIzaSyDp7M8qcIlYVKVBMNMfLbzgHWpxjd2sOb0</li>
+              <li>Método: POST direto para Google Generative Language API</li>
             </ol>
           </div>
 
