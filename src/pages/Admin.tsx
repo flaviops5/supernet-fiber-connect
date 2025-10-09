@@ -39,6 +39,7 @@ import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
+import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import WhatsAppConversations from '@/components/WhatsAppConversations';
 import WhatsAppTester from '@/components/WhatsAppTester';
 import { toast } from "sonner";
@@ -93,6 +94,9 @@ const Dashboard = () => {
 
       {/* IXC Connection Tester */}
       <IXCConnectionTester />
+
+      {/* IXC Functions Tester */}
+      <IXCFunctionsTester />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
