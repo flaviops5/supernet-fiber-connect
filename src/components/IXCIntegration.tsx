@@ -11,6 +11,9 @@ import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
 import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
 import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
+import { IXCConnectionTester } from '@/components/IXCConnectionTester';
+import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface IXCCustomer {
   id: string;
@@ -333,18 +336,24 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
-      {/* Health Check de Todos os Endpoints */}
-      <IXCEndpointsHealthCheck />
-      
-      <Separator className="my-8" />
-      
-      {/* Descoberta de Endpoints GPON */}
-      <IXCEndpointDiscovery />
-      
-      <Separator className="my-8" />
-      
-      {/* Lista de Contratos IXC */}
-      <IXCContractsList />
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Integração IXC</h1>
+        <p className="text-muted-foreground">Gerencie a integração com o sistema IXC Soft</p>
+      </div>
+
+      <Tabs defaultValue="integration" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="integration">Integração</TabsTrigger>
+          <TabsTrigger value="connection">Teste de Conexão</TabsTrigger>
+          <TabsTrigger value="functions">Teste de Funções</TabsTrigger>
+          <TabsTrigger value="health">Health Check</TabsTrigger>
+          <TabsTrigger value="discovery">Discovery GPON</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="integration" className="space-y-6">
+          <IXCContractsList />
+          
+          <Separator className="my-8" />
       
       <Separator className="my-8" />
       
@@ -948,6 +957,24 @@ const IXCIntegration = () => {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="connection">
+          <IXCConnectionTester />
+        </TabsContent>
+
+        <TabsContent value="functions">
+          <IXCFunctionsTester />
+        </TabsContent>
+
+        <TabsContent value="health">
+          <IXCEndpointsHealthCheck />
+        </TabsContent>
+
+        <TabsContent value="discovery">
+          <IXCEndpointDiscovery />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

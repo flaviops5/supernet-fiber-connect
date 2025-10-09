@@ -39,8 +39,6 @@ import { CampaignManagement } from '@/components/CampaignManagement';
 import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
-import { IXCConnectionTester } from '@/components/IXCConnectionTester';
-import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { toast } from "sonner";
 
@@ -91,15 +89,6 @@ const Dashboard = () => {
 
       {/* Alert Card for Mass Outages */}
       <MassOutageAlertCard />
-
-      {/* IXC Connection Tester */}
-      <IXCConnectionTester />
-
-      {/* IXC Functions Tester */}
-      <IXCFunctionsTester />
-
-      {/* IXC Webservice v1 Scraper */}
-      
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

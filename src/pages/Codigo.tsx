@@ -5,10 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, BookOpen, Zap, Activity, Database, Bot, Settings, ExternalLink, Sparkles, Network } from "lucide-react";
 import { toast } from "sonner";
-import { IXCConnectionTester } from "@/components/IXCConnectionTester";
-import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
-import { IXCEndpointDiscovery } from "@/components/IXCEndpointDiscovery";
-import { IXCEndpointsHealthCheck } from "@/components/IXCEndpointsHealthCheck";
 
 const Codigo = () => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -388,24 +384,14 @@ return {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div>
-                  <h4 className="font-semibold mb-3">🩺 Health Check - Todos os Endpoints</h4>
-                  <IXCEndpointsHealthCheck />
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">🔌 Teste de Conectividade IXC</h4>
-                  <IXCConnectionTester />
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">🧪 Teste de Todas as Functions</h4>
-                  <IXCFunctionsTester />
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">🔍 Descoberta de Endpoints GPON</h4>
-                  <IXCEndpointDiscovery />
+                <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Testes Movidos</h4>
+                  <p className="text-blue-700 dark:text-blue-300 text-sm mb-3">
+                    Todos os testes relacionados ao IXC foram consolidados no menu <strong>Integração IXC</strong> para melhor organização.
+                  </p>
+                  <p className="text-blue-700 dark:text-blue-300 text-sm">
+                    Acesse: Menu → Agentes → Integração IXC
+                  </p>
                 </div>
               </CardContent>
             </Card>
