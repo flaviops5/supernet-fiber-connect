@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
 import { IXCEndpointDiscovery } from "@/components/IXCEndpointDiscovery";
+import { IXCEndpointsHealthCheck } from "@/components/IXCEndpointsHealthCheck";
 
 const Codigo = () => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -387,6 +388,11 @@ return {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div>
+                  <h4 className="font-semibold mb-3">🩺 Health Check - Todos os Endpoints</h4>
+                  <IXCEndpointsHealthCheck />
+                </div>
+
                 <div>
                   <h4 className="font-semibold mb-3">🔌 Teste de Conectividade IXC</h4>
                   <IXCConnectionTester />

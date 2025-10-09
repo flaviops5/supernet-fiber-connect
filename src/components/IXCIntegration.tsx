@@ -10,6 +10,7 @@ import { Loader2, Users, Wifi, WifiOff, Activity, FileText, CheckCircle2, XCircl
 import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
 import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
+import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
 
 interface IXCCustomer {
   id: string;
@@ -332,6 +333,11 @@ const IXCIntegration = () => {
 
   return (
     <div className="space-y-6">
+      {/* Health Check de Todos os Endpoints */}
+      <IXCEndpointsHealthCheck />
+      
+      <Separator className="my-8" />
+      
       {/* Descoberta de Endpoints GPON */}
       <IXCEndpointDiscovery />
       

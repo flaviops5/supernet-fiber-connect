@@ -38,18 +38,48 @@ interface DiscoveryResult {
   allResults: EndpointResult[];
 }
 
-// Endpoints conhecidos do webservice/v1
+// Endpoints conhecidos do webservice/v1 (29 endpoints únicos)
 const KNOWN_ENDPOINTS = [
-  { path: '/webservice/v1/cliente', method: 'GET/POST', description: 'Gerenciar clientes' },
-  { path: '/webservice/v1/cliente_contrato', method: 'GET/POST', description: 'Contratos de clientes' },
-  { path: '/webservice/v1/cliente_equipamento', method: 'GET/POST', description: 'Equipamentos de clientes' },
-  { path: '/webservice/v1/fn_acessos', method: 'GET', description: 'Listar acessos' },
-  { path: '/webservice/v1/su_olt', method: 'GET', description: 'Listar OLTs' },
-  { path: '/webservice/v1/su_olt_pon', method: 'GET', description: 'Portas PON das OLTs' },
-  { path: '/webservice/v1/su_concentrador', method: 'GET', description: 'Listar concentradores' },
-  { path: '/webservice/v1/financeiro_titulo', method: 'GET', description: 'Títulos financeiros' },
-  { path: '/webservice/v1/plano', method: 'GET', description: 'Listar planos' },
-  { path: '/webservice/v1/rastreador', method: 'GET/POST', description: 'Rastreamento' },
+  // CLIENTES (7)
+  { path: '/webservice/v1/cliente', method: 'GET/POST/PUT/DELETE', description: 'Gerenciar clientes', category: 'Clientes' },
+  { path: '/webservice/v1/cliente_arquivo', method: 'POST', description: 'Upload de arquivo', category: 'Clientes' },
+  { path: '/webservice/v1/cliente_arquivos', method: 'GET/POST/DELETE', description: 'Gerenciar arquivos', category: 'Clientes' },
+  { path: '/webservice/v1/cliente_equipamento', method: 'GET/POST', description: 'Equipamentos de clientes', category: 'Clientes' },
+  { path: '/webservice/v1/consulta_spc_serasa', method: 'POST', description: 'Consultar SPC/Serasa', category: 'Clientes' },
+  { path: '/webservice/v1/bloquear_desbloquear_sip', method: 'POST', description: 'Bloquear/Desbloquear SIP', category: 'Clientes' },
+  { path: '/webservice/v1/reenviar_link_assinatura_digital', method: 'POST', description: 'Reenviar link assinatura', category: 'Clientes' },
+  
+  // CONTRATOS (10)
+  { path: '/webservice/v1/cliente_contrato', method: 'GET/POST/PUT/DELETE', description: 'Gerenciar contratos', category: 'Contratos' },
+  { path: '/webservice/v1/cliente_contrato_descontos', method: 'GET/POST', description: 'Descontos de contratos', category: 'Contratos' },
+  { path: '/webservice/v1/cliente_contrato_acrescimos', method: 'GET/POST', description: 'Acréscimos de contratos', category: 'Contratos' },
+  { path: '/webservice/v1/cliente_contrato_servicos', method: 'GET/POST', description: 'Serviços de contratos', category: 'Contratos' },
+  { path: '/webservice/v1/cliente_contrato_ativar_cliente', method: 'POST', description: 'Ativar contrato', category: 'Contratos' },
+  { path: '/webservice/v1/desativar_cancelar_financeiro_nao_vencido', method: 'POST', description: 'Cancelar contrato', category: 'Contratos' },
+  { path: '/webservice/v1/negativar_bloquear', method: 'POST', description: 'Negativar e bloquear', category: 'Contratos' },
+  { path: '/webservice/v1/vd_contratos', method: 'GET', description: 'Contratos de venda', category: 'Contratos' },
+  { path: '/webservice/v1/vd_contratos_produtos', method: 'GET', description: 'Produtos de contratos', category: 'Contratos' },
+  { path: '/webservice/v1/plano', method: 'GET', description: 'Listar planos', category: 'Contratos' },
+  
+  // FINANCEIRO (5)
+  { path: '/webservice/v1/fn_areceber', method: 'GET/POST', description: 'Contas a receber', category: 'Financeiro' },
+  { path: '/webservice/v1/fn_areceber_recebimentos_baixas_novo', method: 'POST', description: 'Recebimentos e baixas', category: 'Financeiro' },
+  { path: '/webservice/v1/fn_areceber_altera', method: 'POST', description: 'Alterar contas a receber', category: 'Financeiro' },
+  { path: '/webservice/v1/financeiro_titulo', method: 'GET', description: 'Títulos financeiros', category: 'Financeiro' },
+  { path: '/webservice/v1/fn_acessos', method: 'GET', description: 'Listar acessos', category: 'Financeiro' },
+  
+  // SUPORTE (1)
+  { path: '/webservice/v1/su_oss_chamado', method: 'GET/POST', description: 'Ordens de serviço', category: 'Suporte' },
+  
+  // INFRAESTRUTURA (4)
+  { path: '/webservice/v1/su_olt', method: 'GET', description: 'Listar OLTs', category: 'Infraestrutura' },
+  { path: '/webservice/v1/su_olt_pon', method: 'GET', description: 'Portas PON das OLTs', category: 'Infraestrutura' },
+  { path: '/webservice/v1/su_concentrador', method: 'GET', description: 'Listar concentradores', category: 'Infraestrutura' },
+  { path: '/webservice/v1/rastreador', method: 'GET/POST', description: 'Rastreamento', category: 'Infraestrutura' },
+  
+  // COMUNICAÇÃO (2)
+  { path: '/webservice/v1/botaoAjax_22282', method: 'POST', description: 'Enviar SMS/Omnichannel', category: 'Comunicação' },
+  { path: '/webservice/v1/botao_rel_26658', method: 'POST', description: 'Enviar notificação push', category: 'Comunicação' },
 ];
 
 export const IXCEndpointDiscovery = () => {
@@ -134,23 +164,41 @@ export const IXCEndpointDiscovery = () => {
       <CardContent className="space-y-4">
         {/* Known Endpoints */}
         <div>
-          <h3 className="font-semibold mb-3">Endpoints Conhecidos ({KNOWN_ENDPOINTS.length})</h3>
+          <h3 className="font-semibold mb-3">
+            Endpoints Conhecidos ({KNOWN_ENDPOINTS.length} mapeados)
+          </h3>
           <ScrollArea className="h-[280px] rounded-md border">
-            <div className="p-4 space-y-2">
-              {KNOWN_ENDPOINTS.map((endpoint, index) => (
-                <Card key={index} className="bg-muted/50">
-                  <CardContent className="py-3">
-                    <div className="flex justify-between items-start mb-1">
-                      <code className="text-sm font-mono font-semibold">
-                        {endpoint.path}
-                      </code>
-                      <Badge variant="outline">{endpoint.method}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {endpoint.description}
-                    </p>
-                  </CardContent>
-                </Card>
+            <div className="p-4 space-y-4">
+              {Object.entries(
+                KNOWN_ENDPOINTS.reduce((acc, ep) => {
+                  const cat = ep.category || 'Outros';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(ep);
+                  return acc;
+                }, {} as Record<string, typeof KNOWN_ENDPOINTS>)
+              ).map(([category, endpoints]) => (
+                <div key={category}>
+                  <h4 className="text-xs font-semibold text-muted-foreground mb-2">
+                    {category} ({endpoints.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {endpoints.map((endpoint, index) => (
+                      <Card key={index} className="bg-muted/50">
+                        <CardContent className="py-2 px-3">
+                          <div className="flex justify-between items-start mb-1">
+                            <code className="text-xs font-mono font-semibold">
+                              {endpoint.path}
+                            </code>
+                            <Badge variant="outline" className="text-xs">{endpoint.method}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {endpoint.description}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </ScrollArea>
