@@ -26,12 +26,39 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get knowledge base for context
+    // Generate embedding for user query
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const embeddingResponse = await fetch('https://ai.gateway.lovable.dev/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: message.slice(0, 8000)
+      })
+    });
+
+    if (!embeddingResponse.ok) {
+      console.error('Embedding API error:', await embeddingResponse.text());
+      throw new Error('Failed to generate query embedding');
+    }
+
+    const embeddingData = await embeddingResponse.json();
+    const queryEmbedding = embeddingData.data[0].embedding;
+
+    // Perform semantic search on knowledge_index
     const { data: knowledgeBase, error: kbError } = await supabase
-      .from('knowledge_base')
-      .select('title, content, category, content_type')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+      .rpc('match_knowledge', {
+        query_embedding: queryEmbedding,
+        top_k: 5,
+        similarity_threshold: 0.5
+      });
 
     if (kbError) {
       console.error('Error fetching knowledge base:', kbError);
@@ -54,9 +81,9 @@ serve(async (req) => {
       }
     }
 
-    // Build context from knowledge base
+    // Build context from semantic search results
     const contextInfo = knowledgeBase?.map(item => 
-      `[${item.category} - ${item.content_type}] ${item.title}: ${item.content}`
+      `[${item.category || 'Geral'} - ${item.content_type || 'documento'}] ${item.title}: ${item.content} (Relevância: ${(item.similarity * 100).toFixed(1)}%)`
     ).join('\n\n') || 'Nenhuma informação específica da empresa disponível.';
 
     // Build conversation context

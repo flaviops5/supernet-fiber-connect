@@ -1726,6 +1726,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_folder: boolean
+          migrated_at: string | null
           parent_id: string | null
           source_document_id: string | null
           tags: string[] | null
@@ -1743,6 +1744,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_folder?: boolean
+          migrated_at?: string | null
           parent_id?: string | null
           source_document_id?: string | null
           tags?: string[] | null
@@ -1760,6 +1762,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_folder?: boolean
+          migrated_at?: string | null
           parent_id?: string | null
           source_document_id?: string | null
           tags?: string[] | null
@@ -1782,6 +1785,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_index: {
+        Row: {
+          agent_types: string[] | null
+          category: string | null
+          content: string
+          content_type: string | null
+          created_at: string | null
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          source_id: string
+          source_table: string
+          summary: string | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_types?: string[] | null
+          category?: string | null
+          content: string
+          content_type?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id: string
+          source_table?: string
+          summary?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_types?: string[] | null
+          category?: string | null
+          content?: string
+          content_type?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id?: string
+          source_table?: string
+          summary?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       maintenance_cron_control: {
         Row: {
@@ -2832,6 +2886,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
       calculate_nps_category: {
         Args: { score: number }
         Returns: string
@@ -2907,12 +2965,73 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_migration_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          migrated_docs: number
+          migration_progress: number
+          pending_docs: number
+          total_docs: number
+        }[]
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
       }
       log_security_event: {
         Args: {
@@ -2932,6 +3051,60 @@ export type Database = {
           user_id_param?: string
         }
         Returns: string
+      }
+      match_knowledge: {
+        Args: {
+          query_embedding: string
+          similarity_threshold?: number
+          top_k?: number
+        }
+        Returns: {
+          category: string
+          content: string
+          content_type: string
+          id: string
+          metadata: Json
+          similarity: number
+          source_id: string
+          tags: string[]
+          title: string
+        }[]
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

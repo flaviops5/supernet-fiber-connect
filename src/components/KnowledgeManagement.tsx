@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, FolderPlus, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import VectorMigrationPanel from './VectorMigrationPanel';
 
 interface KnowledgeItem {
   id: string;
@@ -362,6 +363,9 @@ const KnowledgeManagement = () => {
 
   return (
     <div className="space-y-4">
+      {/* Painel de migração vetorial */}
+      <VectorMigrationPanel />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">

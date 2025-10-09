@@ -120,3 +120,9 @@ verify_jwt = true
 [functions.check-lovable-ai-config]
 verify_jwt = true
 
+[functions.migrate-knowledge-batch]
+verify_jwt = true
+
+[functions.corporate-ai-chat]
+verify_jwt = true
+
