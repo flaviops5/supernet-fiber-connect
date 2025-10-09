@@ -1726,6 +1726,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_folder: boolean
+          metadata: Json | null
           migrated_at: string | null
           parent_id: string | null
           source: string | null
@@ -1745,6 +1746,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_folder?: boolean
+          metadata?: Json | null
           migrated_at?: string | null
           parent_id?: string | null
           source?: string | null
@@ -1764,6 +1766,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_folder?: boolean
+          metadata?: Json | null
           migrated_at?: string | null
           parent_id?: string | null
           source?: string | null
