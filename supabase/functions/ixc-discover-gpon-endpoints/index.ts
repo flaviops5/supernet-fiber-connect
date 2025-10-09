@@ -85,14 +85,27 @@ serve(async (req) => {
         
         if (status === 200) {
           const data = await response.json();
-          results.push({
-            endpoint,
-            status: 'EXISTS',
-            statusCode: 200,
-            recordCount: data?.registros?.length || 0,
-            message: '✅ Endpoint disponível'
-          });
-          console.log(`✅ ${endpoint}: EXISTE`);
+          
+          // Verificar se é uma resposta de erro do IXC
+          if (data?.type === 'error') {
+            results.push({
+              endpoint,
+              status: 'ERROR',
+              statusCode: 200,
+              recordCount: 0,
+              message: `⚠️ Endpoint responde mas retorna erro: ${data.message}`
+            });
+            console.log(`⚠️ ${endpoint}: ERRO NA RESPOSTA - ${data.message}`);
+          } else {
+            results.push({
+              endpoint,
+              status: 'EXISTS',
+              statusCode: 200,
+              recordCount: data?.registros?.length || 0,
+              message: '✅ Endpoint disponível com dados'
+            });
+            console.log(`✅ ${endpoint}: EXISTE com ${data?.registros?.length || 0} registros`);
+          }
         } else if (status === 404) {
           results.push({
             endpoint,
