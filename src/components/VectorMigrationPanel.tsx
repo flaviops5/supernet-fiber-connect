@@ -86,6 +86,43 @@ const VectorMigrationPanel = () => {
     }
   };
 
+  const runFullMigration = async () => {
+    setMigrating(true);
+    try {
+      toast({
+        title: "Iniciando migração completa",
+        description: "Isso pode levar alguns minutos...",
+      });
+
+      const { data, error } = await supabase.functions.invoke('migrate-knowledge-full');
+
+      if (error) throw error;
+
+      if (data.errors?.length > 0) {
+        console.warn('Erros na migração:', data.errors);
+      }
+
+      toast({
+        title: data.success ? "Sucesso!" : "Atenção",
+        description: data.message || `${data.migrated} documentos migrados${data.failed > 0 ? `, ${data.failed} com erro` : ''}`,
+        variant: data.success ? "default" : "destructive"
+      });
+
+      // Recarregar stats
+      await loadStats();
+
+    } catch (error) {
+      console.error('Error running full migration:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao executar migração completa",
+        variant: "destructive"
+      });
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   useEffect(() => {
     loadStats();
   }, []);
@@ -157,17 +194,18 @@ const VectorMigrationPanel = () => {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              A migração processa 25 documentos por vez. Execute múltiplas vezes até completar.
+              Use "Migrar Tudo" para processar todos os documentos de uma vez, ou "Lote" para processar 25 por vez.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Botão de migração */}
+        {/* Botões de migração */}
         <div className="flex gap-2">
           <Button
-            onClick={runMigrationBatch}
+            onClick={runFullMigration}
             disabled={migrating || isComplete}
             className="flex-1"
+            variant="default"
           >
             {migrating ? (
               <>
@@ -177,8 +215,19 @@ const VectorMigrationPanel = () => {
             ) : (
               <>
                 <Zap className="mr-2 h-4 w-4" />
-                {isComplete ? 'Migração Completa' : `Migrar Lote (25 docs)`}
+                {isComplete ? 'Migração Completa' : `Migrar Tudo (${stats?.pending_docs || 0} docs)`}
               </>
+            )}
+          </Button>
+          <Button
+            onClick={runMigrationBatch}
+            disabled={migrating || isComplete}
+            variant="outline"
+          >
+            {migrating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Lote (25)'
             )}
           </Button>
         </div>
@@ -191,7 +240,7 @@ const VectorMigrationPanel = () => {
           </div>
           <div className="flex justify-between">
             <span>Dimensões:</span>
-            <span className="font-mono">512</span>
+            <span className="font-mono">1536</span>
           </div>
           <div className="flex justify-between">
             <span>Índice vetorial:</span>

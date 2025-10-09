@@ -126,3 +126,6 @@ verify_jwt = true
 [functions.corporate-ai-chat]
 verify_jwt = true
 
+[functions.migrate-knowledge-full]
+verify_jwt = true
+
