@@ -1,15 +1,26 @@
 import { AuthGuard } from "@/components/AuthGuard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Code, Database, FileCode, Settings } from "lucide-react";
+import { Code, Database, FileCode, Settings, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AutoRebootDocs = () => {
+  const navigate = useNavigate();
+
   return (
     <AuthGuard requiredRoles={['admin']}>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <FileCode className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold">Auto Reboot - Documentação Completa</h1>

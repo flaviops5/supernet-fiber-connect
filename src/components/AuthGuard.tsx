@@ -32,6 +32,7 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         
         if (sessionError) {
           setError('Erro ao verificar sessão');
+          setAuthorized(false);
           return;
         }
 
@@ -44,6 +45,7 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         setSession(session);
       } catch (err) {
         setError('Erro interno de autenticação');
+        setAuthorized(false);
       }
     };
 
@@ -58,7 +60,8 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         }
 
         if (event === 'SIGNED_IN' && session) {
-          checkAuth();
+          setUser(session.user);
+          setSession(session);
         }
       }
     );
