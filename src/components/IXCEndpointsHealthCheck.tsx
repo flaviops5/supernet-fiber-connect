@@ -140,13 +140,18 @@ export function IXCEndpointsHealthCheck() {
         return;
       }
 
-      const returned = (data?.results || data) as EndpointTest[];
-      setResults(returned || []);
+      // Garantir que results é um array válido
+      const returned = Array.isArray(data?.results) ? data.results : 
+                       Array.isArray(data) ? data : [];
+      
+      setResults(returned.filter(r => r !== null && r !== undefined));
       setProgress(100);
 
-      const successCount = (returned || []).filter(r => r.status === 'success').length;
-      const errorCount = (returned || []).filter(r => r.status === 'error').length;
-      const notFoundCount = (returned || []).filter(r => r.status === 'not_found').length;
+      const validResults = returned.filter(r => r !== null && r !== undefined);
+      const successCount = validResults.filter(r => r.status === 'success').length;
+      const errorCount = validResults.filter(r => r.status === 'error').length;
+      const notFoundCount = validResults.filter(r => r.status === 'not_found').length;
+      
       toast.success(`Testes concluídos: ${successCount} OK, ${notFoundCount} não encontrados, ${errorCount} erros`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erro desconhecido';
@@ -157,6 +162,7 @@ export function IXCEndpointsHealthCheck() {
   };
 
   const groupedResults = results.reduce((acc, result) => {
+    if (!result || !result.category) return acc; // Skip null/invalid results
     if (!acc[result.category]) acc[result.category] = [];
     acc[result.category].push(result);
     return acc;
