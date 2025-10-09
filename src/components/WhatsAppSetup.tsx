@@ -66,23 +66,49 @@ export default function WhatsAppSetup() {
   const testWebhook = async () => {
     setTestingWebhook(true);
     try {
-      // Tenta enviar uma mensagem de teste para o próprio número
+      console.log('🧪 Iniciando teste de integração WhatsApp...');
+      console.log('📱 Enviando mensagem para:', "5561933008252");
+      console.log('📦 Instância:', instanceName);
+      
       const { data, error } = await supabase.functions.invoke('send-whatsapp-message', {
         body: {
-          phone: "5561933008252", // Número da própria instância
+          phone: "5561933008252",
           message: "✅ Teste de integração WhatsApp - Sistema funcionando!",
           instanceName
         }
       });
 
-      if (error) throw error;
+      console.log('📥 Resposta da função:', { data, error });
 
-      setWebhookConfigured(true);
-      toast.success("Webhook testado com sucesso! Mensagem enviada.");
+      if (error) {
+        console.error('❌ Erro da função:', error);
+        throw error;
+      }
+
+      // Verificar se a resposta indica sucesso
+      if (data?.status === 'success' || data?.message === 'Message sent successfully') {
+        setWebhookConfigured(true);
+        toast.success("✅ Teste concluído! Mensagem enviada com sucesso.");
+      } else {
+        console.warn('⚠️ Resposta inesperada:', data);
+        throw new Error(data?.error || 'Resposta inesperada da API');
+      }
     } catch (error: any) {
-      console.error("Erro no teste:", error);
+      console.error("❌ Erro no teste de integração:", error);
       setWebhookConfigured(false);
-      toast.error(`Erro no teste: ${error.message}`);
+      
+      let errorMessage = error.message || 'Erro desconhecido';
+      
+      // Mensagens de erro mais específicas
+      if (errorMessage.includes('404')) {
+        errorMessage = 'Instância não encontrada. Verifique se a instância está ativa na Evolution API.';
+      } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
+        errorMessage = 'Erro de autenticação. Verifique as credenciais da API.';
+      } else if (errorMessage.includes('500')) {
+        errorMessage = 'Erro no servidor Evolution API. Tente novamente em alguns instantes.';
+      }
+      
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setTestingWebhook(false);
     }

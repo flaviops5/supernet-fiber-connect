@@ -13,6 +13,8 @@ serve(async (req) => {
   try {
     const { phone, message, instanceName = 'SDR2' } = await req.json();
     
+    console.log('📨 Send WhatsApp Message Request:', { phone, instanceName, messageLength: message?.length });
+    
     if (!phone || !message) {
       throw new Error('Phone and message are required');
     }
@@ -21,14 +23,18 @@ serve(async (req) => {
     const baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
 
     if (!apiKey || !baseUrl) {
+      console.error('❌ Missing credentials:', { hasApiKey: !!apiKey, hasBaseUrl: !!baseUrl });
       throw new Error('Evolution API credentials not configured');
     }
 
     console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
+    console.log(`🔗 API URL: ${baseUrl}/message/sendText/${instanceName}`);
 
     // Formatar número (remover caracteres especiais e garantir formato correto)
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
+
+    console.log(`📞 Formatted phone: ${formattedPhone}`);
 
     // Enviar mensagem via Evolution API
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
@@ -43,6 +49,8 @@ serve(async (req) => {
         delay: 1200
       }),
     });
+
+    console.log(`📡 Evolution API Response Status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
