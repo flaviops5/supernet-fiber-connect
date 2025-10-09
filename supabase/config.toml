@@ -117,5 +117,3 @@ verify_jwt = true
 [functions.check-lovable-ai-config]
 verify_jwt = true
 
-[functions.ixc-scrape-webservice-v1]
-verify_jwt = false

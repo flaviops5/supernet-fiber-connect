@@ -38,6 +38,20 @@ interface DiscoveryResult {
   allResults: EndpointResult[];
 }
 
+// Endpoints conhecidos do webservice/v1
+const KNOWN_ENDPOINTS = [
+  { path: '/webservice/v1/cliente', method: 'GET/POST', description: 'Gerenciar clientes' },
+  { path: '/webservice/v1/cliente_contrato', method: 'GET/POST', description: 'Contratos de clientes' },
+  { path: '/webservice/v1/cliente_equipamento', method: 'GET/POST', description: 'Equipamentos de clientes' },
+  { path: '/webservice/v1/fn_acessos', method: 'GET', description: 'Listar acessos' },
+  { path: '/webservice/v1/su_olt', method: 'GET', description: 'Listar OLTs' },
+  { path: '/webservice/v1/su_olt_pon', method: 'GET', description: 'Portas PON das OLTs' },
+  { path: '/webservice/v1/su_concentrador', method: 'GET', description: 'Listar concentradores' },
+  { path: '/webservice/v1/financeiro_titulo', method: 'GET', description: 'Títulos financeiros' },
+  { path: '/webservice/v1/plano', method: 'GET', description: 'Listar planos' },
+  { path: '/webservice/v1/rastreador', method: 'GET/POST', description: 'Rastreamento' },
+];
+
 export const IXCEndpointDiscovery = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<DiscoveryResult | null>(null);
@@ -110,14 +124,39 @@ export const IXCEndpointDiscovery = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="w-5 h-5" />
-          Descoberta de Endpoints GPON
+          Endpoints IXC Webservice v1
         </CardTitle>
         <CardDescription>
-          Descubra quais endpoints relacionados à infraestrutura GPON estão disponíveis na API do IXC
+          Endpoints conhecidos da API do IXC e descoberta de endpoints GPON
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Known Endpoints */}
+        <div>
+          <h3 className="font-semibold mb-3">Endpoints Conhecidos ({KNOWN_ENDPOINTS.length})</h3>
+          <ScrollArea className="h-[280px] rounded-md border">
+            <div className="p-4 space-y-2">
+              {KNOWN_ENDPOINTS.map((endpoint, index) => (
+                <Card key={index} className="bg-muted/50">
+                  <CardContent className="py-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <code className="text-sm font-mono font-semibold">
+                        {endpoint.path}
+                      </code>
+                      <Badge variant="outline">{endpoint.method}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {endpoint.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <Separator />
         <Button 
           onClick={discoverEndpoints} 
           disabled={loading}

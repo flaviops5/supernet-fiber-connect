@@ -43,7 +43,6 @@ import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import WhatsAppConversations from '@/components/WhatsAppConversations';
 import WhatsAppTester from '@/components/WhatsAppTester';
-import { IXCWebserviceScraper } from '@/components/IXCWebserviceScraper';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -101,7 +100,7 @@ const Dashboard = () => {
       <IXCFunctionsTester />
 
       {/* IXC Webservice v1 Scraper */}
-      <IXCWebserviceScraper />
+      
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
