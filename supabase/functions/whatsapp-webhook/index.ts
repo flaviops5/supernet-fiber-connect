@@ -85,10 +85,14 @@ try {
         .select('*')
         .eq('customer_phone', customerPhone)
         .eq('channel', 'whatsapp')
-        .eq('status', 'active')
+        .or('status.eq.active,status.eq.waiting')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+      
+      if (searchError) {
+        console.error('Error searching conversation:', searchError);
+      }
 
       let conversationId = existingConversation?.id;
 
