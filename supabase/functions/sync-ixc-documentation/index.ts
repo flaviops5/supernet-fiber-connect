@@ -99,6 +99,63 @@ function parseIXCDocumentation(html: string): KnowledgeEntry[] {
   // Estrutura base de conhecimento IXC
   const categories = [
     {
+      name: 'RESUMO: Endpoints IXC WebService V1',
+      category: 'ixc-api',
+      content: `# 📋 ENDPOINTS IXC WEBSERVICE V1 - LISTA CONSOLIDADA
+
+## 📊 RESUMO TOTAL: 29 Endpoints Únicos
+
+### 👥 CLIENTES (7 endpoints)
+1. \`GET/POST/PUT/DELETE /webservice/v1/cliente\` - Gerenciar clientes
+2. \`POST /webservice/v1/cliente_arquivo\` - Upload de arquivo do cliente
+3. \`GET/POST/DELETE /webservice/v1/cliente_arquivos\` - Gerenciar arquivos do cliente
+4. \`GET/POST /webservice/v1/cliente_equipamento\` - Equipamentos de clientes
+5. \`POST /webservice/v1/consulta_spc_serasa\` - Consultar SPC/Serasa
+6. \`POST /webservice/v1/bloquear_desbloquear_sip\` - Bloquear/Desbloquear SIP
+7. \`POST /webservice/v1/reenviar_link_assinatura_digital\` - Reenviar link de assinatura digital
+
+### 📄 CONTRATOS (10 endpoints)
+8. \`GET/POST/PUT/DELETE /webservice/v1/cliente_contrato\` - Gerenciar contratos
+9. \`GET/POST /webservice/v1/cliente_contrato_descontos\` - Descontos de contratos
+10. \`GET/POST /webservice/v1/cliente_contrato_acrescimos\` - Acréscimos de contratos
+11. \`GET/POST /webservice/v1/cliente_contrato_servicos\` - Serviços de contratos
+12. \`POST /webservice/v1/cliente_contrato_ativar_cliente\` - Ativar contrato do cliente
+13. \`POST /webservice/v1/desativar_cancelar_financeiro_nao_vencido\` - Cancelar contrato e financeiro não vencido
+14. \`POST /webservice/v1/negativar_bloquear\` - Negativar contrato e desbloquear acesso
+15. \`GET /webservice/v1/vd_contratos\` - Contratos de venda (planos)
+16. \`GET /webservice/v1/vd_contratos_produtos\` - Produtos de contratos de venda
+17. \`GET /webservice/v1/plano\` - Listar planos
+
+### 💰 FINANCEIRO (5 endpoints)
+18. \`GET/POST /webservice/v1/fn_areceber\` - Contas a receber
+19. \`POST /webservice/v1/fn_areceber_recebimentos_baixas_novo\` - Recebimentos e baixas
+20. \`POST /webservice/v1/fn_areceber_altera\` - Alterar contas a receber
+21. \`GET /webservice/v1/financeiro_titulo\` - Títulos financeiros
+22. \`GET /webservice/v1/fn_acessos\` - Listar acessos
+
+### 🛠️ SUPORTE/OSS (1 endpoint)
+23. \`GET/POST /webservice/v1/su_oss_chamado\` - Ordens de serviço/chamados
+
+### 🌐 INFRAESTRUTURA GPON (4 endpoints)
+24. \`GET /webservice/v1/su_olt\` - Listar OLTs
+25. \`GET /webservice/v1/su_olt_pon\` - Portas PON das OLTs
+26. \`GET /webservice/v1/su_concentrador\` - Listar concentradores
+27. \`GET/POST /webservice/v1/rastreador\` - Rastreamento
+
+### 📱 COMUNICAÇÃO (2 endpoints)
+28. \`POST /webservice/v1/botaoAjax_22282\` - Enviar SMS/Omnicanal
+29. \`POST /webservice/v1/botao_rel_26658\` - Enviar notificação push
+
+## 🎯 URL Base
+\`https://seu-dominio.ixcsoft.com.br/webservice/v1/\`
+
+## 🔐 Autenticação
+- Método: Basic Auth
+- Header GET: \`ixcsoft: listar\``,
+      tags: ['api', 'resumo', 'endpoints', 'lista', 'consolidado'],
+      display_order: -1
+    },
+    {
       name: 'Introdução à API IXC',
       category: 'ixc-api',
       content: `# API IXC Provedor
@@ -1005,7 +1062,7 @@ Envia notificação push para aplicativo do cliente.
     }
   ];
 
-  // Combinar tudo (29 endpoints + 3 categorias = 32 documentos)
+  // Combinar tudo (1 resumo + 3 categorias + 29 endpoints = 33 documentos)
   const allEndpoints = [
     ...categories,
     ...clienteEndpoints,
