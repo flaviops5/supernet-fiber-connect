@@ -7,7 +7,14 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('🎯 Webhook endpoint hit!', {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   if (req.method === 'OPTIONS') {
+    console.log('✅ OPTIONS request handled');
     return new Response(null, { headers: corsHeaders });
   }
 
