@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
-import AgentPresencePanel from '@/components/atendimento/AgentPresencePanel';
 import ConversationQueue from '@/components/atendimento/ConversationQueue';
 import ChatArea from '@/components/atendimento/ChatArea';
 import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
@@ -11,6 +10,14 @@ import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
 import SimulationButton from '@/components/atendimento/SimulationButton';
 import DepartmentMetrics from '@/components/atendimento/DepartmentMetrics';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function Atendimento() {
   const navigate = useNavigate();
@@ -123,6 +130,21 @@ export default function Atendimento() {
             </div>
             
             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Meu Setor:</span>
+                <Select value={agentDepartment} onValueChange={setAgentDepartment}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="comercial">Comercial</SelectItem>
+                    <SelectItem value="tecnico">Técnico</SelectItem>
+                    <SelectItem value="financeiro">Financeiro</SelectItem>
+                    <SelectItem value="administrativo">Administrativo</SelectItem>
+                    <SelectItem value="logistica">Logística</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <SimulationButton />
               <AtendimentoMetrics />
             </div>
@@ -132,16 +154,8 @@ export default function Atendimento() {
         {/* Main Content */}
         <div className="container mx-auto p-4 h-[calc(100vh-4rem)]">
           <div className="grid grid-cols-12 gap-4 h-full">
-            {/* Left Sidebar - Agent Presence */}
-            <div className="col-span-2">
-              <AgentPresencePanel 
-                currentDepartment={agentDepartment}
-                onDepartmentChange={setAgentDepartment}
-              />
-            </div>
-
             {/* Conversation Queue with Metrics */}
-            <div className="col-span-3 space-y-4">
+            <div className="col-span-4 space-y-4">
               <ConversationQueue
                 selectedConversation={selectedConversation}
                 onSelectConversation={setSelectedConversation}
@@ -156,7 +170,7 @@ export default function Atendimento() {
             </div>
 
             {/* Right Sidebar - Client Info */}
-            <div className="col-span-2">
+            <div className="col-span-3">
               <ClientInfoPanel conversationId={selectedConversation} />
             </div>
           </div>
