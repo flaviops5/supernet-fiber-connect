@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MediaUpload } from '@/components/MediaUpload';
 import TagManager from './TagManager';
+import MessageShortcuts from './MessageShortcuts';
 
 interface Message {
   id: string;
@@ -22,9 +23,10 @@ interface Message {
 
 interface Props {
   conversationId: string | null;
+  agentDepartment: string;
 }
 
-export default function ChatArea({ conversationId }: Props) {
+export default function ChatArea({ conversationId, agentDepartment }: Props) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -255,34 +257,49 @@ export default function ChatArea({ conversationId }: Props) {
           </div>
         )}
         
-        <div className="flex gap-2 items-end">
-          <MediaUpload
-            onAudioTranscribed={(text) => {
-              setNewMessage(prev => prev + (prev ? ' ' : '') + text);
-            }}
-            onImageSelected={setAttachedImage}
-            disabled={loading}
-          />
-          <Textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            placeholder="Digite ou grave sua mensagem..."
-            className="min-h-[60px] resize-none flex-1"
-            disabled={loading}
-          />
-          <Button
-            size="icon"
-            onClick={handleSendMessage}
-            disabled={loading || (!newMessage.trim() && !attachedImage)}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <MessageShortcuts 
+              department={agentDepartment}
+              onSelectShortcut={(shortcut) => {
+                let content = shortcut.message_text || '';
+                if (shortcut.media) {
+                  content += `\n[Mídia: ${shortcut.media.file_url}]`;
+                }
+                setNewMessage(prev => prev + (prev ? '\n' : '') + content);
+              }}
+            />
+          </div>
+          
+          <div className="flex gap-2 items-end">
+            <MediaUpload
+              onAudioTranscribed={(text) => {
+                setNewMessage(prev => prev + (prev ? ' ' : '') + text);
+              }}
+              onImageSelected={setAttachedImage}
+              disabled={loading}
+            />
+            <Textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="Digite, grave ou use /atalho..."
+              className="min-h-[60px] resize-none flex-1"
+              disabled={loading}
+            />
+            <Button
+              size="icon"
+              onClick={handleSendMessage}
+              disabled={loading || (!newMessage.trim() && !attachedImage)}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

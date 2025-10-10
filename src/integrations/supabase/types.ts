@@ -881,6 +881,39 @@ export type Database = {
         }
         Relationships: []
       }
+      closure_messages: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          message: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -2051,6 +2084,113 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      media_repository: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          is_active: boolean | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_active?: boolean | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      message_shortcuts: {
+        Row: {
+          ai_agents: string[] | null
+          created_at: string | null
+          created_by: string | null
+          department: Database["public"]["Enums"]["agent_department"][] | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          media_id: string | null
+          message_text: string | null
+          shortcut_key: string
+          title: string
+          updated_at: string | null
+          usage_context: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          ai_agents?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["agent_department"][] | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          media_id?: string | null
+          message_text?: string | null
+          shortcut_key: string
+          title: string
+          updated_at?: string | null
+          usage_context?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          ai_agents?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["agent_department"][] | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          media_id?: string | null
+          message_text?: string | null
+          shortcut_key?: string
+          title?: string
+          updated_at?: string | null
+          usage_context?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_shortcuts_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_repository"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       network_maintenance_tasks: {
         Row: {

@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import ClosureMessageSelector from './ClosureMessageSelector';
 
 interface Conversation {
   id: string;
@@ -240,73 +241,10 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground mb-2">Ações Rápidas</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button 
-              size="sm" 
-              variant="default"
-              className="h-auto py-2 flex flex-col gap-1 col-span-2"
-              disabled={resolving}
-              onClick={async () => {
-                if (!conversationId) return;
-                
-                setResolving(true);
-                try {
-                  // Get agent info before resolving
-                  const assignedAgentId = conversation?.assigned_agent_id;
-                  
-                  // Update conversation status
-                  const { error } = await supabase
-                    .from('conversations')
-                    .update({ 
-                      status: 'resolved',
-                      resolved_at: new Date().toISOString()
-                    })
-                    .eq('id', conversationId);
-
-                  if (error) throw error;
-
-                  // Decrement agent's conversation count if assigned
-                  if (assignedAgentId) {
-                    const { data: presenceData } = await supabase
-                      .from('agent_presence')
-                      .select('current_conversations')
-                      .eq('user_id', assignedAgentId)
-                      .single();
-
-                    if (presenceData && presenceData.current_conversations > 0) {
-                      await supabase
-                        .from('agent_presence')
-                        .update({ 
-                          current_conversations: presenceData.current_conversations - 1,
-                          last_activity: new Date().toISOString()
-                        })
-                        .eq('user_id', assignedAgentId);
-                    }
-                  }
-
-                  toast({
-                    title: 'Atendimento finalizado',
-                    description: 'A conversa foi marcada como resolvida.',
-                  });
-
-                  // Reload conversation to update UI
-                  loadConversation();
-                } catch (error) {
-                  console.error('Error resolving conversation:', error);
-                  toast({
-                    title: 'Erro',
-                    description: 'Não foi possível finalizar o atendimento.',
-                    variant: 'destructive',
-                  });
-                } finally {
-                  setResolving(false);
-                }
-              }}
-            >
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-xs font-semibold">
-                {resolving ? 'Finalizando...' : 'Finalizar Atendimento'}
-              </span>
-            </Button>
+            <ClosureMessageSelector 
+              conversationId={conversationId}
+              onClose={loadConversation}
+            />
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <AlertCircle className="h-4 w-4" />
               <span className="text-xs">Abrir Ticket</span>
