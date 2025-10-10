@@ -144,7 +144,7 @@ export default function ClosureMessageSelector({ conversationId, onClose }: Prop
           variant="default"
           className="h-auto py-2 flex flex-col gap-1 col-span-2"
         >
-          <CheckCircle className="h-4 w-4" />
+          <CheckCircle className="h-4 w-4 text-orange-500" />
           <span className="text-xs font-semibold">Finalizar Atendimento</span>
         </Button>
       </DialogTrigger>
