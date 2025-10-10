@@ -53,6 +53,7 @@ serve(async (req) => {
     const queryEmbedding = embeddingData.data[0].embedding;
 
     // Perform semantic search on knowledge_index
+    console.log('🔍 Performing semantic search...');
     const { data: knowledgeBase, error: kbError } = await supabase
       .rpc('match_knowledge', {
         query_embedding: queryEmbedding,
@@ -61,7 +62,18 @@ serve(async (req) => {
       });
 
     if (kbError) {
-      console.error('Error fetching knowledge base:', kbError);
+      console.error('❌ Error fetching knowledge base:', kbError);
+    } else {
+      console.log(`✅ Found ${knowledgeBase?.length || 0} relevant documents`);
+      if (knowledgeBase && knowledgeBase.length > 0) {
+        console.log('📄 Top results:', knowledgeBase.map(kb => ({
+          title: kb.title,
+          category: kb.category,
+          similarity: (kb.similarity * 100).toFixed(1) + '%'
+        })));
+      } else {
+        console.log('⚠️ No documents found above similarity threshold');
+      }
     }
 
     // Get conversation history for context
