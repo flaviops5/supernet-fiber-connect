@@ -174,9 +174,10 @@ export default function ChatArea({ conversationId }: Props) {
     <Card className="h-full flex flex-col shadow-lg border-border/50 relative">
       {/* Watermark background */}
       <div 
-        className="absolute inset-0 opacity-[0.15] pointer-events-none bg-repeat"
+        className="absolute inset-0 opacity-40 pointer-events-none bg-repeat"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%23000' opacity='0.1' text-anchor='middle' dominant-baseline='middle' transform='rotate(-45 100 100)'%3ESUPERNET%3C/text%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='24' font-family='Arial' fill='%23000000' opacity='0.4' text-anchor='middle' dominant-baseline='middle' transform='rotate(-45 100 100)'%3ESupernet Telecom%3C/text%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat',
           backgroundSize: '200px 200px'
         }}
       />

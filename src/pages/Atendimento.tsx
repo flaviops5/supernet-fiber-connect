@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 import ConversationQueue from '@/components/atendimento/ConversationQueue';
 import ChatArea from '@/components/atendimento/ChatArea';
 import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
+import AgentInfoPanel from '@/components/atendimento/AgentInfoPanel';
 import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
 import SimulationButton from '@/components/atendimento/SimulationButton';
 import DepartmentMetrics from '@/components/atendimento/DepartmentMetrics';
@@ -169,8 +170,13 @@ export default function Atendimento() {
               <ChatArea conversationId={selectedConversation} />
             </div>
 
-            {/* Right Sidebar - Client Info */}
-            <div className="col-span-3">
+            {/* Right Sidebar - Agent Info (smaller) */}
+            <div className="col-span-2">
+              <AgentInfoPanel conversationId={selectedConversation} />
+            </div>
+
+            {/* Right Sidebar - Client Info (larger) */}
+            <div className="col-span-1">
               <ClientInfoPanel conversationId={selectedConversation} />
             </div>
           </div>
