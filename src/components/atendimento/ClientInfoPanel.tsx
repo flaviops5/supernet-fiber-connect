@@ -249,15 +249,15 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               onClose={loadConversation}
             />
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4 text-orange-500" />
               <span className="text-xs">Abrir Ticket</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-4 w-4 text-orange-500" />
               <span className="text-xs">Agendar</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <MapPin className="h-4 w-4" />
+              <MapPin className="h-4 w-4 text-orange-500" />
               <span className="text-xs">Ver Endereço</span>
             </Button>
           </div>
