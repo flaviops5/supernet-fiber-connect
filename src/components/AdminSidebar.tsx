@@ -70,14 +70,14 @@ const menuItems = [
     external: true,
   },
   {
-    title: "Gerenciar Agentes",
-    url: "/admin/agentes",
-    icon: Users,
-  },
-  {
-    title: "Usuários",
+    title: "Usuários & Agentes",
     url: "/admin/users",
     icon: User,
+  },
+  {
+    title: "Configurar Departamentos",
+    url: "/admin/agentes",
+    icon: Users,
   },
 ];
 
