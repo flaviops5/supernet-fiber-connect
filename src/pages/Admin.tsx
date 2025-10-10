@@ -29,6 +29,9 @@ import CoverageManagement from '@/components/CoverageManagement';
 import IXCIntegration from '@/components/IXCIntegration';
 import { CompanySettingsForm } from '@/components/CompanySettingsForm';
 import { SMTPSettings } from '@/components/SMTPSettings';
+import MediaRepositoryManager from '@/components/admin/MediaRepositoryManager';
+import MessageShortcutsManager from '@/components/admin/MessageShortcutsManager';
+import ClosureMessagesManager from '@/components/admin/ClosureMessagesManager';
 
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
@@ -1439,6 +1442,20 @@ const SettingsManagement = () => {
   );
 };
 
+const AtendimentoManagement = () => (
+  <div className="space-y-6">
+    <div>
+      <h1 className="text-3xl font-bold">Configurações de Atendimento</h1>
+      <p className="text-muted-foreground">Gerencie mensagens, atalhos e mídias do atendimento</p>
+    </div>
+    <div className="grid gap-6">
+      <ClosureMessagesManager />
+      <MessageShortcutsManager />
+      <MediaRepositoryManager />
+    </div>
+  </div>
+);
+
 const HeroManagement = () => {
   const [heroSettings, setHeroSettings] = useState(null);
   const [heroSlides, setHeroSlides] = useState([]);
@@ -1979,6 +1996,7 @@ const Admin = () => {
                 <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/whatsapp" element={<WhatsAppSetup />} />
                 <Route path="/profile" element={<ProfileManagement />} />
+                <Route path="/atendimento-config" element={<AtendimentoManagement />} />
 
                 <Route path="/settings" element={<SettingsManagement />} />
               </Routes>

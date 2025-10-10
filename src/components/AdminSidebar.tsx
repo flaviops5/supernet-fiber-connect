@@ -124,6 +124,11 @@ const agentsItems = [
     icon: Bot,
   },
   {
+    title: "Config. Atendimento",
+    url: "/admin/atendimento-config",
+    icon: MessageSquare,
+  },
+  {
     title: "WhatsApp",
     url: "/admin/whatsapp",
     icon: MessageCircle,

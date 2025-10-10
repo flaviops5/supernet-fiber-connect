@@ -17,6 +17,7 @@ interface MessageShortcut {
   shortcut_key: string;
   message_text: string | null;
   media_id: string | null;
+  usage_count?: number;
   media?: {
     file_url: string;
     file_type: string;
