@@ -55,6 +55,7 @@ serve(async (req) => {
 
     console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
     console.log(`🔗 API URL: ${baseUrl}/message/sendText/${instanceName}`);
+    console.log(`🔑 Using API Key: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT SET'}`);
 
     // Format phone number
     const cleanPhone = phone.replace(/\D/g, '');
@@ -63,10 +64,11 @@ serve(async (req) => {
     console.log(`📞 Formatted phone: ${formattedPhone}`);
 
     // Send message via Evolution API
+    // Evolution API uses 'apikey' header, not 'Bearer'
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'apikey': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
