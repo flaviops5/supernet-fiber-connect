@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase, Wifi, WifiOff, ShieldAlert, CreditCard } from 'lucide-react';
+import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 interface Conversation {
   id: string;
@@ -39,6 +40,8 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!conversationId) {
@@ -237,9 +240,72 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground mb-2">Ações Rápidas</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <FileText className="h-4 w-4" />
-              <span className="text-xs">Ver Boletos</span>
+            <Button 
+              size="sm" 
+              variant="default"
+              className="h-auto py-2 flex flex-col gap-1 col-span-2"
+              disabled={resolving}
+              onClick={async () => {
+                if (!conversationId) return;
+                
+                setResolving(true);
+                try {
+                  // Get agent info before resolving
+                  const assignedAgentId = conversation?.assigned_agent_id;
+                  
+                  // Update conversation status
+                  const { error } = await supabase
+                    .from('conversations')
+                    .update({ 
+                      status: 'resolved',
+                      resolved_at: new Date().toISOString()
+                    })
+                    .eq('id', conversationId);
+
+                  if (error) throw error;
+
+                  // Decrement agent's conversation count if assigned
+                  if (assignedAgentId) {
+                    const { data: presenceData } = await supabase
+                      .from('agent_presence')
+                      .select('current_conversations')
+                      .eq('user_id', assignedAgentId)
+                      .single();
+
+                    if (presenceData && presenceData.current_conversations > 0) {
+                      await supabase
+                        .from('agent_presence')
+                        .update({ 
+                          current_conversations: presenceData.current_conversations - 1,
+                          last_activity: new Date().toISOString()
+                        })
+                        .eq('user_id', assignedAgentId);
+                    }
+                  }
+
+                  toast({
+                    title: 'Atendimento finalizado',
+                    description: 'A conversa foi marcada como resolvida.',
+                  });
+
+                  // Reload conversation to update UI
+                  loadConversation();
+                } catch (error) {
+                  console.error('Error resolving conversation:', error);
+                  toast({
+                    title: 'Erro',
+                    description: 'Não foi possível finalizar o atendimento.',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setResolving(false);
+                }
+              }}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-xs font-semibold">
+                {resolving ? 'Finalizando...' : 'Finalizar Atendimento'}
+              </span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <AlertCircle className="h-4 w-4" />

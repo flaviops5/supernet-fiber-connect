@@ -138,7 +138,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
       let finalAgent = currentAgent;
       let responseMessage = '';
 
-      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
+        // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
       if (currentAgent === 'routing') {
         const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
           body: {
@@ -157,7 +157,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         if (finalAgent !== currentAgent) {
           setCurrentAgent(finalAgent);
           
-          // Se foi atribuído um agente especializado, atualizar o departamento na conversation
+          // Se foi atribuído um agente especializado, atribuir agente humano disponível
           if (activeConversationId && finalAgent !== 'routing') {
             const deptMap: Record<string, 'comercial' | 'tecnico' | 'financeiro'> = {
               'sales': 'comercial',
@@ -165,13 +165,55 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
               'support_financial': 'financeiro'
             };
             const dept = deptMap[finalAgent as keyof typeof deptMap];
+            
             if (dept) {
+              // Buscar agente disponível do departamento
+              const { data: availableAgents, error: agentError } = await supabase
+                .rpc('get_available_agents_for_department', {
+                  dept: dept,
+                  include_universal: true
+                });
+
+              if (agentError) {
+                console.error('Error finding available agent:', agentError);
+              }
+
+              let assignedAgentId = null;
+              
+              if (availableAgents && availableAgents.length > 0) {
+                // Pegar o primeiro agente disponível com menor carga
+                assignedAgentId = availableAgents[0].user_id;
+                
+                // Incrementar contador de conversas do agente
+                const { error: presenceError } = await supabase
+                  .from('agent_presence')
+                  .update({ 
+                    current_conversations: availableAgents[0].current_load + 1,
+                    last_activity: new Date().toISOString()
+                  })
+                  .eq('user_id', assignedAgentId);
+
+                if (presenceError) {
+                  console.error('Error updating agent presence:', presenceError);
+                }
+              }
+
+              // Atualizar conversa com departamento e agente atribuído
               await supabase
                 .from('conversations')
-                .update({ department: dept })
+                .update({ 
+                  department: dept,
+                  assigned_agent_id: assignedAgentId,
+                  status: assignedAgentId ? 'active' : 'waiting'
+                })
                 .eq('id', activeConversationId);
               
-              console.log('Department updated to:', dept, 'for agent:', finalAgent);
+              console.log('Department updated to:', dept, 'Agent assigned:', assignedAgentId);
+              
+              // Se não há agente disponível, notificar
+              if (!assignedAgentId) {
+                responseMessage += '\n\n⏳ No momento não há agentes disponíveis. Você foi adicionado à fila de atendimento e em breve um de nossos atendentes irá assumir esta conversa.';
+              }
             }
           }
         }
