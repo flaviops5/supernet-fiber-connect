@@ -54,6 +54,9 @@ serve(async (req) => {
       throw deleteError;
     }
 
+    // Log de verificação do content_type e quantidade
+    console.log('🧪 Primeiro item content_type:', entries[0]?.content_type, 'total:', entries.length);
+
     // Inserir nova documentação
     const { error: insertError } = await supabase
       .from('knowledge_base')
