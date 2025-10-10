@@ -3,9 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, User, MessageSquare, AlertCircle } from 'lucide-react';
+import { Clock, MessageSquare, AlertCircle, Filter } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import ConversationSearch from './ConversationSearch';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Conversation {
   id: string;
@@ -17,6 +27,7 @@ interface Conversation {
   priority: number;
   created_at: string;
   last_message_at: string;
+  tags?: string[];
 }
 
 interface Props {
@@ -46,9 +57,13 @@ const statusLabels = {
 export default function ConversationQueue({ selectedConversation, onSelectConversation, agentDepartment }: Props) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filter, setFilter] = useState<FilterType>('waiting');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
 
   useEffect(() => {
     loadConversations();
+    loadTags();
 
     const channel = supabase
       .channel('conversations-changes')
@@ -59,14 +74,31 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
           schema: 'public',
           table: 'conversations'
         },
-        () => loadConversations()
+        () => {
+          loadConversations();
+          loadTags();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [agentDepartment, filter]);
+  }, [agentDepartment, filter, searchQuery, selectedTags]);
+
+  const loadTags = async () => {
+    const { data } = await supabase
+      .from('conversations')
+      .select('tags');
+    
+    if (data) {
+      const uniqueTags = new Set<string>();
+      data.forEach(conv => {
+        (conv.tags || []).forEach((tag: string) => uniqueTags.add(tag));
+      });
+      setAllTags(Array.from(uniqueTags).sort());
+    }
+  };
 
   const loadConversations = async () => {
     let query = supabase
@@ -87,7 +119,20 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
       query = query.or(`department.eq.${agentDepartment},department.is.null`);
     }
 
-    const { data, error } = await query;
+    // Search query usando full-text search
+    if (searchQuery) {
+      query = query.textSearch('search_vector', searchQuery, {
+        type: 'websearch',
+        config: 'portuguese'
+      });
+    }
+
+    // Filter by tags
+    if (selectedTags.length > 0) {
+      query = query.overlaps('tags', selectedTags);
+    }
+
+    const { data, error } = await query.limit(100);
 
     if (error) {
       console.error('Error loading conversations:', error);
@@ -95,6 +140,18 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     }
 
     setConversations(data || []);
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
   };
 
   const getTimeAgo = (date: string) => {
@@ -106,11 +163,44 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
 
   return (
     <Card className="h-full flex flex-col shadow-lg border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
-          Fila de Atendimento
-        </CardTitle>
+      <CardHeader className="pb-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Fila de Atendimento
+          </CardTitle>
+          
+          {allTags.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4" />
+                  Tags
+                  {selectedTags.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1">
+                      {selectedTags.length}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Filtrar por Tags</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {allTags.map(tag => (
+                  <DropdownMenuCheckboxItem
+                    key={tag}
+                    checked={selectedTags.includes(tag)}
+                    onCheckedChange={() => toggleTag(tag)}
+                  >
+                    {tag}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        <ConversationSearch onSearch={handleSearch} />
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
@@ -148,9 +238,16 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {statusLabels[conv.status as keyof typeof statusLabels]}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {statusLabels[conv.status as keyof typeof statusLabels]}
+                      </Badge>
+                      {conv.tags && conv.tags.length > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {conv.tags[0]}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
                       {getTimeAgo(conv.last_message_at || conv.created_at)}

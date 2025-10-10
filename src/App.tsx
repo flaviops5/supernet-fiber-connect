@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -25,10 +24,10 @@ import CodigoFonte from "./pages/CodigoFonte";
 import Codigo from "./pages/Codigo";
 import QuedasMassaCodigo from "./pages/QuedasMassaCodigo";
 import Apresentacao from "./pages/Apresentacao";
+import AdminAgents from "./pages/AdminAgents";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import { AuthGuard } from "./components/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +47,7 @@ const App = () => {
           <Routes>
             {/* Admin routes without header/footer */}
             <Route path="/admin/*" element={<AdminWrapper />} />
+            <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/atendimento" element={<Atendimento />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />

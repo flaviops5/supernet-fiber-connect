@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_department_assignments: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          department: Database["public"]["Enums"]["agent_department"]
+          id: string
+          is_universal: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          department: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          is_universal?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          department?: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          is_universal?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_metrics: {
         Row: {
           action_type: string
@@ -1061,6 +1091,7 @@ export type Database = {
           metadata: Json | null
           priority: number | null
           resolved_at: string | null
+          search_vector: unknown | null
           status: Database["public"]["Enums"]["conversation_status"]
           tags: string[] | null
           updated_at: string | null
@@ -1081,6 +1112,7 @@ export type Database = {
           metadata?: Json | null
           priority?: number | null
           resolved_at?: string | null
+          search_vector?: unknown | null
           status?: Database["public"]["Enums"]["conversation_status"]
           tags?: string[] | null
           updated_at?: string | null
@@ -1101,6 +1133,7 @@ export type Database = {
           metadata?: Json | null
           priority?: number | null
           resolved_at?: string | null
+          search_vector?: unknown | null
           status?: Database["public"]["Enums"]["conversation_status"]
           tags?: string[] | null
           updated_at?: string | null
@@ -2963,6 +2996,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_available_agents_for_department: {
+        Args: {
+          dept: Database["public"]["Enums"]["agent_department"]
+          include_universal?: boolean
+        }
+        Returns: {
+          current_load: number
+          is_universal: boolean
+          max_load: number
+          user_id: string
+        }[]
+      }
       get_contract_template_for_plan: {
         Args: { plan_name: string }
         Returns: string
@@ -3120,6 +3165,7 @@ export type Database = {
         | "tecnico"
         | "financeiro"
         | "administrativo"
+        | "logistica"
       agent_status: "online" | "busy" | "away" | "offline"
       campaign_channel: "whatsapp" | "sms" | "email" | "call"
       campaign_cta_type:
@@ -3297,6 +3343,7 @@ export const Constants = {
         "tecnico",
         "financeiro",
         "administrativo",
+        "logistica",
       ],
       agent_status: ["online", "busy", "away", "offline"],
       campaign_channel: ["whatsapp", "sms", "email", "call"],

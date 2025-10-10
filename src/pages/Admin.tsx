@@ -90,6 +90,55 @@ const Dashboard = () => {
       {/* Alert Card for Mass Outages */}
       <MassOutageAlertCard />
 
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ações Rápidas</CardTitle>
+          <CardDescription>Acesso rápido às principais funcionalidades</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <Button
+            variant="outline"
+            className="justify-start h-auto py-4"
+            onClick={() => window.location.href = '/admin/agentes'}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <Users className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Gerenciar Agentes</div>
+                <div className="text-xs text-muted-foreground">Atribuir departamentos</div>
+              </div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start h-auto py-4"
+            onClick={() => window.location.href = '/atendimento'}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Central de Atendimento</div>
+                <div className="text-xs text-muted-foreground">Gerenciar conversas</div>
+              </div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start h-auto py-4"
+            onClick={() => window.location.href = '/admin/monitoramento'}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <Monitor className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Monitoramento</div>
+                <div className="text-xs text-muted-foreground">Auto-reboot e status</div>
+              </div>
+            </div>
+          </Button>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
