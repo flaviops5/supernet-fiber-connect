@@ -148,30 +148,30 @@ export default function Atendimento() {
               <SimulationButton />
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-12 gap-4 flex-1">
-          {/* Conversation Queue */}
-          <div className="col-span-12 md:col-span-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
-            <ConversationQueue
-              selectedConversation={selectedConversation}
-              onSelectConversation={setSelectedConversation}
-              agentDepartment={agentDepartment}
-            />
-          </div>
+            {/* Main Grid - 3 Column Layout */}
+            <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
+              {/* Left Column - Conversation Queue */}
+              <div className="col-span-12 lg:col-span-3 flex flex-col">
+                <ConversationQueue
+                  selectedConversation={selectedConversation}
+                  onSelectConversation={setSelectedConversation}
+                  agentDepartment={agentDepartment}
+                />
+              </div>
 
-        {/* Chat Area */}
-        <div className="col-span-12 md:col-span-5 overflow-y-auto">
-          <ChatArea conversationId={selectedConversation} />
-        </div>
+              {/* Center Column - Chat Area */}
+              <div className="col-span-12 lg:col-span-6 flex flex-col min-h-0">
+                <ChatArea conversationId={selectedConversation} />
+              </div>
 
-        {/* Right Sidebar - Stack vertically */}
-        <div className="col-span-12 md:col-span-3 space-y-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
-          {/* Agent Info Card */}
-          <AgentInfoPanel conversationId={selectedConversation} />
-          
-          {/* Client Info Card */}
-          <ClientInfoPanel conversationId={selectedConversation} />
-        </div>
+              {/* Right Column - Agent + Client Info */}
+              <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 overflow-y-auto">
+                {/* Agent Info Card */}
+                <AgentInfoPanel conversationId={selectedConversation} />
+                
+                {/* Client Info Card */}
+                <ClientInfoPanel conversationId={selectedConversation} />
+              </div>
             </div>
           </div>
         </div>
