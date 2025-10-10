@@ -109,7 +109,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-border/50 bg-gradient-to-br from-muted/30 via-background to-background">
+    <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <User className="h-4 w-4" />
@@ -188,25 +188,28 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             <p className="text-sm font-mono">cliente@supernet</p>
           </div>
 
-          {/* Online/Offline Status */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Status Conexão</p>
-            <div className="flex items-center gap-2">
-              <Wifi className="h-3 w-3 text-green-500" />
-              <Badge variant="outline" className="text-xs border-green-500 text-green-700">
-                Online
-              </Badge>
+          {/* Status e Situação na mesma linha */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Online/Offline Status */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Status Conexão</p>
+              <div className="flex items-center gap-1">
+                <Wifi className="h-3 w-3 text-green-500" />
+                <Badge variant="outline" className="text-xs border-green-500 text-green-700">
+                  Online
+                </Badge>
+              </div>
             </div>
-          </div>
 
-          {/* Bloqueio/Financeiro Status */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Situação</p>
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-3 w-3 text-yellow-500" />
-              <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
-                Financeiro em atraso
-              </Badge>
+            {/* Bloqueio/Financeiro Status */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Situação</p>
+              <div className="flex items-center gap-1">
+                <CreditCard className="h-3 w-3 text-yellow-500" />
+                <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
+                  Atraso
+                </Badge>
+              </div>
             </div>
           </div>
 
