@@ -9,8 +9,6 @@ import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
 import AgentInfoPanel from '@/components/atendimento/AgentInfoPanel';
 import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
 import SimulationButton from '@/components/atendimento/SimulationButton';
-import DepartmentMetrics from '@/components/atendimento/DepartmentMetrics';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -116,18 +114,9 @@ export default function Atendimento() {
                 ← Voltar ao Admin
               </button>
               <div className="h-6 w-px bg-border" />
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  {agentName || 'Atendimento'}
-                </h1>
-                <Badge variant="secondary" className="font-medium">
-                  {agentDepartment === 'comercial' ? 'Comercial' :
-                   agentDepartment === 'tecnico' ? 'Técnico' :
-                   agentDepartment === 'financeiro' ? 'Financeiro' :
-                   agentDepartment === 'administrativo' ? 'Administrativo' :
-                   agentDepartment === 'logistica' ? 'Logística' : agentDepartment}
-                </Badge>
-              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Atendimento
+              </h1>
             </div>
             
             <div className="flex items-center gap-4">
@@ -161,14 +150,13 @@ export default function Atendimento() {
 
             {/* Main Grid */}
             <div className="grid grid-cols-12 gap-4 flex-1">
-          {/* Conversation Queue with Metrics */}
-          <div className="col-span-12 md:col-span-4 space-y-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+          {/* Conversation Queue */}
+          <div className="col-span-12 md:col-span-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
             <ConversationQueue
               selectedConversation={selectedConversation}
               onSelectConversation={setSelectedConversation}
               agentDepartment={agentDepartment}
             />
-            <DepartmentMetrics />
           </div>
 
         {/* Chat Area */}

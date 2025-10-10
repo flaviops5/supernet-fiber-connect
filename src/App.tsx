@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
 import PerfilAgente from "./pages/PerfilAgente";
+import MetricasDepartamentos from "./pages/MetricasDepartamentos";
 import Monitoramento from "./pages/Monitoramento";
 import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/admin/agentes" element={<AdminAgents />} />
           <Route path="/atendimento" element={<Atendimento />} />
           <Route path="/perfil-agente" element={<PerfilAgente />} />
+          <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
             

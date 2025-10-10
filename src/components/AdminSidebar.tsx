@@ -209,6 +209,12 @@ const profileItems = [
     external: true,
   },
   {
+    title: "Métricas dos Departamentos",
+    url: "/metricas-departamentos",
+    icon: Activity,
+    external: true,
+  },
+  {
     title: "Configurações",
     url: "/admin/settings",
     icon: Settings,

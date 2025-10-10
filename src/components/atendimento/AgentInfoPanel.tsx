@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Briefcase } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, User as UserIcon, Briefcase, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -135,8 +136,19 @@ export default function AgentInfoPanel({ conversationId }: Props) {
 
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">Agente Responsável</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold">Agente Responsável</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.location.href = '/perfil-agente'}
+            className="text-xs h-7 px-2"
+          >
+            <Settings className="h-3 w-3 mr-1" />
+            Editar
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Avatar */}
@@ -156,7 +168,7 @@ export default function AgentInfoPanel({ conversationId }: Props) {
 
         {/* Função */}
         <div className="flex items-center gap-2 text-sm">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <UserIcon className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">Função:</span>
           <span className="font-medium">{agentInfo.job_title || getRoleLabel(agentRole || undefined)}</span>
         </div>
