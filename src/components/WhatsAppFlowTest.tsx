@@ -187,7 +187,7 @@ export default function WhatsAppFlowTest() {
         .from('conversation_messages')
         .select('*')
         .eq('conversation_id', conversation.id)
-        .eq('sender_type', 'ai')
+        .in('sender_type', ['agent', 'ai'])
         .order('created_at', { ascending: false })
         .limit(1);
 
