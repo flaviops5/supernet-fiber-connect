@@ -24,8 +24,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const webhookData = await req.json();
-    console.log('📥 Webhook received:', JSON.stringify(webhookData, null, 2));
+let webhookData: any = null;
+try {
+  webhookData = await req.json();
+} catch (e) {
+  console.error('❌ Invalid or empty JSON body', e);
+  return new Response(
+    JSON.stringify({ success: false, error: 'Invalid or empty JSON body' }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+  );
+}
+console.log('📥 Webhook received:', JSON.stringify(webhookData, null, 2));
 
     // Evolution API envia diferentes tipos de eventos
     const eventType = webhookData.event;
