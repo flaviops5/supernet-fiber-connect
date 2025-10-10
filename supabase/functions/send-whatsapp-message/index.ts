@@ -40,9 +40,14 @@ serve(async (req) => {
     const apiKey = Deno.env.get('EVOLUTION_API_KEY');
     let baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
 
+    console.log('🔐 Checking credentials...');
+    console.log(`   API Key present: ${!!apiKey} (length: ${apiKey?.length || 0})`);
+    console.log(`   Base URL: ${baseUrl || 'NOT SET'}`);
+
     // Remove trailing slash from baseUrl to avoid double slashes
     if (baseUrl && baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
+      console.log(`   Base URL after cleanup: ${baseUrl}`);
     }
 
     if (!apiKey || !baseUrl) {
@@ -54,8 +59,8 @@ serve(async (req) => {
     }
 
     console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
-    console.log(`🔗 API URL: ${baseUrl}/message/sendText/${instanceName}`);
-    console.log(`🔑 Using API Key: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT SET'}`);
+    console.log(`🔗 Full API URL: ${baseUrl}/message/sendText/${instanceName}`);
+    console.log(`🔑 API Key preview: ${apiKey ? `${apiKey.substring(0, 15)}...` : 'NOT SET'}`);
 
     // Format phone number
     const cleanPhone = phone.replace(/\D/g, '');
@@ -63,14 +68,18 @@ serve(async (req) => {
 
     console.log(`📞 Formatted phone: ${formattedPhone}`);
 
+    // Prepare headers - Evolution API uses 'apikey' header
+    const headers = {
+      'apikey': apiKey,
+      'Content-Type': 'application/json',
+    };
+    
+    console.log('📋 Request headers:', { ...headers, apikey: headers.apikey.substring(0, 15) + '...' });
+
     // Send message via Evolution API
-    // Evolution API uses 'apikey' header, not 'Bearer'
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
       method: 'POST',
-      headers: {
-        'apikey': apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         number: formattedPhone,
         text: message,
