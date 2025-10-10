@@ -26,15 +26,35 @@ serve(async (req) => {
 
 let webhookData: any = null;
 try {
-  webhookData = await req.json();
+  const textBody = await req.text();
+  const contentType = req.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    console.warn('⚠️ Unexpected Content-Type:', contentType);
+  }
+
+  if (!textBody || textBody.trim() === '') {
+    console.error('❌ Empty body received from webhook');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Empty request body' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
+  }
+
+  webhookData = JSON.parse(textBody);
+  console.log('📥 Webhook keys:', Object.keys(webhookData));
+
 } catch (e) {
-  console.error('❌ Invalid or empty JSON body', e);
+  console.error('❌ Failed to parse JSON body:', e);
   return new Response(
-    JSON.stringify({ success: false, error: 'Invalid or empty JSON body' }),
+    JSON.stringify({
+      success: false,
+      error: 'Invalid JSON format',
+      details: e instanceof Error ? e.message : 'Unknown error'
+    }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
   );
 }
-console.log('📥 Webhook received:', JSON.stringify(webhookData, null, 2));
 
     // Evolution API envia diferentes tipos de eventos
     const eventType = webhookData.event;
