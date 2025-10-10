@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User as UserIcon, Briefcase, Settings, Building2 } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 interface AgentInfo {
   name: string;
@@ -121,34 +121,33 @@ export default function AgentInfoPanel() {
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold">Agente Responsável</CardTitle>
+          <CardTitle className="text-xs font-semibold">Agente Responsável</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => window.location.href = '/perfil-agente'}
-            className="text-xs h-7 px-2"
+            className="h-6 w-6 p-0"
           >
-            <Settings className="h-3 w-3 mr-1" />
-            Editar
+            <Settings className="h-3 w-3" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         {/* Avatar */}
         <div className="flex justify-center">
-          <Avatar className="h-20 w-20">
+          <Avatar className="h-12 w-12">
             <AvatarImage src={agentInfo.avatar_url} alt={agentInfo.name} />
-            <AvatarFallback className="text-lg">
+            <AvatarFallback className="text-sm">
               {agentInfo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>
 
         {/* Nome e Email */}
-        <div className="text-center space-y-1">
-          <h3 className="font-semibold text-base">{agentInfo.name}</h3>
+        <div className="text-center space-y-0.5">
+          <h3 className="font-semibold text-sm">{agentInfo.name}</h3>
           <p className="text-xs text-muted-foreground">{agentInfo.email}</p>
           {agentInfo.phone && (
             <p className="text-xs text-muted-foreground">{agentInfo.phone}</p>
@@ -157,49 +156,22 @@ export default function AgentInfoPanel() {
 
         {/* Função */}
         {agentInfo.job_title && (
-          <div className="flex items-center gap-2 text-sm">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Cargo:</span>
-            <span className="font-medium">{agentInfo.job_title}</span>
+          <div className="text-center">
+            <span className="text-xs font-medium">{agentInfo.job_title}</span>
           </div>
         )}
 
-        {/* Role */}
-        <div className="flex items-center gap-2 text-sm">
-          <UserIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">Função:</span>
-          <Badge variant="secondary" className="font-medium">
+        {/* Role e Departamentos em linha */}
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="text-xs">
             {getRoleLabel(agentRole)}
           </Badge>
+          {departments.map((dept) => (
+            <Badge key={dept} variant="outline" className="text-xs">
+              {getDepartmentLabel(dept)}
+            </Badge>
+          ))}
         </div>
-
-        {/* Departamentos */}
-        {departments.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Departamentos:</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {departments.map((dept) => (
-                <Badge key={dept} variant="outline" className="text-xs">
-                  {getDepartmentLabel(dept)}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Horário de Trabalho */}
-        {agentInfo.work_hours_start && agentInfo.work_hours_end && (
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Horário:</span>
-            <span className="text-xs font-medium">
-              {agentInfo.work_hours_start.substring(0, 5)} - {agentInfo.work_hours_end.substring(0, 5)}
-            </span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
