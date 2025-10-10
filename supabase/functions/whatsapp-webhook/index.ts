@@ -168,21 +168,8 @@ try {
 
       console.log('📨 Agent response:', routingResponse);
 
-      // Enviar resposta via WhatsApp
-      const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
-        body: {
-          phone: customerPhone,
-          message: routingResponse.message || 'Olá! Em breve nossa equipe entrará em contato.'
-        }
-      });
-
-      if (sendError) {
-        console.error('Error sending WhatsApp message:', sendError);
-        throw sendError;
-      }
-
-      // Salvar mensagem do agente
-      await supabase
+      // Salvar mensagem do agente ANTES de tentar enviar
+      const { error: saveAgentMsgError } = await supabase
         .from('conversation_messages')
         .insert({
           conversation_id: conversationId,
@@ -192,11 +179,33 @@ try {
           ai_suggestion: true
         });
 
+      if (saveAgentMsgError) {
+        console.error('⚠️ Error saving agent message:', saveAgentMsgError);
+      }
+
+      // Tentar enviar resposta via WhatsApp (não crítico)
+      let messageSent = false;
+      const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
+        body: {
+          phone: customerPhone,
+          message: routingResponse.message || 'Olá! Em breve nossa equipe entrará em contato.'
+        }
+      });
+
+      if (sendError) {
+        console.error('⚠️ Failed to send WhatsApp message (conversation saved):', sendError);
+        messageSent = false;
+      } else {
+        console.log('✅ WhatsApp message sent successfully');
+        messageSent = true;
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
           conversationId: conversationId,
-          processed: true 
+          processed: true,
+          messageSent: messageSent
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
