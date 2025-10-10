@@ -19,6 +19,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import WhatsAppConversations from "./WhatsAppConversations";
 import WhatsAppTester from "./WhatsAppTester";
+import WhatsAppFlowTest from "./WhatsAppFlowTest";
 
 interface InstanceStatus {
   instanceName: string;
@@ -149,11 +150,16 @@ export default function WhatsAppSetup() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="conversations" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="test" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="test">🧪 Teste Completo</TabsTrigger>
           <TabsTrigger value="conversations">Conversas</TabsTrigger>
           <TabsTrigger value="setup">Configuração</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="test" className="space-y-6">
+          <WhatsAppFlowTest />
+        </TabsContent>
 
         <TabsContent value="conversations" className="space-y-6">
           <WhatsAppConversations />
