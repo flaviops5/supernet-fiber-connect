@@ -129,3 +129,6 @@ verify_jwt = true
 [functions.migrate-knowledge-full]
 verify_jwt = true
 
+[functions.test-whatsapp-webhook]
+verify_jwt = false
+
