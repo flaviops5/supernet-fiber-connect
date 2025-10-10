@@ -120,7 +120,7 @@ export default function AgentInfoPanel() {
   }
 
   return (
-    <Card className="h-auto bg-gradient-to-br from-orange-50 via-orange-100/50 to-background dark:from-orange-950/20 dark:via-orange-900/10 dark:to-background">
+    <Card className="h-auto bg-gradient-to-br from-blue-50 via-blue-100/50 to-background dark:from-blue-950/20 dark:via-blue-900/10 dark:to-background">
       <CardHeader className="pb-1 pt-3 px-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xs font-semibold">Agente Responsável</CardTitle>
