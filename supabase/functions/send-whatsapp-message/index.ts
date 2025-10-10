@@ -38,7 +38,12 @@ serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('EVOLUTION_API_KEY');
-    const baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+    let baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+
+    // Remove trailing slash from baseUrl to avoid double slashes
+    if (baseUrl && baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
 
     if (!apiKey || !baseUrl) {
       console.error('❌ Missing credentials:', { hasApiKey: !!apiKey, hasBaseUrl: !!baseUrl });
