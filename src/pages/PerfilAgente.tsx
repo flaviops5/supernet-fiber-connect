@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
@@ -15,8 +15,10 @@ import { Upload, Save, ArrowLeft } from 'lucide-react';
 export default function PerfilAgente() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -39,10 +41,28 @@ export default function PerfilAgente() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Check if editing another user's profile (admin only)
+      const userIdParam = searchParams.get('user_id');
+      let profileUserId = user.id;
+
+      if (userIdParam) {
+        // Verify user is admin
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (roleData?.role === 'admin') {
+          profileUserId = userIdParam;
+          setTargetUserId(userIdParam);
+        }
+      }
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', profileUserId)
         .single();
 
       if (profileError) throw profileError;
@@ -63,7 +83,7 @@ export default function PerfilAgente() {
       const { data: deptData } = await supabase
         .from('agent_department_assignments')
         .select('department')
-        .eq('user_id', user.id)
+        .eq('user_id', profileUserId)
         .single();
 
       if (deptData) {
@@ -92,9 +112,11 @@ export default function PerfilAgente() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const uploadUserId = targetUserId || user.id;
+
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+      const fileName = `${uploadUserId}/${Math.random()}.${fileExt}`;
       const filePath = fileName;
 
       const { error: uploadError } = await supabase.storage
@@ -131,6 +153,8 @@ export default function PerfilAgente() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const saveUserId = targetUserId || user.id;
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -142,7 +166,7 @@ export default function PerfilAgente() {
           work_hours_end: profile.work_hours_end || null,
           bio: profile.bio
         })
-        .eq('user_id', user.id);
+        .eq('user_id', saveUserId);
 
       if (profileError) throw profileError;
 
@@ -150,7 +174,7 @@ export default function PerfilAgente() {
         const { error: deptError } = await supabase
           .from('agent_department_assignments')
           .upsert({
-            user_id: user.id,
+            user_id: saveUserId,
             department: department as any,
             assigned_by: user.id
           }, {
@@ -189,7 +213,9 @@ export default function PerfilAgente() {
               <ArrowLeft className="h-4 w-4" />
               Voltar ao Admin
             </Button>
-            <h1 className="text-xl font-bold">Meu Perfil</h1>
+            <h1 className="text-xl font-bold">
+              {targetUserId ? `Perfil de ${profile.name || 'Usuário'}` : 'Meu Perfil'}
+            </h1>
             <div className="w-24" />
           </div>
         </header>

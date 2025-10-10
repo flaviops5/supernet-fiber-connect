@@ -477,6 +477,15 @@ const UsersManagement = () => {
                   </div>
                   
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/perfil-agente?user_id=${user.user_id}`)}
+                      title="Editar Perfil"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    
                     <select
                       value={user.user_roles[0]?.role || 'viewer'}
                       onChange={(e) => updateUserRole(user.user_id, e.target.value as 'admin' | 'editor' | 'viewer')}
