@@ -25,6 +25,15 @@ export const ROUTING_AGENT_CONFIG = {
     "telemedicina-agent"
   ],
   
+  // Department mapping
+  departmentMapping: {
+    "sales-agent": "comercial",
+    "support-tech-agent": "tecnico",
+    "support-financial-agent": "financeiro",
+    "automacao-agent": "tecnico",
+    "telemedicina-agent": "comercial"
+  },
+  
   // Priority mapping
   agentPriority: {
     "support-tech-agent": 3, // Highest priority

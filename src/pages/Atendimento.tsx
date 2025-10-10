@@ -9,12 +9,34 @@ import ChatArea from '@/components/atendimento/ChatArea';
 import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
 import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
 import SimulationButton from '@/components/atendimento/SimulationButton';
+import DepartmentMetrics from '@/components/atendimento/DepartmentMetrics';
+import { Badge } from '@/components/ui/badge';
 
 export default function Atendimento() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [agentDepartment, setAgentDepartment] = useState<string>('comercial');
+  const [agentName, setAgentName] = useState<string>('');
+
+  useEffect(() => {
+    loadAgentInfo();
+  }, []);
+
+  const loadAgentInfo = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profile) {
+      setAgentName(profile.name);
+    }
+  };
 
   useEffect(() => {
     // Set agent status to online when component mounts
@@ -86,9 +108,18 @@ export default function Atendimento() {
                 ← Voltar ao Admin
               </button>
               <div className="h-6 w-px bg-border" />
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Central de Atendimento
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  {agentName || 'Atendimento'}
+                </h1>
+                <Badge variant="secondary" className="font-medium">
+                  {agentDepartment === 'comercial' ? 'Comercial' :
+                   agentDepartment === 'tecnico' ? 'Técnico' :
+                   agentDepartment === 'financeiro' ? 'Financeiro' :
+                   agentDepartment === 'administrativo' ? 'Administrativo' :
+                   agentDepartment === 'logistica' ? 'Logística' : agentDepartment}
+                </Badge>
+              </div>
             </div>
             
             <div className="flex items-center gap-4">
@@ -109,13 +140,14 @@ export default function Atendimento() {
               />
             </div>
 
-            {/* Conversation Queue */}
-            <div className="col-span-3">
+            {/* Conversation Queue with Metrics */}
+            <div className="col-span-3 space-y-4">
               <ConversationQueue
                 selectedConversation={selectedConversation}
                 onSelectConversation={setSelectedConversation}
                 agentDepartment={agentDepartment}
               />
+              <DepartmentMetrics />
             </div>
 
             {/* Chat Area */}

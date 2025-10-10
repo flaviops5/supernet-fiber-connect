@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MediaUpload } from '@/components/MediaUpload';
+import TagManager from './TagManager';
 
 interface Message {
   id: string;
@@ -29,15 +30,32 @@ export default function ChatArea({ conversationId }: Props) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [conversationTags, setConversationTags] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const loadConversationTags = async () => {
+    if (!conversationId) return;
+
+    const { data } = await supabase
+      .from('conversations')
+      .select('tags')
+      .eq('id', conversationId)
+      .single();
+
+    if (data?.tags) {
+      setConversationTags(data.tags);
+    }
+  };
 
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      setConversationTags([]);
       return;
     }
 
     loadMessages();
+    loadConversationTags();
 
     const channel = supabase
       .channel(`messages-${conversationId}`)
@@ -153,11 +171,27 @@ export default function ChatArea({ conversationId }: Props) {
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-border/50">
-      <CardHeader className="border-b pb-3">
+    <Card className="h-full flex flex-col shadow-lg border-border/50 relative">
+      {/* Watermark background */}
+      <div 
+        className="absolute inset-0 opacity-[0.03] pointer-events-none bg-repeat"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%23000' opacity='0.1' text-anchor='middle' dominant-baseline='middle' transform='rotate(-45 100 100)'%3ESUPERNET%3C/text%3E%3C/svg%3E")`,
+          backgroundSize: '200px 200px'
+        }}
+      />
+      
+      <CardHeader className="border-b pb-3 relative z-10">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold">Chat</CardTitle>
           <div className="flex gap-2">
+            {conversationId && (
+              <TagManager
+                conversationId={conversationId}
+                currentTags={conversationTags}
+                onTagsUpdated={loadConversationTags}
+              />
+            )}
             <Button size="sm" variant="outline">
               <ArrowLeftRight className="h-4 w-4 mr-1" />
               Transferir
@@ -166,7 +200,7 @@ export default function ChatArea({ conversationId }: Props) {
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10">
         {messages.map((message) => (
           <div
             key={message.id}
