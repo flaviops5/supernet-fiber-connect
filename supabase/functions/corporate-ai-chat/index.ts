@@ -93,10 +93,42 @@ serve(async (req) => {
       }
     }
 
-    // Build context from semantic search results
-    const contextInfo = knowledgeBase?.map(item => 
-      `[${item.category || 'Geral'} - ${item.content_type || 'documento'}] ${item.title}: ${item.content} (Relevância: ${(item.similarity * 100).toFixed(1)}%)`
-    ).join('\n\n') || 'Nenhuma informação específica da empresa disponível.';
+    // Build context with semantic results or fallback keyword search
+    let kbResults = knowledgeBase || [];
+    if (!kbResults || kbResults.length === 0) {
+      const lowerMsg = message.toLowerCase();
+      const terms: string[] = [];
+      if (lowerMsg.includes('pon')) terms.push('pon');
+      if (lowerMsg.includes('gpon')) terms.push('gpon');
+      if (lowerMsg.includes('olt')) terms.push('olt');
+      if (lowerMsg.includes('onu')) terms.push('onu');
+      // Always add first significant token as last resort
+      const firstToken = (lowerMsg.match(/[a-z0-9]{3,}/g) || [])[0];
+      if (firstToken && !terms.includes(firstToken)) terms.push(firstToken);
+
+      const termLike = terms.length > 0 ? terms[0] : 'pon';
+      const { data: fallbackDocs, error: fbError } = await supabase
+        .from('knowledge_base')
+        .select('title, category, content, content_type')
+        .or(`title.ilike.%${termLike}%,content.ilike.%${termLike}%`)
+        .limit(5);
+
+      if (fbError) {
+        console.error('❌ Fallback keyword search error:', fbError);
+      } else if (fallbackDocs && fallbackDocs.length > 0) {
+        console.log(`🔎 Fallback found ${fallbackDocs.length} docs for "${termLike}"`);
+        // Normalize to match expected shape (add similarity ~0.35 to signal low-confidence)
+        kbResults = fallbackDocs.map(d => ({ ...d, similarity: 0.35 }));
+      } else {
+        console.log('⚠️ Fallback keyword search returned no results');
+      }
+    }
+
+    const contextInfo = (kbResults && kbResults.length > 0)
+      ? kbResults.map(item =>
+          `[${item.category || 'Geral'} - ${item.content_type || 'documento'}] ${item.title}: ${item.content}${item.similarity !== undefined ? ` (Relevância: ${(item.similarity * 100).toFixed(1)}%)` : ''}`
+        ).join('\n\n')
+      : 'Nenhuma informação específica da empresa disponível.';
 
     // Build conversation context
     const conversationContext = conversationHistory.map(msg => 
@@ -122,10 +154,11 @@ ${conversationContext}
 DIRETRIZES IMPORTANTES:
 1. Seja sempre profissional, útil e amigável
 2. Use as informações da base de conhecimento para responder
-3. Se não souber algo específico, seja honesto e sugira procurar o RH ou supervisor
+3. Se não encontrar no contexto, diga: "não encontrei na base de conhecimento desta instância" e liste títulos relacionados; evite dizer que "não tem acesso a documentos internos"
 4. Mantenha o foco nas necessidades dos funcionários da SUPERNET FIBRA
 5. Dê respostas claras e práticas
 6. Use um tom colaborativo e de apoio
+7. Para termos técnicos (ex.: PON/GPON/OLT/ONU), priorize documentos técnicos e cite o título de onde retirou a informação
 
 Responda sempre em português brasileiro de forma clara e objetiva.`;
 
