@@ -501,7 +501,7 @@ Método: POST
     entries.push({
       title: endpoint.name,
       content: endpoint.content,
-      content_type: 'markdown',
+      content_type: 'document',
       category: endpoint.category,
       tags: endpoint.tags,
       agent_types: ['support_tech', 'support_financial'], // Disponível para agentes de suporte
