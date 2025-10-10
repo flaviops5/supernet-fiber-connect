@@ -161,29 +161,29 @@ export default function Atendimento() {
 
             {/* Main Grid */}
             <div className="grid grid-cols-12 gap-4 flex-1">
-              {/* Conversation Queue with Metrics */}
-              <div className="col-span-4 space-y-4">
-                <ConversationQueue
-                  selectedConversation={selectedConversation}
-                  onSelectConversation={setSelectedConversation}
-                  agentDepartment={agentDepartment}
-                />
-                <DepartmentMetrics />
-              </div>
+          {/* Conversation Queue with Metrics */}
+          <div className="col-span-12 md:col-span-4 space-y-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+            <ConversationQueue
+              selectedConversation={selectedConversation}
+              onSelectConversation={setSelectedConversation}
+              agentDepartment={agentDepartment}
+            />
+            <DepartmentMetrics />
+          </div>
 
-              {/* Chat Area */}
-              <div className="col-span-5">
-                <ChatArea conversationId={selectedConversation} />
-              </div>
+        {/* Chat Area */}
+        <div className="col-span-12 md:col-span-5 overflow-y-auto">
+          <ChatArea conversationId={selectedConversation} />
+        </div>
 
-              {/* Right Sidebar - Stack vertically */}
-              <div className="col-span-3 space-y-4">
-                {/* Agent Info Card */}
-                <AgentInfoPanel conversationId={selectedConversation} />
-                
-                {/* Client Info Card */}
-                <ClientInfoPanel conversationId={selectedConversation} />
-              </div>
+        {/* Right Sidebar - Stack vertically */}
+        <div className="col-span-12 md:col-span-3 space-y-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+          {/* Agent Info Card */}
+          <AgentInfoPanel conversationId={selectedConversation} />
+          
+          {/* Client Info Card */}
+          <ClientInfoPanel conversationId={selectedConversation} />
+        </div>
             </div>
           </div>
         </div>

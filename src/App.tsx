@@ -11,6 +11,7 @@ import Blog from "./pages/Blog";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
+import PerfilAgente from "./pages/PerfilAgente";
 import Monitoramento from "./pages/Monitoramento";
 import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
@@ -48,7 +49,8 @@ const App = () => {
             {/* Admin routes without header/footer */}
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
-            <Route path="/atendimento" element={<Atendimento />} />
+          <Route path="/atendimento" element={<Atendimento />} />
+          <Route path="/perfil-agente" element={<PerfilAgente />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
             

@@ -204,8 +204,9 @@ const siteManagementItems = [
 const profileItems = [
   {
     title: "Meu Perfil",
-    url: "/admin/profile",
+    url: "/perfil-agente",
     icon: User,
+    external: true,
   },
   {
     title: "Configurações",
@@ -459,13 +460,23 @@ export function AdminSidebar() {
               {profileItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={getNavClasses(item.url)}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    {item.external ? (
+                      <a
+                        href={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </a>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

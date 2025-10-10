@@ -11,6 +11,9 @@ interface AgentInfo {
   name: string;
   email: string;
   avatar_url?: string;
+  job_title?: string;
+  work_hours_start?: string;
+  work_hours_end?: string;
 }
 
 interface AgentRole {
@@ -54,7 +57,7 @@ export default function AgentInfoPanel({ conversationId }: Props) {
       if (conversation?.assigned_agent_id) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('name, email, avatar_url')
+          .select('name, email, avatar_url, job_title, work_hours_start, work_hours_end')
           .eq('user_id', conversation.assigned_agent_id)
           .single();
 
@@ -155,7 +158,7 @@ export default function AgentInfoPanel({ conversationId }: Props) {
         <div className="flex items-center gap-2 text-sm">
           <User className="h-4 w-4 text-muted-foreground" />
           <span className="text-muted-foreground">Função:</span>
-          <span className="font-medium">{getRoleLabel(agentRole || undefined)}</span>
+          <span className="font-medium">{agentInfo.job_title || getRoleLabel(agentRole || undefined)}</span>
         </div>
 
         {/* Setor */}
@@ -184,6 +187,17 @@ export default function AgentInfoPanel({ conversationId }: Props) {
               </span>
             </div>
           </>
+        )}
+
+        {/* Horário de Trabalho */}
+        {agentInfo.work_hours_start && agentInfo.work_hours_end && (
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Horário:</span>
+            <span className="text-xs font-medium">
+              {agentInfo.work_hours_start.substring(0, 5)} - {agentInfo.work_hours_end.substring(0, 5)}
+            </span>
+          </div>
         )}
       </CardContent>
     </Card>
