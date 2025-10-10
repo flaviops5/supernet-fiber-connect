@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase } from 'lucide-react';
+import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase, Wifi, WifiOff, ShieldAlert, CreditCard } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -178,15 +178,33 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             </div>
           )}
 
-          {conversation.customer_email && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">E-mail</p>
-              <div className="flex items-center gap-2">
-                <Mail className="h-3 w-3 text-muted-foreground" />
-                <p className="text-sm truncate">{conversation.customer_email}</p>
-              </div>
+          {/* PPPoE Status */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">PPPoE</p>
+            <p className="text-sm font-mono">cliente@supernet</p>
+          </div>
+
+          {/* Online/Offline Status */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Status Conexão</p>
+            <div className="flex items-center gap-2">
+              <Wifi className="h-3 w-3 text-green-500" />
+              <Badge variant="outline" className="text-xs border-green-500 text-green-700">
+                Online
+              </Badge>
             </div>
-          )}
+          </div>
+
+          {/* Bloqueio/Financeiro Status */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Situação</p>
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-3 w-3 text-yellow-500" />
+              <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
+                Financeiro em atraso
+              </Badge>
+            </div>
+          </div>
 
           {conversation.customer_cpf && (
             <div>
