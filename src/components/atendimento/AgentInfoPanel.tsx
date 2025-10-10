@@ -134,7 +134,7 @@ export default function AgentInfoPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1 pt-2">
         {/* Avatar */}
         <div className="flex justify-center">
           <Avatar className="h-12 w-12">

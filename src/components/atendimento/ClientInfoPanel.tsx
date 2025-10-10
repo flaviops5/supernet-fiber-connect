@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import ClosureMessageSelector from './ClosureMessageSelector';
+import watermarkBg from '@/assets/watermark-background.jpg';
 
 interface Conversation {
   id: string;
@@ -109,15 +110,24 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-border/50">
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col shadow-lg border-border/50 relative overflow-hidden">
+      <div 
+        className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{
+          backgroundImage: `url(${watermarkBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      <CardHeader className="pb-3 relative z-10">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <User className="h-4 w-4" />
           Informações do Cliente
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-4 relative z-10">
         {/* Agent Info */}
         {agentInfo && (
           <>
