@@ -146,7 +146,6 @@ export default function Atendimento() {
                   </SelectContent>
                 </Select>
               </div>
-              <SimulationButton />
               <AtendimentoMetrics />
             </div>
           </div>
@@ -154,30 +153,37 @@ export default function Atendimento() {
 
         {/* Main Content */}
         <div className="container mx-auto p-4 h-[calc(100vh-4rem)]">
-          <div className="grid grid-cols-12 gap-4 h-full">
-            {/* Conversation Queue with Metrics */}
-            <div className="col-span-4 space-y-4">
-              <ConversationQueue
-                selectedConversation={selectedConversation}
-                onSelectConversation={setSelectedConversation}
-                agentDepartment={agentDepartment}
-              />
-              <DepartmentMetrics />
+          <div className="space-y-4 h-full flex flex-col">
+            {/* Top Row - Simulation Buttons */}
+            <div className="flex gap-2 justify-end">
+              <SimulationButton />
             </div>
 
-            {/* Chat Area */}
-            <div className="col-span-5">
-              <ChatArea conversationId={selectedConversation} />
-            </div>
+            {/* Main Grid */}
+            <div className="grid grid-cols-12 gap-4 flex-1">
+              {/* Conversation Queue with Metrics */}
+              <div className="col-span-4 space-y-4">
+                <ConversationQueue
+                  selectedConversation={selectedConversation}
+                  onSelectConversation={setSelectedConversation}
+                  agentDepartment={agentDepartment}
+                />
+                <DepartmentMetrics />
+              </div>
 
-            {/* Right Sidebar - Agent Info (smaller) */}
-            <div className="col-span-2">
-              <AgentInfoPanel conversationId={selectedConversation} />
-            </div>
+              {/* Chat Area */}
+              <div className="col-span-5">
+                <ChatArea conversationId={selectedConversation} />
+              </div>
 
-            {/* Right Sidebar - Client Info (larger) */}
-            <div className="col-span-1">
-              <ClientInfoPanel conversationId={selectedConversation} />
+              {/* Right Sidebar - Stack vertically */}
+              <div className="col-span-3 space-y-4">
+                {/* Agent Info Card */}
+                <AgentInfoPanel conversationId={selectedConversation} />
+                
+                {/* Client Info Card */}
+                <ClientInfoPanel conversationId={selectedConversation} />
+              </div>
             </div>
           </div>
         </div>
