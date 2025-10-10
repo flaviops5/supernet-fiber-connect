@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, Send, User, Brain, MessageCircle, Clock, Trash2, Plus, Sparkles } from 'lucide-react';
+import { Bot, Send, User, Brain, MessageCircle, Clock, Trash2, Plus, Sparkles, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -34,10 +34,34 @@ const CorporateAI = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const syncIXCDocumentation = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-ixc-documentation');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sincronização concluída!",
+        description: `${data.itemsProcessed} endpoints IXC sincronizados com sucesso`,
+      });
+    } catch (error) {
+      console.error('Error syncing IXC documentation:', error);
+      toast({
+        title: "Erro na sincronização",
+        description: "Não foi possível sincronizar os endpoints IXC",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   useEffect(() => {
@@ -280,14 +304,30 @@ const CorporateAI = () => {
                 {conversations.length}
               </Badge>
             </div>
-            <Button 
-              onClick={createNewConversation} 
-              className="w-full"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Conversa
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                onClick={createNewConversation} 
+                className="w-full"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Conversa
+              </Button>
+              <Button 
+                onClick={syncIXCDocumentation} 
+                variant="outline"
+                className="w-full"
+                size="sm"
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Sincronizar IXC (28 endpoints)
+              </Button>
+            </div>
           </div>
           
           <ScrollArea className="flex-1">
