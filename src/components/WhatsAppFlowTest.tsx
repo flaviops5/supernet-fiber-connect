@@ -97,7 +97,25 @@ export default function WhatsAppFlowTest() {
         body: webhookPayload
       });
 
-      if (webhookError) throw new Error(`Erro no webhook: ${webhookError.message}`);
+      if (webhookError) {
+        const errorMsg = `Erro no webhook: ${webhookError.message || JSON.stringify(webhookError)}`;
+        updateStep('webhook', {
+          status: 'error',
+          message: errorMsg,
+          data: webhookError
+        });
+        throw new Error(errorMsg);
+      }
+
+      if (!webhookResponse?.success) {
+        const errorMsg = `Webhook retornou erro: ${webhookResponse?.error || 'desconhecido'}`;
+        updateStep('webhook', {
+          status: 'error',
+          message: errorMsg,
+          data: webhookResponse
+        });
+        throw new Error(errorMsg);
+      }
 
       updateStep('webhook', {
         status: 'success',
@@ -173,7 +191,8 @@ export default function WhatsAppFlowTest() {
         });
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Aguardar um pouco mais para o agente processar
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Step 5: Verificar resposta do agente
       addStep({
@@ -191,7 +210,15 @@ export default function WhatsAppFlowTest() {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (agentMsgError) throw new Error(`Erro ao buscar resposta: ${agentMsgError.message}`);
+      if (agentMsgError) {
+        const errorMsg = `Erro ao buscar resposta: ${agentMsgError.message}`;
+        updateStep('agent_response', {
+          status: 'error',
+          message: errorMsg,
+          data: agentMsgError
+        });
+        throw new Error(errorMsg);
+      }
 
       if (agentMessages && agentMessages.length > 0) {
         updateStep('agent_response', {
@@ -200,9 +227,21 @@ export default function WhatsAppFlowTest() {
           data: agentMessages[0]
         });
       } else {
+        // Buscar TODAS as mensagens para debug
+        const { data: allMessages } = await supabase
+          .from('conversation_messages')
+          .select('*')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: false });
+
+        const errorMsg = `Nenhuma mensagem do agente encontrada. Total de mensagens: ${allMessages?.length || 0}`;
         updateStep('agent_response', {
           status: 'error',
-          message: 'Resposta do agente não foi gerada'
+          message: errorMsg,
+          data: { 
+            allMessages,
+            webhookResponse 
+          }
         });
       }
 
