@@ -96,26 +96,29 @@ try {
 
       let conversationId = existingConversation?.id;
 
-      // Se não existe conversação ativa, criar uma nova
+      // Se não existe conversação ativa, criar ou atualizar
       if (!conversationId) {
-        console.log('🆕 Creating new conversation');
+        console.log('🆕 Creating or updating conversation');
         const { data: newConversation, error: createError } = await supabase
           .from('conversations')
-          .insert({
+          .upsert({
             customer_name: customerName,
             customer_phone: customerPhone,
             channel: 'whatsapp',
             status: 'waiting',
+            last_message_at: new Date().toISOString(),
             metadata: {
               whatsapp_id: messageData.key?.id,
               instance: webhookData.instance
             }
+          }, {
+            onConflict: 'channel,customer_phone'
           })
           .select()
           .single();
 
         if (createError) {
-          console.error('Error creating conversation:', createError);
+          console.error('Error creating/updating conversation:', createError);
           throw createError;
         }
 
