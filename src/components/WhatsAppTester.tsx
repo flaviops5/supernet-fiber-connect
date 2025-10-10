@@ -46,6 +46,28 @@ export default function WhatsAppTester() {
     }
   };
 
+  const testWebhook = async () => {
+    setLoading(true);
+    setResponse(null);
+
+    try {
+      toast.info("Enviando mensagem de teste simulada...");
+      
+      const { data, error } = await supabase.functions.invoke('test-whatsapp-webhook');
+
+      if (error) throw error;
+
+      setResponse(data);
+      toast.success("Teste concluído! Verifique os resultados abaixo.");
+    } catch (error: any) {
+      console.error("Erro no teste:", error);
+      toast.error(`Erro: ${error.message}`);
+      setResponse({ error: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -86,23 +108,45 @@ export default function WhatsAppTester() {
           />
         </div>
 
-        <Button
-          onClick={sendTestMessage}
-          disabled={loading}
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enviando...
-            </>
-          ) : (
-            <>
-              <Send className="mr-2 h-4 w-4" />
-              Enviar Mensagem de Teste
-            </>
-          )}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={sendTestMessage}
+            disabled={loading}
+            className="w-full"
+            variant="default"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Enviar Mensagem Real
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={testWebhook}
+            disabled={loading}
+            className="w-full"
+            variant="outline"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Simular Webhook (Teste Direto)
+              </>
+            )}
+          </Button>
+        </div>
 
         {response && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
