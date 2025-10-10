@@ -162,7 +162,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
   };
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-border/50">
+    <Card className="h-full flex flex-col shadow-lg border-border/50 bg-gradient-to-br from-orange-50 via-orange-100/50 to-background dark:from-orange-950/20 dark:via-orange-900/10 dark:to-background">
       <CardHeader className="pb-3 space-y-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">

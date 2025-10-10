@@ -120,54 +120,43 @@ export default function AgentInfoPanel() {
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
+    <Card className="h-auto bg-gradient-to-br from-orange-50 via-orange-100/50 to-background dark:from-orange-950/20 dark:via-orange-900/10 dark:to-background">
+      <CardHeader className="pb-1 pt-3 px-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xs font-semibold">Agente Responsável</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => window.location.href = '/perfil-agente'}
-            className="h-6 w-6 p-0"
+            className="h-5 w-5 p-0"
           >
             <Settings className="h-3 w-3" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-1 pt-2">
+      <CardContent className="space-y-1 pt-1 pb-2 px-3">
         {/* Avatar */}
-        <div className="flex justify-center">
-          <Avatar className="h-12 w-12">
+        <div className="flex justify-center mb-1">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={agentInfo.avatar_url} alt={agentInfo.name} />
-            <AvatarFallback className="text-sm">
+            <AvatarFallback className="text-xs">
               {agentInfo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
             </AvatarFallback>
           </Avatar>
         </div>
 
-        {/* Nome e Email */}
-        <div className="text-center space-y-0.5">
-          <h3 className="font-semibold text-sm">{agentInfo.name}</h3>
-          <p className="text-xs text-muted-foreground">{agentInfo.email}</p>
-          {agentInfo.phone && (
-            <p className="text-xs text-muted-foreground">{agentInfo.phone}</p>
-          )}
+        {/* Nome */}
+        <div className="text-center">
+          <h3 className="font-semibold text-xs leading-tight">{agentInfo.name}</h3>
         </div>
 
-        {/* Função */}
-        {agentInfo.job_title && (
-          <div className="text-center">
-            <span className="text-xs font-medium">{agentInfo.job_title}</span>
-          </div>
-        )}
-
         {/* Role e Departamentos em linha */}
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <Badge variant="secondary" className="text-xs">
+        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+          <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-5">
             {getRoleLabel(agentRole)}
           </Badge>
           {departments.map((dept) => (
-            <Badge key={dept} variant="outline" className="text-xs">
+            <Badge key={dept} variant="outline" className="text-[10px] py-0 px-1.5 h-5">
               {getDepartmentLabel(dept)}
             </Badge>
           ))}

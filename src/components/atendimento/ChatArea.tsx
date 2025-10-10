@@ -173,18 +173,8 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
   }
 
   return (
-    <Card className="h-full flex flex-col shadow-lg border-border/50 relative">
-      {/* Watermark background */}
-      <div 
-        className="absolute inset-0 opacity-40 pointer-events-none bg-repeat"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='24' font-family='Arial' fill='%23000000' opacity='0.4' text-anchor='middle' dominant-baseline='middle' transform='rotate(-45 100 100)'%3ESupernet Telecom%3C/text%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '200px 200px'
-        }}
-      />
-      
-      <CardHeader className="border-b pb-3 relative z-10">
+    <Card className="h-full flex flex-col shadow-lg border-border/50 bg-gradient-to-br from-orange-50 via-orange-100/50 to-background dark:from-orange-950/20 dark:via-orange-900/10 dark:to-background">
+      <CardHeader className="border-b pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold">Chat</CardTitle>
           <div className="flex gap-2">
@@ -203,7 +193,7 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10">
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
