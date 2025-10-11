@@ -34,6 +34,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [openingTicket, setOpeningTicket] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,6 +62,56 @@ export default function ClientInfoPanel({ conversationId }: Props) {
       setConversation(data);
     }
     setLoading(false);
+  };
+
+  const handleOpenTicket = async () => {
+    if (!conversation?.ixc_client_id) {
+      toast({
+        title: "Cliente não identificado",
+        description: "Não foi possível identificar o cliente no IXC.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOpeningTicket(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'createAtendimento',
+          params: {
+            customerId: conversation.ixc_client_id,
+            atendimentoData: {
+              planName: 'Atendimento via Chat',
+              customerName: conversation.customer_name,
+              customerPhone: conversation.customer_phone,
+              customerEmail: conversation.customer_email,
+              observacoes: `Atendimento aberto pelo agente via sistema de chat.\nDepartamento: ${conversation.department}\nProtocolo: ${conversationId}`
+            }
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Atendimento criado com sucesso!",
+          description: `Ticket aberto no IXC ${data.data?.id ? `#${data.data.id}` : ''}`,
+        });
+      } else {
+        throw new Error(data?.error || 'Erro ao criar atendimento');
+      }
+    } catch (error) {
+      console.error('Error opening ticket:', error);
+      toast({
+        title: "Erro ao abrir atendimento",
+        description: error instanceof Error ? error.message : "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningTicket(false);
+    }
   };
 
   if (!conversationId || !conversation) {
@@ -119,9 +170,15 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               conversationId={conversationId}
               onClose={loadConversation}
             />
-            <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-auto py-2 flex flex-col gap-1"
+              onClick={handleOpenTicket}
+              disabled={openingTicket || !conversation?.ixc_client_id}
+            >
               <AlertCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
-              <span className="text-xs">Abrir Atendimento</span>
+              <span className="text-xs">{openingTicket ? 'Abrindo...' : 'Abrir Atendimento'}</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <Calendar className="h-4 w-4 text-[hsl(var(--orange))]" />
