@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight, X } from 'lucide-react';
+import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight, X, FileCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -12,6 +12,7 @@ import { MediaUpload } from '@/components/MediaUpload';
 import TagManager from './TagManager';
 import MessageShortcuts from './MessageShortcuts';
 import AISuggestion from './AISuggestion';
+import TextReview from './TextReview';
 
 interface Message {
   id: string;
@@ -34,6 +35,7 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
   const [loading, setLoading] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [conversationTags, setConversationTags] = useState<string[]>([]);
+  const [showTextReview, setShowTextReview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadConversationTags = async () => {
@@ -253,6 +255,17 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
             conversationId={conversationId}
             onAccept={(suggestion) => setNewMessage(suggestion)}
           />
+
+          {showTextReview && newMessage.trim() && (
+            <TextReview
+              originalText={newMessage}
+              onAccept={(reviewedText) => {
+                setNewMessage(reviewedText);
+                setShowTextReview(false);
+              }}
+              onClose={() => setShowTextReview(false)}
+            />
+          )}
           
           <div className="flex gap-2">
             <MessageShortcuts 
@@ -265,6 +278,18 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
                 setNewMessage(prev => prev + (prev ? '\n' : '') + content);
               }}
             />
+            {newMessage.trim() && !showTextReview && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowTextReview(true)}
+                disabled={loading}
+                className="gap-2"
+              >
+                <FileCheck className="h-4 w-4 text-blue-500" />
+                Revisar texto
+              </Button>
+            )}
           </div>
           
           <div className="flex gap-2 items-end">

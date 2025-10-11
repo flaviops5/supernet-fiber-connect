@@ -132,3 +132,12 @@ verify_jwt = true
 [functions.test-whatsapp-webhook]
 verify_jwt = false
 
+[functions.ai-suggest-reply]
+verify_jwt = true
+
+[functions.ai-auto-tag]
+verify_jwt = false
+
+[functions.ai-text-review]
+verify_jwt = true
+
