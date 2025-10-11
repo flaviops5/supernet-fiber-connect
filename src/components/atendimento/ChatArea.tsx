@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { MediaUpload } from '@/components/MediaUpload';
 import TagManager from './TagManager';
 import MessageShortcuts from './MessageShortcuts';
+import AISuggestion from './AISuggestion';
 
 interface Message {
   id: string;
@@ -248,6 +249,11 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
         )}
         
         <div className="space-y-2">
+          <AISuggestion 
+            conversationId={conversationId}
+            onAccept={(suggestion) => setNewMessage(suggestion)}
+          />
+          
           <div className="flex gap-2">
             <MessageShortcuts 
               department={agentDepartment}

@@ -244,6 +244,16 @@ try {
         throw messageError;
       }
 
+      // Auto-tag conversation using AI (fire and forget)
+      if (!isReopen) {
+        supabase.functions.invoke('ai-auto-tag', {
+          body: { 
+            conversation_id: conversationId,
+            message_content: messageContent 
+          }
+        }).catch(err => console.error('Auto-tag error:', err));
+      }
+
       // Chamar agente de roteamento (Cloé) para processar e responder
       console.log('🤖 Calling routing agent...');
       const { data: routingResponse, error: routingError } = await supabase.functions.invoke('routing-agent', {
