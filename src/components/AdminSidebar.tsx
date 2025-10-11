@@ -129,6 +129,11 @@ const agentsItems = [
     icon: MessageSquare,
   },
   {
+    title: "Escalonamento",
+    url: "/admin/escalonamento",
+    icon: Activity,
+  },
+  {
     title: "WhatsApp",
     url: "/admin/whatsapp",
     icon: MessageCircle,

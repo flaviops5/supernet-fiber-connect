@@ -1605,6 +1605,132 @@ export type Database = {
         }
         Relationships: []
       }
+      escalation_history: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          customer_notified: boolean | null
+          escalation_type: string
+          from_agent_id: string | null
+          from_department: Database["public"]["Enums"]["agent_department"]
+          id: string
+          reason: string | null
+          rule_id: string | null
+          to_agent_id: string | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          customer_notified?: boolean | null
+          escalation_type: string
+          from_agent_id?: string | null
+          from_department: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          reason?: string | null
+          rule_id?: string | null
+          to_agent_id?: string | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          customer_notified?: boolean | null
+          escalation_type?: string
+          from_agent_id?: string | null
+          from_department?: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          reason?: string | null
+          rule_id?: string | null
+          to_agent_id?: string | null
+          to_department?: Database["public"]["Enums"]["agent_department"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_history_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_history_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "escalation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalation_rules: {
+        Row: {
+          auto_escalate_after_minutes: number | null
+          conditions: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          from_department: Database["public"]["Enums"]["agent_department"]
+          id: string
+          priority: number
+          require_keywords: string[] | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+          updated_at: string
+        }
+        Insert: {
+          auto_escalate_after_minutes?: number | null
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          from_department: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          priority?: number
+          require_keywords?: string[] | null
+          to_department: Database["public"]["Enums"]["agent_department"]
+          updated_at?: string
+        }
+        Update: {
+          auto_escalate_after_minutes?: number | null
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          from_department?: Database["public"]["Enums"]["agent_department"]
+          id?: string
+          priority?: number
+          require_keywords?: string[] | null
+          to_department?: Database["public"]["Enums"]["agent_department"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      escalation_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          mode: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          mode?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       failed_actions: {
         Row: {
           action_log_id: string | null
