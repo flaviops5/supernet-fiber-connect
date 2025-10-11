@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import ClosureMessageSelector from './ClosureMessageSelector';
+import OpenTicketDialog from './OpenTicketDialog';
 
 interface Conversation {
   id: string;
@@ -35,6 +36,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [loading, setLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [openingTicket, setOpeningTicket] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
     setLoading(false);
   };
 
-  const handleOpenTicket = async () => {
+  const handleOpenTicket = async (assuntoId: string, observacoes: string) => {
     if (!conversation?.ixc_client_id) {
       toast({
         title: "Cliente não identificado",
@@ -82,11 +84,12 @@ export default function ClientInfoPanel({ conversationId }: Props) {
           params: {
             customerId: conversation.ixc_client_id,
             atendimentoData: {
+              assuntoId: assuntoId,
               planName: 'Atendimento via Chat',
               customerName: conversation.customer_name,
               customerPhone: conversation.customer_phone,
               customerEmail: conversation.customer_email,
-              observacoes: `Atendimento aberto pelo agente via sistema de chat.\nDepartamento: ${conversation.department}\nProtocolo: ${conversationId}`
+              observacoes: observacoes || `Atendimento aberto pelo agente via sistema de chat.\nDepartamento: ${conversation.department}\nProtocolo: ${conversationId}`
             }
           }
         }
@@ -97,8 +100,9 @@ export default function ClientInfoPanel({ conversationId }: Props) {
       if (data?.success) {
         toast({
           title: "Atendimento criado com sucesso!",
-          description: `Ticket aberto no IXC ${data.data?.id ? `#${data.data.id}` : ''}`,
+          description: `Ticket #${data.data?.id || 'N/A'} aberto no IXC`,
         });
+        setDialogOpen(false);
       } else {
         throw new Error(data?.error || 'Erro ao criar atendimento');
       }
@@ -174,12 +178,19 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               size="sm" 
               variant="outline" 
               className="h-auto py-2 flex flex-col gap-1"
-              onClick={handleOpenTicket}
+              onClick={() => setDialogOpen(true)}
               disabled={openingTicket || !conversation?.ixc_client_id}
             >
               <AlertCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
-              <span className="text-xs">{openingTicket ? 'Abrindo...' : 'Abrir Atendimento'}</span>
+              <span className="text-xs">Abrir Atendimento</span>
             </Button>
+            
+            <OpenTicketDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              onSubmit={handleOpenTicket}
+              loading={openingTicket}
+            />
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <Calendar className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Agendar</span>
