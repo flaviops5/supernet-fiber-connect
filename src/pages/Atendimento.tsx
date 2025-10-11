@@ -170,12 +170,12 @@ export default function Atendimento() {
               {/* Right Column - Agent + Client Info */}
               <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 min-h-0 h-full">
                 {/* Agent Info Card - fixed height */}
-                <div className="h-[22%] flex-shrink-0">
+                <div className="h-[19%] flex-shrink-0">
                   <AgentInfoPanel />
                 </div>
                 
                 {/* Client Info Card - fill remaining space */}
-                <div className="h-[78%] flex-shrink-0 overflow-hidden">
+                <div className="h-[81%] flex-shrink-0 overflow-hidden">
                   <ClientInfoPanel conversationId={selectedConversation} />
                 </div>
               </div>
