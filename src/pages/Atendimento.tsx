@@ -168,7 +168,7 @@ export default function Atendimento() {
               </div>
 
               {/* Right Column - Agent + Client Info */}
-              <div className="col-span-12 lg:col-span-3 flex flex-col gap-2 min-h-0 h-full">
+              <div className="col-span-12 lg:col-span-3 flex flex-col gap-0.5 min-h-0 h-full">
                 {/* Agent Info Card - fixed height */}
                 <div className="h-[30%] flex-shrink-0">
                   <AgentInfoPanel />
