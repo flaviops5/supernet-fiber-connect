@@ -92,6 +92,20 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             <p className="text-sm font-medium">{conversation.customer_name}</p>
           </div>
 
+          {/* PPPoE e CPF na mesma linha */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">PPPoE</p>
+              <p className="text-sm font-mono">cliente@supernet</p>
+            </div>
+            {conversation.customer_cpf && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">CPF</p>
+                <p className="text-sm font-mono">{conversation.customer_cpf}</p>
+              </div>
+            )}
+          </div>
+
           {conversation.customer_phone && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">Telefone</p>
@@ -101,12 +115,6 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               </div>
             </div>
           )}
-
-          {/* PPPoE Status */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">PPPoE</p>
-            <p className="text-sm font-mono">cliente@supernet</p>
-          </div>
 
           {/* Status e Situação na mesma linha */}
           <div className="grid grid-cols-2 gap-3">
@@ -132,13 +140,6 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               </div>
             </div>
           </div>
-
-          {conversation.customer_cpf && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">CPF</p>
-              <p className="text-sm font-mono">{conversation.customer_cpf}</p>
-            </div>
-          )}
         </div>
 
         <Separator />

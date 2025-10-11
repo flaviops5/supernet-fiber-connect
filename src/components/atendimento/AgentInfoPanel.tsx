@@ -163,8 +163,8 @@ export default function AgentInfoPanel() {
   }
 
   return (
-    <Card className="h-auto bg-gradient-to-br from-muted/30 via-background to-background border-2 border-border">
-      <CardHeader className="pb-1 pt-3 px-3">
+    <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <UserCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
@@ -174,14 +174,14 @@ export default function AgentInfoPanel() {
             variant="ghost"
             size="sm"
             onClick={() => window.location.href = '/perfil-agente'}
-            className="h-5 w-5 p-0"
+            className="h-8 w-8 p-0"
           >
-            <Settings className="h-3 w-3" />
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
-        <Separator className="mt-2" />
+        <Separator className="mt-3" />
       </CardHeader>
-      <CardContent className="space-y-1 pt-1 pb-2 px-3">
+      <CardContent className="flex-1 overflow-y-auto space-y-4">
         {/* Avatar */}
         <div className="flex justify-center mb-1">
           <Avatar className="h-10 w-10">
