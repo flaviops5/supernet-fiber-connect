@@ -112,7 +112,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
     <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <User className="h-4 w-4" />
+          <User className="h-4 w-4 text-[hsl(var(--orange))]" />
           Informações do Cliente
         </CardTitle>
         <Separator className="mt-3" />

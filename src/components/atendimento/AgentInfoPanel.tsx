@@ -166,8 +166,8 @@ export default function AgentInfoPanel() {
     <Card className="h-auto bg-gradient-to-br from-muted/30 via-background to-background border-2 border-border">
       <CardHeader className="pb-1 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
-            <UserCircle className="h-3.5 w-3.5 text-[hsl(var(--orange))]" />
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <UserCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
             Agente Responsável
           </CardTitle>
           <Button
