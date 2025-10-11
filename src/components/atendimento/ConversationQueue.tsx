@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { Clock, MessageSquare, AlertCircle, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -160,7 +161,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4 text-[hsl(var(--orange))]" />
             Fila de Atendimento
           </CardTitle>
           
@@ -171,7 +172,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="icon" className="h-8 w-8 relative">
-                    <Tag className="h-4 w-4" />
+                    <Tag className="h-4 w-4 text-[hsl(var(--orange))]" />
                     {selectedTags.length > 0 && (
                       <Badge 
                         variant="secondary" 
@@ -218,6 +219,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
             )}
           </div>
         </div>
+        <Separator className="mt-3" />
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden flex flex-col p-0">

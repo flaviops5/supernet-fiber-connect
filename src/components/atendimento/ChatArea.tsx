@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { Send, Paperclip, Bot, User, Phone, ArrowLeftRight, X, FileCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -177,7 +178,7 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
 
   return (
     <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
-      <CardHeader className="border-b pb-3">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold">Chat</CardTitle>
           <div className="flex gap-2">
@@ -194,6 +195,7 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
             </Button>
           </div>
         </div>
+        <Separator className="mt-3" />
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -251,11 +253,6 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
         )}
         
         <div className="space-y-2">
-          <AISuggestion 
-            conversationId={conversationId}
-            onAccept={(suggestion) => setNewMessage(suggestion)}
-          />
-
           {showTextReview && newMessage.trim() && (
             <TextReview
               originalText={newMessage}
@@ -267,7 +264,11 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
             />
           )}
           
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <AISuggestion 
+              conversationId={conversationId}
+              onAccept={(suggestion) => setNewMessage(suggestion)}
+            />
             <MessageShortcuts 
               department={agentDepartment}
               onSelectShortcut={(shortcut) => {
@@ -286,7 +287,7 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
                 disabled={loading}
                 className="gap-2"
               >
-                <FileCheck className="h-4 w-4 text-blue-500" />
+                <FileCheck className="h-4 w-4 text-[hsl(var(--orange))]" />
                 Revisar texto
               </Button>
             )}

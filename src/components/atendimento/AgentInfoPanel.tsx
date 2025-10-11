@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings, Star } from 'lucide-react';
+import { Settings, Star, UserCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 interface AgentInfo {
@@ -165,7 +166,10 @@ export default function AgentInfoPanel() {
     <Card className="h-auto bg-gradient-to-br from-muted/30 via-background to-background border-2 border-border">
       <CardHeader className="pb-1 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xs font-semibold">Agente Responsável</CardTitle>
+          <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+            <UserCircle className="h-3.5 w-3.5 text-[hsl(var(--orange))]" />
+            Agente Responsável
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
@@ -175,6 +179,7 @@ export default function AgentInfoPanel() {
             <Settings className="h-3 w-3" />
           </Button>
         </div>
+        <Separator className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-1 pt-1 pb-2 px-3">
         {/* Avatar */}
@@ -207,7 +212,7 @@ export default function AgentInfoPanel() {
         {/* Toggle de Feedback */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t mt-2">
           <Label htmlFor="feedback-toggle" className="text-xs flex items-center gap-1 cursor-pointer">
-            <Star className="h-3 w-3 text-orange-500" />
+            <Star className="h-3 w-3 text-[hsl(var(--orange))]" />
             Solicitar feedback
           </Label>
           <Switch

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle } from 'lucide-react';
+import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Briefcase, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle, UserCog } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -115,6 +115,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
           <User className="h-4 w-4" />
           Informações do Cliente
         </CardTitle>
+        <Separator className="mt-3" />
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto space-y-4">
@@ -122,7 +123,10 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         {agentInfo && (
           <>
             <div className="p-3 bg-primary/5 border border-primary/10 rounded-lg space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Atendente Responsável</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                <UserCog className="h-3.5 w-3.5 text-[hsl(var(--orange))]" />
+                Agente Responsável
+              </p>
               
               <div className="flex items-center gap-3">
                 <Avatar className="h-12 w-12 border-2 border-primary/20">
@@ -249,15 +253,15 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               onClose={loadConversation}
             />
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <AlertCircle className="h-4 w-4 text-orange-500" />
+              <AlertCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Abrir Ticket</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <Calendar className="h-4 w-4 text-orange-500" />
+              <Calendar className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Agendar</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <MapPin className="h-4 w-4 text-orange-500" />
+              <MapPin className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Ver Endereço</span>
             </Button>
           </div>

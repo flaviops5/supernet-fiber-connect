@@ -164,16 +164,16 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
     <div className="flex items-center gap-2">
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="icon"
         onClick={isRecording ? stopRecording : startRecording}
         disabled={disabled || isTranscribing}
-        className={isRecording ? 'text-red-500 animate-pulse' : ''}
+        className={isRecording ? 'border-red-500 bg-red-50 dark:bg-red-950' : 'border-border hover:bg-accent'}
       >
         {isTranscribing ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--orange))]" />
         ) : (
-          <Mic className="w-5 h-5" />
+          <Mic className={`h-5 w-5 ${isRecording ? 'text-red-500 animate-pulse' : 'text-[hsl(var(--orange))]'}`} />
         )}
       </Button>
 
@@ -188,12 +188,13 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({
       
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         size="icon"
         onClick={() => imageInputRef.current?.click()}
         disabled={disabled}
+        className="border-border hover:bg-accent"
       >
-        <ImageIcon className="w-5 h-5" />
+        <ImageIcon className="h-5 w-5 text-[hsl(var(--orange))]" />
       </Button>
     </div>
   );
