@@ -67,22 +67,47 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   };
 
   const handleOpenTicket = async (assuntoId: string, observacoes: string) => {
-    if (!conversation?.ixc_client_id) {
-      toast({
-        title: "Cliente não identificado",
-        description: "Não foi possível identificar o cliente no IXC.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!conversation) return;
+
+    // Se não tiver ixc_client_id, tentar buscar pelo CPF ou telefone
+    let customerId = conversation.ixc_client_id;
 
     setOpeningTicket(true);
     try {
+      // Se não houver customerId, buscar no IXC pelo CPF
+      if (!customerId && conversation.customer_cpf) {
+        const { data: searchData, error: searchError } = await supabase.functions.invoke('ixc-integration', {
+          body: {
+            action: 'getClientByCpf',
+            params: { cpf: conversation.customer_cpf }
+          }
+        });
+
+        if (!searchError && searchData?.success && searchData.data?.id) {
+          customerId = searchData.data.id;
+          
+          // Atualizar a conversa com o ixc_client_id encontrado
+          await supabase
+            .from('conversations')
+            .update({ ixc_client_id: customerId })
+            .eq('id', conversationId);
+        }
+      }
+
+      if (!customerId) {
+        toast({
+          title: "Cliente não encontrado",
+          description: "Não foi possível identificar o cliente no IXC. Verifique o CPF.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('ixc-integration', {
         body: {
           action: 'createAtendimento',
           params: {
-            customerId: conversation.ixc_client_id,
+            customerId: customerId,
             atendimentoData: {
               assuntoId: assuntoId,
               planName: 'Atendimento via Chat',
@@ -103,6 +128,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
           description: `Ticket #${data.data?.id || 'N/A'} aberto no IXC`,
         });
         setDialogOpen(false);
+        loadConversation(); // Recarregar dados da conversa
       } else {
         throw new Error(data?.error || 'Erro ao criar atendimento');
       }
@@ -144,24 +170,35 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         <div className="space-y-2">
           <div className="flex items-baseline gap-2">
             <p className="text-xs text-muted-foreground">Nome:</p>
-            <p className="text-sm font-medium">João Silva</p>
+            <p className="text-sm font-medium">{conversation.customer_name || 'N/A'}</p>
           </div>
 
-          <div className="flex items-baseline gap-2">
-            <p className="text-xs text-muted-foreground">PPPoE:</p>
-            <p className="text-sm font-mono">cliente@supernet</p>
-          </div>
+          {conversation.metadata?.pppoe && (
+            <div className="flex items-baseline gap-2">
+              <p className="text-xs text-muted-foreground">PPPoE:</p>
+              <p className="text-sm font-mono">{conversation.metadata.pppoe}</p>
+            </div>
+          )}
 
           <div className="flex items-baseline gap-2">
             <p className="text-xs text-muted-foreground">CPF:</p>
-            <p className="text-sm font-mono">123.456.789-00</p>
+            <p className="text-sm font-mono">{conversation.customer_cpf || 'N/A'}</p>
           </div>
 
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">Telefone:</p>
             <Phone className="h-3 w-3 text-muted-foreground" />
-            <p className="text-sm">(11) 98765-4321</p>
+            <p className="text-sm">{conversation.customer_phone || 'N/A'}</p>
           </div>
+
+          {conversation.ixc_client_id && (
+            <div className="flex items-baseline gap-2">
+              <p className="text-xs text-muted-foreground">ID IXC:</p>
+              <Badge variant="outline" className="text-xs">
+                {conversation.ixc_client_id}
+              </Badge>
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -179,7 +216,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               variant="outline" 
               className="h-auto py-2 flex flex-col gap-1"
               onClick={() => setDialogOpen(true)}
-              disabled={openingTicket || !conversation?.ixc_client_id}
+              disabled={openingTicket || !conversation?.customer_cpf}
             >
               <AlertCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Abrir Atendimento</span>
