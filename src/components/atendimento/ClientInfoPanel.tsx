@@ -84,12 +84,12 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         <Separator className="mt-3" />
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
         {/* Basic Info */}
         <div className="space-y-3">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Nome</p>
-            <p className="text-sm font-medium">{conversation.customer_name}</p>
+            <p className="text-sm font-medium">João Silva</p>
           </div>
 
           {/* PPPoE e CPF na mesma linha */}
@@ -98,46 +98,17 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               <p className="text-xs text-muted-foreground mb-1">PPPoE</p>
               <p className="text-sm font-mono">cliente@supernet</p>
             </div>
-            {conversation.customer_cpf && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">CPF</p>
-                <p className="text-sm font-mono">{conversation.customer_cpf}</p>
-              </div>
-            )}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">CPF</p>
+              <p className="text-sm font-mono">123.456.789-00</p>
+            </div>
           </div>
 
-          {conversation.customer_phone && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Telefone</p>
-              <div className="flex items-center gap-2">
-                <Phone className="h-3 w-3 text-muted-foreground" />
-                <p className="text-sm">{conversation.customer_phone}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Status e Situação na mesma linha */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Online/Offline Status */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Status Conexão</p>
-              <div className="flex items-center gap-1">
-                <Wifi className="h-3 w-3 text-green-500" />
-                <Badge variant="outline" className="text-xs border-green-500 text-green-700">
-                  Online
-                </Badge>
-              </div>
-            </div>
-
-            {/* Bloqueio/Financeiro Status */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Situação</p>
-              <div className="flex items-center gap-1">
-                <CreditCard className="h-3 w-3 text-yellow-500" />
-                <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
-                  Atraso
-                </Badge>
-              </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Telefone</p>
+            <div className="flex items-center gap-2">
+              <Phone className="h-3 w-3 text-muted-foreground" />
+              <p className="text-sm">(11) 98765-4321</p>
             </div>
           </div>
         </div>
@@ -170,16 +141,6 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             </Button>
           </div>
         </div>
-
-        {conversation.ixc_client_id && (
-          <>
-            <Separator />
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground mb-1">Cliente IXC</p>
-              <p className="text-sm font-mono">#{conversation.ixc_client_id}</p>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );
