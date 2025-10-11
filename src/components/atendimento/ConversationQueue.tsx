@@ -156,6 +156,31 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     });
   };
 
+  const getWaitingTimeMinutes = (conv: Conversation) => {
+    const now = new Date();
+    const lastActivity = new Date(conv.last_message_at || conv.created_at);
+    return Math.floor((now.getTime() - lastActivity.getTime()) / 1000 / 60);
+  };
+
+  const getPulseClass = (conv: Conversation) => {
+    // Se a conversa está sendo atendida ou foi transferida para humano
+    if (conv.status === 'active' || conv.status === 'transferred') {
+      return 'pulse-green';
+    }
+    
+    // Se está aguardando, verificar tempo
+    if (conv.status === 'waiting') {
+      const waitingMinutes = getWaitingTimeMinutes(conv);
+      if (waitingMinutes >= 11) {
+        return 'pulse-red';
+      } else if (waitingMinutes >= 10) {
+        return 'pulse-yellow';
+      }
+    }
+    
+    return '';
+  };
+
   return (
     <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
       <CardHeader className="pb-3">
@@ -241,7 +266,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
                     selectedConversation === conv.id
                       ? 'border-primary bg-primary/5 shadow-sm'
                       : 'border-border/50 hover:border-primary/50'
-                  }`}
+                  } ${getPulseClass(conv)}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
