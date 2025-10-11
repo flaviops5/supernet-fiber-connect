@@ -22,7 +22,8 @@ export const ROUTING_AGENT_CONFIG = {
     "support-tech-agent",
     "support-financial-agent",
     "automacao-agent",
-    "telemedicina-agent"
+    "telemedicina-agent",
+    "logistics-agent"
   ],
   
   // Department mapping
@@ -31,13 +32,15 @@ export const ROUTING_AGENT_CONFIG = {
     "support-tech-agent": "tecnico",
     "support-financial-agent": "financeiro",
     "automacao-agent": "tecnico",
-    "telemedicina-agent": "comercial"
+    "telemedicina-agent": "comercial",
+    "logistics-agent": "logistica"
   },
   
   // Priority mapping
   agentPriority: {
     "support-tech-agent": 3, // Highest priority
     "support-financial-agent": 2,
+    "logistics-agent": 2,
     "sales-agent": 1,
     "automacao-agent": 1,
     "telemedicina-agent": 1

@@ -141,3 +141,6 @@ verify_jwt = false
 [functions.ai-text-review]
 verify_jwt = true
 
+[functions.logistics-agent]
+verify_jwt = false
+

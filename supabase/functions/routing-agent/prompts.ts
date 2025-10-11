@@ -33,6 +33,11 @@ Identifique palavras-chave e contexto:
 - Contexto: Questões de cobrança e pagamento
 - Exemplos: "Quero negociar meu débito", "Como gerar segunda via?", "Minha fatura está errada"
 
+**LOGÍSTICA** (logistics-agent)
+- Palavras: "agendar", "instalação", "técnico", "visita", "quando vem", "remarcar", "horário"
+- Contexto: Agendamento de instalações e atendimentos técnicos
+- Exemplos: "Quero agendar instalação", "Quando vem o técnico?", "Preciso remarcar"
+
 **AUTOMAÇÃO RESIDENCIAL** (automacao-agent)
 - Palavras: "automação", "smart home", "alexa", "google home", "câmeras", "sensores"
 - Contexto: Interesse em dispositivos inteligentes
@@ -48,7 +53,7 @@ Responda SEMPRE em formato JSON:
 
 \`\`\`json
 {
-  "agent": "sales-agent|support-tech-agent|support-financial-agent|automacao-agent|telemedicina-agent",
+  "agent": "sales-agent|support-tech-agent|support-financial-agent|logistics-agent|automacao-agent|telemedicina-agent",
   "confidence": 0.0-1.0,
   "reason": "Breve justificativa da decisão"
 }
