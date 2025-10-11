@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle } from 'lucide-react';
+import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle, Receipt } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -143,23 +143,6 @@ export default function ClientInfoPanel({ conversationId }: Props) {
 
         <Separator />
 
-        {/* Tags */}
-        {conversation.tags && conversation.tags.length > 0 && (
-          <>
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">Tags</p>
-              <div className="flex flex-wrap gap-1">
-                {conversation.tags.map((tag, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <Separator />
-          </>
-        )}
-
         {/* Quick Actions */}
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground mb-2">Ações Rápidas</p>
@@ -179,6 +162,10 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <MapPin className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Ver Endereço</span>
+            </Button>
+            <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
+              <Receipt className="h-4 w-4 text-[hsl(var(--orange))]" />
+              <span className="text-xs">Enviar PIX/Boleto</span>
             </Button>
           </div>
         </div>
