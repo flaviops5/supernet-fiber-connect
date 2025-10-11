@@ -3,19 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, MessageSquare, AlertCircle, Filter } from 'lucide-react';
+import { Clock, MessageSquare, AlertCircle, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConversationSearch from './ConversationSearch';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Conversation {
   id: string;
@@ -163,44 +157,67 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
 
   return (
     <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
-      <CardHeader className="pb-3 space-y-3">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Fila de Atendimento
           </CardTitle>
           
-          {allTags.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Tags
-                  {selectedTags.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1">
-                      {selectedTags.length}
-                    </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filtrar por Tags</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {allTags.map(tag => (
-                  <DropdownMenuCheckboxItem
-                    key={tag}
-                    checked={selectedTags.includes(tag)}
-                    onCheckedChange={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <div className="flex items-center gap-2">
+            <ConversationSearch onSearch={handleSearch} />
+            
+            {allTags.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8 relative">
+                    <Tag className="h-4 w-4" />
+                    {selectedTags.length > 0 && (
+                      <Badge 
+                        variant="secondary" 
+                        className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                      >
+                        {selectedTags.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Filtrar por Tags</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {allTags.map(tag => (
+                        <div key={tag} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`tag-${tag}`}
+                            checked={selectedTags.includes(tag)}
+                            onCheckedChange={() => toggleTag(tag)}
+                          />
+                          <label
+                            htmlFor={`tag-${tag}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {tag}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedTags.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setSelectedTags([])}
+                      >
+                        Limpar Filtros
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
         </div>
-
-        <ConversationSearch onSearch={handleSearch} />
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
