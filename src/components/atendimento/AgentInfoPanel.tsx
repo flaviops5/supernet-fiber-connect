@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Settings, Star } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface AgentInfo {
   name: string;
@@ -21,6 +24,8 @@ export default function AgentInfoPanel() {
   const [agentRole, setAgentRole] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadCurrentAgentInfo();
@@ -52,10 +57,18 @@ export default function AgentInfoPanel() {
         .select('department')
         .eq('user_id', user.id);
 
+      // Buscar configuração de feedback
+      const { data: presenceData } = await supabase
+        .from('agent_presence')
+        .select('feedback_enabled')
+        .eq('user_id', user.id)
+        .single();
+
       if (profile) {
         setAgentInfo(profile);
         setAgentRole(roleData?.role || null);
         setDepartments(deptData?.map(d => d.department) || []);
+        setFeedbackEnabled(presenceData?.feedback_enabled ?? true);
       }
     } catch (error) {
       console.error('Error loading agent info:', error);
@@ -87,6 +100,35 @@ export default function AgentInfoPanel() {
       viewer: 'Visualizador'
     };
     return labels[role] || role;
+  };
+
+  const handleFeedbackToggle = async (enabled: boolean) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('agent_presence')
+        .update({ feedback_enabled: enabled })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setFeedbackEnabled(enabled);
+      toast({
+        title: enabled ? 'Feedback habilitado' : 'Feedback desabilitado',
+        description: enabled 
+          ? 'Clientes receberão solicitação de avaliação após atendimento.'
+          : 'Clientes não receberão solicitação de avaliação.',
+      });
+    } catch (error) {
+      console.error('Error updating feedback setting:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar a configuração.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
@@ -160,6 +202,20 @@ export default function AgentInfoPanel() {
               {getDepartmentLabel(dept)}
             </Badge>
           ))}
+        </div>
+
+        {/* Toggle de Feedback */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t mt-2">
+          <Label htmlFor="feedback-toggle" className="text-xs flex items-center gap-1 cursor-pointer">
+            <Star className="h-3 w-3 text-orange-500" />
+            Solicitar feedback
+          </Label>
+          <Switch
+            id="feedback-toggle"
+            checked={feedbackEnabled}
+            onCheckedChange={handleFeedbackToggle}
+            className="scale-75"
+          />
         </div>
       </CardContent>
     </Card>

@@ -64,10 +64,10 @@ export default function ClosureMessageSelector({ conversationId, onClose }: Prop
     try {
       const messageData = messages.find(m => m.id === selectedMessage);
       
-      // Get current conversation data
+      // Get current conversation and agent data
       const { data: conversation } = await supabase
         .from('conversations')
-        .select('assigned_agent_id')
+        .select('assigned_agent_id, customer_phone')
         .eq('id', conversationId)
         .single();
 
@@ -98,11 +98,11 @@ export default function ClosureMessageSelector({ conversationId, onClose }: Prop
         })
         .eq('id', conversationId);
 
-      // Decrement agent's conversation count
+      // Decrement agent's conversation count and check feedback setting
       if (conversation?.assigned_agent_id) {
         const { data: presenceData } = await supabase
           .from('agent_presence')
-          .select('current_conversations')
+          .select('current_conversations, feedback_enabled')
           .eq('user_id', conversation.assigned_agent_id)
           .single();
 
@@ -114,6 +114,22 @@ export default function ClosureMessageSelector({ conversationId, onClose }: Prop
               last_activity: new Date().toISOString()
             })
             .eq('user_id', conversation.assigned_agent_id);
+        }
+
+        // Send feedback request if enabled
+        if (presenceData?.feedback_enabled && conversation?.customer_phone) {
+          const feedbackMessage = `Obrigado por utilizar nossos serviços! 🙏\n\nPor favor, avalie seu atendimento de 1 a 5:\n⭐ 1 - Muito insatisfeito\n⭐⭐ 2 - Insatisfeito\n⭐⭐⭐ 3 - Neutro\n⭐⭐⭐⭐ 4 - Satisfeito\n⭐⭐⭐⭐⭐ 5 - Muito satisfeito\n\nResponda apenas com o número de 1 a 5.`;
+          
+          try {
+            await supabase.functions.invoke('send-whatsapp-message', {
+              body: {
+                phone: conversation.customer_phone,
+                message: feedbackMessage
+              }
+            });
+          } catch (error) {
+            console.error('Failed to send feedback request:', error);
+          }
         }
       }
 

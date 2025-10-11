@@ -166,6 +166,7 @@ export type Database = {
           created_at: string | null
           current_conversations: number | null
           department: Database["public"]["Enums"]["agent_department"]
+          feedback_enabled: boolean | null
           id: string
           last_activity: string | null
           max_conversations: number | null
@@ -177,6 +178,7 @@ export type Database = {
           created_at?: string | null
           current_conversations?: number | null
           department: Database["public"]["Enums"]["agent_department"]
+          feedback_enabled?: boolean | null
           id?: string
           last_activity?: string | null
           max_conversations?: number | null
@@ -188,6 +190,7 @@ export type Database = {
           created_at?: string | null
           current_conversations?: number | null
           department?: Database["public"]["Enums"]["agent_department"]
+          feedback_enabled?: boolean | null
           id?: string
           last_activity?: string | null
           max_conversations?: number | null
@@ -1010,6 +1013,41 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_feedback: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          customer_comment: string | null
+          customer_rating: number
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          customer_comment?: string | null
+          customer_rating: number
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          customer_comment?: string | null
+          customer_rating?: number
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           ai_suggestion: boolean | null
@@ -1123,6 +1161,8 @@ export type Database = {
           last_message_at: string | null
           metadata: Json | null
           priority: number | null
+          reopen_count: number | null
+          reopened_from_conversation_id: string | null
           resolved_at: string | null
           search_vector: unknown | null
           status: Database["public"]["Enums"]["conversation_status"]
@@ -1144,6 +1184,8 @@ export type Database = {
           last_message_at?: string | null
           metadata?: Json | null
           priority?: number | null
+          reopen_count?: number | null
+          reopened_from_conversation_id?: string | null
           resolved_at?: string | null
           search_vector?: unknown | null
           status?: Database["public"]["Enums"]["conversation_status"]
@@ -1165,13 +1207,23 @@ export type Database = {
           last_message_at?: string | null
           metadata?: Json | null
           priority?: number | null
+          reopen_count?: number | null
+          reopened_from_conversation_id?: string | null
           resolved_at?: string | null
           search_vector?: unknown | null
           status?: Database["public"]["Enums"]["conversation_status"]
           tags?: string[] | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_reopened_from_conversation_id_fkey"
+            columns: ["reopened_from_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       coverage_areas: {
         Row: {

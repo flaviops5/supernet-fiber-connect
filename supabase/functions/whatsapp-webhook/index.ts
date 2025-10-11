@@ -79,7 +79,63 @@ try {
 
       console.log(`📞 Message from ${customerName} (${customerPhone}): ${messageContent}`);
 
-      // Buscar ou criar conversação
+      // Check for feedback response (números de 1 a 5)
+      const feedbackMatch = messageContent.trim().match(/^[1-5]$/);
+      if (feedbackMatch) {
+        const rating = parseInt(feedbackMatch[0]);
+        
+        // Find most recent resolved conversation for this customer
+        const { data: recentConversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('customer_phone', customerPhone)
+          .eq('status', 'resolved')
+          .order('resolved_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentConversation) {
+          await supabase
+            .from('conversation_feedback')
+            .insert({
+              conversation_id: recentConversation.id,
+              customer_rating: rating,
+              metadata: { source: 'whatsapp_auto' }
+            });
+
+          console.log(`⭐ Feedback registered: ${rating} stars`);
+          
+          // Send thank you message
+          await supabase.functions.invoke('send-whatsapp-message', {
+            body: {
+              phone: customerPhone,
+              message: '✅ Obrigado pelo seu feedback! Sua opinião é muito importante para nós.'
+            }
+          });
+
+          return new Response(JSON.stringify({ 
+            success: true, 
+            feedbackRegistered: true,
+            rating: rating
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Check for recently resolved conversation (auto-reopen within 24h)
+      const { data: recentResolved } = await supabase
+        .from('conversations')
+        .select('id, customer_name, customer_cpf, customer_email, ixc_client_id, department, assigned_agent_id')
+        .eq('customer_phone', customerPhone)
+        .eq('channel', 'whatsapp')
+        .eq('status', 'resolved')
+        .gte('resolved_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('resolved_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Buscar conversação ativa ou criar nova
       const { data: existingConversation, error: searchError } = await supabase
         .from('conversations')
         .select('*')
@@ -95,13 +151,49 @@ try {
       }
 
       let conversationId = existingConversation?.id;
+      let isReopen = false;
 
-      // Se não existe conversação ativa, criar ou atualizar
+      // Se não existe conversação ativa, criar ou reabrir
+      if (!conversationId && recentResolved) {
+        // Reabrir conversa recente mantendo dados do cliente
+        console.log('🔄 Reopening recent conversation with existing data');
+        const { data: reopenedConv, error: reopenError } = await supabase
+          .from('conversations')
+          .insert({
+            customer_name: recentResolved.customer_name,
+            customer_phone: customerPhone,
+            customer_cpf: recentResolved.customer_cpf,
+            customer_email: recentResolved.customer_email,
+            ixc_client_id: recentResolved.ixc_client_id,
+            channel: 'whatsapp',
+            status: 'waiting',
+            department: recentResolved.department,
+            assigned_agent_id: recentResolved.assigned_agent_id,
+            reopened_from_conversation_id: recentResolved.id,
+            reopen_count: 1,
+            last_message_at: new Date().toISOString(),
+            metadata: {
+              whatsapp_id: messageData.key?.id,
+              instance: webhookData.instance,
+              auto_reopened: true
+            }
+          })
+          .select()
+          .single();
+
+        if (reopenError) {
+          console.error('Error reopening conversation:', reopenError);
+        } else {
+          conversationId = reopenedConv.id;
+          isReopen = true;
+        }
+      }
+      
       if (!conversationId) {
-        console.log('🆕 Creating or updating conversation');
+        console.log('🆕 Creating new conversation');
         const { data: newConversation, error: createError } = await supabase
           .from('conversations')
-          .upsert({
+          .insert({
             customer_name: customerName,
             customer_phone: customerPhone,
             channel: 'whatsapp',
@@ -111,8 +203,6 @@ try {
               whatsapp_id: messageData.key?.id,
               instance: webhookData.instance
             }
-          }, {
-            onConflict: 'channel,customer_phone'
           })
           .select()
           .single();
@@ -212,7 +302,8 @@ try {
           success: true, 
           conversationId: conversationId,
           processed: true,
-          messageSent: messageSent
+          messageSent: messageSent,
+          isReopen: isReopen
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
