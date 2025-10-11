@@ -92,16 +92,14 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             <p className="text-sm font-medium">João Silva</p>
           </div>
 
-          {/* PPPoE e CPF na mesma linha */}
-          <div className="flex items-baseline gap-4">
-            <div className="flex items-baseline gap-2">
-              <p className="text-xs text-muted-foreground">PPPoE:</p>
-              <p className="text-sm font-mono">cliente@supernet</p>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-xs text-muted-foreground">CPF:</p>
-              <p className="text-sm font-mono">123.456.789-00</p>
-            </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-xs text-muted-foreground">PPPoE:</p>
+            <p className="text-sm font-mono">cliente@supernet</p>
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            <p className="text-xs text-muted-foreground">CPF:</p>
+            <p className="text-sm font-mono">123.456.789-00</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -123,7 +121,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             />
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <AlertCircle className="h-4 w-4 text-[hsl(var(--orange))]" />
-              <span className="text-xs">Abrir Ticket</span>
+              <span className="text-xs">Abrir Atendimento</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <Calendar className="h-4 w-4 text-[hsl(var(--orange))]" />
