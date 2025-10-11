@@ -86,30 +86,28 @@ export default function ClientInfoPanel({ conversationId }: Props) {
 
       <CardContent className="flex-1 flex flex-col space-y-4 overflow-hidden">
         {/* Basic Info */}
-        <div className="space-y-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Nome</p>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <p className="text-xs text-muted-foreground">Nome:</p>
             <p className="text-sm font-medium">João Silva</p>
           </div>
 
           {/* PPPoE e CPF na mesma linha */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">PPPoE</p>
+          <div className="flex items-baseline gap-4">
+            <div className="flex items-baseline gap-2">
+              <p className="text-xs text-muted-foreground">PPPoE:</p>
               <p className="text-sm font-mono">cliente@supernet</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">CPF</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-xs text-muted-foreground">CPF:</p>
               <p className="text-sm font-mono">123.456.789-00</p>
             </div>
           </div>
 
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Telefone</p>
-            <div className="flex items-center gap-2">
-              <Phone className="h-3 w-3 text-muted-foreground" />
-              <p className="text-sm">(11) 98765-4321</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-muted-foreground">Telefone:</p>
+            <Phone className="h-3 w-3 text-muted-foreground" />
+            <p className="text-sm">(11) 98765-4321</p>
           </div>
         </div>
 
