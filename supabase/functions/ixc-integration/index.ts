@@ -65,7 +65,23 @@ serve(async (req) => {
   }
 
   try {
-    const { action, params = {} } = await req.json();
+    // Validar body antes de fazer parse
+    const bodyText = await req.text();
+    console.log('Request body received:', bodyText);
+    
+    if (!bodyText || bodyText.trim() === '') {
+      throw new Error('Request body está vazio');
+    }
+    
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(bodyText);
+    } catch (e) {
+      console.error('Erro ao fazer parse do JSON:', e);
+      throw new Error(`JSON inválido no body da requisição: ${(e as Error).message}`);
+    }
+    
+    const { action, params = {} } = parsedBody;
     
     const username = Deno.env.get('IXC_API_USERNAME');
     const password = Deno.env.get('IXC_API_PASSWORD');
