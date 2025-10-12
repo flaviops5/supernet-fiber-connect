@@ -36,9 +36,9 @@ serve(async (req) => {
         'Authorization': `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
-        method: 'GET',
+        method: 'POST',
         path: '/webservice/v1/su_oss_assunto',
-        query: {
+        body: {
           qtype: 'su_oss_assunto.id',
           query: '*',
           oper: 'like',
@@ -64,15 +64,20 @@ serve(async (req) => {
     }
 
     const data = proxyData.data;
-    console.log(`✅ Encontrados ${data.registros?.length || 0} assuntos`);
+    const registrosRaw = data?.registros || [];
+    const registrosArr: IXCSubject[] = Array.isArray(registrosRaw)
+      ? registrosRaw
+      : Object.values(registrosRaw || {});
+
+    console.log(`✅ Encontrados ${registrosArr.length} assuntos (antes do filtro)`);
 
     // Filtrar apenas assuntos ativos e formatar
-    const subjects = (data.registros || [])
-      .filter((s: IXCSubject) => s.ativo === 'Sim')
-      .map((s: IXCSubject) => ({
-        id: s.id,
-        nome: s.assunto,
-      }));
+    const subjects = registrosArr
+      .filter((s: IXCSubject) => {
+        const v = (s.ativo || '').toString().trim().toLowerCase();
+        return v === 'sim' || v === 's' || v === '1' || v === 'ativo' || v === 'a';
+      })
+      .map((s: IXCSubject) => ({ id: s.id, nome: s.assunto }));
 
     return new Response(
       JSON.stringify({
