@@ -21,6 +21,7 @@ import Roteamento from "./pages/Roteamento";
 import SimulacaoCompleta from "./pages/SimulacaoCompleta";
 import TesteFonteQueimada from "./pages/TesteFonteQueimada";
 import GPT5 from "./pages/GPT5";
+import TestIXCSubjects from "./pages/TestIXCSubjects";
 import SystemMetrics from "./pages/SystemMetrics";
 import CodigoFonte from "./pages/CodigoFonte";
 import Codigo from "./pages/Codigo";
@@ -73,6 +74,7 @@ const App = () => {
                     <Route path="/simulacao_completa" element={<SimulacaoCompleta />} />
                     <Route path="/teste_fonte_queimada" element={<TesteFonteQueimada />} />
                     <Route path="/gpt_5" element={<GPT5 />} />
+                    <Route path="/test-ixc-subjects" element={<TestIXCSubjects />} />
                     <Route path="/system-metrics" element={<SystemMetrics />} />
                     <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/codigo" element={<Codigo />} />
