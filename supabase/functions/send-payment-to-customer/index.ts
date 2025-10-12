@@ -29,34 +29,33 @@ serve(async (req) => {
     // 1. Buscar cliente no IXC pelo CPF ou telefone
     console.log('🔍 Buscando cliente no IXC...');
     const searchValue = cpf ? cpf.replace(/\D/g, '') : phone.replace(/\D/g, '');
-    const searchType = cpf ? 'cpf' : 'phone';
     
     const { data: searchData } = await supabase.functions.invoke('ixc-integration', {
       body: {
-        action: 'searchClient',
+        action: 'searchCustomers',
         params: { 
-          search: searchValue,
-          searchType: searchType
+          query: searchValue
         }
       }
     });
 
-    if (!searchData?.success || !searchData.data?.id) {
+    if (!searchData?.success || !searchData.data || searchData.data.length === 0) {
       console.log('❌ Cliente não encontrado');
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Cliente não encontrado no sistema',
-          searchValue,
-          searchType
+          searchValue
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
 
-    const customerId = searchData.data.id;
-    const customerName = searchData.data.razao || 'Cliente';
-    const customerPhone = searchData.data.fone_celular || phone;
+    // Pega o primeiro resultado da busca
+    const customer = searchData.data[0];
+    const customerId = customer.id;
+    const customerName = customer.razao || 'Cliente';
+    const customerPhone = customer.telefone_celular || customer.fone_celular || phone;
     console.log('✅ Cliente encontrado:', { id: customerId, name: customerName, phone: customerPhone });
 
     // 2. Buscar títulos financeiros pendentes
