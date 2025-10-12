@@ -94,6 +94,8 @@ serve(async (req) => {
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
+    console.log(`🔧 Config: URL=${!!IXC_BASE_URL}, USER=${!!IXC_USERNAME}, PASS=${!!IXC_PASSWORD}`);
+
     if (!IXC_BASE_URL || !IXC_USERNAME || !IXC_PASSWORD) {
       throw new Error('IXC credentials not configured');
     }
@@ -111,6 +113,10 @@ serve(async (req) => {
     const ixcAuthHeader = useIncomingBasic
       ? incomingAuth
       : `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`;
+    
+    console.log(`🔐 Auth usado: ${useIncomingBasic ? 'da requisição' : 'das env vars'} (${ixcAuthHeader.slice(0, 15)}...)`);
+    console.log(`🌐 URL completa: ${url}`);
+    
     const ixcHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -174,6 +180,12 @@ serve(async (req) => {
 
     const duration = Date.now() - startTime;
     console.log(`✅ IXC Response: ${ixcResponse.status} (${duration}ms)`);
+    
+    // Log adicional para erros de autenticação
+    if (ixcResponse.status === 401) {
+      console.error('🚫 IXC retornou 401 - Verifique credenciais ou permissões do usuário da API');
+      if (rawText) console.error('📄 Resposta:', rawText.slice(0, 300));
+    }
 
     // Armazenar em cache se GET bem-sucedido com JSON
     if (method === 'GET' && ixcResponse.ok && ixcData) {
