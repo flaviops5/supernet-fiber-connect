@@ -9,6 +9,7 @@ import ClientInfoPanel from '@/components/atendimento/ClientInfoPanel';
 import AgentInfoPanel from '@/components/atendimento/AgentInfoPanel';
 import AtendimentoMetrics from '@/components/atendimento/AtendimentoMetrics';
 import SimulationButton from '@/components/atendimento/SimulationButton';
+import { SendRealMessageButton } from '@/components/atendimento/SendRealMessageButton';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -145,6 +146,7 @@ export default function Atendimento() {
           <div className="space-y-4 h-full flex flex-col">
             {/* Top Row - Simulation Buttons */}
             <div className="flex gap-2 justify-end">
+              <SendRealMessageButton />
               <SimulationButton />
             </div>
 
