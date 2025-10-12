@@ -57,9 +57,14 @@ serve(async (req) => {
     }
 
     const proxyData = await response.json();
-    console.log('📦 Resposta do proxy:', JSON.stringify(proxyData).slice(0, 300));
+    console.log('📦 Resposta COMPLETA do proxy:', JSON.stringify(proxyData));
 
     if (!proxyData.ok) {
+      console.error('❌ Detalhes do erro IXC:', {
+        status: proxyData.status,
+        error: proxyData.error,
+        data: proxyData.data
+      });
       throw new Error(`Erro do IXC: ${proxyData.error || 'Erro desconhecido'}`);
     }
 
