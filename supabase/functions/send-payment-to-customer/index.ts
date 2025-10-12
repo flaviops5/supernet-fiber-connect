@@ -12,12 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    const { phone } = await req.json();
-    console.log('📞 Enviando pagamento para:', phone);
+    const { phone, cpf } = await req.json();
+    console.log('📞 Enviando pagamento para:', { phone, cpf });
 
-    if (!phone) {
+    if (!phone && !cpf) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Telefone é obrigatório' }),
+        JSON.stringify({ success: false, error: 'Telefone ou CPF é obrigatório' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -26,16 +26,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Buscar cliente no IXC pelo telefone
+    // 1. Buscar cliente no IXC pelo CPF ou telefone
     console.log('🔍 Buscando cliente no IXC...');
-    const cleanPhone = phone.replace(/\D/g, '');
+    const searchValue = cpf ? cpf.replace(/\D/g, '') : phone.replace(/\D/g, '');
+    const searchType = cpf ? 'cpf' : 'phone';
     
     const { data: searchData } = await supabase.functions.invoke('ixc-integration', {
       body: {
         action: 'searchClient',
         params: { 
-          search: cleanPhone,
-          searchType: 'phone'
+          search: searchValue,
+          searchType: searchType
         }
       }
     });
@@ -46,7 +47,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: 'Cliente não encontrado no sistema',
-          phone: cleanPhone
+          searchValue,
+          searchType
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
@@ -54,7 +56,8 @@ serve(async (req) => {
 
     const customerId = searchData.data.id;
     const customerName = searchData.data.razao || 'Cliente';
-    console.log('✅ Cliente encontrado:', { id: customerId, name: customerName });
+    const customerPhone = searchData.data.fone_celular || phone;
+    console.log('✅ Cliente encontrado:', { id: customerId, name: customerName, phone: customerPhone });
 
     // 2. Buscar títulos financeiros pendentes
     console.log('💰 Buscando títulos financeiros...');
@@ -125,9 +128,10 @@ serve(async (req) => {
 
     // 5. Enviar via WhatsApp
     console.log('📤 Enviando via WhatsApp...');
+    const targetPhone = customerPhone.replace(/\D/g, '');
     const { data: sendData, error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
       body: {
-        phone: cleanPhone,
+        phone: targetPhone,
         message: messageText,
         instanceName: 'SDR2'
       }
@@ -155,7 +159,7 @@ serve(async (req) => {
           customer: {
             id: customerId,
             name: customerName,
-            phone: cleanPhone
+            phone: targetPhone
           },
           payment: {
             valor: firstTitle.valor,

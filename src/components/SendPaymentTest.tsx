@@ -7,16 +7,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, CheckCircle, XCircle } from "lucide-react";
 
 export const SendPaymentTest = () => {
-  const [phone, setPhone] = useState("61953890130");
+  const [phone, setPhone] = useState("");
+  const [cpf, setCpf] = useState("61953890130");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const { toast } = useToast();
 
   const handleSend = async () => {
-    if (!phone) {
+    if (!phone && !cpf) {
       toast({
         title: "Erro",
-        description: "Digite um telefone",
+        description: "Digite um telefone ou CPF",
         variant: "destructive"
       });
       return;
@@ -27,7 +28,7 @@ export const SendPaymentTest = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('send-payment-to-customer', {
-        body: { phone }
+        body: { phone, cpf }
       });
 
       if (error) throw error;
@@ -68,9 +69,15 @@ export const SendPaymentTest = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
+        <div className="space-y-2">
           <Input
-            placeholder="Digite o telefone (ex: 61953890130)"
+            placeholder="CPF do cliente (ex: 61953890130)"
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+            disabled={loading}
+          />
+          <Input
+            placeholder="Ou telefone (ex: 61992757062) - opcional"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             disabled={loading}
@@ -78,7 +85,7 @@ export const SendPaymentTest = () => {
           <Button 
             onClick={handleSend} 
             disabled={loading}
-            className="min-w-[120px]"
+            className="w-full"
           >
             {loading ? (
               <>
@@ -88,7 +95,7 @@ export const SendPaymentTest = () => {
             ) : (
               <>
                 <Send className="mr-2 h-4 w-4" />
-                Enviar
+                Enviar Boleto/PIX
               </>
             )}
           </Button>
