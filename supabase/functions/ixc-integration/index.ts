@@ -14,6 +14,8 @@ interface IXCCustomer {
   email?: string;
   telefone_comercial?: string;
   telefone_celular?: string;
+  fone_celular?: string;
+  whatsapp?: string;
   endereco?: string;
   numero?: string;
   bairro?: string;
@@ -44,7 +46,9 @@ function normalizeRegistros(input: any): IXCCustomer[] {
     cnpj_cpf: String(r.cnpj_cpf ?? r.cnpj ?? r.cpf ?? ''),
     email: r.email ?? r.hotsite_email ?? undefined,
     telefone_comercial: r.telefone_comercial ?? undefined,
-    telefone_celular: r.telefone_celular ?? r.whatsapp ?? undefined,
+    telefone_celular: r.telefone_celular ?? r.fone_celular ?? r.whatsapp ?? undefined,
+    fone_celular: r.fone_celular ?? r.telefone_celular ?? r.whatsapp ?? undefined,
+    whatsapp: r.whatsapp ?? r.telefone_celular ?? r.fone_celular ?? undefined,
     endereco: r.endereco ?? undefined,
     numero: r.numero ?? undefined,
     bairro: r.bairro ?? undefined,
@@ -306,9 +310,12 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   const raw = String(query ?? '').trim();
   const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
   
-  // Remove pontos e traços para buscar CPF/CNPJ
-  const cleanNumber = raw.replace(/[.\-\/]/g, '');
+  // Remove pontos e traços para buscar CPF/CNPJ/Telefone
+  const cleanNumber = raw.replace(/[.\-\/\(\)\s]/g, '');
   const isCpfCnpj = /^\d{11,14}$/.test(cleanNumber);
+  const isPhone = /^\d{10,13}$/.test(cleanNumber);
+  
+  console.log('🔍 searchCustomers:', { raw, cleanNumber, isCpfCnpj, isPhone });
   
   // Baseado na documentação: usar "L" para operador LIKE (contém), "=" para igualdade exata
   const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [];
@@ -323,6 +330,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
       formatted = cleanNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
     }
     
+    console.log('🔍 Tentando buscar por CPF/CNPJ:', { formatted, cleanNumber });
     attempts.push(
       { qtype: 'cliente.cnpj_cpf', oper: '=', sortname: 'cliente.razao', q: formatted },
       { qtype: 'cnpj_cpf',         oper: '=', sortname: 'razao',         q: formatted },
@@ -331,13 +339,28 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
     );
   }
   
+  // Se for telefone, tenta várias combinações
+  if (isPhone) {
+    console.log('🔍 Tentando buscar por telefone:', cleanNumber);
+    attempts.push(
+      { qtype: 'cliente.telefone_celular', oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
+      { qtype: 'telefone_celular',         oper: 'L', sortname: 'razao',         q: cleanNumber },
+      { qtype: 'cliente.fone_celular',     oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
+      { qtype: 'fone_celular',             oper: 'L', sortname: 'razao',         q: cleanNumber },
+      { qtype: 'cliente.whatsapp',         oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
+      { qtype: 'whatsapp',                 oper: 'L', sortname: 'razao',         q: cleanNumber },
+    );
+  }
+  
   // Tenta buscar por nome
-  attempts.push(
-    { qtype: 'cliente.razao',      oper: 'L',   sortname: 'cliente.razao',      q },
-    { qtype: 'cliente.fantasia',   oper: 'L',   sortname: 'cliente.fantasia',   q },
-    { qtype: 'razao',              oper: 'L',   sortname: 'razao',              q },
-    { qtype: 'fantasia',           oper: 'L',   sortname: 'fantasia',           q },
-  );
+  if (!isCpfCnpj && !isPhone) {
+    attempts.push(
+      { qtype: 'cliente.razao',      oper: 'L',   sortname: 'cliente.razao',      q },
+      { qtype: 'cliente.fantasia',   oper: 'L',   sortname: 'cliente.fantasia',   q },
+      { qtype: 'razao',              oper: 'L',   sortname: 'razao',              q },
+      { qtype: 'fantasia',           oper: 'L',   sortname: 'fantasia',           q },
+    );
+  }
 
   for (const attempt of attempts) {
     try {
@@ -367,14 +390,24 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
 
   // Fallback: carrega um lote e filtra localmente
   try {
-    const lote = await getCustomers(baseUrl, auth, { limit: 200, page: 1, orderBy: 'razao', order: 'asc' });
+    console.log('🔄 Tentando fallback com lote local...');
+    const lote = await getCustomers(baseUrl, auth, { limit: 500, page: 1, orderBy: 'razao', order: 'asc' });
     const qLower = q.toLowerCase();
-    const filtrados = (lote || []).filter((c) =>
-      [c.razao, c.nome_fantasia, c.cnpj_cpf]
+    const filtrados = (lote || []).filter((c) => {
+      // Busca por nome, CPF/CNPJ ou telefone
+      const cpfMatch = cleanNumber && c.cnpj_cpf && c.cnpj_cpf.replace(/\D/g, '') === cleanNumber;
+      const phoneMatch = cleanNumber && (
+        (c.telefone_celular && c.telefone_celular.replace(/\D/g, '').includes(cleanNumber)) ||
+        (c.fone_celular && c.fone_celular.replace(/\D/g, '').includes(cleanNumber)) ||
+        ((c as any).whatsapp && (c as any).whatsapp.replace(/\D/g, '').includes(cleanNumber))
+      );
+      const nameMatch = [c.razao, c.nome_fantasia]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(qLower))
-    );
-    console.log(`searchCustomers: fallback local retornou ${filtrados.length} resultados`);
+        .some((v) => String(v).toLowerCase().includes(qLower));
+      
+      return cpfMatch || phoneMatch || nameMatch;
+    });
+    console.log(`searchCustomers: fallback local retornou ${filtrados.length} resultados de ${lote.length} clientes`);
     return filtrados;
   } catch (e) {
     console.error('searchCustomers: fallback também falhou:', (e as Error)?.message);
