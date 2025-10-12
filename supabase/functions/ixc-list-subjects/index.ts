@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,61 +19,43 @@ serve(async (req) => {
   }
 
   try {
-    console.log('📋 Listando assuntos do IXC...');
+    console.log('📋 Listando assuntos do IXC via proxy...');
 
-    // Credenciais IXC
-    const ixcUsername = Deno.env.get('IXC_API_USERNAME');
-    const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
-    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
-
-    if (!ixcUsername || !ixcPassword) {
-      throw new Error('Credenciais IXC não configuradas');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    if (!SUPABASE_URL) {
+      throw new Error('SUPABASE_URL não configurado');
     }
 
-    if (!IXC_API_BASE) {
-      throw new Error('IXC_API_BASE_URL não configurado');
-    }
+    const proxyUrl = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
-    // Normalizar URL removendo /adm.php
-    const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '').replace(/^https?:\/\//, '');
-    const auth = btoa(`${ixcUsername}:${ixcPassword}`);
-    const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
-
-    // Buscar assuntos do IXC
-    const body = new URLSearchParams({
-      qtype: 'su_oss_assunto.assunto',
-      query: '',
-      oper: 'listar',
+    // Parâmetros de listagem baseados no exemplo fornecido
+    const body = {
+      qtype: 'su_oss_assunto.id',
+      query: '1',
+      oper: '>=',
       page: '1',
-      rp: '100',
-      sortname: 'su_oss_assunto.assunto',
-      sortorder: 'asc',
-    });
+      rp: '1000',
+      sortname: 'su_oss_assunto.id',
+      sortorder: 'desc',
+    };
 
-    const response = await fetch(`${baseUrl}/su_oss_assunto`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ixcsoft': 'listar',
-      },
-      body,
-    });
+    console.log('📤 Chamando proxy com body:', JSON.stringify(body));
 
-    const text = await response.text();
-    let data: any;
-    
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error('❌ Resposta não-JSON do IXC:', text.slice(0, 200));
-      throw new Error('Resposta inválida do IXC');
+    // Chamar IXC via proxy usando ixc-client
+    const response = await callIxcWithRetry(
+      proxyUrl,
+      'POST',
+      '/webservice/v1/su_oss_assunto',
+      body
+    );
+
+    console.log('📥 Resposta do proxy:', JSON.stringify(response).slice(0, 200));
+
+    if (!response.ok || !response.data) {
+      throw new Error(response.error || 'Erro ao buscar assuntos no IXC');
     }
 
-    if (!response.ok) {
-      console.error(`❌ IXC HTTP ${response.status}:`, text.slice(0, 200));
-      throw new Error(data?.message || `HTTP ${response.status}`);
-    }
+    const data = response.data;
 
     // Extrair registros
     const registros: IXCSubject[] = Array.isArray(data?.registros)
@@ -81,9 +64,9 @@ serve(async (req) => {
 
     console.log(`📄 Total de assuntos: ${registros.length}`);
 
-    // Filtrar apenas assuntos ativos
+    // Filtrar apenas assuntos ativos (ativo === 'Sim' ou 'S')
     const activeSubjects = registros
-      .filter((subject: IXCSubject) => subject.ativo === 'Sim')
+      .filter((subject: IXCSubject) => subject.ativo === 'Sim' || subject.ativo === 'S')
       .map((subject: IXCSubject) => ({
         id: subject.id,
         nome: subject.assunto
