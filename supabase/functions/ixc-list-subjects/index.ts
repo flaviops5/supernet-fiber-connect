@@ -56,14 +56,21 @@ serve(async (req) => {
 
     const rawText = await response.text();
 
+    // Validação extra do content-type
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      console.warn('⚠️ IXC retornou content-type inesperado:', contentType);
+      console.error('❌ Resposta não JSON do IXC:', rawText.slice(0, 500));
+    }
+
     if (!response.ok) {
-      console.error(`❌ HTTP ${response.status}:`, rawText);
+      console.error(`❌ HTTP ${response.status}:`, rawText.slice(0, 500));
       throw new Error(`Erro HTTP ${response.status}`);
     }
 
     // Verifica se retornou HTML de erro
     if (rawText.includes('<div') && rawText.includes('Ocorreu um erro')) {
-      console.error('❌ IXC retornou erro HTML:', rawText.substring(0, 200));
+      console.error('❌ IXC retornou erro HTML:', rawText.slice(0, 500));
       throw new Error('Erro interno do IXC - endpoint pode não existir ou parâmetros inválidos');
     }
 
@@ -71,8 +78,8 @@ serve(async (req) => {
     try {
       data = JSON.parse(rawText);
     } catch (e) {
-      console.error('❌ Resposta não é JSON válido:', rawText.substring(0, 200));
-      throw new Error('Resposta inválida da API IXC');
+      console.error('❌ Resposta não é JSON válido:', rawText.slice(0, 500));
+      throw new Error('A resposta da API IXC não é JSON válido. Verifique autenticação e endpoint.');
     }
     console.log(`✅ Encontrados ${data.registros?.length || 0} assuntos`);
 
