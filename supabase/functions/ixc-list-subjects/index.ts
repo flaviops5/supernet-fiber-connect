@@ -18,6 +18,10 @@ const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD') || '';
 const IXC_TIMEOUT_MS = 8000;
 const IXC_RETRY_ATTEMPTS = 2;
 
+// URL do Edge Function ixc-proxy (usa SUPABASE_URL se existir, senão usa o ID do projeto)
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://mxdupkbpxjcfxdgrwknp.supabase.co';
+const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 // Função utilitária de timeout
 async function fetchWithTimeout(url: string, options: RequestInit, timeout = IXC_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -55,28 +59,26 @@ serve(async (req) => {
       sortorder: 'asc'
     };
 
-    // Headers exigidos pelo IXC para listagens
-    const headers = {
-      'ixcsoft': 'listar',
-      'Accept': 'application/json',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`)
+    // Montar chamada via IXC Proxy (Padroniza autenticação e headers 'listar')
+    const proxyHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
     };
+    if (SERVICE_ROLE) proxyHeaders['Authorization'] = `Bearer ${SERVICE_ROLE}`;
+
+    const proxyBody = {
+      method: 'POST',
+      path: '/webservice/v1/su_oss_assunto',
+      body: payload
+    };
+
+    const url = IXC_PROXY_URL;
+    console.log('📡 URL do proxy:', url);
 
     const options: RequestInit = {
       method: 'POST',
-      headers,
-      body: new URLSearchParams(payload as Record<string, string>)
+      headers: proxyHeaders,
+      body: JSON.stringify(proxyBody)
     };
-
-    // Normalizar base URL removendo /adm.php
-    console.log('🔧 IXC_API_BASE_URL original:', IXC_API_BASE_URL);
-    const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
-    console.log('🔧 Base URL normalizada:', cleanBaseUrl);
-    
-    // URL completa
-    const url = `${cleanBaseUrl}/webservice/v1/su_oss_assunto`;
-    console.log('📡 URL final construída:', url);
 
     // Tentativas com retry
     let attempt = 0;
@@ -111,8 +113,16 @@ serve(async (req) => {
 
         console.log('✅ JSON parseado com sucesso');
 
-        // Extrair registros
-        const registrosRaw = parsed?.registros || parsed?.result || [];
+        // Verificar se o proxy retornou erro
+        if (typeof parsed?.ok === 'boolean' && !parsed.ok) {
+          throw new Error(`IXC Proxy HTTP ${parsed.status}: ${parsed.error || 'Erro no proxy'}`);
+        }
+
+        // Extrair dados do proxy (quando aplicável)
+        const payloadData = (typeof parsed?.ok === 'boolean') ? parsed?.data : parsed;
+
+        // Extrair registros do IXC
+        const registrosRaw = payloadData?.registros || payloadData?.result || [];
         const registrosArr: IXCSubject[] = Array.isArray(registrosRaw)
           ? registrosRaw
           : Object.values(registrosRaw || {});
