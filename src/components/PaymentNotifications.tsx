@@ -202,7 +202,9 @@ export const PaymentNotifications = () => {
 
       if (titlesError) throw titlesError;
       
-      if (!titlesData?.data || titlesData.data.length === 0) {
+      const registros = titlesData?.data?.registros || [];
+      
+      if (registros.length === 0) {
         toast({
           title: "Nenhum título encontrado",
           description: "Não há títulos pendentes para este CPF",
@@ -212,7 +214,7 @@ export const PaymentNotifications = () => {
       }
 
       // Pegar o primeiro título
-      const firstTitle = titlesData.data[0];
+      const firstTitle = registros[0];
       
       // Buscar QR Code PIX
       const { data: pixData, error: pixError } = await supabase.functions.invoke('ixc-integration', {
