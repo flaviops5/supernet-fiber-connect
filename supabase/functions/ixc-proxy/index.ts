@@ -105,12 +105,16 @@ serve(async (req) => {
     const url = `${cleanBaseUrl}${path}${query ? '?' + query : ''}`;
     
     // Fazer requisição ao IXC
-    // ✅ Priorizar Authorization da requisição de entrada, senão usar credenciais do ambiente
-    const incomingAuth = req.headers.get('authorization');
+    // ✅ Usar Authorization BASIC do caller somente se vier em formato Basic; caso contrário usar credenciais do ambiente
+    const incomingAuth = req.headers.get('authorization') || '';
+    const useIncomingBasic = incomingAuth.toLowerCase().startsWith('basic ');
+    const ixcAuthHeader = useIncomingBasic
+      ? incomingAuth
+      : `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`;
     const ixcHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'Authorization': incomingAuth || `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`
+      'Authorization': ixcAuthHeader
     };
 
     // Alguns endpoints do IXC exigem este header para listagens
