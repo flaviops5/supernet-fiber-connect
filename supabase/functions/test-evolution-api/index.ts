@@ -17,15 +17,22 @@ serve(async (req) => {
 
     console.log('🔍 Testing Evolution API connection...');
     console.log('📞 Phone Number:', phoneNumber);
-    console.log('🌐 Base URL:', baseUrl);
+    console.log('🌐 Base URL (raw):', baseUrl);
 
     if (!apiKey || !baseUrl) {
       throw new Error('Missing Evolution API credentials');
     }
 
+    // Normalize base URL to avoid double slashes
+    const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+
     // Test instance status with SDR2
     const instanceName = 'SDR2';
-    const response = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
+    const testUrl = `${normalizedBaseUrl}/instance/connectionState/${instanceName}`;
+
+    console.log('🔗 Testing URL:', testUrl);
+
+    const response = await fetch(testUrl, {
       method: 'GET',
       headers: {
         'apikey': apiKey,
@@ -33,20 +40,24 @@ serve(async (req) => {
       },
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({ noJson: true }));
     
-    console.log('✅ Evolution API Response:', JSON.stringify(data, null, 2));
+    console.log('📥 Evolution API Raw Status:', response.status);
+    console.log('✅ Evolution API Response Body:', JSON.stringify(data, null, 2));
+
+    const success = response.ok;
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success,
         status: response.status,
-        message: 'Evolution API connection successful',
-        data: data,
+        message: success ? 'Evolution API connection successful' : 'Evolution API returned a non-200 status',
+        data,
         config: {
-          baseUrl,
+          baseUrl: normalizedBaseUrl,
           phoneNumber,
           instanceName,
+          testedUrl: testUrl,
         }
       }),
       {
