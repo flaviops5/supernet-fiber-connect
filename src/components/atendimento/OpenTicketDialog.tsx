@@ -40,21 +40,49 @@ export default function OpenTicketDialog({ open, onOpenChange, onSubmit, loading
       
       if (error) throw error;
       
-      if (data?.success && data.data) {
+      if (data?.success && data.data && data.data.length > 0) {
         setSubjects(data.data);
-        // Selecionar o primeiro assunto por padrão
-        if (data.data.length > 0 && !assuntoId) {
+        if (!assuntoId) {
           setAssuntoId(data.data[0].id);
         }
       } else {
-        throw new Error(data?.error || 'Erro ao carregar assuntos');
+        // Fallback: assuntos padrão caso IXC não retorne
+        console.warn('IXC não retornou assuntos, usando fallback');
+        const fallbackSubjects = [
+          { id: '1', nome: 'Instalação' },
+          { id: '2', nome: 'Suporte Técnico' },
+          { id: '3', nome: 'Financeiro' },
+          { id: '4', nome: 'Comercial' },
+          { id: '5', nome: 'Cancelamento' },
+        ];
+        setSubjects(fallbackSubjects);
+        if (!assuntoId) {
+          setAssuntoId(fallbackSubjects[0].id);
+        }
+        toast({
+          title: "Assuntos padrão carregados",
+          description: "Não foi possível carregar assuntos do IXC. Usando lista padrão.",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error('Erro ao carregar assuntos:', error);
+      // Fallback em caso de erro total
+      const fallbackSubjects = [
+        { id: '1', nome: 'Instalação' },
+        { id: '2', nome: 'Suporte Técnico' },
+        { id: '3', nome: 'Financeiro' },
+        { id: '4', nome: 'Comercial' },
+        { id: '5', nome: 'Cancelamento' },
+      ];
+      setSubjects(fallbackSubjects);
+      if (!assuntoId) {
+        setAssuntoId(fallbackSubjects[0].id);
+      }
       toast({
-        title: "Erro ao carregar assuntos",
-        description: "Não foi possível carregar a lista de assuntos do IXC.",
-        variant: "destructive",
+        title: "Assuntos padrão carregados",
+        description: "Erro ao conectar com IXC. Usando lista padrão.",
+        variant: "default",
       });
     } finally {
       setLoadingSubjects(false);
