@@ -18,7 +18,7 @@ serve(async (req) => {
     if (!phone && !cpf) {
       return new Response(
         JSON.stringify({ success: false, error: 'Telefone ou CPF é obrigatório' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -47,7 +47,7 @@ serve(async (req) => {
           error: 'Cliente não encontrado no sistema',
           searchValue
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -77,7 +77,7 @@ serve(async (req) => {
           error: 'Cliente não possui faturas em aberto',
           customerName
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -144,7 +144,7 @@ serve(async (req) => {
           error: 'Erro ao enviar mensagem WhatsApp',
           details: sendError 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
