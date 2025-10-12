@@ -112,14 +112,36 @@ serve(async (req) => {
     };
 
     // Alguns endpoints do IXC exigem este header para listagens
-    if (method === 'POST' && path.startsWith('/webservice/v1/')) {
+    // Detectar chamadas de listagem (IXC exige form-urlencoded + header ixcsoft)
+    const isListar = method === 'POST' && path.startsWith('/webservice/v1/') && body && typeof body === 'object' && (
+      'qtype' in body || 'query' in body || 'oper' in body || 'page' in body || 'rp' in body || 'sortname' in body || 'sortorder' in body
+    );
+
+    if (isListar) {
       ixcHeaders['ixcsoft'] = 'listar';
+      ixcHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+    }
+
+    // Preparar corpo adequadamente
+    let outgoingBody: BodyInit | undefined = undefined;
+    if (body) {
+      if (isListar) {
+        // Encode como form-urlencoded
+        const params = new URLSearchParams();
+        for (const [k, v] of Object.entries(body)) {
+          if (v !== undefined && v !== null) params.append(k, String(v));
+        }
+        outgoingBody = params;
+      } else {
+        // JSON padrão
+        outgoingBody = JSON.stringify(body);
+      }
     }
 
     const ixcResponse = await fetch(url, {
       method,
       headers: ixcHeaders,
-      body: body ? JSON.stringify(body) : undefined
+      body: outgoingBody
     });
 
     // Tentar parsear como JSON; caso contrário, capturar texto (ex.: HTML de login)
