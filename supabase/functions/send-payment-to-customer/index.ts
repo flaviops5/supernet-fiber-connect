@@ -33,19 +33,31 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // 1. Buscar cliente no IXC pelo CPF ou telefone
+    // 1. Buscar cliente no IXC
     console.log('🔍 Buscando cliente no IXC...');
     const searchValue = cpf ? cpf.replace(/\D/g, '') : phone.replace(/\D/g, '');
+    console.log('📝 Valor de busca:', searchValue);
     
-    const { data: searchData } = await supabase.functions.invoke('ixc-integration', {
+    const { data: searchData, error: searchError } = await supabase.functions.invoke('ixc-integration', {
       headers: invokeHeaders,
       body: {
         action: 'searchCustomers',
-        params: { 
-          query: searchValue
-        }
+        params: { query: searchValue }
       }
     });
+
+    console.log('📊 Resultado da busca:', JSON.stringify(searchData, null, 2));
+    
+    if (searchError) {
+      console.error('❌ Erro na busca:', searchError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Erro ao buscar cliente: ' + searchError.message
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
 
     if (!searchData?.success || !searchData.data || searchData.data.length === 0) {
       console.log('❌ Cliente não encontrado');
@@ -59,7 +71,6 @@ serve(async (req) => {
       );
     }
 
-    // Pega o primeiro resultado da busca
     const customer = searchData.data[0];
     const customerId = customer.id;
     const customerName = customer.razao || 'Cliente';
