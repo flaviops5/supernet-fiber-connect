@@ -76,9 +76,33 @@ Alguns assuntos disparam fluxos específicos no IXC:
 ### Componentes Relacionados
 
 - **OpenTicketDialog**: Componente que exibe o diálogo de seleção de assunto
-- **ClientInfoPanel**: Contém o botão para abrir atendimentos
-- **ixc-list-subjects**: Edge function que busca os assuntos
-- **ixc-integration**: Edge function que cria o atendimento com o assunto selecionado
+- **ClientInfoPanel**: Contém os botões "Abrir Atendimento" e "Enviar PIX/Boleto"
+- **ixc-list-subjects**: Edge function que busca os assuntos via **proxy IXC**
+- **ixc-proxy**: Proxy centralizado para chamadas IXC com retry automático
+- **ixc-integration**: Edge function que cria o atendimento e busca informações de pagamento
+
+### Integração com Proxy IXC
+
+A função `ixc-list-subjects` utiliza o **proxy IXC** através do `callIxcWithRetry` para garantir:
+- Autenticação centralizada
+- Retry automático com backoff exponencial
+- Circuit breaker para proteção contra sobrecarga
+- Logging unificado de requisições
+
+**Parâmetros de busca**:
+```json
+{
+  "qtype": "su_oss_assunto.id",
+  "query": "1",
+  "oper": ">=",
+  "page": "1",
+  "rp": "1000",
+  "sortname": "su_oss_assunto.id",
+  "sortorder": "desc"
+}
+```
+
+**Filtros**: Retorna apenas assuntos com `ativo === 'Sim'` ou `ativo === 'S'`
 
 ## Tratamento de Erros
 
@@ -86,6 +110,26 @@ Se houver erro ao buscar os assuntos:
 - Uma mensagem de erro é exibida ao usuário
 - O campo de seleção fica desabilitado
 - O botão de criar atendimento permanece desabilitado
+
+## Nova Funcionalidade: Enviar PIX/Boleto
+
+### Botão "Enviar PIX/Boleto"
+
+**Localização**: ClientInfoPanel - Ações Rápidas
+
+**Funcionalidade**: Busca títulos financeiros pendentes e exibe informações de pagamento
+
+**Fluxo**:
+1. Busca títulos pendentes do cliente via `getFinancialTitles`
+2. Obtém QR Code PIX do primeiro título via `getPixQrCode`
+3. Exibe modal com:
+   - Valor e data de vencimento
+   - PIX Copia e Cola (com botão copiar)
+   - Código de barras (com botão copiar)
+   - Links para boleto e página de pagamento
+   - Mensagem pronta para WhatsApp (com botão copiar)
+
+**Endpoint IXC**: `/fn_areceber_qrcode?id={titleId}`
 
 ## Configuração Necessária
 

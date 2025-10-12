@@ -11,6 +11,14 @@ import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import ClosureMessageSelector from './ClosureMessageSelector';
 import OpenTicketDialog from './OpenTicketDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Copy } from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -37,6 +45,9 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [resolving, setResolving] = useState(false);
   const [openingTicket, setOpeningTicket] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [loadingPayment, setLoadingPayment] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,13 +77,12 @@ export default function ClientInfoPanel({ conversationId }: Props) {
     setLoading(false);
   };
 
-  const handleOpenTicket = async (assuntoId: string, observacoes: string) => {
+  const handleSendPaymentLink = async () => {
     if (!conversation) return;
 
-    // Se não tiver ixc_client_id, tentar buscar pelo CPF ou telefone
     let customerId = conversation.ixc_client_id;
 
-    setOpeningTicket(true);
+    setLoadingPayment(true);
     try {
       // Se não houver customerId, buscar no IXC pelo CPF
       if (!customerId && conversation.customer_cpf) {
@@ -86,7 +96,110 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         if (!searchError && searchData?.success && searchData.data?.id) {
           customerId = searchData.data.id;
           
-          // Atualizar a conversa com o ixc_client_id encontrado
+          await supabase
+            .from('conversations')
+            .update({ ixc_client_id: customerId })
+            .eq('id', conversationId);
+        }
+      }
+
+      if (!customerId) {
+        toast({
+          title: "Cliente não encontrado",
+          description: "Não foi possível identificar o cliente no IXC. Verifique o CPF.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Buscar títulos financeiros pendentes
+      const { data: titlesData, error: titlesError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'getFinancialTitles',
+          params: { customerId }
+        }
+      });
+
+      if (titlesError) throw titlesError;
+
+      const titles = titlesData?.data?.titles || [];
+      
+      if (titles.length === 0) {
+        toast({
+          title: "Nenhum título pendente",
+          description: "Cliente não possui faturas em aberto.",
+        });
+        return;
+      }
+
+      const firstTitle = titles[0];
+
+      // Buscar QR Code PIX
+      const { data: pixData, error: pixError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'getPixQrCode',
+          params: { titleId: firstTitle.id }
+        }
+      });
+
+      if (pixError) {
+        console.error('Erro ao buscar PIX:', pixError);
+      }
+
+      setPaymentInfo({
+        valor: firstTitle.valor,
+        vencimento: firstTitle.data_vencimento,
+        codbar: firstTitle.codbar,
+        url_boleto: firstTitle.url_boleto,
+        qrcode: pixData?.data?.qrcode,
+        qrcode_link: pixData?.data?.qrcode_link,
+      });
+
+      setPaymentDialogOpen(true);
+
+      toast({
+        title: "Informações de pagamento carregadas",
+        description: "Dados prontos para envio ao cliente",
+      });
+
+    } catch (error) {
+      console.error('Error getting payment info:', error);
+      toast({
+        title: "Erro ao buscar informações",
+        description: error instanceof Error ? error.message : "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPayment(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: `${label} copiado para a área de transferência`,
+    });
+  };
+
+  const handleOpenTicket = async (assuntoId: string, observacoes: string) => {
+    if (!conversation) return;
+
+    let customerId = conversation.ixc_client_id;
+
+    setOpeningTicket(true);
+    try {
+      if (!customerId && conversation.customer_cpf) {
+        const { data: searchData, error: searchError } = await supabase.functions.invoke('ixc-integration', {
+          body: {
+            action: 'getClientByCpf',
+            params: { cpf: conversation.customer_cpf }
+          }
+        });
+
+        if (!searchError && searchData?.success && searchData.data?.id) {
+          customerId = searchData.data.id;
+          
           await supabase
             .from('conversations')
             .update({ ixc_client_id: customerId })
@@ -128,7 +241,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
           description: `Ticket #${data.data?.id || 'N/A'} aberto no IXC`,
         });
         setDialogOpen(false);
-        loadConversation(); // Recarregar dados da conversa
+        loadConversation();
       } else {
         throw new Error(data?.error || 'Erro ao criar atendimento');
       }
@@ -236,13 +349,137 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               <MapPin className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Ver Endereço</span>
             </Button>
-            <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-auto py-2 flex flex-col gap-1"
+              onClick={handleSendPaymentLink}
+              disabled={loadingPayment || !conversation?.customer_cpf}
+            >
               <Receipt className="h-4 w-4 text-[hsl(var(--orange))]" />
               <span className="text-xs">Enviar PIX/Boleto</span>
             </Button>
           </div>
         </div>
       </CardContent>
+
+      {/* Payment Info Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>💳 Informações de Pagamento</DialogTitle>
+            <DialogDescription>
+              Dados para envio ao cliente via WhatsApp
+            </DialogDescription>
+          </DialogHeader>
+          
+          {paymentInfo && (
+            <div className="space-y-4">
+              {/* Valores */}
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Valor:</span>
+                  <span className="text-lg font-bold">R$ {paymentInfo.valor}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Vencimento:</span>
+                  <span className="font-medium">{paymentInfo.vencimento}</span>
+                </div>
+              </div>
+
+              {/* PIX */}
+              {paymentInfo.qrcode && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">🏦 PIX Copia e Cola</h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(paymentInfo.qrcode, 'PIX')}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-muted rounded font-mono text-xs break-all max-h-32 overflow-y-auto">
+                    {paymentInfo.qrcode}
+                  </div>
+                </div>
+              )}
+
+              {/* Código de Barras */}
+              {paymentInfo.codbar && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold">🔢 Código de Barras</h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(paymentInfo.codbar, 'Código de Barras')}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-muted rounded font-mono text-sm break-all">
+                    {paymentInfo.codbar}
+                  </div>
+                </div>
+              )}
+
+              {/* Links */}
+              <div className="space-y-2">
+                {paymentInfo.url_boleto && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => window.open(paymentInfo.url_boleto, '_blank')}
+                  >
+                    📎 Abrir Boleto
+                  </Button>
+                )}
+                {paymentInfo.qrcode_link && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => window.open(paymentInfo.qrcode_link, '_blank')}
+                  >
+                    🔗 Link de Pagamento
+                  </Button>
+                )}
+              </div>
+
+              {/* Mensagem Pronta */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold">📝 Mensagem Pronta</h4>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => {
+                      const message = `
+Olá! Segue os dados para pagamento:
+
+💵 Valor: R$ ${paymentInfo.valor}
+📅 Vencimento: ${paymentInfo.vencimento}
+
+${paymentInfo.qrcode ? `🏦 PIX COPIA E COLA:\n${paymentInfo.qrcode}\n\n` : ''}
+${paymentInfo.codbar ? `🔢 Código de Barras:\n${paymentInfo.codbar}\n\n` : ''}
+${paymentInfo.url_boleto ? `📎 Link do Boleto:\n${paymentInfo.url_boleto}\n\n` : ''}
+${paymentInfo.qrcode_link ? `🔗 Link de Pagamento:\n${paymentInfo.qrcode_link}` : ''}
+                      `.trim();
+                      copyToClipboard(message, 'Mensagem completa');
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar Mensagem
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
