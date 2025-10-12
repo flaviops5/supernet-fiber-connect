@@ -181,6 +181,10 @@ serve(async (req) => {
     const duration = Date.now() - startTime;
     console.log(`✅ IXC Response: ${ixcResponse.status} (${duration}ms)`);
     
+    // Log para debug de dados parseados
+    console.log('🔍 ixcData type:', typeof ixcData, '| is null:', ixcData === null, '| is undefined:', ixcData === undefined);
+    if (rawText) console.log('📄 rawText preview:', rawText.slice(0, 300));
+    
     // Log adicional para erros de autenticação
     if (ixcResponse.status === 401) {
       console.error('🚫 IXC retornou 401 - Verifique credenciais ou permissões do usuário da API');
