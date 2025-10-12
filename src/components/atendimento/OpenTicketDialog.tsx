@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface OpenTicketDialogProps {
   open: boolean;
@@ -13,24 +15,51 @@ interface OpenTicketDialogProps {
   loading: boolean;
 }
 
-// Assuntos comuns do IXC - você pode ajustar conforme seus assuntos cadastrados
-const ASSUNTOS_IXC = [
-  { id: '25', nome: 'Instalação' },
-  { id: '1', nome: 'Suporte Técnico' },
-  { id: '2', nome: 'Financeiro' },
-  { id: '3', nome: 'Cancelamento' },
-  { id: '4', nome: 'Mudança de Endereço' },
-  { id: '5', nome: 'Upgrade de Plano' },
-  { id: '6', nome: 'Downgrade de Plano' },
-  { id: '7', nome: 'Reinstalação' },
-  { id: '8', nome: 'Manutenção Preventiva' },
-  { id: '9', nome: 'Reclamação' },
-  { id: '10', nome: 'Elogio/Sugestão' },
-];
+interface IXCSubject {
+  id: string;
+  nome: string;
+}
 
 export default function OpenTicketDialog({ open, onOpenChange, onSubmit, loading }: OpenTicketDialogProps) {
-  const [assuntoId, setAssuntoId] = useState('25');
+  const [assuntoId, setAssuntoId] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [subjects, setSubjects] = useState<IXCSubject[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      loadSubjects();
+    }
+  }, [open]);
+
+  const loadSubjects = async () => {
+    setLoadingSubjects(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-list-subjects');
+      
+      if (error) throw error;
+      
+      if (data?.success && data.data) {
+        setSubjects(data.data);
+        // Selecionar o primeiro assunto por padrão
+        if (data.data.length > 0 && !assuntoId) {
+          setAssuntoId(data.data[0].id);
+        }
+      } else {
+        throw new Error(data?.error || 'Erro ao carregar assuntos');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar assuntos:', error);
+      toast({
+        title: "Erro ao carregar assuntos",
+        description: "Não foi possível carregar a lista de assuntos do IXC.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
 
   const handleSubmit = () => {
     onSubmit(assuntoId, observacoes);
@@ -52,12 +81,19 @@ export default function OpenTicketDialog({ open, onOpenChange, onSubmit, loading
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="assunto">Assunto do Atendimento *</Label>
-            <Select value={assuntoId} onValueChange={setAssuntoId}>
+            <Select value={assuntoId} onValueChange={setAssuntoId} disabled={loadingSubjects}>
               <SelectTrigger id="assunto">
-                <SelectValue placeholder="Selecione o assunto" />
+                {loadingSubjects ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando assuntos...
+                  </span>
+                ) : (
+                  <SelectValue placeholder="Selecione o assunto" />
+                )}
               </SelectTrigger>
               <SelectContent>
-                {ASSUNTOS_IXC.map((assunto) => (
+                {subjects.map((assunto) => (
                   <SelectItem key={assunto.id} value={assunto.id}>
                     {assunto.nome}
                   </SelectItem>
@@ -89,7 +125,7 @@ export default function OpenTicketDialog({ open, onOpenChange, onSubmit, loading
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || loadingSubjects || !assuntoId}
           >
             {loading ? 'Criando...' : 'Criar Atendimento'}
           </Button>
