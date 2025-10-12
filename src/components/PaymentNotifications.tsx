@@ -248,6 +248,47 @@ export const PaymentNotifications = () => {
     }
   };
 
+  const handleSendTestNotification = async () => {
+    if (!paymentInfo) {
+      toast({
+        title: "Nenhum dado disponível",
+        description: "Busque os dados do cliente primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setTestingPayment(true);
+      
+      // Criar notificação de teste
+      const { error } = await supabase.functions.invoke('check-due-invoices', {
+        body: { 
+          testMode: true,
+          testCpf: testCpf.replace(/\D/g, '')
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Notificação de teste enviada!",
+        description: "Verifique a tabela abaixo para ver o resultado",
+      });
+
+      fetchNotifications();
+    } catch (error: any) {
+      console.error('Erro ao enviar notificação de teste:', error);
+      toast({
+        title: "Erro ao enviar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingPayment(false);
+    }
+  };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -413,6 +454,18 @@ export const PaymentNotifications = () => {
                   </div>
                 </div>
               )}
+
+              <div className="pt-4 border-t">
+                <Button
+                  onClick={handleSendTestNotification}
+                  disabled={testingPayment}
+                  className="w-full"
+                  variant="default"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  {testingPayment ? "Enviando..." : "Enviar Notificação de Teste (WhatsApp/Email)"}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
