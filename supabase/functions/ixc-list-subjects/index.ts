@@ -28,34 +28,51 @@ serve(async (req) => {
       throw new Error('Credenciais do IXC não configuradas');
     }
 
-    // Buscar assuntos do IXC
-    const ixcUrl = `${IXC_BASE_URL}/webservice/v1/su_oss_assunto`;
-    const authHeader = 'Basic ' + btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
+    // Buscar assuntos do IXC via proxy
+    console.log('📡 Chamando IXC via proxy...');
 
-    console.log(`📡 Chamando IXC: ${ixcUrl}`);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    const response = await fetch(ixcUrl, {
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Configuração Supabase não encontrada');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
-        qtype: 'su_oss_assunto.id',
-        query: '*',
-        oper: 'like',
-        page: '1',
-        rp: '100', // Buscar até 100 assuntos
-        sortname: 'su_oss_assunto.assunto',
-        sortorder: 'asc'
+        method: 'GET',
+        path: '/webservice/v1/su_oss_assunto',
+        query: {
+          qtype: 'su_oss_assunto.id',
+          query: '*',
+          oper: 'like',
+          page: '1',
+          rp: '100',
+          sortname: 'su_oss_assunto.assunto',
+          sortorder: 'asc'
+        }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Erro na API IXC: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('❌ Erro do proxy:', errorText);
+      throw new Error(`Erro no proxy IXC: ${response.status}`);
     }
 
-    const data = await response.json();
+    const proxyData = await response.json();
+    console.log('📦 Resposta do proxy:', JSON.stringify(proxyData).substring(0, 200));
+
+    if (!proxyData.ok) {
+      throw new Error(`Erro do IXC: ${proxyData.error || 'Erro desconhecido'}`);
+    }
+
+    const data = proxyData.data;
     console.log(`✅ Encontrados ${data.registros?.length || 0} assuntos`);
 
     // Filtrar apenas assuntos ativos e formatar
