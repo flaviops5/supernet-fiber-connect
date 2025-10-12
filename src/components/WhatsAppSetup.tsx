@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import WhatsAppConversations from "./WhatsAppConversations";
 import WhatsAppTester from "./WhatsAppTester";
 import WhatsAppFlowTest from "./WhatsAppFlowTest";
+import { SendPaymentTest } from "./SendPaymentTest";
 
 interface InstanceStatus {
   instanceName: string;
@@ -158,6 +159,7 @@ export default function WhatsAppSetup() {
         </TabsList>
 
         <TabsContent value="test" className="space-y-6">
+          <SendPaymentTest />
           <WhatsAppFlowTest />
         </TabsContent>
 

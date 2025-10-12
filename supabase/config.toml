@@ -147,3 +147,6 @@ verify_jwt = false
 [functions.check-escalation]
 verify_jwt = false
 
+[functions.send-payment-to-customer]
+verify_jwt = true
+
