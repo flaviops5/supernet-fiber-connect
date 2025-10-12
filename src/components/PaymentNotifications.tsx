@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play, MessageSquare, Mail } from "lucide-react";
+import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play, MessageSquare, Mail, Search, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -37,6 +37,9 @@ export const PaymentNotifications = () => {
   const [checking, setChecking] = useState(false);
   const [testDate, setTestDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [testCpf, setTestCpf] = useState('61953890130');
+  const [testingPayment, setTestingPayment] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const { toast } = useToast();
 
   const fetchNotifications = async () => {
@@ -183,6 +186,74 @@ export const PaymentNotifications = () => {
     );
   };
 
+  const handleTestPaymentInfo = async () => {
+    setTestingPayment(true);
+    setPaymentInfo(null);
+    try {
+      const cleanCpf = testCpf.replace(/\D/g, '');
+      
+      // Buscar títulos financeiros
+      const { data: titlesData, error: titlesError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'getFinancialTitles',
+          params: { cnpj_cpf: cleanCpf }
+        }
+      });
+
+      if (titlesError) throw titlesError;
+      
+      if (!titlesData?.data || titlesData.data.length === 0) {
+        toast({
+          title: "Nenhum título encontrado",
+          description: "Não há títulos pendentes para este CPF",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Pegar o primeiro título
+      const firstTitle = titlesData.data[0];
+      
+      // Buscar QR Code PIX
+      const { data: pixData, error: pixError } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'getPixQrCode',
+          params: { id: firstTitle.id }
+        }
+      });
+
+      if (pixError) throw pixError;
+
+      setPaymentInfo({
+        title: firstTitle,
+        pix: pixData?.data
+      });
+
+      toast({
+        title: "Informações carregadas!",
+        description: `Encontrado título de R$ ${firstTitle.valor}`,
+      });
+
+    } catch (error: any) {
+      console.error('Erro ao buscar informações de pagamento:', error);
+      toast({
+        title: "Erro ao buscar informações",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTestingPayment(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: `${label} copiado para a área de transferência`,
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: { variant: "outline" as const, icon: Clock, label: "Pendente" },
@@ -262,6 +333,88 @@ export const PaymentNotifications = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Test Payment Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Testar Busca de Títulos (PIX/Boleto)
+          </CardTitle>
+          <CardDescription>
+            Teste a funcionalidade de busca de títulos financeiros por CPF
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Digite o CPF"
+              value={testCpf}
+              onChange={(e) => setTestCpf(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleTestPaymentInfo}
+              disabled={testingPayment}
+            >
+              {testingPayment ? "Buscando..." : "Buscar"}
+            </Button>
+          </div>
+
+          {paymentInfo && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <div>
+                <h3 className="font-semibold mb-2">Informações do Título</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Valor:</strong> R$ {paymentInfo.title.valor}</p>
+                  <p><strong>Vencimento:</strong> {paymentInfo.title.data_vencimento}</p>
+                  <p><strong>Status:</strong> {paymentInfo.title.status}</p>
+                </div>
+              </div>
+
+              {paymentInfo.pix && (
+                <div>
+                  <h3 className="font-semibold mb-2">PIX Copia e Cola</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      value={paymentInfo.pix.qrcode}
+                      readOnly
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(paymentInfo.pix.qrcode, "Código PIX")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {paymentInfo.title.linhadig && (
+                <div>
+                  <h3 className="font-semibold mb-2">Código de Barras</h3>
+                  <div className="flex gap-2">
+                    <Input
+                      value={paymentInfo.title.linhadig}
+                      readOnly
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(paymentInfo.title.linhadig, "Código de barras")}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Test Controls */}
       <Card>
