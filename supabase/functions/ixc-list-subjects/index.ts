@@ -55,16 +55,18 @@ serve(async (req) => {
       sortorder: 'asc'
     };
 
-    // Headers com Basic Auth
+    // Headers exigidos pelo IXC para listagens
     const headers = {
-      'Content-Type': 'application/json',
+      'ixcsoft': 'listar',
+      'Accept': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': 'Basic ' + btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`)
     };
 
     const options: RequestInit = {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload)
+      body: new URLSearchParams(payload as Record<string, string>)
     };
 
     // Normalizar base URL removendo /adm.php
@@ -90,8 +92,8 @@ serve(async (req) => {
         console.log('📦 Status:', res.status, '| Content-Type:', contentType);
         console.log('📄 Body snippet:', body.slice(0, 200));
 
-        // Validar content-type
-        if (!contentType.includes('application/json')) {
+        // Validar content-type (alguns IXC usam text/x-json)
+        if (!contentType.toLowerCase().includes('json')) {
           console.error('⚠️ IXC retornou conteúdo não JSON:', { status: res.status, contentType });
           throw new Error('IXC retornou HTML ou outro conteúdo inválido — verifique credenciais e URL');
         }
