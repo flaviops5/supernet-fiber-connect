@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -11,169 +12,107 @@ interface IXCSubject {
   ativo: string;
 }
 
-// Configurações
-const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL') || '';
-const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME') || '';
-const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD') || '';
-const IXC_TIMEOUT_MS = 8000;
-const IXC_RETRY_ATTEMPTS = 2;
-
-// URL do Edge Function ixc-proxy (usa SUPABASE_URL se existir, senão usa o ID do projeto)
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://mxdupkbpxjcfxdgrwknp.supabase.co';
-const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-// Função utilitária de timeout
-async function fetchWithTimeout(url: string, options: RequestInit, timeout = IXC_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(timer);
-    return res;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log('📥 Buscando assuntos do IXC...');
-
   try {
-    // Validar variáveis de ambiente
-    if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      throw new Error('Variáveis de ambiente IXC não configuradas (IXC_API_BASE_URL, IXC_API_USERNAME, IXC_API_PASSWORD)');
+    console.log('📋 Listando assuntos do IXC...');
+
+    // Credenciais IXC
+    const ixcUsername = Deno.env.get('IXC_API_USERNAME');
+    const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
+    const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
+
+    if (!ixcUsername || !ixcPassword) {
+      throw new Error('Credenciais IXC não configuradas');
     }
 
-    // Payload para buscar assuntos
-    const payload = {
-      qtype: 'su_oss_assunto.id',
-      query: '*',
-      oper: 'like',
+    if (!IXC_API_BASE) {
+      throw new Error('IXC_API_BASE_URL não configurado');
+    }
+
+    // Normalizar URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '').replace(/^https?:\/\//, '');
+    const auth = btoa(`${ixcUsername}:${ixcPassword}`);
+    const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
+
+    // Buscar assuntos do IXC
+    const body = new URLSearchParams({
+      qtype: 'su_oss_assunto.assunto',
+      query: '',
+      oper: 'listar',
       page: '1',
       rp: '100',
       sortname: 'su_oss_assunto.assunto',
-      sortorder: 'asc'
-    };
+      sortorder: 'asc',
+    });
 
-    // Montar chamada via IXC Proxy (Padroniza autenticação e headers 'listar')
-    const proxyHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (SERVICE_ROLE) proxyHeaders['Authorization'] = `Bearer ${SERVICE_ROLE}`;
-
-    const proxyBody = {
+    const response = await fetch(`${baseUrl}/su_oss_assunto`, {
       method: 'POST',
-      path: '/webservice/v1/su_oss_assunto',
-      body: payload
-    };
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'listar',
+      },
+      body,
+    });
 
-    const url = IXC_PROXY_URL;
-    console.log('📡 URL do proxy:', url);
-
-    const options: RequestInit = {
-      method: 'POST',
-      headers: proxyHeaders,
-      body: JSON.stringify(proxyBody)
-    };
-
-    // Tentativas com retry
-    let attempt = 0;
-    let lastError: any = null;
-
-    while (attempt <= IXC_RETRY_ATTEMPTS) {
-      attempt++;
-      try {
-        console.log(`🔄 Tentativa ${attempt}/${IXC_RETRY_ATTEMPTS + 1}...`);
-        
-        const res = await fetchWithTimeout(url, options);
-        const contentType = res.headers.get('content-type') || '';
-        const body = await res.text();
-
-        console.log('📦 Status:', res.status, '| Content-Type:', contentType);
-        console.log('📄 Body snippet:', body.slice(0, 200));
-
-        // Validar content-type (alguns IXC usam text/x-json)
-        if (!contentType.toLowerCase().includes('json')) {
-          console.error('⚠️ IXC retornou conteúdo não JSON:', { status: res.status, contentType });
-          throw new Error('IXC retornou HTML ou outro conteúdo inválido — verifique credenciais e URL');
-        }
-
-        // Parse JSON
-        let parsed: any;
-        try {
-          parsed = JSON.parse(body);
-        } catch (e) {
-          console.error('❌ Falha ao interpretar JSON:', e);
-          throw new Error('IXC retornou JSON inválido');
-        }
-
-        console.log('✅ JSON parseado com sucesso');
-
-        // Verificar se o proxy retornou erro
-        if (typeof parsed?.ok === 'boolean' && !parsed.ok) {
-          throw new Error(`IXC Proxy HTTP ${parsed.status}: ${parsed.error || 'Erro no proxy'}`);
-        }
-
-        // Extrair dados do proxy (quando aplicável)
-        const payloadData = (typeof parsed?.ok === 'boolean') ? parsed?.data : parsed;
-
-        // Extrair registros do IXC
-        const registrosRaw = payloadData?.registros || payloadData?.result || [];
-        const registrosArr: IXCSubject[] = Array.isArray(registrosRaw)
-          ? registrosRaw
-          : Object.values(registrosRaw || {});
-
-        console.log(`📊 Encontrados ${registrosArr.length} assuntos (antes do filtro)`);
-
-        // Filtrar apenas assuntos ativos
-        const subjects = registrosArr
-          .filter((s: IXCSubject) => {
-            const v = (s.ativo || '').toString().trim().toLowerCase();
-            return v === 'sim' || v === 's' || v === '1' || v === 'ativo' || v === 'a';
-          })
-          .map((s: IXCSubject) => ({ id: s.id, nome: s.assunto }));
-
-        console.log(`✅ ${subjects.length} assuntos ativos retornados`);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: subjects,
-            total: subjects.length
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
-
-      } catch (err) {
-        lastError = err;
-        console.warn(`⚠️ Tentativa ${attempt} falhou:`, err.message);
-        if (attempt > IXC_RETRY_ATTEMPTS) break;
-        await new Promise((r) => setTimeout(r, 300 * attempt));
-      }
+    const text = await response.text();
+    let data: any;
+    
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error('❌ Resposta não-JSON do IXC:', text.slice(0, 200));
+      throw new Error('Resposta inválida do IXC');
     }
 
-    // Falha após todas as tentativas
-    throw new Error(`Falha ao contatar IXC após ${IXC_RETRY_ATTEMPTS + 1} tentativa(s): ${lastError?.message}`);
+    if (!response.ok) {
+      console.error(`❌ IXC HTTP ${response.status}:`, text.slice(0, 200));
+      throw new Error(data?.message || `HTTP ${response.status}`);
+    }
 
-  } catch (error) {
-    console.error('❌ Erro ao buscar assuntos:', error);
-    const message = error instanceof Error ? error.message : String(error);
+    // Extrair registros
+    const registros: IXCSubject[] = Array.isArray(data?.registros)
+      ? data.registros
+      : (data?.registros ? Object.values(data.registros) : []);
+
+    console.log(`📄 Total de assuntos: ${registros.length}`);
+
+    // Filtrar apenas assuntos ativos
+    const activeSubjects = registros
+      .filter((subject: IXCSubject) => subject.ativo === 'Sim')
+      .map((subject: IXCSubject) => ({
+        id: subject.id,
+        nome: subject.assunto
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    console.log(`✅ ${activeSubjects.length} assuntos ativos encontrados`);
+
     return new Response(
       JSON.stringify({
-        success: false,
-        error: message,
+        success: true,
+        data: activeSubjects,
+        total: activeSubjects.length,
       }),
-      {
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+        status: 200 
+      },
+    );
+
+  } catch (error) {
+    console.error('❌ Erro ao listar assuntos:', error);
+    const msg = (error as Error)?.message || 'Erro desconhecido';
+    return new Response(
+      JSON.stringify({ success: false, error: msg }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      },
     );
   }
 });
