@@ -28,51 +28,52 @@ serve(async (req) => {
       throw new Error('Credenciais do IXC não configuradas');
     }
 
-    // Buscar assuntos do IXC via proxy
-    console.log('📡 Chamando IXC via proxy...');
+    // Buscar assuntos do IXC usando o mesmo padrão das outras funções
+    console.log('📡 Buscando assuntos do IXC...');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const ixcUrl = `${IXC_BASE_URL}/webservice/v1/su_oss_assunto`;
+    const authHeader = 'Basic ' + btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`);
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Configuração Supabase não encontrada');
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        method: 'GET',
-        path: '/webservice/v1/su_oss_assunto',
-        query: {
-          qtype: 'su_oss_assunto.id',
-          query: '*',
-          oper: 'like',
-          page: '1',
-          rp: '100',
-          sortname: 'su_oss_assunto.assunto',
-          sortorder: 'asc'
-        }
-      })
+    const body = new URLSearchParams({
+      qtype: 'su_oss_assunto.id',
+      query: '*',
+      oper: 'like',
+      page: '1',
+      rp: '100',
+      sortname: 'su_oss_assunto.assunto',
+      sortorder: 'asc'
     });
 
+    const response = await fetch(ixcUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ixcsoft': 'listar',
+      },
+      body,
+    });
+
+    const rawText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erro do proxy:', errorText);
-      throw new Error(`Erro no proxy IXC: ${response.status}`);
+      console.error(`❌ HTTP ${response.status}:`, rawText);
+      throw new Error(`Erro HTTP ${response.status}`);
     }
 
-    const proxyData = await response.json();
-    console.log('📦 Resposta do proxy:', JSON.stringify(proxyData).substring(0, 200));
-
-    if (!proxyData.ok) {
-      throw new Error(`Erro do IXC: ${proxyData.error || 'Erro desconhecido'}`);
+    // Verifica se retornou HTML de erro
+    if (rawText.includes('<div') && rawText.includes('Ocorreu um erro')) {
+      console.error('❌ IXC retornou erro HTML:', rawText.substring(0, 200));
+      throw new Error('Erro interno do IXC - endpoint pode não existir ou parâmetros inválidos');
     }
 
-    const data = proxyData.data;
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (e) {
+      console.error('❌ Resposta não é JSON válido:', rawText.substring(0, 200));
+      throw new Error('Resposta inválida da API IXC');
+    }
     console.log(`✅ Encontrados ${data.registros?.length || 0} assuntos`);
 
     // Filtrar apenas assuntos ativos e formatar
