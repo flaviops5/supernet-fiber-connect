@@ -33,49 +33,108 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // 1. Buscar cliente no IXC
-    console.log('🔍 Buscando cliente no IXC...');
-    const searchValue = cpf ? cpf.replace(/\D/g, '') : phone.replace(/\D/g, '');
-    console.log('📝 Valor de busca:', searchValue);
-    
-    const { data: searchData, error: searchError } = await supabase.functions.invoke('ixc-integration', {
-      headers: invokeHeaders,
-      body: {
-        action: 'searchCustomers',
-        params: { query: searchValue }
-      }
-    });
+    // 1. BUSCAR CLIENTE NO IXC COM MÚLTIPLOS FALLBACKS
+    console.log('🔍 Iniciando busca de cliente...');
+    let customer = null;
+    let customerId = null;
+    let customerName = null;
+    let customerPhone = null;
 
-    console.log('📊 Resultado da busca:', JSON.stringify(searchData, null, 2));
+    // Preparar valores de busca
+    const cpfClean = cpf ? cpf.replace(/\D/g, '') : null;
+    const phoneClean = phone ? phone.replace(/\D/g, '') : null;
     
-    if (searchError) {
-      console.error('❌ Erro na busca:', searchError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Erro ao buscar cliente: ' + searchError.message
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+    console.log('📝 Valores para busca:', { cpf, cpfClean, phone, phoneClean });
+
+    // TENTATIVA 1: Buscar por CPF formatado (como está no banco)
+    if (cpfClean && cpfClean.length === 11) {
+      console.log('🔄 Tentativa 1: Buscar CPF formatado');
+      const cpfFormatted = cpfClean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      const { data: searchData1 } = await supabase.functions.invoke('ixc-integration', {
+        headers: invokeHeaders,
+        body: { action: 'searchCustomers', params: { query: cpfFormatted } }
+      });
+      
+      if (searchData1?.success && searchData1.data?.length > 0) {
+        customer = searchData1.data[0];
+        console.log('✅ Cliente encontrado com CPF formatado');
+      }
     }
 
-    if (!searchData?.success || !searchData.data || searchData.data.length === 0) {
-      console.log('❌ Cliente não encontrado');
+    // TENTATIVA 2: Buscar por CPF sem formatação
+    if (!customer && cpfClean) {
+      console.log('🔄 Tentativa 2: Buscar CPF sem formatação');
+      const { data: searchData2 } = await supabase.functions.invoke('ixc-integration', {
+        headers: invokeHeaders,
+        body: { action: 'searchCustomers', params: { query: cpfClean } }
+      });
+      
+      if (searchData2?.success && searchData2.data?.length > 0) {
+        customer = searchData2.data[0];
+        console.log('✅ Cliente encontrado com CPF limpo');
+      }
+    }
+
+    // TENTATIVA 3: Buscar por telefone
+    if (!customer && phoneClean) {
+      console.log('🔄 Tentativa 3: Buscar por telefone');
+      const { data: searchData3 } = await supabase.functions.invoke('ixc-integration', {
+        headers: invokeHeaders,
+        body: { action: 'searchCustomers', params: { query: phoneClean } }
+      });
+      
+      if (searchData3?.success && searchData3.data?.length > 0) {
+        customer = searchData3.data[0];
+        console.log('✅ Cliente encontrado com telefone');
+      }
+    }
+
+    // TENTATIVA 4: Carregar lote e filtrar localmente
+    if (!customer) {
+      console.log('🔄 Tentativa 4: Buscar em lote local');
+      const { data: allCustomers } = await supabase.functions.invoke('ixc-integration', {
+        headers: invokeHeaders,
+        body: { 
+          action: 'getCustomers', 
+          params: { limit: 500, page: 1 } 
+        }
+      });
+      
+      if (allCustomers?.success && allCustomers.data) {
+        console.log(`📦 Carregados ${allCustomers.data.length} clientes para filtrar`);
+        
+        customer = allCustomers.data.find((c: any) => {
+          const clientCpf = (c.cnpj_cpf || '').replace(/\D/g, '');
+          const clientPhone = (c.telefone_celular || c.fone_celular || '').replace(/\D/g, '');
+          
+          return (cpfClean && clientCpf === cpfClean) || 
+                 (phoneClean && clientPhone === phoneClean);
+        });
+        
+        if (customer) {
+          console.log('✅ Cliente encontrado no lote local');
+        }
+      }
+    }
+
+    // Verificar se encontrou o cliente
+    if (!customer) {
+      console.log('❌ Cliente NÃO encontrado após todas as tentativas');
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Cliente não encontrado no sistema',
-          searchValue
+          searchValues: { cpf: cpfClean, phone: phoneClean }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    const customer = searchData.data[0];
-    const customerId = customer.id;
-    const customerName = customer.razao || 'Cliente';
-    const customerPhone = customer.telefone_celular || customer.fone_celular || phone;
-    console.log('✅ Cliente encontrado:', { id: customerId, name: customerName, phone: customerPhone });
+    // Extrair dados do cliente encontrado
+    customerId = customer.id;
+    customerName = customer.razao || 'Cliente';
+    customerPhone = customer.telefone_celular || customer.fone_celular || phoneClean;
+    console.log('✅ Dados do cliente:', { id: customerId, name: customerName, phone: customerPhone });
 
     // 2. Buscar títulos financeiros pendentes
     console.log('💰 Buscando títulos financeiros...');
