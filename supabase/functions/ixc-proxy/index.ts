@@ -194,6 +194,11 @@ serve(async (req) => {
     }
 
     const ok = ixcResponse.ok && !!ixcData;
+    
+    // Log para debug quando IXC retorna 200 mas pode ter erro no payload
+    if (ixcResponse.ok && ixcData) {
+      console.log('📦 IXC Data:', JSON.stringify(ixcData).slice(0, 300));
+    }
 
     // Determinar status HTTP correto baseado no tipo de erro
     let responseStatus = ixcResponse.status;
