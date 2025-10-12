@@ -67,9 +67,12 @@ serve(async (req) => {
       body: JSON.stringify(payload)
     };
 
+    // Normalizar base URL removendo /adm.php
+    const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
+    
     // URL completa
-    const url = `${IXC_API_BASE_URL}/webservice/v1/su_oss_assunto`;
-    console.log('📡 URL:', url);
+    const url = `${cleanBaseUrl}/webservice/v1/su_oss_assunto`;
+    console.log('📡 URL construída:', url);
 
     // Tentativas com retry
     let attempt = 0;
