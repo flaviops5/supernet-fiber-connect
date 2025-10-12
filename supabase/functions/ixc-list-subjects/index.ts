@@ -79,7 +79,46 @@ serve(async (req) => {
       data = JSON.parse(rawText);
     } catch (e) {
       console.error('❌ Resposta não é JSON válido:', rawText.slice(0, 500));
-      throw new Error('A resposta da API IXC não é JSON válido. Verifique autenticação e endpoint.');
+      // Fallback: tentar via IXC Proxy (mesma lógica usada nos outros fluxos já validados)
+      try {
+        console.log('🛟 Tentando via IXC Proxy (fallback)...');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error('Configuração Supabase não encontrada para proxy');
+        }
+
+        const proxyResp = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            method: 'GET',
+            path: '/webservice/v1/su_oss_assunto',
+            query: {
+              qtype: 'su_oss_assunto.id',
+              query: '*',
+              oper: 'like',
+              page: '1',
+              rp: '100',
+              sortname: 'su_oss_assunto.assunto',
+              sortorder: 'asc'
+            }
+          })
+        });
+
+        const proxyData = await proxyResp.json();
+        console.log('📦 Resposta do proxy (preview):', JSON.stringify(proxyData).slice(0, 300));
+        if (!proxyResp.ok || !proxyData.ok) {
+          throw new Error(`Erro do IXC via proxy: ${proxyData.error || proxyResp.status}`);
+        }
+        data = proxyData.data; // usar dados vindos do proxy
+      } catch (proxyErr) {
+        console.error('❌ Fallback via proxy também falhou:', (proxyErr as Error).message);
+        throw new Error('A resposta da API IXC não é JSON válido e o fallback via proxy falhou. Verifique autenticação e endpoint.');
+      }
     }
     console.log(`✅ Encontrados ${data.registros?.length || 0} assuntos`);
 
