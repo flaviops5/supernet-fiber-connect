@@ -26,11 +26,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Cabeçalhos para chamadas internas
+    const invokeHeaders = {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+    };
+
     // 1. Buscar cliente no IXC pelo CPF ou telefone
     console.log('🔍 Buscando cliente no IXC...');
     const searchValue = cpf ? cpf.replace(/\D/g, '') : phone.replace(/\D/g, '');
     
     const { data: searchData } = await supabase.functions.invoke('ixc-integration', {
+      headers: invokeHeaders,
       body: {
         action: 'searchCustomers',
         params: { 
@@ -61,6 +69,7 @@ serve(async (req) => {
     // 2. Buscar títulos financeiros pendentes
     console.log('💰 Buscando títulos financeiros...');
     const { data: titlesData } = await supabase.functions.invoke('ixc-integration', {
+      headers: invokeHeaders,
       body: {
         action: 'getFinancialTitles',
         params: { customerId }
@@ -91,6 +100,7 @@ serve(async (req) => {
     // 3. Buscar QR Code PIX
     console.log('💳 Buscando dados PIX...');
     const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
+      headers: invokeHeaders,
       body: {
         action: 'getPixQrCode',
         params: { titleId: firstTitle.id }
@@ -129,6 +139,7 @@ serve(async (req) => {
     console.log('📤 Enviando via WhatsApp...');
     const targetPhone = customerPhone.replace(/\D/g, '');
     const { data: sendData, error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
+      headers: invokeHeaders,
       body: {
         phone: targetPhone,
         message: messageText,
