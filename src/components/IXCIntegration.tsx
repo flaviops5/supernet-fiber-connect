@@ -13,6 +13,7 @@ import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
 import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
+import TestIXCSubjects from '@/pages/TestIXCSubjects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface IXCCustomer {
@@ -342,8 +343,9 @@ const IXCIntegration = () => {
       </div>
 
       <Tabs defaultValue="integration" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="integration">Integração</TabsTrigger>
+          <TabsTrigger value="subjects">Assuntos</TabsTrigger>
           <TabsTrigger value="connection">Teste de Conexão</TabsTrigger>
           <TabsTrigger value="functions">Teste de Funções</TabsTrigger>
           <TabsTrigger value="health">Health Check</TabsTrigger>
@@ -957,6 +959,10 @@ const IXCIntegration = () => {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        <TabsContent value="subjects">
+          <TestIXCSubjects />
         </TabsContent>
 
         <TabsContent value="connection">
