@@ -105,10 +105,12 @@ serve(async (req) => {
         
         customer = allCustomers.data.find((c: any) => {
           const clientCpf = (c.cnpj_cpf || '').replace(/\D/g, '');
-          const clientPhone = (c.telefone_celular || c.fone_celular || '').replace(/\D/g, '');
-          
-          return (cpfClean && clientCpf === cpfClean) || 
-                 (phoneClean && clientPhone === phoneClean);
+          const phonesRaw = [c.telefone_celular, c.fone_celular, c.whatsapp, c.telefone_comercial].filter(Boolean);
+          const phones = phonesRaw.map((p: string) => String(p).replace(/\D/g, ''));
+
+          const cpfMatch = cpfClean && clientCpf === cpfClean;
+          const phoneMatch = phoneClean && phones.some((p: string) => p === phoneClean || p.endsWith(phoneClean) || p.includes(phoneClean));
+          return Boolean(cpfMatch || phoneMatch);
         });
         
         if (customer) {
