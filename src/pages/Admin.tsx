@@ -43,6 +43,7 @@ import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
+import { WhatsAppApiTester } from '@/components/WhatsAppApiTester';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -92,6 +93,9 @@ const Dashboard = () => {
 
       {/* Alert Card for Mass Outages */}
       <MassOutageAlertCard />
+
+      {/* WhatsApp API Quick Test */}
+      <WhatsAppApiTester />
 
       {/* Quick Actions */}
       <Card>
