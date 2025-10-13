@@ -30,37 +30,38 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // 1. Buscar clientes com status FA no IXC
-    console.log('📡 Buscando clientes com status FA no IXC...');
-    const { data: customersResp, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
-      body: JSON.stringify({ 
-        action: 'getCustomersByStatus',
-        params: { status: 'FINANCEIRO EM ATRASO', page: 1, limit: 500 }
-      })
-    });
+    // 1. Buscar títulos vencidos no IXC
+    console.log('📡 Buscando títulos vencidos no IXC...');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
 
-    console.log('📊 Resposta getCustomersByStatus:', { 
-      success: customersResp?.success, 
-      hasData: !!customersResp?.data,
-      dataLength: Array.isArray(customersResp?.data) ? customersResp.data.length : 'não é array',
-      error: ixcError,
-      responsePreview: JSON.stringify(customersResp).substring(0, 500)
+    const { data: titlesResp, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
+      body: {
+        action: 'getFinancialTitles',
+        params: {
+          qtype: 'fn_areceber.data_vencimento',
+          oper: '<',
+          query: todayStr,
+          page: 1,
+          rp: 1000
+        }
+      }
     });
 
     if (ixcError) {
       throw new Error(`Erro ao invocar ixc-integration: ${ixcError.message}`);
     }
 
-    if (!customersResp?.success) {
-      throw new Error(`IXC retornou erro: ${customersResp?.error || 'Erro desconhecido'}`);
-    }
+    const titles = titlesResp?.data?.registros || titlesResp?.registros || [];
+    console.log(`📊 Total de títulos vencidos encontrados: ${titles.length}`);
 
-    if (!customersResp.data || !Array.isArray(customersResp.data) || customersResp.data.length === 0) {
-      console.log('⚠️ Nenhum cliente com status FA encontrado');
+    if (titles.length === 0) {
+      console.log('⚠️ Nenhum título vencido encontrado');
       return new Response(
         JSON.stringify({ 
           success: true,
-          message: 'Nenhum cliente com status FA encontrado',
+          message: 'Nenhum título vencido encontrado',
           stats: {
             totalContracts: 0,
             contractsFA: 0,
@@ -72,30 +73,51 @@ serve(async (req) => {
       );
     }
 
-    // Mantemos o nome "contracts" por compatibilidade com o restante do código
-    const contracts = customersResp.data;
-    console.log(`✅ ${contracts.length} clientes com status FA encontrados`);
+    // 2. Processar títulos e agrupar por cliente
+    const clientTitles = new Map<string, any[]>();
+    for (const title of titles) {
+      // Verificar se o título está pago ou cancelado
+      const status = (title.status || '').toUpperCase();
+      if (['PAID', 'CANCELLED', 'CANCELED', 'P', 'C'].includes(status)) {
+        continue;
+      }
 
-    // 2. Filtrar por nome apenas em modo teste
-    let contractsFA = contracts;
-
-    if (testClientName) {
-      contractsFA = contractsFA.filter((customer: any) => {
-        const clientName = (customer.razao || customer.nome_fantasia || '').toLowerCase();
-        return clientName.includes(testClientName.toLowerCase());
-      });
-      console.log(`🎯 Clientes filtrados para "${testClientName}": ${contractsFA.length}`);
-    } else {
-      console.log(`🔍 ${contractsFA.length} clientes prontos para processamento`);
+      const clientId = String(title.id_cliente || title.cliente_id);
+      if (!clientTitles.has(clientId)) {
+        clientTitles.set(clientId, []);
+      }
+      clientTitles.get(clientId)!.push(title);
     }
 
-    if (contractsFA.length === 0) {
+    console.log(`📊 Total de clientes com títulos vencidos: ${clientTitles.size}`);
+
+    // 3. Filtrar por nome do cliente em modo teste
+    let processClients = Array.from(clientTitles.keys());
+
+    if (testClientName) {
+      // Em modo teste, filtrar por nome
+      const filteredClients: string[] = [];
+      for (const clientId of processClients) {
+        const titles = clientTitles.get(clientId)!;
+        const firstTitle = titles[0];
+        const clientName = (firstTitle.cliente_nome || '').toLowerCase();
+        if (clientName.includes(testClientName.toLowerCase())) {
+          filteredClients.push(clientId);
+        }
+      }
+      processClients = filteredClients;
+      console.log(`🎯 Clientes filtrados para "${testClientName}": ${processClients.length}`);
+    }
+
+    if (processClients.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true,
-          message: 'Nenhum cliente com status FA encontrado',
+          message: testClientName 
+            ? `Nenhum cliente encontrado com nome "${testClientName}"`
+            : 'Nenhum cliente com títulos vencidos',
           stats: {
-            totalContracts: contracts.length,
+            totalContracts: titles.length,
             contractsFA: 0,
             sent: 0,
             errors: 0
@@ -105,44 +127,56 @@ serve(async (req) => {
       );
     }
 
-    // 3. Para cada contrato FA, buscar títulos vencidos e enviar
+    // 4. Para cada cliente, buscar dados e enviar
     const results = {
       sent: 0,
       errors: 0,
       details: [] as any[]
     };
 
-    for (const customer of contractsFA) {
-      const clientId = customer.id || customer.cliente_id || customer.id_cliente;
-      const clientName = customer.razao || customer.nome_fantasia || 'Cliente';
-      const statusAcesso = customer.statusInfo?.contracts?.[0]?.status_internet || customer.status || 'FA';
+    for (const clientId of processClients) {
+      const titlesForClient = clientTitles.get(clientId)!;
+      const overdueTitle = titlesForClient[0]; // Pegar o primeiro título vencido
 
-      console.log(`\n📋 Processando: ${clientName} (ID: ${clientId}, Status: ${statusAcesso})`);
+      console.log(`\n📋 Processando cliente ID: ${clientId}`);
 
       try {
         // Buscar dados completos do cliente
         const { data: clientData } = await supabase.functions.invoke('ixc-integration', {
-          body: JSON.stringify({
+          body: {
             action: 'getCustomer',
             params: { id: clientId }
-          })
+          }
         });
 
-        if (!clientData?.success || !clientData.data) {
+        const customer = clientData?.data?.registros?.[0] || clientData?.registros?.[0];
+        
+        if (!customer) {
           console.log(`⚠️ Cliente ${clientId} não encontrado`);
           results.errors++;
           results.details.push({
             clientId,
-            clientName,
             error: 'Cliente não encontrado',
             status: 'error'
           });
           continue;
         }
 
-        const customer = clientData.data;
-        const customerPhone = customer.telefone_celular || customer.fone_celular || customer.whatsapp;
+        const clientName = customer.razao || customer.nome_fantasia || 'Cliente';
+        const customerPhone = customer.celular || customer.telefone_celular || customer.fone_celular || customer.whatsapp;
         const customerCpf = customer.cnpj_cpf;
+        
+        // Verificar se o cliente está com status FA
+        const statusCliente = (customer.status || '').toUpperCase();
+        if (!['FA', 'FINANCEIRO EM ATRASO'].includes(statusCliente)) {
+          console.log(`⏭️  Cliente ${clientName} não está em FA (status: ${statusCliente})`);
+          results.details.push({
+            clientId,
+            clientName,
+            status: 'not_fa'
+          });
+          continue;
+        }
 
         if (!customerPhone) {
           console.log(`⚠️ Cliente ${clientName} sem telefone cadastrado`);
@@ -156,40 +190,14 @@ serve(async (req) => {
           continue;
         }
 
-        // Buscar títulos financeiros
-        const { data: titlesData } = await supabase.functions.invoke('ixc-integration', {
-          body: JSON.stringify({
-            action: 'getFinancialTitles',
-            params: { customerId: clientId }
-          })
-        });
-
-        const titles = titlesData?.data?.registros || [];
-        const overdueTitle = titles.find((t: any) => {
-          const today = new Date();
-          const dueDate = new Date(t.data_vencimento);
-          const statusTitulo = (t.status || t.situacao || '').toUpperCase();
-          return dueDate < today && (statusTitulo === 'A' || statusTitulo === 'R');
-        });
-
-        if (!overdueTitle) {
-          console.log(`⚠️ Cliente ${clientName} sem títulos vencidos`);
-          results.details.push({
-            clientId,
-            clientName,
-            status: 'no_overdue_titles'
-          });
-          continue;
-        }
-
-        console.log(`💰 Título vencido encontrado: ${overdueTitle.id} - R$ ${overdueTitle.valor}`);
+        console.log(`💰 Cliente ${clientName} - Título vencido: ${overdueTitle.id} - R$ ${overdueTitle.valor}`);
 
         // Buscar QRCode PIX para o título
         const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
-          body: JSON.stringify({
+          body: {
             action: 'getPixQrCode',
-            params: { titleId: String(overdueTitle.id) }
-          })
+            params: { id: String(overdueTitle.id) }
+          }
         });
 
         const pixCode = pixData?.data?.qrcode || null;
@@ -217,7 +225,6 @@ serve(async (req) => {
         console.log(`📤 Enviando boleto para ${customerPhone}...`);
         const targetPhone = String(customerPhone).replace(/\D/g, '');
         const { data: sendData, error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
-          headers: invokeHeaders,
           body: {
             phone: targetPhone,
             message: messageText,
@@ -288,17 +295,17 @@ serve(async (req) => {
     console.log(`📊 Resumo: ${results.sent} enviados, ${results.errors} erros`);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Processamento concluído: ${results.sent} boletos enviados`,
-        stats: {
-          totalContracts: contracts.length,
-          contractsFA: contractsFA.length,
-          sent: results.sent,
-          errors: results.errors
-        },
-        details: results.details
-      }),
+        JSON.stringify({
+          success: true,
+          message: `Processamento concluído: ${results.sent} boletos enviados`,
+          stats: {
+            totalContracts: titles.length,
+            contractsFA: processClients.length,
+            sent: results.sent,
+            errors: results.errors
+          },
+          details: results.details
+        }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
