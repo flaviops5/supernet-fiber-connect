@@ -118,6 +118,7 @@ serve(async (req) => {
             protocol,
             routeReason: 'cpf_validation_failed',
             autoRouted: true,
+            autoClose: true, // Encerrar conversa após transferência
           }),
           {
             status: 200,
@@ -147,7 +148,8 @@ serve(async (req) => {
           agent: 'routing',
           message: askMessage,
           requiresCPF: true,
-          attempts: attempts + 1
+          attempts: attempts + 1,
+          autoClose: false // Não encerrar enquanto aguarda CPF
         }),
         {
           status: 200,
@@ -195,6 +197,7 @@ serve(async (req) => {
               protocol,
               routeReason: 'cpf_validation_failed',
               autoRouted: true,
+              autoClose: true, // Encerrar conversa após transferência
             }),
             {
               status: 200,
@@ -244,7 +247,8 @@ serve(async (req) => {
             agent: 'routing',
             message: blockedMessage,
             rateLimited: true,
-            blockedUntil: rateLimitCheck.blockedUntil
+            blockedUntil: rateLimitCheck.blockedUntil,
+            autoClose: true // Encerrar conversa quando bloqueado por rate limit
           }),
           {
             status: 429,
@@ -500,6 +504,7 @@ serve(async (req) => {
                   autoRouted: true,
                   routeReason: 'blocked_or_overdue',
                   juliaResponse: !!financialMessage,
+                  autoClose: false, // NÃO encerrar - cliente agora está com Julia
                 }),
                 {
                   status: 200,
@@ -557,6 +562,7 @@ serve(async (req) => {
                     customerIdentified: true,
                     customerData: mockCustomerData,
                     massOutageDetected: true,
+                    autoClose: true, // Encerrar - informação completa fornecida
                   }),
                   {
                     status: 200,
@@ -633,6 +639,7 @@ serve(async (req) => {
                   autoRouted: true,
                   routeReason: 'offline',
                   luanResponse: !!techMessage,
+                  autoClose: false, // NÃO encerrar - cliente agora está com Luan
                 }),
                 {
                   status: 200,
@@ -788,7 +795,8 @@ serve(async (req) => {
                 message: `Não consegui localizar seu cadastro após várias tentativas. Vou transferir você para um de nossos colaboradores que vai entrar em contato em breve. 🙏`,
                 needsHumanTransfer: true,
                 cpfAttempts,
-                cpfNotFound: true
+                cpfNotFound: true,
+                autoClose: true // Encerrar após transferir para humano
               }),
               {
                 status: 200,
@@ -820,7 +828,8 @@ serve(async (req) => {
               cpfNotFound: true,
               cpfAttempts,
               hasContactHistory,
-              needsIdentification: true
+              needsIdentification: true,
+              autoClose: false // NÃO encerrar - aguardando nova tentativa de CPF
             }),
             {
               status: 200,
@@ -1018,7 +1027,8 @@ serve(async (req) => {
                 customerData,
                 autoRouted: true,
                 routeReason: 'blocked_or_overdue',
-                juliaResponse: !!financialMessage, // Flag indicando se veio da Julia
+                juliaResponse: !!financialMessage,
+                autoClose: false, // NÃO encerrar - cliente agora está com Julia
               }),
               {
                 status: 200,
@@ -1091,7 +1101,8 @@ serve(async (req) => {
                       affectedCount: massOutage.affected_count,
                       isPowerOutage,
                       detectedAt: massOutage.detected_at
-                    }
+                    },
+                    autoClose: true, // Encerrar - informação completa fornecida
                   }),
                   {
                     status: 200,
@@ -1289,7 +1300,8 @@ serve(async (req) => {
                 customerData,
                 autoRouted: true,
                 routeReason: 'offline',
-                luanResponse: !!techMessage, // Flag indicando se veio do Luan
+                luanResponse: !!techMessage,
+                autoClose: false, // NÃO encerrar - cliente agora está com Luan
               }),
               {
                 status: 200,
@@ -1390,7 +1402,8 @@ serve(async (req) => {
           JSON.stringify({
             agent: 'routing',
             message: 'Olá! Tudo bem? Meu nome é Cloé. Como posso ajudar hoje? 😊',
-            isGreeting: true
+            isGreeting: true,
+            autoClose: false // NÃO encerrar - conversa inicial
           }),
           {
             status: 200,
@@ -1488,7 +1501,8 @@ MENSAGEM ATUAL DO CLIENTE:
           agent: 'clarify',
           message: decision.message || 'Para te ajudar melhor, pode me contar um pouco mais sobre o que você precisa?',
           confidence: decision.confidence,
-          reason: decision.reason
+          reason: decision.reason,
+          autoClose: false // NÃO encerrar - aguardando clarificação
         }),
         {
           status: 200,
@@ -1508,7 +1522,8 @@ MENSAGEM ATUAL DO CLIENTE:
           agent: 'identification',
           message: 'Para verificar sua situação, preciso do seu CPF, por favor.',
           needsIdentification: true,
-          targetAgent: decision.agent
+          targetAgent: decision.agent,
+          autoClose: false // NÃO encerrar - aguardando CPF
         }),
         {
           status: 200,
@@ -1586,6 +1601,7 @@ MENSAGEM ATUAL DO CLIENTE:
         message: transferMessage,
         protocol,
         financialMessage,
+        autoClose: false // NÃO encerrar - transferindo para agente especializado
       }),
       {
         status: 200,

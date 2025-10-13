@@ -290,6 +290,49 @@ try {
         console.error('⚠️ Error saving agent message:', saveAgentMsgError);
       }
 
+      // 🔄 AUTO-ENCERRAMENTO: Verificar se conversa deve ser encerrada
+      // Encerra quando:
+      // 1. autoClose explícito = true (rate limit, transferência para vendas por falha de CPF)
+      // 2. Transferiu para agente especializado que já respondeu (Julia/Luan já atendeu)
+      const shouldAutoClose = routingResponse.autoClose === true;
+      
+      if (shouldAutoClose) {
+        console.log('✅ Auto-closing conversation based on agent response');
+        await supabase
+          .from('conversations')
+          .update({
+            status: 'resolved',
+            resolved_at: new Date().toISOString(),
+            metadata: {
+              auto_closed: true,
+              close_reason: routingResponse.rateLimited ? 'rate_limited' : 
+                          routingResponse.routeReason === 'cpf_validation_failed' ? 'transferred_sales' :
+                          'info_provided'
+            }
+          })
+          .eq('id', conversationId);
+      }
+      
+      // 📊 Se transferiu para agente especializado (Julia/Luan), atualizar o agente responsável mas manter conversa aberta
+      if (routingResponse.autoRouted && !shouldAutoClose) {
+        const agentDepartmentMap = {
+          'support_financial': 'financeiro',
+          'support_tech': 'tecnico'
+        };
+        
+        const department = agentDepartmentMap[routingResponse.agent];
+        if (department) {
+          console.log(`📍 Updating conversation department to: ${department}`);
+          await supabase
+            .from('conversations')
+            .update({
+              department: department,
+              status: 'active' // Mantém ativa para o novo agente
+            })
+            .eq('id', conversationId);
+        }
+      }
+
       // Tentar enviar resposta via WhatsApp (não crítico)
       let messageSent = false;
       const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
