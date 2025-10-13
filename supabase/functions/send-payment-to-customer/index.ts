@@ -91,8 +91,7 @@ serve(async (req) => {
       console.log('🔍 Tentativa 2: CPF formatado:', cpfFormatted);
       
       const { data: searchData1 } = await supabase.functions.invoke('ixc-integration', {
-        headers: invokeHeaders,
-        body: { action: 'searchCustomers', params: { query: cpfFormatted } }
+        body: JSON.stringify({ action: 'searchCustomers', params: { query: cpfFormatted } })
       });
       
       console.log('📊 Resultado tentativa 2:', {
@@ -122,8 +121,7 @@ serve(async (req) => {
       console.log('🔍 Tentativa 3: CPF limpo:', cpfClean);
       
       const { data: searchData2 } = await supabase.functions.invoke('ixc-integration', {
-        headers: invokeHeaders,
-        body: { action: 'searchCustomers', params: { query: cpfClean } }
+        body: JSON.stringify({ action: 'searchCustomers', params: { query: cpfClean } })
       });
       
       console.log('📊 Resultado tentativa 3:', {
@@ -153,8 +151,7 @@ serve(async (req) => {
       console.log('🔍 Tentativa 4: Telefone:', phoneClean);
       
       const { data: searchData3 } = await supabase.functions.invoke('ixc-integration', {
-        headers: invokeHeaders,
-        body: { action: 'searchCustomers', params: { query: phoneClean } }
+        body: JSON.stringify({ action: 'searchCustomers', params: { query: phoneClean } })
       });
       
       console.log('📊 Resultado tentativa 4:', {
@@ -195,11 +192,10 @@ serve(async (req) => {
         async () => {
           console.log('📡 Buscando clientes do IXC (sem cache)');
           const { data } = await supabase.functions.invoke('ixc-integration', {
-            headers: invokeHeaders,
-            body: { 
+            body: JSON.stringify({ 
               action: 'getCustomers', 
               params: { limit: 200, page: 1 } 
-            }
+            })
           });
           return data;
         },
@@ -289,11 +285,10 @@ serve(async (req) => {
     // 2. Buscar títulos financeiros pendentes
     console.log('💰 Buscando títulos financeiros...');
     const { data: titlesData } = await supabase.functions.invoke('ixc-integration', {
-      headers: invokeHeaders,
-      body: {
+      body: JSON.stringify({
         action: 'getFinancialTitles',
         params: { customerId }
-      }
+      })
     });
 
     const titles = titlesData?.data?.titles || [];
@@ -320,11 +315,10 @@ serve(async (req) => {
     // 3. Buscar QR Code PIX
     console.log('💳 Buscando dados PIX...');
     const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
-      headers: invokeHeaders,
-      body: {
+      body: JSON.stringify({
         action: 'getPixQrCode',
         params: { titleId: firstTitle.id }
-      }
+      })
     });
 
     const pixCode = pixData?.data?.qrcode || null;
