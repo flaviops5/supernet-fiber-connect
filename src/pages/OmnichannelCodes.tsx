@@ -1,146 +1,599 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Code2, FileCode, Folder, Download } from 'lucide-react';
+import { Copy, Check, Code2, FileCode, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-const OMNICHANNEL_FILES = {
-  frontend: [
-    'src/pages/Atendimento.tsx',
-    'src/components/atendimento/ConversationQueue.tsx',
-    'src/components/atendimento/ChatArea.tsx',
-    'src/components/atendimento/ClientInfoPanel.tsx',
-    'src/components/atendimento/AgentInfoPanel.tsx',
-    'src/components/atendimento/SendRealMessageButton.tsx',
-    'src/components/atendimento/ConversationHistory.tsx',
-    'src/components/atendimento/ClosureMessageSelector.tsx',
-    'src/components/atendimento/AgentPresencePanel.tsx',
-    'src/components/atendimento/ConversationSearch.tsx',
-  ],
-  backend: [
-    'supabase/functions/whatsapp-webhook/index.ts',
-    'supabase/functions/routing-agent/index.ts',
-    'supabase/functions/routing-agent/config.ts',
-    'supabase/functions/routing-agent/prompts.ts',
-    'supabase/functions/send-whatsapp-message/index.ts',
-    'supabase/functions/check-escalation/index.ts',
-    'supabase/functions/summarize-conversation/index.ts',
-  ],
+// Arquivos com código completo embutido
+const BACKEND_FILES = [
+  {
+    name: 'whatsapp-webhook/index.ts',
+    description: 'Webhook que recebe mensagens do WhatsApp via Evolution API',
+    language: 'typescript',
+    code: `import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+serve(async (req) => {
+  console.log('🎯 Webhook endpoint hit!', {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
+  if (req.method === 'OPTIONS') {
+    console.log('✅ OPTIONS request handled');
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+let webhookData: any = null;
+try {
+  const textBody = await req.text();
+  const contentType = req.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    console.warn('⚠️ Unexpected Content-Type:', contentType);
+  }
+
+  if (!textBody || textBody.trim() === '') {
+    console.error('❌ Empty body received from webhook');
+    return new Response(
+      JSON.stringify({ success: false, error: 'Empty request body' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    );
+  }
+
+  webhookData = JSON.parse(textBody);
+  console.log('📥 Webhook keys:', Object.keys(webhookData));
+
+} catch (e) {
+  console.error('❌ Failed to parse JSON body:', e);
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: 'Invalid JSON format',
+      details: e instanceof Error ? e.message : 'Unknown error'
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+  );
+}
+
+    // Evolution API envia diferentes tipos de eventos
+    const eventType = webhookData.event;
+
+    // Processar apenas mensagens recebidas
+    if (eventType === 'messages.upsert') {
+      const messageData = webhookData.data;
+      
+      // Ignorar mensagens enviadas por nós mesmos
+      if (messageData.key?.fromMe) {
+        console.log('⏭️ Ignoring message from self');
+        return new Response(JSON.stringify({ success: true, ignored: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const customerPhone = messageData.key?.remoteJid?.replace('@s.whatsapp.net', '') || '';
+      const customerName = messageData.pushName || 'Cliente WhatsApp';
+      const messageContent = messageData.message?.conversation || 
+                           messageData.message?.extendedTextMessage?.text || 
+                           'Mensagem de mídia';
+
+      console.log(\`📞 Message from \${customerName} (\${customerPhone}): \${messageContent}\`);
+
+      // Check for feedback response (números de 1 a 5)
+      const feedbackMatch = messageContent.trim().match(/^[1-5]$/);
+      if (feedbackMatch) {
+        const rating = parseInt(feedbackMatch[0]);
+        
+        // Find most recent resolved conversation for this customer
+        const { data: recentConversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('customer_phone', customerPhone)
+          .eq('status', 'resolved')
+          .order('resolved_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentConversation) {
+          await supabase
+            .from('conversation_feedback')
+            .insert({
+              conversation_id: recentConversation.id,
+              customer_rating: rating,
+              metadata: { source: 'whatsapp_auto' }
+            });
+
+          console.log(\`⭐ Feedback registered: \${rating} stars\`);
+          
+          // Send thank you message
+          await supabase.functions.invoke('send-whatsapp-message', {
+            body: {
+              phone: customerPhone,
+              message: '✅ Obrigado pelo seu feedback! Sua opinião é muito importante para nós.'
+            }
+          });
+
+          return new Response(JSON.stringify({ 
+            success: true, 
+            feedbackRegistered: true,
+            rating: rating
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Buscar conversação ativa ou criar nova
+      const { data: existingConversation, error: searchError } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('customer_phone', customerPhone)
+        .eq('channel', 'whatsapp')
+        .or('status.eq.active,status.eq.waiting')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (searchError) {
+        console.error('Error searching conversation:', searchError);
+      }
+
+      let conversationId = existingConversation?.id;
+
+      // Criar nova conversa se não existir
+      if (!conversationId) {
+        console.log('🆕 Creating new conversation');
+        const { data: newConversation, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            customer_name: customerName,
+            customer_phone: customerPhone,
+            channel: 'whatsapp',
+            status: 'waiting',
+            last_message_at: new Date().toISOString(),
+            metadata: {
+              whatsapp_id: messageData.key?.id,
+              instance: webhookData.instance
+            }
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating conversation:', createError);
+          throw createError;
+        }
+
+        conversationId = newConversation.id;
+      }
+
+      // Salvar mensagem do cliente
+      await supabase
+        .from('conversation_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_type: 'customer',
+          sender_name: customerName,
+          content: messageContent,
+          metadata: {
+            whatsapp_message_id: messageData.key?.id,
+            timestamp: messageData.messageTimestamp
+          }
+        });
+
+      // Chamar agente de roteamento
+      const { data: routingResponse } = await supabase.functions.invoke('routing-agent', {
+        body: {
+          message: messageContent,
+          conversationId: conversationId,
+          context: {
+            name: customerName,
+            phone: customerPhone,
+            channel: 'whatsapp'
+          }
+        }
+      });
+
+      // Enviar resposta via WhatsApp
+      await supabase.functions.invoke('send-whatsapp-message', {
+        body: {
+          phone: customerPhone,
+          message: routingResponse.message || 'Olá! Em breve nossa equipe entrará em contato.'
+        }
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          conversationId: conversationId,
+          processed: true
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, eventType: eventType, processed: false }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});`
+  },
+  {
+    name: 'routing-agent/index.ts',
+    description: 'Agente de roteamento inteligente (Cloé) - identifica CPF e direciona para especialistas',
+    language: 'typescript',
+    code: `import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { message, conversationId, context } = await req.json();
+    
+    console.log('Routing Agent - Received:', message);
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get conversation data
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('customer_cpf, customer_name, ixc_client_id')
+      .eq('id', conversationId)
+      .single();
+
+    // Extract CPF from message
+    const cpfMatch = message.match(/\\b(\\d{3}\\.?\\d{3}\\.?\\d{3}-?\\d{2})\\b/);
+    
+    // If no CPF yet, ask for it
+    if (!conversation?.customer_cpf && !cpfMatch) {
+      return new Response(
+        JSON.stringify({
+          agent: 'routing',
+          message: 'Olá! Sou a Cloé Martins 😊\\n\\nPara começarmos, você poderia me informar seu CPF?',
+          requiresCPF: true
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // If CPF provided, identify customer
+    if (cpfMatch && !conversation?.customer_cpf) {
+      const cpf = cpfMatch[1].replace(/\\D/g, '');
+      
+      // Search in IXC
+      const { data: ixcResponse } = await supabase.functions.invoke('ixc-integration', {
+        body: {
+          action: 'search_customer',
+          params: { cpf }
+        }
+      });
+
+      if (ixcResponse?.success && ixcResponse?.customer) {
+        // Update conversation with customer data
+        await supabase
+          .from('conversations')
+          .update({
+            customer_cpf: cpf,
+            customer_name: ixcResponse.customer.nome,
+            customer_email: ixcResponse.customer.email,
+            ixc_client_id: ixcResponse.customer.id
+          })
+          .eq('id', conversationId);
+
+        // Check if blocked
+        const isBlocked = ixcResponse.customer.status === 'bloqueado';
+        
+        if (isBlocked) {
+          // Route to Financial Support
+          const protocol = \`PROT-\${Date.now()}-\${Math.random().toString(36).substr(2, 9).toUpperCase()}\`;
+          
+          return new Response(
+            JSON.stringify({
+              agent: 'support_financial',
+              message: \`Identificado! Transferindo para Suporte Financeiro... ⏳\\n\\n📋 Protocolo: \${protocol}\`,
+              protocol,
+              autoRouted: true
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Check if offline
+        const isOffline = !ixcResponse.customer.online;
+        
+        if (isOffline) {
+          // Route to Technical Support
+          const protocol = \`PROT-\${Date.now()}-\${Math.random().toString(36).substr(2, 9).toUpperCase()}\`;
+          
+          return new Response(
+            JSON.stringify({
+              agent: 'support_tech',
+              message: \`Vejo que sua conexão está offline. Transferindo para Suporte Técnico... 🔧\\n\\n📋 Protocolo: \${protocol}\`,
+              protocol,
+              autoRouted: true
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Customer is online and not blocked
+        return new Response(
+          JSON.stringify({
+            agent: 'routing',
+            message: \`Ótimo! Vejo que sua conexão está ativa. Como posso ajudar?\`,
+            customerIdentified: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } else {
+        // New customer
+        return new Response(
+          JSON.stringify({
+            agent: 'sales',
+            message: \`CPF não encontrado em nossa base. Vou transferir para Vendas! 🎉\`,
+            autoRouted: true
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // Default response
+    return new Response(
+      JSON.stringify({
+        agent: 'routing',
+        message: 'Como posso ajudar você hoje?'
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ Routing error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});`
+  },
+  {
+    name: 'send-whatsapp-message/index.ts',
+    description: 'Função para enviar mensagens via WhatsApp usando Evolution API',
+    language: 'typescript',
+    code: `import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log('📨 Received request to send-whatsapp-message');
+    
+    const body = await req.json();
+    const { phone, message, instanceName = 'SDR2' } = body;
+    
+    console.log('📨 Send WhatsApp Message:', { phone, instanceName, messageLength: message?.length });
+    
+    if (!phone || !message) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Phone and message are required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    const apiKey = Deno.env.get('EVOLUTION_API_KEY');
+    let baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+
+    console.log('🔐 Checking credentials...');
+    console.log(\`   API Key present: \${!!apiKey}\`);
+    console.log(\`   Base URL: \${baseUrl || 'NOT SET'}\`);
+
+    // Remove trailing slash
+    if (baseUrl && baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+
+    if (!apiKey || !baseUrl) {
+      console.error('❌ Missing credentials');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Evolution API credentials not configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    console.log(\`📱 Sending WhatsApp message to \${phone}\`);
+
+    // Format phone number
+    const cleanPhone = phone.replace(/\\D/g, '');
+    const formattedPhone = cleanPhone.includes('@') ? cleanPhone : \`\${cleanPhone}@s.whatsapp.net\`;
+
+    console.log(\`📞 Formatted phone: \${formattedPhone}\`);
+
+    // Send message via Evolution API
+    const response = await fetch(\`\${baseUrl}/message/sendText/\${instanceName}\`, {
+      method: 'POST',
+      headers: {
+        'apikey': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        number: formattedPhone,
+        text: message,
+        delay: 1200
+      }),
+    });
+
+    console.log(\`📡 Evolution API Response Status: \${response.status}\`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Evolution API Error:', response.status, errorText);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: \`Evolution API error: \${response.status}\`,
+          details: errorText 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    console.log('✅ Message sent successfully:', data);
+
+    return new Response(
+      JSON.stringify({
+        status: 'success',
+        message: 'Message sent successfully',
+        data: {
+          id: data.key?.id || data.messageId,
+          status: data.status || 'SENT'
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error('❌ Unexpected error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error?.message || 'Internal server error',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});`
+  }
+];
+
 export default function OmnichannelCodes() {
-  const [copied, setCopied] = useState(false);
+  const [copiedFile, setCopiedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const generateFileListPrompt = () => {
-    let prompt = `# ANÁLISE COMPLETA DO SISTEMA OMNICHANNEL\n\n`;
-    prompt += `Por favor, leia e analise TODO O CÓDIGO dos seguintes arquivos do sistema:\n\n`;
-    
-    prompt += `## FRONTEND COMPONENTS\n\n`;
-    OMNICHANNEL_FILES.frontend.forEach(file => {
-      prompt += `Leia o arquivo: ${file}\n`;
-    });
-    
-    prompt += `\n## BACKEND EDGE FUNCTIONS\n\n`;
-    OMNICHANNEL_FILES.backend.forEach(file => {
-      prompt += `Leia o arquivo: ${file}\n`;
-    });
-    
-    prompt += `\n## CONTEXTO DO SISTEMA\n\n`;
-    prompt += `Este é um sistema de atendimento omnichannel que integra:\n`;
-    prompt += `- WhatsApp (via Evolution API)\n`;
-    prompt += `- Roteamento inteligente com IA\n`;
-    prompt += `- Atendimento multicanal\n`;
-    prompt += `- Resumo automático de conversas\n`;
-    prompt += `- Escalonamento entre departamentos\n\n`;
-    
-    prompt += `## TECNOLOGIAS UTILIZADAS\n\n`;
-    prompt += `- Frontend: React + TypeScript + Tailwind CSS\n`;
-    prompt += `- Backend: Supabase Edge Functions (Deno)\n`;
-    prompt += `- IA: Lovable AI Gateway (Google Gemini 2.5 Flash)\n`;
-    prompt += `- Database: PostgreSQL (Supabase)\n`;
-    prompt += `- Real-time: Supabase Realtime (WebSockets)\n\n`;
-    
-    prompt += `## FLUXO PRINCIPAL\n\n`;
-    prompt += `1. Cliente envia mensagem via WhatsApp\n`;
-    prompt += `2. Evolution API recebe e webhook envia para whatsapp-webhook\n`;
-    prompt += `3. routing-agent analisa e roteia para departamento correto\n`;
-    prompt += `4. Agente humano atende via interface (Atendimento.tsx)\n`;
-    prompt += `5. Sistema pode escalar para outros departamentos (check-escalation)\n`;
-    prompt += `6. Ao finalizar, gera resumo via IA (summarize-conversation)\n\n`;
-    
-    prompt += `## O QUE VOCÊ DEVE FAZER\n\n`;
-    prompt += `Depois de ler TODOS os arquivos listados acima, você pode:\n`;
-    prompt += `- Analisar a arquitetura completa do sistema\n`;
-    prompt += `- Identificar pontos de melhoria\n`;
-    prompt += `- Sugerir otimizações de código\n`;
-    prompt += `- Revisar segurança e boas práticas\n`;
-    prompt += `- Propor novas funcionalidades\n`;
-    prompt += `- Explicar o funcionamento detalhado\n`;
-    
-    return prompt;
-  };
-
-  const handleCopy = async () => {
+  const handleCopyCode = async (fileName: string, code: string) => {
     try {
-      const prompt = generateFileListPrompt();
-      await navigator.clipboard.writeText(prompt);
-      setCopied(true);
+      await navigator.clipboard.writeText(code);
+      setCopiedFile(fileName);
       toast({
-        title: 'Prompt copiado!',
-        description: 'Cole este prompt em uma LLM com acesso ao projeto (Cursor, Copilot, etc.)',
+        title: 'Código copiado!',
+        description: `${fileName} copiado para a área de transferência`,
       });
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopiedFile(null), 2000);
     } catch (error) {
       toast({
         title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o prompt.',
+        description: 'Não foi possível copiar o código.',
         variant: 'destructive',
       });
     }
   };
 
-  const handleDownloadZip = async () => {
-    try {
-      toast({
-        title: 'Gerando arquivo...',
-        description: 'Aguarde enquanto compilamos os arquivos',
-      });
+  const handleDownloadFile = (fileName: string, code: string) => {
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 
-      const { data, error } = await supabase.functions.invoke('generate-omnichannel-zip');
-
-      if (error) throw error;
-
-      // Create blob and download
-      const blob = new Blob([data], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `omnichannel-3-arquivos.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: 'Código baixado!',
-        description: 'Arquivo com todo o código do backend salvo',
-      });
-    } catch (error) {
-      console.error('Erro ao baixar código:', error);
-      toast({
-        title: 'Erro ao gerar arquivo',
-        description: 'Não foi possível criar o arquivo',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Arquivo baixado!',
+      description: `${fileName} salvo com sucesso`,
+    });
   };
-
-  const totalFiles = OMNICHANNEL_FILES.frontend.length + OMNICHANNEL_FILES.backend.length;
 
   return (
     <AuthGuard requiredRoles={['admin', 'editor']}>
@@ -149,40 +602,11 @@ export default function OmnichannelCodes() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Code2 className="h-8 w-8 text-primary" />
-              Omnichannel Codes
+              Código Backend Omnichannel
             </h1>
             <p className="text-muted-foreground mt-2">
-              Lista de arquivos do sistema para análise por LLMs
+              3 arquivos principais do sistema - prontos para usar
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleCopy}
-              size="lg"
-              className="gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-5 w-5" />
-                  Copiado!
-                </>
-              ) : (
-                <>
-                  <Copy className="h-5 w-5" />
-                  Copiar Prompt
-                </>
-              )}
-            </Button>
-            
-            <Button
-              onClick={handleDownloadZip}
-              size="lg"
-              variant="secondary"
-              className="gap-2"
-            >
-              <Download className="h-5 w-5" />
-              Baixar 3 Arquivos (.txt)
-            </Button>
           </div>
         </div>
 
@@ -192,141 +616,151 @@ export default function OmnichannelCodes() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileCode className="h-5 w-5" />
-              Como usar
+              Arquivos TypeScript Completos
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <p className="font-semibold">📋 Passo 1: Copiar o Prompt</p>
-              <p className="text-sm text-muted-foreground">
-                Clique no botão "Copiar Prompt" para copiar um prompt que pede à LLM para ler todos os arquivos do Omnichannel.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="font-semibold">🤖 Passo 2: Usar uma LLM com acesso ao projeto</p>
-              <p className="text-sm text-muted-foreground">
-                Cole o prompt em uma LLM que tenha acesso ao código:
-              </p>
-              <ul className="list-disc list-inside text-sm text-muted-foreground ml-4">
-                <li><strong>Cursor AI</strong>: Cole no chat e a IA lerá todos os arquivos automaticamente</li>
-                <li><strong>GitHub Copilot</strong>: Use no VS Code com acesso ao workspace</li>
-                <li><strong>Windsurf</strong>: Cole no chat para análise completa</li>
+              <p className="font-semibold">📦 O que está incluído:</p>
+              <ul className="list-disc list-inside text-sm text-muted-foreground ml-4 space-y-1">
+                <li><strong>whatsapp-webhook</strong>: Recebe mensagens do WhatsApp</li>
+                <li><strong>routing-agent</strong>: Identifica CPF e roteia automaticamente</li>
+                <li><strong>send-whatsapp-message</strong>: Envia respostas via WhatsApp</li>
               </ul>
             </div>
             
             <div className="space-y-2">
-              <p className="font-semibold">💬 Passo 3: A LLM lerá tudo</p>
-              <p className="text-sm text-muted-foreground">
-                A LLM terá contexto completo de:
-              </p>
-              <ul className="list-disc list-inside text-sm text-muted-foreground ml-4">
-                <li>Todo o código de {totalFiles} arquivos</li>
-                <li>Arquitetura e fluxo do sistema</li>
-                <li>Integração WhatsApp + IA + Supabase</li>
-                <li>Frontend e Backend completos</li>
-              </ul>
+              <p className="font-semibold">🚀 Como usar:</p>
+              <ol className="list-decimal list-inside text-sm text-muted-foreground ml-4 space-y-1">
+                <li>Clique em cada arquivo abaixo para expandir</li>
+                <li>Copie o código completo ou baixe o arquivo .ts</li>
+                <li>Cole em outra LLM (Claude, ChatGPT, Gemini) para análise</li>
+              </ol>
             </div>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <p className="font-semibold">💡 Exemplos de perguntas para fazer:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                <div className="p-3 bg-white dark:bg-gray-900 rounded border text-sm">
-                  "Analise a segurança deste sistema"
-                </div>
-                <div className="p-3 bg-white dark:bg-gray-900 rounded border text-sm">
-                  "Como adicionar suporte a Facebook?"
-                </div>
-                <div className="p-3 bg-white dark:bg-gray-900 rounded border text-sm">
-                  "Explique o fluxo de uma conversa"
-                </div>
-                <div className="p-3 bg-white dark:bg-gray-900 rounded border text-sm">
-                  "Sugira melhorias de performance"
-                </div>
-              </div>
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                💡 <strong>Dica:</strong> Estes códigos são Edge Functions do Supabase (Deno). 
+                Você pode pedir para a LLM explicar, otimizar ou adaptar para outras plataformas.
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Total de Arquivos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{totalFiles}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Frontend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{OMNICHANNEL_FILES.frontend.length}</p>
-              <Badge variant="secondary" className="mt-2">React Components</Badge>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Backend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{OMNICHANNEL_FILES.backend.length}</p>
-              <Badge variant="secondary" className="mt-2">Edge Functions</Badge>
-            </CardContent>
-          </Card>
+          {BACKEND_FILES.map((file, index) => (
+            <Card key={file.name}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileCode className="h-4 w-4 text-purple-500" />
+                  Arquivo {index + 1}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Badge variant="secondary">{file.name}</Badge>
+                  <p className="text-xs text-muted-foreground">{file.description}</p>
+                  <div className="text-sm font-mono text-muted-foreground">
+                    {file.code.split('\n').length} linhas
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5" />
-              Arquivos Frontend ({OMNICHANNEL_FILES.frontend.length})
+              <Code2 className="h-5 w-5" />
+              Código dos Arquivos
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {OMNICHANNEL_FILES.frontend.map((file) => (
-                <div key={file} className="p-3 bg-muted rounded text-sm font-mono flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                  <span className="truncate">{file}</span>
-                </div>
+            <Accordion type="single" collapsible className="w-full">
+              {BACKEND_FILES.map((file) => (
+                <AccordionItem key={file.name} value={file.name}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileCode className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                      <div className="text-left flex-1">
+                        <div className="font-semibold">{file.name}</div>
+                        <div className="text-xs text-muted-foreground font-normal">
+                          {file.description}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="ml-auto mr-2">
+                        {file.code.split('\n').length} linhas
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 pt-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCopyCode(file.name, file.code)}
+                          className="gap-2"
+                        >
+                          {copiedFile === file.name ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Copiado!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Copiar Código
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadFile(file.name, file.code)}
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Baixar .ts
+                        </Button>
+                      </div>
+                      
+                      <div className="relative">
+                        <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-[600px] text-xs font-mono border">
+                          <code className="language-typescript">{file.code}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            </div>
+            </Accordion>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5" />
-              Edge Functions Backend ({OMNICHANNEL_FILES.backend.length})
-            </CardTitle>
+            <CardTitle className="text-sm">Variáveis de Ambiente Necessárias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {OMNICHANNEL_FILES.backend.map((file) => (
-                <div key={file} className="p-3 bg-muted rounded text-sm font-mono flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                  <span className="truncate">{file}</span>
-                </div>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm font-mono">
+              <div className="p-2 bg-white dark:bg-gray-900 rounded border">
+                EVOLUTION_API_KEY
+              </div>
+              <div className="p-2 bg-white dark:bg-gray-900 rounded border">
+                EVOLUTION_API_BASE_URL
+              </div>
+              <div className="p-2 bg-white dark:bg-gray-900 rounded border">
+                OPENAI_API_KEY
+              </div>
+              <div className="p-2 bg-white dark:bg-gray-900 rounded border">
+                SUPABASE_URL
+              </div>
+              <div className="p-2 bg-white dark:bg-gray-900 rounded border">
+                SUPABASE_SERVICE_ROLE_KEY
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview do Prompt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono whitespace-pre-wrap">
-              {generateFileListPrompt()}
-            </pre>
           </CardContent>
         </Card>
       </div>
