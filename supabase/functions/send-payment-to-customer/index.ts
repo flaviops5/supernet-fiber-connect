@@ -67,16 +67,21 @@ serve(async (req) => {
     
     if (cacheKey) {
       console.log('🔍 Verificando cache:', cacheKey);
-      const cachedCustomer = await getCachedOrFetch(
-        supabase,
-        cacheKey,
-        null, // Não busca se não encontrar no cache
-        5 * 60 // 5 minutos
-      );
-      
-      if (cachedCustomer) {
-        customer = cachedCustomer;
-        console.log('✅ Cliente encontrado no CACHE');
+      try {
+        const { data: cacheData } = await supabase
+          .from('ixc_cache')
+          .select('value, expires_at')
+          .eq('key', cacheKey)
+          .maybeSingle();
+        
+        if (cacheData && new Date(cacheData.expires_at) > new Date()) {
+          customer = cacheData.value;
+          console.log('✅ Cliente encontrado no CACHE');
+        } else {
+          console.log('❌ Cache vazio ou expirado');
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao verificar cache:', error.message);
       }
     }
 
