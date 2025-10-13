@@ -20,8 +20,10 @@ serve(async (req) => {
       );
     }
 
-    // Ler o arquivo index.ts da função
-    const filePath = `../${functionName}/index.ts`;
+    // Construir o caminho absoluto para a função
+    const currentDir = new URL('.', import.meta.url).pathname;
+    const functionsDir = currentDir.replace('/get-function-code/', '/');
+    const filePath = `${functionsDir}${functionName}/index.ts`;
     
     console.log('Tentando ler arquivo:', filePath);
     
