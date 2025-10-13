@@ -30,6 +30,7 @@ import QuedasMassaCodigo from "./pages/QuedasMassaCodigo";
 import Apresentacao from "./pages/Apresentacao";
 import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
+import OmnichannelCodes from "./pages/OmnichannelCodes";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -54,6 +55,7 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
+            <Route path="/admin/omnichannel-codes" element={<OmnichannelCodes />} />
           <Route path="/atendimento" element={<Atendimento />} />
           <Route path="/perfil-agente" element={<PerfilAgente />} />
           <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />

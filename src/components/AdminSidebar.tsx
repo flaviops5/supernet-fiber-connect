@@ -41,6 +41,7 @@ import {
   MessageCircle,
   Wrench,
   Sparkles,
+  Code2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -114,6 +115,11 @@ const documentationItems = [
     title: "IA Corporativa",
     url: "/admin/corporate-ai",
     icon: Brain,
+  },
+  {
+    title: "Omnichannel Codes",
+    url: "/admin/omnichannel-codes",
+    icon: Code2,
   },
 ];
 
