@@ -46,6 +46,7 @@ import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { WhatsAppApiTester } from '@/components/WhatsAppApiTester';
 import { TestClientFinancialStatus } from '@/components/TestClientFinancialStatus';
 import { DiagnosticoClienteCompleto } from '@/components/DiagnosticoClienteCompleto';
+import { AutoSendOverdueInvoices } from '@/components/AutoSendOverdueInvoices';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -104,6 +105,9 @@ const Dashboard = () => {
 
       {/* Diagnostic Complete Client */}
       <DiagnosticoClienteCompleto />
+
+      {/* Auto Send Overdue Invoices */}
+      <AutoSendOverdueInvoices />
 
       {/* Quick Actions */}
       <Card>
