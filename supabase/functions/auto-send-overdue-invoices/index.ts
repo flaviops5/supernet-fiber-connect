@@ -94,6 +94,7 @@ serve(async (req) => {
 
     // 3. Para cada cliente, buscar dados completos e verificar status FA
     const clientsToProcess: Array<{id: string, name: string, data: any, overdueTitle: any}> = [];
+    const allClientsFound: Array<{name: string, status: string, hasOverdueTitle: boolean}> = [];
 
     for (const [clientId, clientTitles] of clientTitlesMap.entries()) {
       try {
@@ -118,6 +119,13 @@ serve(async (req) => {
         const customerStatus = (customer.status || '').toUpperCase();
         const isFAStatus = ['FA', 'FINANCEIRO EM ATRASO'].includes(customerStatus);
         
+        // Registrar todos os clientes encontrados para debug
+        allClientsFound.push({
+          name: clientName,
+          status: customerStatus,
+          hasOverdueTitle: true
+        });
+        
         console.log(`👤 Cliente ${clientName} (${clientId}) - Status: ${customerStatus} - É FA? ${isFAStatus}`);
         
         if (!isFAStatus) {
@@ -138,6 +146,20 @@ serve(async (req) => {
     }
 
     console.log(`📊 Total de clientes em FA para processar: ${clientsToProcess.length}`);
+    
+    // Log de todos os clientes encontrados se estiver em modo teste
+    if (testClientName) {
+      console.log(`\n🔍 DEBUG: Buscando "${testClientName}" entre ${allClientsFound.length} clientes:`);
+      const matching = allClientsFound.filter(c => 
+        c.name.toLowerCase().includes(testClientName.toLowerCase())
+      );
+      console.log(`📋 Clientes que contêm "${testClientName}":`, matching);
+      
+      if (matching.length === 0) {
+        console.log(`⚠️ Nenhum cliente encontrado com nome contendo "${testClientName}"`);
+        console.log(`💡 Primeiros 10 clientes encontrados:`, allClientsFound.slice(0, 10).map(c => `${c.name} (${c.status})`));
+      }
+    }
 
     // 4. Filtrar por nome em modo teste
     let finalClientsToProcess = clientsToProcess;
