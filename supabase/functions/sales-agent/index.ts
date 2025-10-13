@@ -20,6 +20,7 @@ serve(async (req) => {
   }
 
   try {
+    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     let messages: Message[] = [];
     let userContext: any = undefined;
     let directOrder = false;
@@ -44,7 +45,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     console.log(`🛒 [${correlationId}] sales-agent: request start`, { method: req.method, directOrder, path: new URL(req.url).pathname });
     
     // Se for uma ordem direta do formulário
