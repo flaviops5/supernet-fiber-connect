@@ -61,9 +61,19 @@ export async function addHMACHeaders(
 /**
  * Valida headers HMAC de requisição recebida
  */
+/**
+ * Sprint 1: Validação HMAC com TTL e clock skew tolerance
+ * 
+ * @param req - Request HTTP recebida
+ * @param secret - Segredo compartilhado HMAC
+ * @param ttlSeconds - TTL em segundos (padrão: 300s = 5 minutos)
+ * @param clockSkewSeconds - Tolerância para dessincronização de relógio (padrão: 30s)
+ */
 export async function validateHMACRequest(
   req: Request,
-  secret: string
+  secret: string,
+  ttlSeconds: number = 300,
+  clockSkewSeconds: number = 30
 ): Promise<{ valid: boolean; error?: string }> {
   const signature = req.headers.get('X-HMAC-Signature');
   const timestamp = req.headers.get('X-HMAC-Timestamp');
@@ -72,18 +82,29 @@ export async function validateHMACRequest(
     return { valid: false, error: 'Missing HMAC headers' };
   }
   
-  // Verificar timestamp (não aceitar requisições com mais de 5 minutos)
-  const now = Date.now();
-  const reqTime = parseInt(timestamp);
-  if (now - reqTime > 5 * 60 * 1000) {
-    return { valid: false, error: 'Request expired' };
+  // Validação de TTL com clock skew tolerance
+  const now = Math.floor(Date.now() / 1000);
+  const reqTime = Math.floor(parseInt(timestamp) / 1000);
+  
+  if (isNaN(reqTime)) {
+    return { valid: false, error: 'Invalid timestamp format' };
+  }
+  
+  const timeDifference = Math.abs(now - reqTime);
+  const maxAllowedDiff = ttlSeconds + clockSkewSeconds;
+  
+  if (timeDifference > maxAllowedDiff) {
+    return { 
+      valid: false, 
+      error: `Timestamp expired (TTL: ${ttlSeconds}s, clock skew: ±${clockSkewSeconds}s, diff: ${timeDifference}s)` 
+    };
   }
   
   const body = await req.text();
   const isValid = await verifySignature(body, signature, secret);
   
   if (!isValid) {
-    return { valid: false, error: 'Invalid signature' };
+    return { valid: false, error: 'Invalid HMAC signature' };
   }
   
   return { valid: true };

@@ -1159,7 +1159,11 @@ export type Database = {
           id: string
           ixc_client_id: string | null
           last_message_at: string | null
+          lgpd_consent: boolean | null
+          lgpd_consent_date: string | null
           metadata: Json | null
+          opt_out_date: string | null
+          opt_out_requested: boolean | null
           priority: number | null
           reopen_count: number | null
           reopened_from_conversation_id: string | null
@@ -1182,7 +1186,11 @@ export type Database = {
           id?: string
           ixc_client_id?: string | null
           last_message_at?: string | null
+          lgpd_consent?: boolean | null
+          lgpd_consent_date?: string | null
           metadata?: Json | null
+          opt_out_date?: string | null
+          opt_out_requested?: boolean | null
           priority?: number | null
           reopen_count?: number | null
           reopened_from_conversation_id?: string | null
@@ -1205,7 +1213,11 @@ export type Database = {
           id?: string
           ixc_client_id?: string | null
           last_message_at?: string | null
+          lgpd_consent?: boolean | null
+          lgpd_consent_date?: string | null
           metadata?: Json | null
+          opt_out_date?: string | null
+          opt_out_requested?: boolean | null
           priority?: number | null
           reopen_count?: number | null
           reopened_from_conversation_id?: string | null
@@ -2108,6 +2120,51 @@ export type Database = {
         }
         Relationships: []
       }
+      lgpd_audit: {
+        Row: {
+          action_type: string
+          created_at: string
+          data_accessed: Json | null
+          id: string
+          ip_address: string | null
+          legal_basis: string | null
+          purpose: string
+          resource_id: string | null
+          resource_type: string
+          retention_until: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          data_accessed?: Json | null
+          id?: string
+          ip_address?: string | null
+          legal_basis?: string | null
+          purpose: string
+          resource_id?: string | null
+          resource_type: string
+          retention_until?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          data_accessed?: Json | null
+          id?: string
+          ip_address?: string | null
+          legal_basis?: string | null
+          purpose?: string
+          resource_id?: string | null
+          resource_type?: string
+          retention_until?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       maintenance_cron_control: {
         Row: {
           created_at: string | null
@@ -2837,6 +2894,39 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_webhooks: {
+        Row: {
+          event_type: string
+          expires_at: string
+          id: string
+          metadata: Json | null
+          processed_at: string
+          request_signature: string | null
+          request_timestamp: number | null
+          webhook_id: string
+        }
+        Insert: {
+          event_type: string
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          processed_at?: string
+          request_signature?: string | null
+          request_timestamp?: number | null
+          webhook_id: string
+        }
+        Update: {
+          event_type?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          processed_at?: string
+          request_signature?: string | null
+          request_timestamp?: number | null
+          webhook_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3029,6 +3119,56 @@ export type Database = {
         }
         Relationships: []
       }
+      routing_feedback: {
+        Row: {
+          actual_department: string | null
+          agent_override: string | null
+          ai_confidence: number | null
+          ai_suggested_department: string | null
+          conversation_id: string | null
+          correction_timestamp: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          override_reason: string | null
+          was_correct: boolean | null
+        }
+        Insert: {
+          actual_department?: string | null
+          agent_override?: string | null
+          ai_confidence?: number | null
+          ai_suggested_department?: string | null
+          conversation_id?: string | null
+          correction_timestamp?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          override_reason?: string | null
+          was_correct?: boolean | null
+        }
+        Update: {
+          actual_department?: string | null
+          agent_override?: string | null
+          ai_confidence?: number | null
+          ai_suggested_department?: string | null
+          conversation_id?: string | null
+          correction_timestamp?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          override_reason?: string | null
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routing_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_logs: {
         Row: {
           created_at: string
@@ -3217,6 +3357,65 @@ export type Database = {
         }
         Relationships: []
       }
+      training_dataset: {
+        Row: {
+          actual_output: string | null
+          agent_type: string
+          conversation_id: string | null
+          created_at: string
+          expected_output: string
+          id: string
+          input_context: string
+          is_validated: boolean | null
+          metadata: Json | null
+          quality_score: number | null
+          tags: string[] | null
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          actual_output?: string | null
+          agent_type: string
+          conversation_id?: string | null
+          created_at?: string
+          expected_output: string
+          id?: string
+          input_context: string
+          is_validated?: boolean | null
+          metadata?: Json | null
+          quality_score?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          actual_output?: string | null
+          agent_type?: string
+          conversation_id?: string | null
+          created_at?: string
+          expected_output?: string
+          id?: string
+          input_context?: string
+          is_validated?: boolean | null
+          metadata?: Json | null
+          quality_score?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_dataset_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity_logs: {
         Row: {
           activity_description: string
@@ -3276,6 +3475,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymize_old_conversations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
@@ -3294,6 +3497,10 @@ export type Database = {
         Returns: Json
       }
       cleanup_expired_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      cleanup_expired_webhooks: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
@@ -3437,7 +3644,7 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: string
+        Returns: unknown
       }
       log_security_event: {
         Args: {
