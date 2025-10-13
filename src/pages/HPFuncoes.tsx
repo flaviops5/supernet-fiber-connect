@@ -23,6 +23,56 @@ const HPFuncoes = () => {
 
   const OMNICHANNEL_FILES = [
     {
+      name: 'DB: mass_outage_events',
+      description: 'Tabela de eventos de queda em massa - PON, CTO e Região',
+      code: `-- ============================================
+-- TABELA: mass_outage_events
+-- Registro de eventos de queda em massa
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS public.mass_outage_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_key TEXT NOT NULL UNIQUE,
+  region_pattern TEXT NOT NULL,
+  affected_count INTEGER NOT NULL,
+  affected_logins TEXT[] NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'active',
+  detected_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  resolved_at TIMESTAMP WITH TIME ZONE,
+  notifications_sent BOOLEAN DEFAULT false,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_mass_outage_event_key ON public.mass_outage_events(event_key);
+CREATE INDEX IF NOT EXISTS idx_mass_outage_status ON public.mass_outage_events(status);
+CREATE INDEX IF NOT EXISTS idx_mass_outage_detected_at ON public.mass_outage_events(detected_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mass_outage_region_pattern ON public.mass_outage_events(region_pattern);
+
+-- RLS Policies
+ALTER TABLE public.mass_outage_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can view mass outage events"
+  ON public.mass_outage_events
+  FOR SELECT
+  USING (has_role(auth.uid(), 'admin'::user_role));
+
+CREATE POLICY "Editors can view mass outage events"
+  ON public.mass_outage_events
+  FOR SELECT
+  USING (has_role(auth.uid(), 'editor'::user_role));
+
+-- Estrutura de dados:
+-- event_key: Chave única do evento (ex: "PON:OLT01-PON-1/1/5" ou "CTO:CTO-123" ou "REGION:Bairro-Centro")
+-- region_pattern: Padrão da região afetada
+-- affected_count: Número de clientes afetados
+-- affected_logins: Array com logins dos clientes afetados
+-- status: 'active' | 'resolved' | 'investigating'
+-- metadata: { olt?, pon_port?, cto?, region?, detection_method?, children_events? }`
+    },
+    {
       name: '_shared/ixc-client.ts',
       description: 'Cliente IXC com retry logic e circuit breaker para resiliência',
       code: `// ============================================
