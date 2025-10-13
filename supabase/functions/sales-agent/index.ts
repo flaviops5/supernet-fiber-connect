@@ -424,9 +424,9 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
                 type: 'object',
                 properties: {
                   customer_name: { type: 'string', description: 'Nome completo do cliente' },
-                  customer_cpf: { type: 'string', description: 'CPF do cliente' },
-                  customer_email: { type: 'string', description: 'Email do cliente' },
-                  customer_phone: { type: 'string', description: 'Telefone/WhatsApp do cliente' },
+                  customer_cpf: { type: 'string', description: 'CPF (somente números)' },
+                  customer_email: { type: 'string', description: 'Email' },
+                  customer_phone: { type: 'string', description: 'Telefone/WhatsApp' },
                   customer_birth_date: { type: 'string', description: 'Data de nascimento (YYYY-MM-DD)' },
                   customer_address: { type: 'string', description: 'Endereço completo' },
                   customer_cep: { type: 'string', description: 'CEP' },
@@ -445,37 +445,16 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
           }
         ],
         tool_choice: 'auto'
-      }),
+      },
+      correlationId
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Muitas requisições. Por favor, aguarde um momento.' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Créditos insuficientes. Entre em contato com o suporte.' 
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error('Erro na API do AI Gateway');
-    }
-
-    const data = await response.json();
-    const message = data.choices[0].message;
-
-    // Se houve chamada de ferramenta, execute
-    if (message.tool_calls) {
+    // Verificar se há tool calls
+    if (hasToolCalls(aiResponse)) {
+      const toolCalls = extractToolCalls(aiResponse);
       const toolResults = [];
       
-      for (const toolCall of message.tool_calls) {
+      for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
         const args = JSON.parse(toolCall.function.arguments);
         
@@ -635,87 +614,78 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
       }
 
       // Fazer segunda chamada com os resultados dos tools para continuar a conversa
-      const followUpResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages,
-            message,
-            ...toolResults
-          ],
-          tools: [
-            {
-              type: 'function',
-              function: {
-                name: 'check_cep_coverage',
-                description: 'Verifica se o CEP tem cobertura da SUPERNET FIBRA',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    cep: { type: 'string', description: 'CEP para verificar (somente números)' }
-                  },
-                  required: ['cep']
-                }
-              }
-            },
-            {
-              type: 'function',
-              function: {
-                name: 'create_installation_order',
-                description: 'Cria atendimento no IXC após coletar e confirmar todos os dados do cliente',
-                parameters: {
-                  type: 'object',
-                  properties: {
-                    customer_name: { type: 'string', description: 'Nome completo do cliente' },
-                    customer_cpf: { type: 'string', description: 'CPF do cliente' },
-                    customer_email: { type: 'string', description: 'Email do cliente' },
-                    customer_phone: { type: 'string', description: 'Telefone/WhatsApp do cliente' },
-                    customer_birth_date: { type: 'string', description: 'Data de nascimento (YYYY-MM-DD)' },
-                    customer_address: { type: 'string', description: 'Endereço completo' },
-                    customer_cep: { type: 'string', description: 'CEP' },
-                    plan_id: { type: 'string', description: 'ID do plano escolhido' },
-                    payment_day: { type: 'number', description: 'Dia do vencimento (01, 05, 10, 15, 20 ou 25)' },
-                    installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' },
-                    installation_period: { type: 'string', description: 'Período da instalação: manha ou tarde' }
-                  },
-                  required: [
-                    'customer_name', 'customer_cpf', 'customer_email', 
-                    'customer_phone', 'customer_birth_date', 'customer_address',
-                    'customer_cep', 'plan_id', 'payment_day', 'installation_date', 'installation_period'
-                  ]
-                }
+      const assistantMessage = aiResponse.choices[0].message;
+      
+      const followUpResponse = await callLovableAI({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+          assistantMessage,
+          ...toolResults
+        ],
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'check_cep_coverage',
+              description: 'Verifica se o CEP tem cobertura da SUPERNET FIBRA',
+              parameters: {
+                type: 'object',
+                properties: {
+                  cep: { type: 'string', description: 'CEP para verificar (somente números)' }
+                },
+                required: ['cep']
               }
             }
-          ],
-          tool_choice: 'auto'
-        }),
-      });
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'create_installation_order',
+              description: 'Cria atendimento no IXC após coletar e confirmar todos os dados do cliente',
+              parameters: {
+                type: 'object',
+                properties: {
+                  customer_name: { type: 'string', description: 'Nome completo do cliente' },
+                  customer_cpf: { type: 'string', description: 'CPF do cliente' },
+                  customer_email: { type: 'string', description: 'Email do cliente' },
+                  customer_phone: { type: 'string', description: 'Telefone/WhatsApp do cliente' },
+                  customer_birth_date: { type: 'string', description: 'Data de nascimento (YYYY-MM-DD)' },
+                  customer_address: { type: 'string', description: 'Endereço completo' },
+                  customer_cep: { type: 'string', description: 'CEP' },
+                  plan_id: { type: 'string', description: 'ID do plano escolhido' },
+                  payment_day: { type: 'number', description: 'Dia do vencimento (01, 05, 10, 15, 20 ou 25)' },
+                  installation_date: { type: 'string', description: 'Data desejada para instalação (YYYY-MM-DD)' },
+                  installation_period: { type: 'string', description: 'Período da instalação: manha ou tarde' }
+                },
+                required: [
+                  'customer_name', 'customer_cpf', 'customer_email', 
+                  'customer_phone', 'customer_birth_date', 'customer_address',
+                  'customer_cep', 'plan_id', 'payment_day', 'installation_date', 'installation_period'
+                ]
+              }
+            }
+          }
+        ],
+        tool_choice: 'auto'
+      }, correlationId);
 
-      if (!followUpResponse.ok) {
-        console.error('Erro na chamada de follow-up');
-        throw new Error('Erro ao processar resposta da IA');
-      }
-
-      const followUpData = await followUpResponse.json();
-      const finalMessage = followUpData.choices[0].message;
+      const finalMessage = extractContent(followUpResponse);
 
       // Retorna resposta final processada
       return new Response(JSON.stringify({ 
-        message: finalMessage.content,
+        message: finalMessage,
         tool_results: toolResults
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // Retorna resposta sem tool calls
+    const responseContent = extractContent(aiResponse);
     return new Response(JSON.stringify({ 
-      message: message.content 
+      message: responseContent
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
