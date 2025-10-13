@@ -102,6 +102,11 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
       .order('priority', { ascending: false })
       .order('created_at', { ascending: false });
 
+    // Excluir conversas finalizadas das filas de atendimento
+    if (filter !== 'all') {
+      query = query.neq('status', 'resolved');
+    }
+
     if (filter === 'my') {
       const { data: { user } } = await supabase.auth.getUser();
       query = query.eq('assigned_agent_id', user?.id);
