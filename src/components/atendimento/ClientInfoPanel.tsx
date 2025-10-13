@@ -50,6 +50,9 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [customerHistory, setCustomerHistory] = useState<Conversation[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -288,6 +291,47 @@ export default function ClientInfoPanel({ conversationId }: Props) {
     }
   };
 
+  const loadCustomerHistory = async () => {
+    if (!conversation?.customer_cpf && !conversation?.customer_phone) return;
+
+    setLoadingHistory(true);
+    try {
+      let query = supabase
+        .from('conversations')
+        .select('*')
+        .eq('status', 'resolved')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (conversation.customer_cpf) {
+        query = query.eq('customer_cpf', conversation.customer_cpf);
+      } else if (conversation.customer_phone) {
+        query = query.eq('customer_phone', conversation.customer_phone);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setCustomerHistory(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar o histórico.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (historyDialogOpen) {
+      loadCustomerHistory();
+    }
+  }, [historyDialogOpen]);
+
   if (!conversationId || !conversation) {
     return (
       <Card className="h-full flex items-center justify-center shadow-lg border-border/50">
@@ -399,9 +443,15 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               onSubmit={handleOpenTicket}
               loading={openingTicket}
             />
-            <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
-              <Calendar className="h-4 w-4 text-[hsl(var(--orange))]" />
-              <span className="text-xs">Agendar</span>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-auto py-2 flex flex-col gap-1"
+              onClick={() => setHistoryDialogOpen(true)}
+              disabled={!conversation?.customer_cpf && !conversation?.customer_phone}
+            >
+              <FileText className="h-4 w-4 text-[hsl(var(--orange))]" />
+              <span className="text-xs">Histórico</span>
             </Button>
             <Button size="sm" variant="outline" className="h-auto py-2 flex flex-col gap-1">
               <MapPin className="h-4 w-4 text-[hsl(var(--orange))]" />
@@ -436,6 +486,66 @@ export default function ClientInfoPanel({ conversationId }: Props) {
           </>
         )}
       </CardContent>
+
+      {/* Customer History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>📋 Histórico de Conversas</DialogTitle>
+            <DialogDescription>
+              Conversas anteriores do cliente {conversation?.customer_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--orange))]" />
+            </div>
+          ) : customerHistory.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum histórico encontrado para este cliente.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {customerHistory.map((hist) => (
+                <div key={hist.id} className="p-4 border rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{hist.department || 'N/A'}</Badge>
+                      <Badge variant={hist.status === 'resolved' ? 'default' : 'secondary'}>
+                        {hist.status}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(hist.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </span>
+                  </div>
+                  
+                  {hist.tags && hist.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {hist.tags.map((tag, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {hist.metadata?.ai_summary && (
+                    <div className="mt-2 p-3 bg-muted rounded text-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="h-3 w-3 text-purple-600" />
+                        <span className="text-xs font-semibold">Resumo IA:</span>
+                      </div>
+                      <p className="text-xs whitespace-pre-wrap">{hist.metadata.ai_summary}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Info Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
