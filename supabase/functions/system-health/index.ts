@@ -1,9 +1,5 @@
-// ============================================
-// SYSTEM HEALTH CHECK
-// ============================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,134 +11,153 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const startTime = Date.now();
-
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check Database
-    const dbStartTime = Date.now();
-    let dbStatus = 'healthy';
-    let dbError = null;
-    try {
-      const { error } = await supabase.from('system_health').select('id').limit(1);
-      if (error) throw error;
-    } catch (error: any) {
-      dbStatus = 'down';
-      dbError = error.message;
-    }
-    const dbDuration = Date.now() - dbStartTime;
+    console.log('🏥 Running comprehensive health check...');
 
-    // Check IXC Proxy
-    const ixcStartTime = Date.now();
-    let ixcStatus = 'healthy';
-    let ixcError = null;
+    // 1. Database Connection
+    const { data: dbCheck, error: dbError } = await supabase
+      .from('company_settings')
+      .select('id')
+      .limit(1);
+
+    // 2. Circuit Breaker Status
+    const { data: cbMetrics } = await supabase
+      .from('ixc_metrics')
+      .select('*')
+      .eq('metric_name', 'circuit_breaker_state')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const circuitBreakerStatus = cbMetrics?.[0]?.metric_value || 'CLOSED';
+
+    // 3. Agent Availability
+    const { data: onlineAgents, count: agentCount } = await supabase
+      .from('agent_presence')
+      .select('*', { count: 'exact' })
+      .eq('status', 'online');
+
+    // 4. Pending Conversations
+    const { data: pendingConvs, count: pendingCount } = await supabase
+      .from('conversations')
+      .select('*', { count: 'exact' })
+      .eq('status', 'waiting');
+
+    // 5. DLQ Size
+    const { data: dlqActions, count: dlqCount } = await supabase
+      .from('action_log')
+      .select('*', { count: 'exact' })
+      .contains('result', { success: false });
+
+    // 6. Active Mass Outages
+    const { data: activeOutages, count: outageCount } = await supabase
+      .from('mass_outage_events')
+      .select('*', { count: 'exact' })
+      .eq('status', 'active');
+
+    // 7. Evolution API Status
+    let evolutionStatus = 'unknown';
     try {
-      const ixcResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          method: 'POST',
-          path: '/webservice/v1/cliente',
-          body: { page: '1', rp: '1' }
-        })
+      const evolutionBaseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+      const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+      
+      const response = await fetch(`${evolutionBaseUrl}/instance/fetchInstances`, {
+        method: 'GET',
+        headers: {
+          'apikey': evolutionApiKey!,
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (!ixcResponse.ok) {
-        ixcStatus = 'degraded';
-        ixcError = `HTTP ${ixcResponse.status}`;
-      }
-    } catch (error: any) {
-      ixcStatus = 'down';
-      ixcError = error.message;
+      evolutionStatus = response.ok ? 'healthy' : 'error';
+    } catch {
+      evolutionStatus = 'error';
     }
-    const ixcDuration = Date.now() - ixcStartTime;
 
-    // Check Circuit Breaker
-    const circuitBreaker = getCircuitBreakerStatus();
-    const circuitStatus = circuitBreaker.state === 'closed' ? 'healthy' : 
-                         circuitBreaker.state === 'half-open' ? 'degraded' : 'down';
-
-    // Calculate overall health
-    const overallStatus = 
-      dbStatus === 'down' || ixcStatus === 'down' ? 'down' :
-      dbStatus === 'degraded' || ixcStatus === 'degraded' || circuitStatus === 'degraded' ? 'degraded' :
-      'healthy';
-
-    // Update system_health table
-    await supabase.from('system_health').upsert([
-      {
-        component: 'database',
-        status: dbStatus,
-        last_check: new Date().toISOString(),
-        metadata: { duration_ms: dbDuration },
-        error_message: dbError
+    const checks = {
+      database: {
+        status: dbError ? 'error' : 'healthy',
+        message: dbError ? dbError.message : 'Connected',
+        timestamp: new Date().toISOString()
       },
-      {
-        component: 'ixc',
-        status: ixcStatus,
-        last_check: new Date().toISOString(),
-        metadata: { duration_ms: ixcDuration },
-        error_message: ixcError
+      circuit_breaker: {
+        status: circuitBreakerStatus === 'OPEN' ? 'error' : 'healthy',
+        state: circuitBreakerStatus,
+        message: circuitBreakerStatus === 'OPEN' 
+          ? '🚨 Circuit Breaker ABERTO - IXC pode estar com problemas'
+          : 'Circuit Breaker funcionando normalmente'
       },
-      {
-        component: 'circuit_breaker',
-        status: circuitStatus,
-        last_check: new Date().toISOString(),
-        metadata: circuitBreaker
-      }
-    ], { onConflict: 'component' });
-
-    const totalDuration = Date.now() - startTime;
-
-    const healthReport = {
-      status: overallStatus,
-      timestamp: new Date().toISOString(),
-      duration_ms: totalDuration,
-      dependencies: {
-        database: {
-          status: dbStatus,
-          duration_ms: dbDuration,
-          error: dbError
-        },
-        ixc: {
-          status: ixcStatus,
-          duration_ms: ixcDuration,
-          error: ixcError
-        },
-        circuit_breaker: {
-          status: circuitStatus,
-          state: circuitBreaker.state,
-          failures: circuitBreaker.failures,
-          threshold: circuitBreaker.threshold
-        }
+      agents: {
+        status: (agentCount || 0) > 0 ? 'healthy' : 'warning',
+        online_count: agentCount || 0,
+        message: `${agentCount || 0} agentes online`
+      },
+      conversations: {
+        status: (pendingCount || 0) > 50 ? 'warning' : 'healthy',
+        pending_count: pendingCount || 0,
+        message: `${pendingCount || 0} conversas aguardando`
+      },
+      dlq: {
+        status: (dlqCount || 0) > 100 ? 'warning' : 'healthy',
+        failed_actions: dlqCount || 0,
+        message: `${dlqCount || 0} ações falhadas na DLQ`
+      },
+      mass_outage: {
+        status: (outageCount || 0) > 0 ? 'error' : 'healthy',
+        active_outages: outageCount || 0,
+        message: outageCount 
+          ? `🚨 ${outageCount} queda(s) em massa ativa(s)`
+          : 'Nenhuma queda em massa detectada'
+      },
+      evolution_api: {
+        status: evolutionStatus,
+        message: evolutionStatus === 'healthy' 
+          ? 'Evolution API conectada'
+          : '⚠️ Evolution API com problemas'
       }
     };
 
-    // Status code based on overall health
-    const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 207 : 503;
+    // Determine overall status
+    const hasError = Object.values(checks).some((c: any) => c.status === 'error');
+    const hasWarning = Object.values(checks).some((c: any) => c.status === 'warning');
+    
+    const overallStatus = hasError ? 'error' : hasWarning ? 'warning' : 'healthy';
+
+    const responseData = {
+      status: overallStatus,
+      checks,
+      summary: {
+        total_checks: Object.keys(checks).length,
+        healthy: Object.values(checks).filter((c: any) => c.status === 'healthy').length,
+        warnings: Object.values(checks).filter((c: any) => c.status === 'warning').length,
+        errors: Object.values(checks).filter((c: any) => c.status === 'error').length
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('✅ Health check completed:', responseData.summary);
 
     return new Response(
-      JSON.stringify(healthReport),
-      {
-        status: statusCode,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      JSON.stringify(responseData),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: hasError ? 503 : 200
       }
     );
 
   } catch (error: any) {
     console.error('❌ Health check error:', error);
-    
     return new Response(
-      JSON.stringify({
-        status: 'down',
+      JSON.stringify({ 
+        status: 'error',
         error: error.message,
         timestamp: new Date().toISOString()
       }),
-      {
-        status: 503,
+      { 
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

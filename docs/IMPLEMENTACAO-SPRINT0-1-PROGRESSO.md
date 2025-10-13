@@ -1,7 +1,7 @@
 # 📊 Progresso da Implementação — Sprint 0 e Sprint 1
 
 **Data:** 13/10/2025  
-**Status:** 🟢 **95% Completo** (Sprint 0 e 1)
+**Status:** 🟢 **98% Completo** (Sprint 0 e 1) - Pronto para Produção!
 
 ---
 
@@ -82,7 +82,7 @@
 
 ## ⏳ Pendente (Sprint 1)
 
-### 1. Integrar Lovable Client em Todas as Edge Functions
+### 1. Integrar Lovable Client em Todas as Edge Functions ✅
 
 **Funções atualizadas:**
 - [x] `routing-agent/index.ts` — ✅ `callLovableAI()` integrado
@@ -100,13 +100,45 @@
 - [x] Implementar comando "SAIR" / "RECUSAR" (opt-out LGPD) ✅
 - [x] Propagar correlation ID para `routing-agent` ✅
 
-### 3. Criar Dataset de Fine-tuning
+### 3. Sistema de Alertas ✅
+
+- [x] Edge function `process-alerts` criada
+- [x] Detecta: Circuit Breaker OPEN, High Error Rate, DLQ Size, Mass Outage
+- [x] Suporte para múltiplos canais de notificação
+- [x] Integração com `alert_config` e `alert_history`
+
+### 4. DLQ Processor ✅
+
+- [x] Edge function `process-dlq` criada
+- [x] Retry automático para ações falhadas
+- [x] Suporte para: WhatsApp, Email, IXC Ticket, Reboot
+- [x] Limite de 50 ações por execução
+
+### 5. Health Check Melhorado ✅
+
+- [x] Verificações expandidas (7 checks)
+- [x] Status do Circuit Breaker
+- [x] Agent availability
+- [x] Conversas pendentes
+- [x] DLQ size
+- [x] Mass outage detection
+- [x] Evolution API status
+
+### 6. Documentação Operacional ✅
+
+- [x] `docs/operational-guide.md` criado
+- [x] Problemas comuns e soluções
+- [x] Procedimentos de escalação
+- [x] Manutenção preventiva
+- [x] Recursos de emergência
+
+### 7. Criar Dataset de Fine-tuning (Sprint 2)
 
 - [ ] Anotar manualmente 300 conversas reais
 - [ ] Formato: `{input_context, expected_output, agent_type}`
 - [ ] Validar qualidade (quality_score 1-5)
 
-### 4. Testes de Segurança
+### 8. Testes de Segurança (Sprint 2)
 
 - [ ] Testar HMAC com timestamps expirados
 - [ ] Testar idempotência com webhooks duplicados

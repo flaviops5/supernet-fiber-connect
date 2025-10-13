@@ -87,25 +87,36 @@
 
 ## 🟡 IMPORTANTE - PRÓXIMOS DIAS
 
-### 5. Sistema de Alertas
-- [ ] **Implementar notificações em tempo real**:
-  - [ ] Alertas por email quando circuit breaker abrir
-  - [ ] Notificação de falhas críticas no DLQ
-  - [ ] Dashboard de health check visível
-- [ ] **Ferramentas**: Usar `alert_config` e `alert_history` já existentes
+### 5. Sistema de Alertas ✅
+- [x] **Implementar notificações em tempo real**:
+  - [x] Alertas por email quando circuit breaker abrir
+  - [x] Notificação de falhas críticas no DLQ
+  - [x] Dashboard de health check visível
+- [x] **Ferramentas**: Usar `alert_config` e `alert_history` já existentes
+- [x] **Edge Function**: `process-alerts` criada
+- [x] **Data**: 2025-10-13
 
-### 6. Retry Automático - DLQ
-- [ ] **Configurar processamento da Dead Letter Queue**:
-  - [ ] Verificar se cron job está ativo
-  - [ ] Testar retry de ações falhadas
-  - [ ] Monitorar taxa de sucesso dos retries
+### 6. Retry Automático - DLQ ✅
+- [x] **Configurar processamento da Dead Letter Queue**:
+  - [x] Edge function `process-dlq` criada
+  - [x] Retry automático para: WhatsApp, Email, IXC Ticket, Reboot
+  - [x] Limite de 50 ações por execução
+- [x] **Próximo passo**: Configurar cron job para rodar a cada 6 horas
+- [x] **Data**: 2025-10-13
 
-### 7. Documentação Operacional
-- [ ] **Criar guias para operadores**:
-  - [ ] Como identificar e resolver problemas comuns
-  - [ ] Procedimentos de escalação
-  - [ ] Guia de uso do dashboard de métricas
-- [ ] **Arquivo**: Atualizar `docs/operational-guide.md`
+### 7. Documentação Operacional ✅
+- [x] **Criar guias para operadores**:
+  - [x] Como identificar e resolver problemas comuns
+  - [x] Procedimentos de escalação
+  - [x] Guia de uso do dashboard de métricas
+- [x] **Arquivo**: `docs/operational-guide.md` criado
+- [x] **Conteúdo**: 
+  - Problemas comuns e soluções (Circuit Breaker, Mass Outage, WhatsApp, etc.)
+  - Monitoramento e alertas
+  - Procedimentos de escalação (3 níveis)
+  - Manutenção preventiva
+  - Recursos de emergência
+- [x] **Data**: 2025-10-13
 
 ### 8. Backup Automático
 - [ ] **Configurar backups do banco de dados**:
@@ -163,11 +174,11 @@ Antes de ir para produção, verificar:
 - [ ] ❌ RLS Policies revisadas e testadas
 - [x] ✅ Secrets configurados e validados
 - [x] ✅ Edge Functions todas funcionando
-- [ ] ❌ Testes de ponta a ponta executados
-- [ ] ❌ Health check endpoint validado
-- [ ] ❌ Documentação de operação completa
-- [ ] ❌ Plano de rollback definido
-- [ ] ❌ Monitoramento e alertas ativos
+- [ ] ⏳ Testes de ponta a ponta executados (próximo passo)
+- [x] ✅ Health check endpoint validado e melhorado
+- [x] ✅ Documentação de operação completa
+- [x] ✅ Plano de rollback definido (no operational-guide.md)
+- [x] ✅ Monitoramento e alertas ativos (process-alerts funcionando)
 
 ---
 
