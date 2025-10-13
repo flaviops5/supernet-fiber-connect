@@ -30,37 +30,34 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // 1. Buscar todos os contratos do IXC
-    console.log('📡 Buscando contratos ativos no IXC...');
-    const { data: contractsData } = await supabase.functions.invoke('ixc-integration', {
+    // 1. Buscar clientes com status FA no IXC
+    console.log('📡 Buscando clientes com status FA no IXC...');
+    const { data: customersResp } = await supabase.functions.invoke('ixc-integration', {
       body: JSON.stringify({ 
-        action: 'getContracts',
-        params: { page: 1, limit: 500 }
+        action: 'getCustomersByStatus',
+        params: { status: 'FINANCEIRO EM ATRASO', page: 1, limit: 500 }
       })
     });
 
-    if (!contractsData?.success || !contractsData.data) {
-      throw new Error('Erro ao buscar contratos do IXC');
+    if (!customersResp?.success || !customersResp.data) {
+      throw new Error('Erro ao buscar clientes por status no IXC');
     }
 
-    const contracts = contractsData.data;
-    console.log(`✅ ${contracts.length} contratos encontrados`);
+    // Mantemos o nome "contracts" por compatibilidade com o restante do código
+    const contracts = customersResp.data;
+    console.log(`✅ ${contracts.length} clientes com status FA encontrados`);
 
-    // 2. Filtrar apenas contratos com status FA (Financeiro em Atraso)
-    let contractsFA = contracts.filter((contract: any) => {
-      const statusAcesso = contract.status_acesso || contract.situacao_financeira || '';
-      return statusAcesso === 'FA' || statusAcesso.toLowerCase().includes('financeiro');
-    });
+    // 2. Filtrar por nome apenas em modo teste
+    let contractsFA = contracts;
 
-    // Se modo teste, filtrar apenas o cliente específico
     if (testClientName) {
-      contractsFA = contractsFA.filter((contract: any) => {
-        const clientName = (contract.cliente || contract.razao || '').toLowerCase();
+      contractsFA = contractsFA.filter((customer: any) => {
+        const clientName = (customer.razao || customer.nome_fantasia || '').toLowerCase();
         return clientName.includes(testClientName.toLowerCase());
       });
-      console.log(`🎯 Contratos filtrados para "${testClientName}": ${contractsFA.length}`);
+      console.log(`🎯 Clientes filtrados para "${testClientName}": ${contractsFA.length}`);
     } else {
-      console.log(`🔍 ${contractsFA.length} contratos com status FA encontrados`);
+      console.log(`🔍 ${contractsFA.length} clientes prontos para processamento`);
     }
 
     if (contractsFA.length === 0) {
@@ -86,10 +83,10 @@ serve(async (req) => {
       details: [] as any[]
     };
 
-    for (const contract of contractsFA) {
-      const clientId = contract.id_cliente || contract.cliente_id;
-      const clientName = contract.cliente || contract.razao || 'Cliente';
-      const statusAcesso = contract.status_acesso || contract.situacao_financeira;
+    for (const customer of contractsFA) {
+      const clientId = customer.id || customer.cliente_id || customer.id_cliente;
+      const clientName = customer.razao || customer.nome_fantasia || 'Cliente';
+      const statusAcesso = customer.statusInfo?.contracts?.[0]?.status_internet || customer.status || 'FA';
 
       console.log(`\n📋 Processando: ${clientName} (ID: ${clientId}, Status: ${statusAcesso})`);
 
@@ -98,7 +95,7 @@ serve(async (req) => {
         const { data: clientData } = await supabase.functions.invoke('ixc-integration', {
           body: JSON.stringify({
             action: 'getCustomer',
-            params: { customerId: clientId }
+            params: { id: clientId }
           })
         });
 
@@ -138,11 +135,12 @@ serve(async (req) => {
           })
         });
 
-        const titles = titlesData?.data?.titles || [];
+        const titles = titlesData?.data?.registros || [];
         const overdueTitle = titles.find((t: any) => {
           const today = new Date();
           const dueDate = new Date(t.data_vencimento);
-          return dueDate < today && (t.status === 'A' || t.status === 'R');
+          const statusTitulo = (t.status || t.situacao || '').toUpperCase();
+          return dueDate < today && (statusTitulo === 'A' || statusTitulo === 'R');
         });
 
         if (!overdueTitle) {
@@ -157,24 +155,55 @@ serve(async (req) => {
 
         console.log(`💰 Título vencido encontrado: ${overdueTitle.id} - R$ ${overdueTitle.valor}`);
 
-        // Enviar boleto via WhatsApp
+        // Buscar QRCode PIX para o título
+        const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
+          body: JSON.stringify({
+            action: 'getPixQrCode',
+            params: { titleId: String(overdueTitle.id) }
+          })
+        });
+
+        const pixCode = pixData?.data?.qrcode || null;
+        const pixLink = pixData?.data?.qrcode_link || pixData?.data?.qrcode_url || null;
+
+        // Montar mensagem
+        let messageText = `Olá ${clientName}! 👋\n\nIdentificamos um boleto em aberto e seu acesso está com redução de velocidade. Seguem os dados para pagamento:\n\n`;
+        messageText += `💵 Valor: R$ ${overdueTitle.valor}\n`;
+        messageText += `📅 Vencimento: ${overdueTitle.data_vencimento}\n`;
+        if (overdueTitle.codbar) {
+          messageText += `\n🔢 Código de Barras:\n\`\`\`${overdueTitle.codbar}\`\`\`\n`;
+        }
+        if (overdueTitle.url_boleto) {
+          messageText += `\n📎 Link do Boleto:\n${overdueTitle.url_boleto}\n`;
+        }
+        if (pixCode) {
+          messageText += `\n🏦 PIX Copia e Cola:\n\`\`\`${pixCode}\`\`\`\n`;
+        }
+        if (pixLink) {
+          messageText += `\n🔗 Link de Pagamento PIX:\n${pixLink}\n`;
+        }
+        messageText += `\nApós o pagamento, a normalização é automática. Dúvidas? Estamos à disposição. 😊`;
+
+        // Enviar WhatsApp diretamente
         console.log(`📤 Enviando boleto para ${customerPhone}...`);
-        const { data: sendResult, error: sendError } = await supabase.functions.invoke('send-payment-to-customer', {
+        const targetPhone = String(customerPhone).replace(/\D/g, '');
+        const { data: sendData, error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
           headers: invokeHeaders,
           body: {
-            phone: customerPhone,
-            cpf: customerCpf
+            phone: targetPhone,
+            message: messageText,
+            instanceName: 'SDR2'
           }
         });
 
-        if (sendError || !sendResult?.success) {
-          console.log(`❌ Erro ao enviar para ${clientName}:`, sendError?.message || sendResult?.error);
+        if (sendError || !sendData?.status) {
+          console.log(`❌ Erro ao enviar para ${clientName}:`, sendError?.message || 'Falha no envio');
           results.errors++;
           results.details.push({
             clientId,
             clientName,
-            phone: customerPhone,
-            error: sendError?.message || sendResult?.error,
+            phone: targetPhone,
+            error: sendError?.message || 'Falha no envio WhatsApp',
             status: 'error'
           });
         } else {
@@ -183,7 +212,7 @@ serve(async (req) => {
           results.details.push({
             clientId,
             clientName,
-            phone: customerPhone,
+            phone: targetPhone,
             titleId: overdueTitle.id,
             titleValue: overdueTitle.valor,
             dueDate: overdueTitle.data_vencimento,
@@ -198,7 +227,7 @@ serve(async (req) => {
             action_payload: {
               client_id: clientId,
               client_name: clientName,
-              phone: customerPhone,
+              phone: targetPhone,
               title_id: overdueTitle.id,
               title_value: overdueTitle.valor,
               due_date: overdueTitle.data_vencimento,
