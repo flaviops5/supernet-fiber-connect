@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle, Receipt } from 'lucide-react';
+import { User, Phone, Mail, MapPin, FileText, AlertCircle, Calendar, Wifi, WifiOff, ShieldAlert, CreditCard, CheckCircle, Receipt, Sparkles, Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,6 +28,7 @@ interface Conversation {
   customer_cpf: string;
   ixc_client_id: string;
   department: string;
+  status: string;
   tags: string[];
   metadata: any;
   assigned_agent_id: string | null;
@@ -48,6 +49,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,6 +259,35 @@ export default function ClientInfoPanel({ conversationId }: Props) {
     }
   };
 
+  const handleGenerateSummary = async () => {
+    if (!conversationId) return;
+    
+    setGeneratingSummary(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('summarize-conversation', {
+        body: { conversationId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Resumo gerado!',
+        description: 'O resumo foi criado com sucesso.',
+      });
+
+      loadConversation();
+    } catch (error) {
+      console.error('Erro ao gerar resumo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível gerar o resumo.',
+        variant: 'destructive'
+      });
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+
   if (!conversationId || !conversation) {
     return (
       <Card className="h-full flex items-center justify-center shadow-lg border-border/50">
@@ -320,10 +351,37 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground mb-2">Ações Rápidas</p>
           <div className="grid grid-cols-2 gap-2">
-            <ClosureMessageSelector 
-              conversationId={conversationId}
-              onClose={loadConversation}
-            />
+            {conversation?.status === 'resolved' ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-auto py-2 flex flex-col gap-1"
+                onClick={handleGenerateSummary}
+                disabled={generatingSummary || !!conversation?.metadata?.ai_summary}
+              >
+                {generatingSummary ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--orange))]" />
+                    <span className="text-xs">Gerando...</span>
+                  </>
+                ) : conversation?.metadata?.ai_summary ? (
+                  <>
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs">Resumo Gerado</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 text-[hsl(var(--orange))]" />
+                    <span className="text-xs">Gerar Resumo IA</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <ClosureMessageSelector 
+                conversationId={conversationId}
+                onClose={loadConversation}
+              />
+            )}
             <Button 
               size="sm" 
               variant="outline" 
@@ -361,6 +419,22 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             </Button>
           </div>
         </div>
+
+        {/* Resumo IA se existir */}
+        {conversation?.metadata?.ai_summary && (
+          <>
+            <Separator />
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-purple-600" />
+                <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Resumo IA</h4>
+              </div>
+              <div className="text-sm text-foreground/90 whitespace-pre-wrap">
+                {conversation.metadata.ai_summary}
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
 
       {/* Payment Info Dialog */}
