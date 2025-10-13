@@ -682,6 +682,34 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
       }
     }
 
+    // 🔄 Detectar se cliente mudou de assunto (fora do escopo financeiro)
+    const financialKeywords = ['boleto', 'pagar', 'débito', 'fatura', 'negociar', 'parcelar', 'desbloque', 'pagamento', 'cobrança'];
+    const technicalKeywords = ['internet', 'conexão', 'lento', 'caiu', 'não funciona', 'wi-fi', 'wifi', 'sinal'];
+    const salesKeywords = ['plano', 'contratar', 'upgrade', 'mudar', 'velocidade maior'];
+    
+    const lastUserMessage = messages?.[messages.length - 1]?.content?.toLowerCase() || '';
+    const hasFinancialIntent = financialKeywords.some(kw => lastUserMessage.includes(kw));
+    const hasTechnicalIntent = technicalKeywords.some(kw => lastUserMessage.includes(kw));
+    const hasSalesIntent = salesKeywords.some(kw => lastUserMessage.includes(kw));
+    
+    // Se cliente mudou de assunto E não é mais financeiro, sinalizar para rotear de volta
+    const shouldRouteBack = !hasFinancialIntent && (hasTechnicalIntent || hasSalesIntent);
+    
+    if (shouldRouteBack) {
+      console.log('🔄 Cliente mudou de assunto - sugerindo roteamento de volta para Cloé');
+      return new Response(
+        JSON.stringify({ 
+          message: assistantMessage,
+          shouldRouteBack: true,
+          suggestedAgent: hasTechnicalIntent ? 'support_technical' : 'sales'
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({ message: assistantMessage }),
       {

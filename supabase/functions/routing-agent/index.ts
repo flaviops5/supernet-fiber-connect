@@ -455,6 +455,23 @@ serve(async (req) => {
                 } else if (finData?.message) {
                   financialMessage = finData.message as string;
                   
+                  // 🔄 Se Julia sugeriu roteamento de volta, NÃO salvar como Julia
+                  if (finData.shouldRouteBack) {
+                    console.log('🔄 Julia sugeriu voltar para roteamento');
+                    return new Response(
+                      JSON.stringify({
+                        agent: 'routing',
+                        message: 'Entendi! Vou te direcionar para o setor correto. Um momento!',
+                        shouldReroute: true,
+                        conversationId
+                      }),
+                      {
+                        status: 200,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                      }
+                    );
+                  }
+                  
                   await supabase
                     .from('conversation_messages')
                     .insert({
@@ -937,6 +954,23 @@ serve(async (req) => {
               } else if (finData?.message) {
                 financialMessage = finData.message as string;
                 console.log('✅ Mensagem da Julia recebida:', financialMessage.substring(0, 50) + '...');
+
+                // 🔄 Se Julia sugeriu roteamento de volta, NÃO persistir como Julia
+                if (finData.shouldRouteBack) {
+                  console.log('🔄 Julia sugeriu voltar para roteamento');
+                  return new Response(
+                    JSON.stringify({
+                      agent: 'routing',
+                      message: 'Entendi! Vou te direcionar para o setor correto. Um momento!',
+                      shouldReroute: true,
+                      conversationId
+                    }),
+                    {
+                      status: 200,
+                      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    }
+                  );
+                }
 
                 // Persist Julia's message server-side (WITHOUT protocol)
                 const { data: insertResult, error: insertError } = await supabase
@@ -1507,6 +1541,24 @@ MENSAGEM ATUAL DO CLIENTE:
           console.error('Erro ao chamar support-financial-agent (decision path):', finError);
         } else if (finData?.message) {
           financialMessage = finData.message as string;
+          
+          // 🔄 Se Julia sugeriu roteamento de volta, NÃO persistir
+          if (finData.shouldRouteBack) {
+            console.log('🔄 Julia sugeriu voltar para roteamento (decision path)');
+            return new Response(
+              JSON.stringify({
+                agent: 'routing',
+                message: 'Entendi! Vou te direcionar para o setor correto. Um momento!',
+                shouldReroute: true,
+                conversationId
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          
           await supabase.from('conversation_messages').insert({
             conversation_id: conversationId,
             sender_type: 'agent',
