@@ -2,30 +2,68 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 
 export const CheckClientOnlineStatus = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [cpfInput, setCpfInput] = useState("063.176.551-46");
 
   const checkOnlineStatus = async () => {
     setLoading(true);
     setResult(null);
 
     try {
-      const clientId = "313";
-      const cpf = "619.538.901-30";
+      const cleanCpf = cpfInput.replace(/[^\d]/g, '');
       
-      console.log("🔍 Verificando status online do cliente:", clientId, cpf);
+      console.log("🔍 Buscando cliente por CPF:", cleanCpf);
 
-      // Buscar informações do cliente no radusuarios
+      // Primeiro buscar o cliente pelo CPF
+      const { data: clientData, error: clientError } = await supabase.functions.invoke('ixc-proxy', {
+        body: {
+          method: 'POST',
+          path: '/webservice/v1/cliente',
+          body: {
+            qtype: 'cliente.cnpj_cpf',
+            query: cleanCpf,
+            oper: '=',
+            page: '1',
+            rp: '10',
+          }
+        }
+      });
+
+      if (clientError) {
+        throw clientError;
+      }
+
+      console.log("👤 Dados do cliente:", clientData);
+
+      const registrosCliente = clientData?.data?.registros || [];
+      if (!Array.isArray(registrosCliente) || registrosCliente.length === 0) {
+        setResult({
+          error: "Cliente não encontrado com este CPF",
+          cpf: cpfInput,
+          timestamp: new Date().toISOString()
+        });
+        setLoading(false);
+        return;
+      }
+
+      const cliente = registrosCliente[0];
+      const clientId = cliente.id;
+
+      console.log("🔍 Verificando status online do cliente ID:", clientId);
+
+      // Agora buscar informações do cliente no radusuarios
       const { data: radiusData, error } = await supabase.functions.invoke('ixc-proxy', {
         body: {
           method: 'POST',
           path: '/webservice/v1/radusuarios',
           body: {
             qtype: 'radusuarios.id_cliente',
-            query: clientId,
+            query: String(clientId),
             oper: '=',
             page: '1',
             rp: '100',
@@ -49,7 +87,8 @@ export const CheckClientOnlineStatus = () => {
 
       setResult({
         clientId,
-        cpf,
+        clientName: cliente.razao || cliente.nome_razao,
+        cpf: cpfInput,
         isOnline: onlineUsers.length > 0,
         totalConnections: registros.length,
         onlineConnections: onlineUsers.length,
@@ -77,23 +116,38 @@ export const CheckClientOnlineStatus = () => {
   return (
     <Card className="p-6 space-y-4">
       <div>
-        <h3 className="text-lg font-semibold">Verificar Status Online</h3>
+        <h3 className="text-lg font-semibold">Verificar Status Online por CPF</h3>
         <p className="text-sm text-muted-foreground">
-          Cliente 313 - Cláudio Máximo Chaves (CPF: 619.538.901-30)
+          Digite o CPF do cliente para verificar se está online
         </p>
       </div>
 
-      <Button 
-        onClick={checkOnlineStatus} 
-        disabled={loading}
-        className="w-full"
-      >
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Verificar se está Online
-      </Button>
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          placeholder="000.000.000-00"
+          value={cpfInput}
+          onChange={(e) => setCpfInput(e.target.value)}
+          className="flex-1"
+        />
+        <Button 
+          onClick={checkOnlineStatus} 
+          disabled={loading}
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Verificar
+        </Button>
+      </div>
 
       {result && !result.error && (
         <div className="space-y-3">
+          <div className="bg-muted p-3 rounded-lg text-sm">
+            <div className="font-semibold">{result.clientName}</div>
+            <div className="text-xs text-muted-foreground">
+              CPF: {result.cpf} | ID: {result.clientId}
+            </div>
+          </div>
+          
           <div className={`p-4 rounded-lg ${result.isOnline ? 'bg-green-500/10 text-green-600' : 'bg-muted'}`}>
             <div className="font-semibold text-lg">
               {result.isOnline ? '🟢 ONLINE' : '🔴 OFFLINE'}
