@@ -1,290 +1,244 @@
+// ===============================================================
+// ⚡ MASS OUTAGE EXECUTOR
+// Detecção de quedas em massa + notificação + abertura de ticket IXC
+// ===============================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 
-// ============================================
-// 🔧 Validação de Variáveis de Ambiente
-// ============================================
-const required = [
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'EVOLUTION_API_KEY',
-  'EVOLUTION_API_BASE_URL',
-  'IXC_API_BASE_URL'
-];
-
-const missing = required.filter(k => !Deno.env.get(k));
-if (missing.length > 0) {
-  throw new Error(`❌ Missing environment variables: ${missing.join(', ')}`);
-}
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME') || 'SDR2';
-
-// ============================================
-// ⚙️ Inicialização Supabase Client
-// ============================================
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-// ============================================
-// 🔒 CORS Headers
-// ============================================
+// 🔐 CORS padrão
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ============================================
-// 📱 Envio de mensagens via Evolution API (reutiliza função existente)
-// ============================================
-async function sendWhatsAppMessage(phone: string, message: string, logger: any) {
+// ===============================================================
+// 🧠 Helper: Envio de WhatsApp via Evolution API (Edge Function existente)
+// ===============================================================
+async function sendWhatsAppMessage(supabase: any, phone: string, message: string, logger: any) {
+  if (!phone || !message) throw new Error("Telefone ou mensagem ausente");
   try {
-    const { data, error } = await supabase.functions.invoke('send-whatsapp-message', {
+    await supabase.functions.invoke("send-whatsapp-message", {
       body: {
         phone,
         message,
-        instanceName: EVOLUTION_INSTANCE_NAME,
-      }
+        instanceName: Deno.env.get("EVOLUTION_INSTANCE_NAME") || "SDR2",
+      },
     });
-
-    if (error) {
-      logger.error('Falha ao enviar WhatsApp', error);
-      throw error;
-    }
-
-    logger.info(`WhatsApp enviado para ${phone}`);
-    return data;
+    logger.info('WhatsApp enviado', { phone });
   } catch (err) {
-    logger.error('Erro ao invocar send-whatsapp-message', err);
-    throw err;
+    logger.error('Falha ao enviar WhatsApp', { phone, error: err.message });
   }
 }
 
-// ============================================
-// 🎟️ Abertura de Ticket no IXC (reutiliza função existente)
-// ============================================
-async function createIxcTicket(event: any, logger: any) {
+// ===============================================================
+// 🧠 Helper: Criar ticket no IXC via função integrada existente
+// ===============================================================
+async function createIxcTicket(supabase: any, clientId: string, descricao: string, logger: any) {
+  if (!clientId) throw new Error("Cliente não identificado para abertura de ticket");
+
   try {
-    if (!event.metadata?.affected_client_id) {
-      logger.warn('Cliente não identificado, pulando criação de ticket');
-      return null;
-    }
-
-    const title = `Queda detectada automaticamente em ${event.region_pattern}`;
-    
-    const ticketData = {
-      tipo: "C",
-      id_cliente: event.metadata.affected_client_id,
-      id_assunto: Deno.env.get('IXC_OUTAGE_SUBJECT_ID') || "25",
-      titulo: title,
-      id_ticket_setor: Deno.env.get('IXC_TICKET_SECTOR_ID') || "3",
-      prioridade: "N",
-      menssagem: `${title}\n\nDetecção automática: ${event.affected_count} clientes afetados\nChave do evento: ${event.event_key}`,
-      su_status: "N",
-      id_filial: "1",
-      origem_endereco: "C",
-      status: "A",
-    };
-
-    const { data, error } = await supabase.functions.invoke('ixc-integration', {
+    await supabase.functions.invoke("ixc-integration", {
       body: {
-        action: 'createAtendimento',
-        customerId: event.metadata.affected_client_id,
-        atendimentoData: ticketData
-      }
+        action: "createAtendimento",
+        customerId: clientId,
+        atendimentoData: {
+          tipo: "C",
+          id_cliente: clientId,
+          id_assunto: "25",
+          titulo: descricao,
+          id_ticket_setor: "3",
+          prioridade: "A",
+          menssagem: descricao,
+          su_status: "N",
+        },
+      },
     });
-
-    if (error) {
-      logger.error('Falha ao criar ticket IXC', error);
-      throw error;
-    }
-
-    logger.info(`Ticket IXC criado para cliente ${event.metadata.affected_client_id}`);
-    return data;
+    logger.info('Ticket IXC criado', { clientId });
   } catch (err) {
-    logger.error('Erro ao invocar ixc-integration', err);
-    throw err;
+    logger.error('Falha ao criar ticket IXC', { clientId, error: err.message });
   }
 }
 
-// ============================================
-// 📞 Buscar telefone do cliente no IXC
-// ============================================
-async function getClientPhone(clientId: string, logger: any): Promise<string | null> {
-  try {
-    const { data, error } = await supabase.functions.invoke('ixc-integration', {
-      body: {
-        action: 'getClient',
-        customerId: clientId
-      }
-    });
-
-    if (error) {
-      logger.warn(`Não foi possível buscar telefone do cliente ${clientId}`, error);
-      return null;
-    }
-
-    return data?.telefone_celular || data?.telefone || null;
-  } catch (err) {
-    logger.warn(`Erro ao buscar telefone do cliente ${clientId}`, err);
-    return null;
-  }
-}
-
-// ============================================
-// 🧠 Função Principal - Executor Inteligente
-// ============================================
+// ===============================================================
+// 🚀 Função principal
+// ===============================================================
 serve(async (req) => {
   const logger = createLogger('mass-outage-executor', req);
+  
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // 🔍 Validação inicial de ambiente
+  const required = [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "IXC_PROXY_URL",
+    "EVOLUTION_API_BASE_URL",
+    "EVOLUTION_API_KEY",
+  ];
+  const missing = required.filter((k) => !Deno.env.get(k));
+  if (missing.length > 0) {
+    logger.error('Variáveis de ambiente ausentes', { missing });
+    return new Response(
+      JSON.stringify({ error: `Missing environment variables: ${missing.join(", ")}` }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 
+  // 🔗 Conexões
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const IXC_PROXY_URL = Deno.env.get("IXC_PROXY_URL")!;
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
-    const body = await req.json();
-    const { record } = body;
-
-    if (!record || !record.event_key) {
-      logger.warn('Evento inválido recebido', { body });
-      return new Response(JSON.stringify({ error: 'Invalid event' }), { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    logger.info(`Novo evento de queda detectado: ${record.event_key}`, {
-      region: record.region_pattern,
-      affected: record.affected_count
-    });
-
-    const { event_key, region_pattern, affected_count, metadata } = record;
-
-    // ============================================
-    // 🚨 PREPARAR MENSAGENS
-    // ============================================
-    const managerMessage = `🚨 *ALERTA DE QUEDA EM MASSA*\n\n` +
-      `📍 Região: ${region_pattern}\n` +
-      `👥 Clientes afetados: ${affected_count}\n` +
-      `🔑 Evento: ${event_key}\n` +
-      `⚠️ Causa provável: ${metadata?.outage_cause || 'Em análise...'}\n` +
-      `🕐 Detectado em: ${new Date().toLocaleString('pt-BR')}`;
-
-    const techMessage = `⚙️ *AÇÃO NECESSÁRIA*\n\n` +
-      `📍 Região afetada: ${region_pattern}\n` +
-      `👥 ${affected_count} clientes offline\n` +
-      `🔧 Verificar: ${metadata?.olt ? `OLT ${metadata.olt}` : 'equipamento de rede'}\n` +
-      `${metadata?.pon_port ? `PON: ${metadata.pon_port}` : ''}\n` +
-      `${metadata?.cto ? `CTO: ${metadata.cto}` : ''}`;
-
-    // ============================================
-    // 📞 BUSCAR NÚMEROS DE TELEFONE
-    // ============================================
-    const managerPhone = Deno.env.get("GERENTE_REDE_PHONE") || "5561999999999";
-    const technicalPhones = (Deno.env.get("SUPORTE_TECNICO_PHONES") || "")
-      .split(",")
-      .map(p => p.trim())
-      .filter(p => p !== "");
-
-    // ============================================
-    // 🔄 PROCESSAR TODAS AS NOTIFICAÇÕES EM PARALELO
-    // ============================================
-    const tasks = [];
-
-    // 1️⃣ Notificar gerente
-    tasks.push(
-      sendWhatsAppMessage(managerPhone, managerMessage, logger)
-        .catch(err => logger.error('Falha ao notificar gerente', err))
-    );
-
-    // 2️⃣ Notificar técnicos
-    technicalPhones.forEach(tech => {
-      tasks.push(
-        sendWhatsAppMessage(tech, techMessage, logger)
-          .catch(err => logger.error(`Falha ao notificar técnico ${tech}`, err))
-      );
-    });
-
-    // 3️⃣ Criar ticket no IXC
-    tasks.push(
-      createIxcTicket(record, logger)
-        .catch(err => logger.error('Falha ao criar ticket', err))
-    );
-
-    // 4️⃣ (Opcional) Notificar clientes afetados
-    if (metadata?.affected_client_id) {
-      const clientPhone = await getClientPhone(metadata.affected_client_id, logger);
-      if (clientPhone) {
-        const clientMessage = `⚠️ Olá! Detectamos uma instabilidade na sua região.\n\n` +
-          `Nossa equipe técnica já foi acionada e está trabalhando para resolver o mais rápido possível.\n\n` +
-          `Agradecemos sua compreensão! 🙏`;
-        
-        tasks.push(
-          sendWhatsAppMessage(clientPhone, clientMessage, logger)
-            .catch(err => logger.error('Falha ao notificar cliente', err))
-        );
-      }
-    }
-
-    // 🚀 Executar todas as tarefas em paralelo
-    const results = await Promise.allSettled(tasks);
-    
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failCount = results.filter(r => r.status === 'rejected').length;
-
-    logger.info('Processamento concluído', {
-      success: successCount,
-      failed: failCount,
-      total: results.length
-    });
-
-    // ============================================
-    // ✅ ATUALIZAR EVENTO COMO NOTIFICADO
-    // ============================================
-    const { error: updateError } = await supabase
+    // 🧾 Buscar eventos ativos de queda em massa
+    const { data: events, error: fetchError } = await supabase
       .from("mass_outage_events")
-      .update({
-        notifications_sent: true,
-        updated_at: new Date().toISOString(),
-        metadata: {
-          ...metadata,
-          notifications_summary: {
-            sent_at: new Date().toISOString(),
-            success_count: successCount,
-            fail_count: failCount
+      .select("*")
+      .eq("status", "active")
+      .eq("notifications_sent", false);
+
+    if (fetchError) throw fetchError;
+
+    if (!events || events.length === 0) {
+      logger.info('Nenhum evento de queda pendente');
+      return new Response(
+        JSON.stringify({ success: true, message: "Nenhum evento de queda pendente" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logger.info('Eventos de queda encontrados', { count: events.length });
+
+    // 🔍 Buscar responsáveis ativos
+    const { data: responsaveis, error: respError } = await supabase
+      .from("responsaveis_alerta")
+      .select("nome, telefone, funcao, tipo_evento")
+      .eq("ativo", true);
+
+    if (respError) throw respError;
+    if (!responsaveis?.length) throw new Error("Nenhum responsável cadastrado");
+
+    // ===============================================================
+    // 🔁 Processar cada evento de queda
+    // ===============================================================
+    for (const event of events) {
+      const {
+        id,
+        region_pattern,
+        affected_count,
+        affected_logins,
+        metadata,
+      } = event;
+
+      const descricao = `🚨 Queda detectada em ${region_pattern}
+💡 ${affected_count} clientes afetados
+📍 Tipo: ${metadata?.group_type || "Desconhecido"}
+🕒 ${new Date(event.detected_at).toLocaleString("pt-BR")}
+${metadata?.power_outage ? "⚡ Possível falta de energia detectada" : ""}
+`;
+
+      logger.info('Processando evento', { region_pattern, affected_count });
+
+      // 🔍 1. Buscar telefone(s) dos clientes afetados (opcional)
+      const clientePhones: string[] = [];
+      if (Array.isArray(affected_logins) && affected_logins.length > 0) {
+        for (const login of affected_logins.slice(0, 3)) {
+          try {
+            const clienteResp = await callIxcWithRetry(
+              IXC_PROXY_URL,
+              "POST",
+              "/webservice/v1/cliente",
+              {
+                qtype: "cliente.login",
+                query: login,
+                oper: "=",
+                page: "1",
+                rp: "1",
+              }
+            );
+            const registros = clienteResp?.data?.registros;
+            if (registros) {
+              const clienteObj = Array.isArray(registros)
+                ? registros[0]
+                : Object.values(registros)[0];
+              if (clienteObj?.celular) clientePhones.push(clienteObj.celular);
+            }
+          } catch (err) {
+            logger.warn('Falha ao buscar cliente', { login, error: err.message });
           }
         }
-      })
-      .eq("event_key", event_key);
+      }
 
-    if (updateError) {
-      logger.error('Erro ao atualizar evento', updateError);
-    } else {
-      logger.info(`Evento ${event_key} marcado como notificado`);
+      // 🔍 2. Filtrar responsáveis pelo tipo de evento
+      const responsaveisEvento = responsaveis.filter(
+        (r) => r.tipo_evento === "mass_outage"
+      );
+
+      // 🔔 3. Criar lista de tarefas de notificação
+      const tasks: Promise<any>[] = [];
+
+      // 📱 Enviar para responsáveis
+      for (const r of responsaveisEvento) {
+        const msg = `🚨 [${r.funcao}] ${r.nome}\n${descricao}`;
+        tasks.push(sendWhatsAppMessage(supabase, r.telefone, msg, logger));
+      }
+
+      // 📱 Enviar para clientes afetados (limite de 3)
+      for (const phone of clientePhones) {
+        const msg = `Olá! Estamos com uma instabilidade na sua região (${region_pattern}). 
+Nossa equipe já foi notificada e está atuando.`;
+        tasks.push(sendWhatsAppMessage(supabase, phone, msg, logger));
+      }
+
+      // 🎫 Criar ticket principal no IXC (ligado ao primeiro cliente da lista)
+      if (clientePhones.length > 0 && metadata?.affected_client_id) {
+        tasks.push(createIxcTicket(supabase, metadata.affected_client_id, descricao, logger));
+      }
+
+      // ⏳ Executar todas as ações em paralelo
+      const results = await Promise.allSettled(tasks);
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failCount = results.filter((r) => r.status === "rejected").length;
+
+      logger.info('Evento processado', { 
+        region_pattern, 
+        notifications_sent: successCount, 
+        failures: failCount 
+      });
+
+      // 🧾 Atualizar evento como notificado
+      await supabase
+        .from("mass_outage_events")
+        .update({
+          notifications_sent: true,
+          updated_at: new Date().toISOString(),
+          metadata: {
+            ...metadata,
+            notification_summary: {
+              total_responsaveis: responsaveisEvento.length,
+              total_clientes: clientePhones.length,
+              success: successCount,
+              fail: failCount,
+            },
+          },
+        })
+        .eq("id", id);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      event_key,
-      notifications: {
-        sent: successCount,
-        failed: failCount
-      }
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (err) {
-    logger.error('Erro crítico no Executor Inteligente', err);
-    
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: err.message 
-    }), {
+    logger.info('Execução concluída', { processed: events.length });
+    return new Response(
+      JSON.stringify({ success: true, processed: events.length }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    logger.error('Erro crítico no executor', { error: error.message });
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

@@ -3119,6 +3119,39 @@ export type Database = {
         }
         Relationships: []
       }
+      responsaveis_alerta: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          funcao: string
+          id: string
+          nome: string
+          telefone: string
+          tipo_evento: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          funcao: string
+          id?: string
+          nome: string
+          telefone: string
+          tipo_evento?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          telefone?: string
+          tipo_evento?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       routing_feedback: {
         Row: {
           actual_department: string | null
