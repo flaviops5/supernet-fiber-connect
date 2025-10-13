@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Code2, FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,9 +21,22 @@ const HPFuncoes = () => {
         body: { functionName }
       });
 
-      if (error) throw error;
+      if (!error && data?.code) {
+        setSelectedCode({ name: functionName, code: data.code });
+        return;
+      }
 
-      setSelectedCode({ name: functionName, code: data.code });
+      // Fallback: carregar diretamente do bundle usando import.meta.glob com ?raw
+      const files = import.meta.glob('../../supabase/functions/*/index.ts', { as: 'raw' });
+      const path = `../../supabase/functions/${functionName}/index.ts`;
+      const loader = files[path] as undefined | (() => Promise<string>);
+      if (loader) {
+        const code = await loader();
+        setSelectedCode({ name: functionName, code });
+        return;
+      }
+
+      throw new Error('Código da função não encontrado');
     } catch (error) {
       console.error('Error loading code:', error);
       toast.error("Erro ao carregar código da função");
@@ -217,6 +230,7 @@ const HPFuncoes = () => {
                               <DialogContent className="max-w-4xl max-h-[80vh]">
                                 <DialogHeader>
                                   <DialogTitle className="font-mono">{selectedCode?.name || func.name}</DialogTitle>
+                                  <DialogDescription>Visualização do código da Edge Function</DialogDescription>
                                 </DialogHeader>
                                 <ScrollArea className="h-[60vh] w-full">
                                   {selectedCode && selectedCode.name === func.name ? (
