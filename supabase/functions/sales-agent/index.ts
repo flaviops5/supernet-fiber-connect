@@ -395,7 +395,6 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
     console.log(`🤖 [${correlationId}] Chamando Lovable AI (sales-agent)`);
     
     const aiResponse = await callLovableAI({
-      model: 'google/gemini-2.5-flash',
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages
