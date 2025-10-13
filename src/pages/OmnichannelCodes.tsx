@@ -107,35 +107,33 @@ export default function OmnichannelCodes() {
   const handleDownloadZip = async () => {
     try {
       toast({
-        title: 'Gerando ZIP...',
+        title: 'Gerando arquivo...',
         description: 'Aguarde enquanto compilamos os arquivos',
       });
 
-      const { data, error } = await supabase.functions.invoke('generate-omnichannel-zip', {
-        method: 'POST',
-      });
+      const { data, error } = await supabase.functions.invoke('generate-omnichannel-zip');
 
       if (error) throw error;
 
       // Create blob and download
-      const blob = new Blob([data], { type: 'application/zip' });
+      const blob = new Blob([data], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `omnichannel_backend_${Date.now()}.zip`;
+      a.download = `omnichannel-backend-completo.txt`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       toast({
-        title: 'ZIP baixado!',
-        description: 'Os arquivos do backend foram salvos com sucesso',
+        title: 'Código baixado!',
+        description: 'Arquivo com todo o código do backend salvo',
       });
     } catch (error) {
-      console.error('Erro ao baixar ZIP:', error);
+      console.error('Erro ao baixar código:', error);
       toast({
-        title: 'Erro ao gerar ZIP',
+        title: 'Erro ao gerar arquivo',
         description: 'Não foi possível criar o arquivo',
         variant: 'destructive',
       });
@@ -183,7 +181,7 @@ export default function OmnichannelCodes() {
               className="gap-2"
             >
               <Download className="h-5 w-5" />
-              Baixar ZIP
+              Baixar Código (.txt)
             </Button>
           </div>
         </div>
