@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Code2, FileCode, Folder } from 'lucide-react';
+import { Copy, Check, Code2, FileCode, Folder, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const OMNICHANNEL_FILES = {
   frontend: [
@@ -33,23 +35,42 @@ const OMNICHANNEL_FILES = {
 
 export default function OmnichannelCodes() {
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fileCodes, setFileCodes] = useState<Record<string, { code?: string; error?: string }>>({});
   const { toast } = useToast();
 
-  const generateFileListPrompt = () => {
-    let prompt = `# ANÁLISE DO SISTEMA OMNICHANNEL\n\n`;
-    prompt += `Por favor, leia e analise os seguintes arquivos do sistema de atendimento omnichannel:\n\n`;
+  useEffect(() => {
+    loadFileCodes();
+  }, []);
+
+  const loadFileCodes = async () => {
+    try {
+      setLoading(true);
+      const allFiles = [...OMNICHANNEL_FILES.frontend, ...OMNICHANNEL_FILES.backend];
+      
+      const { data, error } = await supabase.functions.invoke('get-omnichannel-code', {
+        body: { filePaths: allFiles }
+      });
+
+      if (error) throw error;
+      
+      setFileCodes(data.results || {});
+    } catch (error) {
+      console.error('Error loading file codes:', error);
+      toast({
+        title: 'Erro ao carregar códigos',
+        description: 'Não foi possível carregar o código dos arquivos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateFullCodePrompt = () => {
+    let prompt = `# CÓDIGO COMPLETO DO SISTEMA OMNICHANNEL\n\n`;
     
-    prompt += `## FRONTEND COMPONENTS (${OMNICHANNEL_FILES.frontend.length} arquivos)\n\n`;
-    OMNICHANNEL_FILES.frontend.forEach(file => {
-      prompt += `- ${file}\n`;
-    });
-    
-    prompt += `\n## BACKEND EDGE FUNCTIONS (${OMNICHANNEL_FILES.backend.length} arquivos)\n\n`;
-    OMNICHANNEL_FILES.backend.forEach(file => {
-      prompt += `- ${file}\n`;
-    });
-    
-    prompt += `\n## CONTEXTO DO SISTEMA\n\n`;
+    prompt += `## CONTEXTO DO SISTEMA\n\n`;
     prompt += `Este é um sistema de atendimento omnichannel que integra:\n`;
     prompt += `- WhatsApp (via Evolution API)\n`;
     prompt += `- Roteamento inteligente com IA\n`;
@@ -72,32 +93,79 @@ export default function OmnichannelCodes() {
     prompt += `5. Sistema pode escalar para outros departamentos (check-escalation)\n`;
     prompt += `6. Ao finalizar, gera resumo via IA (summarize-conversation)\n\n`;
     
-    prompt += `## SUGESTÕES DE ANÁLISE\n\n`;
-    prompt += `Após ler os arquivos, você pode:\n`;
-    prompt += `- Analisar a segurança do sistema\n`;
-    prompt += `- Sugerir melhorias na arquitetura\n`;
-    prompt += `- Identificar possíveis bugs ou problemas\n`;
-    prompt += `- Propor otimizações de performance\n`;
-    prompt += `- Sugerir novas funcionalidades\n`;
-    prompt += `- Revisar o fluxo de dados e a experiência do usuário\n`;
+    prompt += `---\n\n`;
+    
+    prompt += `## FRONTEND COMPONENTS (${OMNICHANNEL_FILES.frontend.length} arquivos)\n\n`;
+    OMNICHANNEL_FILES.frontend.forEach(file => {
+      const fileData = fileCodes[file];
+      prompt += `### ${file}\n\n`;
+      if (fileData?.code) {
+        prompt += `\`\`\`typescript\n${fileData.code}\n\`\`\`\n\n`;
+      } else if (fileData?.error) {
+        prompt += `*Erro ao carregar: ${fileData.error}*\n\n`;
+      } else {
+        prompt += `*Carregando...*\n\n`;
+      }
+      prompt += `---\n\n`;
+    });
+    
+    prompt += `## BACKEND EDGE FUNCTIONS (${OMNICHANNEL_FILES.backend.length} arquivos)\n\n`;
+    OMNICHANNEL_FILES.backend.forEach(file => {
+      const fileData = fileCodes[file];
+      prompt += `### ${file}\n\n`;
+      if (fileData?.code) {
+        prompt += `\`\`\`typescript\n${fileData.code}\n\`\`\`\n\n`;
+      } else if (fileData?.error) {
+        prompt += `*Erro ao carregar: ${fileData.error}*\n\n`;
+      } else {
+        prompt += `*Carregando...*\n\n`;
+      }
+      prompt += `---\n\n`;
+    });
     
     return prompt;
   };
 
-  const handleCopy = async () => {
+  const copyFileCode = async (filePath: string) => {
+    const fileData = fileCodes[filePath];
+    if (!fileData?.code) {
+      toast({
+        title: 'Código não disponível',
+        description: 'O código deste arquivo ainda não foi carregado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const prompt = generateFileListPrompt();
+      await navigator.clipboard.writeText(fileData.code);
+      toast({
+        title: 'Código copiado!',
+        description: `Código de ${filePath} copiado para a área de transferência.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar o código.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCopyAll = async () => {
+    try {
+      const prompt = generateFullCodePrompt();
       await navigator.clipboard.writeText(prompt);
       setCopied(true);
       toast({
-        title: 'Prompt copiado!',
-        description: 'Cole este prompt em qualquer LLM (ChatGPT, Claude, etc.) que tenha acesso ao código.',
+        title: 'Código completo copiado!',
+        description: 'Todo o código do Omnichannel foi copiado para análise.',
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       toast({
         title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o prompt.',
+        description: 'Não foi possível copiar o código.',
         variant: 'destructive',
       });
     }
@@ -119,11 +187,17 @@ export default function OmnichannelCodes() {
             </p>
           </div>
           <Button
-            onClick={handleCopy}
+            onClick={handleCopyAll}
             size="lg"
             className="gap-2"
+            disabled={loading}
           >
-            {copied ? (
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Carregando...
+              </>
+            ) : copied ? (
               <>
                 <Check className="h-5 w-5" />
                 Copiado!
@@ -131,7 +205,7 @@ export default function OmnichannelCodes() {
             ) : (
               <>
                 <Copy className="h-5 w-5" />
-                Copiar Prompt
+                Copiar Todo Código
               </>
             )}
           </Button>
@@ -241,14 +315,49 @@ export default function OmnichannelCodes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {OMNICHANNEL_FILES.frontend.map((file) => (
-                <div key={file} className="p-3 bg-muted rounded text-sm font-mono flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                  <span className="truncate">{file}</span>
-                </div>
-              ))}
-            </div>
+            <Accordion type="single" collapsible className="w-full">
+              {OMNICHANNEL_FILES.frontend.map((file, index) => {
+                const fileData = fileCodes[file];
+                return (
+                  <AccordionItem key={file} value={`frontend-${index}`}>
+                    <AccordionTrigger className="text-sm font-mono">
+                      <div className="flex items-center gap-2">
+                        <FileCode className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                        <span className="truncate">{file}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyFileCode(file)}
+                            className="gap-2"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copiar
+                          </Button>
+                        </div>
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : fileData?.code ? (
+                          <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono">
+                            {fileData.code}
+                          </pre>
+                        ) : fileData?.error ? (
+                          <p className="text-destructive text-sm">{fileData.error}</p>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Código não disponível</p>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           </CardContent>
         </Card>
 
@@ -260,25 +369,49 @@ export default function OmnichannelCodes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {OMNICHANNEL_FILES.backend.map((file) => (
-                <div key={file} className="p-3 bg-muted rounded text-sm font-mono flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                  <span className="truncate">{file}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview do Prompt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono whitespace-pre-wrap">
-              {generateFileListPrompt()}
-            </pre>
+            <Accordion type="single" collapsible className="w-full">
+              {OMNICHANNEL_FILES.backend.map((file, index) => {
+                const fileData = fileCodes[file];
+                return (
+                  <AccordionItem key={file} value={`backend-${index}`}>
+                    <AccordionTrigger className="text-sm font-mono">
+                      <div className="flex items-center gap-2">
+                        <FileCode className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                        <span className="truncate">{file}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyFileCode(file)}
+                            className="gap-2"
+                          >
+                            <Copy className="h-3 w-3" />
+                            Copiar
+                          </Button>
+                        </div>
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : fileData?.code ? (
+                          <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-xs font-mono">
+                            {fileData.code}
+                          </pre>
+                        ) : fileData?.error ? (
+                          <p className="text-destructive text-sm">{fileData.error}</p>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">Código não disponível</p>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           </CardContent>
         </Card>
       </div>
