@@ -21,7 +21,9 @@ serve(async (req) => {
     }
 
     // Ler o arquivo index.ts da função
-    const filePath = `../functions/${functionName}/index.ts`;
+    const filePath = `../${functionName}/index.ts`;
+    
+    console.log('Tentando ler arquivo:', filePath);
     
     try {
       const code = await Deno.readTextFile(filePath);
