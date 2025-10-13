@@ -12,7 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🤖 Iniciando envio automático de boletos para clientes em FA...');
+    const { testClientName } = await req.json().catch(() => ({}));
+    
+    if (testClientName) {
+      console.log(`🎯 Modo TESTE: Processando apenas cliente "${testClientName}"`);
+    } else {
+      console.log('🤖 Iniciando envio automático de boletos para clientes em FA...');
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -41,12 +47,21 @@ serve(async (req) => {
     console.log(`✅ ${contracts.length} contratos encontrados`);
 
     // 2. Filtrar apenas contratos com status FA (Financeiro em Atraso)
-    const contractsFA = contracts.filter((contract: any) => {
+    let contractsFA = contracts.filter((contract: any) => {
       const statusAcesso = contract.status_acesso || contract.situacao_financeira || '';
       return statusAcesso === 'FA' || statusAcesso.toLowerCase().includes('financeiro');
     });
 
-    console.log(`🔍 ${contractsFA.length} contratos com status FA encontrados`);
+    // Se modo teste, filtrar apenas o cliente específico
+    if (testClientName) {
+      contractsFA = contractsFA.filter((contract: any) => {
+        const clientName = (contract.cliente || contract.razao || '').toLowerCase();
+        return clientName.includes(testClientName.toLowerCase());
+      });
+      console.log(`🎯 Contratos filtrados para "${testClientName}": ${contractsFA.length}`);
+    } else {
+      console.log(`🔍 ${contractsFA.length} contratos com status FA encontrados`);
+    }
 
     if (contractsFA.length === 0) {
       return new Response(

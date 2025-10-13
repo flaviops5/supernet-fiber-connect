@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, AlertCircle, CheckCircle2, TestTube } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function AutoSendOverdueInvoices() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [testClientName, setTestClientName] = useState("");
   const { toast } = useToast();
 
   const executarEnvioAutomatico = async () => {
@@ -16,13 +19,17 @@ export function AutoSendOverdueInvoices() {
       setLoading(true);
       setResult(null);
 
+      const isTestMode = testClientName.trim().length > 0;
+
       toast({
-        title: "Iniciando envio automático",
-        description: "Buscando clientes com status FA...",
+        title: isTestMode ? "Iniciando teste" : "Iniciando envio automático",
+        description: isTestMode 
+          ? `Testando apenas cliente: ${testClientName}...`
+          : "Buscando clientes com status FA...",
       });
 
       const { data, error } = await supabase.functions.invoke('auto-send-overdue-invoices', {
-        body: {}
+        body: isTestMode ? { testClientName: testClientName.trim() } : {}
       });
 
       if (error) throw error;
@@ -72,6 +79,19 @@ export function AutoSendOverdueInvoices() {
           </AlertDescription>
         </Alert>
 
+        <div className="space-y-2">
+          <Label htmlFor="testClient">🧪 Modo Teste (Opcional)</Label>
+          <Input
+            id="testClient"
+            placeholder="Digite o nome do cliente (ex: Claudio Máximo)"
+            value={testClientName}
+            onChange={(e) => setTestClientName(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Deixe em branco para processar todos os clientes com status FA
+          </p>
+        </div>
+
         <Button 
           onClick={executarEnvioAutomatico} 
           disabled={loading}
@@ -81,6 +101,11 @@ export function AutoSendOverdueInvoices() {
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processando...
+            </>
+          ) : testClientName.trim().length > 0 ? (
+            <>
+              <TestTube className="mr-2 h-4 w-4" />
+              Testar Cliente: {testClientName}
             </>
           ) : (
             <>
