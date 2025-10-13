@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Clock, MessageSquare, AlertCircle, Tag, History } from 'lucide-react';
+import { Clock, MessageSquare, AlertCircle, Tag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConversationSearch from './ConversationSearch';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import ConversationHistory from './ConversationHistory';
+
 
 interface Conversation {
   id: string;
@@ -32,7 +32,7 @@ interface Props {
   agentDepartment: string;
 }
 
-type FilterType = 'waiting' | 'active' | 'my' | 'all' | 'history';
+type FilterType = 'waiting' | 'active' | 'my' | 'all';
 
 const channelIcons = {
   whatsapp: '📱',
@@ -109,7 +109,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     if (filter === 'my') {
       const { data: { user } } = await supabase.auth.getUser();
       query = query.eq('assigned_agent_id', user?.id);
-    } else if (filter !== 'all' && filter !== 'history') {
+    } else if (filter !== 'all') {
       query = query.eq('status', filter);
     }
 
@@ -185,9 +185,6 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     return '';
   };
 
-  if (filter === 'history') {
-    return <ConversationHistory onSelectConversation={onSelectConversation} />;
-  }
 
   return (
     <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
@@ -257,15 +254,11 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
 
       <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
         <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-5 mx-4">
+          <TabsList className="grid w-full grid-cols-4 mx-4">
             <TabsTrigger value="waiting" className="text-xs">Aguardando</TabsTrigger>
             <TabsTrigger value="active" className="text-xs">Ativas</TabsTrigger>
             <TabsTrigger value="my" className="text-xs">Minhas</TabsTrigger>
             <TabsTrigger value="all" className="text-xs">Todas</TabsTrigger>
-            <TabsTrigger value="history" className="text-xs">
-              <History className="h-3 w-3 mr-1" />
-              Histórico
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={filter} className="flex-1 overflow-y-auto px-4 mt-2">
