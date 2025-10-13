@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
+import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +21,20 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Telefone ou CPF é obrigatório' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // 🔍 Verificar circuit breaker antes de iniciar
+    const circuitStatus = getCircuitBreakerStatus();
+    if (circuitStatus.state === 'open') {
+      console.warn('⚠️ Circuit breaker ABERTO - aguardando recuperação');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Sistema temporariamente indisponível. Tente novamente em alguns instantes.',
+          circuitBreaker: circuitStatus
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
       );
     }
 
@@ -46,17 +62,35 @@ serve(async (req) => {
     
     console.log('📝 Valores para busca:', { cpf, cpfClean, phone, phoneClean });
 
-    // TENTATIVA 1: Buscar por CPF formatado (como está no banco)
-    if (cpfClean && cpfClean.length === 11) {
+    // TENTATIVA 1: Buscar no CACHE primeiro
+    const cacheKey = cpfClean ? `customer:cpf:${cpfClean}` : phoneClean ? `customer:phone:${phoneClean}` : null;
+    
+    if (cacheKey) {
+      console.log('🔍 Verificando cache:', cacheKey);
+      const cachedCustomer = await getCachedOrFetch(
+        supabase,
+        cacheKey,
+        null, // Não busca se não encontrar no cache
+        5 * 60 // 5 minutos
+      );
+      
+      if (cachedCustomer) {
+        customer = cachedCustomer;
+        console.log('✅ Cliente encontrado no CACHE');
+      }
+    }
+
+    // TENTATIVA 2: Buscar por CPF formatado (como está no banco)
+    if (!customer && cpfClean && cpfClean.length === 11) {
       const cpfFormatted = cpfClean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-      console.log('🔍 Tentativa 1: CPF formatado:', cpfFormatted);
+      console.log('🔍 Tentativa 2: CPF formatado:', cpfFormatted);
       
       const { data: searchData1 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: cpfFormatted } }
       });
       
-      console.log('📊 Resultado tentativa 1:', {
+      console.log('📊 Resultado tentativa 2:', {
         success: searchData1?.success,
         totalResultados: searchData1?.data?.length || 0,
         primeiroCliente: searchData1?.data?.[0] ? {
@@ -69,19 +103,25 @@ serve(async (req) => {
       if (searchData1?.success && searchData1.data?.length > 0) {
         customer = searchData1.data[0];
         console.log('✅ Cliente encontrado com CPF formatado');
+        
+        // Salvar no cache
+        if (cacheKey) {
+          await setCache(supabase, cacheKey, customer, 5 * 60);
+          console.log('💾 Cliente salvo no cache');
+        }
       }
     }
 
-    // TENTATIVA 2: Buscar por CPF sem formatação
+    // TENTATIVA 3: Buscar por CPF sem formatação
     if (!customer && cpfClean) {
-      console.log('🔍 Tentativa 2: CPF limpo:', cpfClean);
+      console.log('🔍 Tentativa 3: CPF limpo:', cpfClean);
       
       const { data: searchData2 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: cpfClean } }
       });
       
-      console.log('📊 Resultado tentativa 2:', {
+      console.log('📊 Resultado tentativa 3:', {
         success: searchData2?.success,
         totalResultados: searchData2?.data?.length || 0,
         primeiroCliente: searchData2?.data?.[0] ? {
@@ -94,19 +134,25 @@ serve(async (req) => {
       if (searchData2?.success && searchData2.data?.length > 0) {
         customer = searchData2.data[0];
         console.log('✅ Cliente encontrado com CPF limpo');
+        
+        // Salvar no cache
+        if (cacheKey) {
+          await setCache(supabase, cacheKey, customer, 5 * 60);
+          console.log('💾 Cliente salvo no cache');
+        }
       }
     }
 
-    // TENTATIVA 3: Buscar por telefone
+    // TENTATIVA 4: Buscar por telefone
     if (!customer && phoneClean) {
-      console.log('🔍 Tentativa 3: Telefone:', phoneClean);
+      console.log('🔍 Tentativa 4: Telefone:', phoneClean);
       
       const { data: searchData3 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: phoneClean } }
       });
       
-      console.log('📊 Resultado tentativa 3:', {
+      console.log('📊 Resultado tentativa 4:', {
         success: searchData3?.success,
         totalResultados: searchData3?.data?.length || 0,
         primeiroCliente: searchData3?.data?.[0] ? {
@@ -123,27 +169,44 @@ serve(async (req) => {
       if (searchData3?.success && searchData3.data?.length > 0) {
         customer = searchData3.data[0];
         console.log('✅ Cliente encontrado com telefone');
+        
+        // Salvar no cache
+        if (cacheKey) {
+          await setCache(supabase, cacheKey, customer, 5 * 60);
+          console.log('💾 Cliente salvo no cache');
+        }
       }
     }
 
-    // TENTATIVA 4: Carregar lote e filtrar localmente
+    // TENTATIVA 5: Carregar lote e filtrar localmente (REDUZIDO PARA 200)
     if (!customer) {
-      console.log('🔍 Tentativa 4: Busca local em lote de 500 clientes');
+      console.log('🔍 Tentativa 5: Busca local em lote de 200 clientes');
       console.log('🔎 Critérios:', { cpfClean, phoneClean });
       
-      const { data: allCustomers } = await supabase.functions.invoke('ixc-integration', {
-        headers: invokeHeaders,
-        body: { 
-          action: 'getCustomers', 
-          params: { limit: 500, page: 1 } 
-        }
-      });
+      // Tentar usar cache de lista de clientes
+      const allCustomers = await getCachedOrFetch(
+        supabase,
+        'customers:batch:200',
+        async () => {
+          console.log('📡 Buscando clientes do IXC (sem cache)');
+          const { data } = await supabase.functions.invoke('ixc-integration', {
+            headers: invokeHeaders,
+            body: { 
+              action: 'getCustomers', 
+              params: { limit: 200, page: 1 } 
+            }
+          });
+          return data;
+        },
+        3 * 60 // Cache por 3 minutos
+      );
       
       if (allCustomers?.success && allCustomers.data) {
-        console.log(`📦 ${allCustomers.data.length} clientes carregados`);
+        const customerList = allCustomers.data;
+        console.log(`📦 ${customerList.length} clientes carregados`);
         
         // Amostra dos 3 primeiros clientes para debug
-        console.log('📝 Amostra (3 primeiros):', allCustomers.data.slice(0, 3).map((c: any) => ({
+        console.log('📝 Amostra (3 primeiros):', customerList.slice(0, 3).map((c: any) => ({
           id: c.id,
           nome: c.razao,
           cpf: c.cnpj_cpf,
@@ -155,7 +218,7 @@ serve(async (req) => {
           }
         })));
         
-        customer = allCustomers.data.find((c: any) => {
+        customer = customerList.find((c: any) => {
           const clientCpf = (c.cnpj_cpf || '').replace(/\D/g, '');
           const phonesRaw = [c.telefone_celular, c.fone_celular, c.whatsapp, c.telefone_comercial].filter(Boolean);
           const phones = phonesRaw.map((p: string) => String(p).replace(/\D/g, ''));
@@ -186,6 +249,12 @@ serve(async (req) => {
             nome: customer.razao,
             cpf: customer.cnpj_cpf
           });
+          
+          // Salvar no cache
+          if (cacheKey) {
+            await setCache(supabase, cacheKey, customer, 5 * 60);
+            console.log('💾 Cliente salvo no cache');
+          }
         } else {
           console.log('❌ Nenhum cliente encontrado no lote');
           console.log('📋 Valores buscados:', { cpfClean, phoneClean });
