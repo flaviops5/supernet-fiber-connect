@@ -48,11 +48,22 @@ serve(async (req) => {
 
     // TENTATIVA 1: Buscar por CPF formatado (como está no banco)
     if (cpfClean && cpfClean.length === 11) {
-      console.log('🔄 Tentativa 1: Buscar CPF formatado');
       const cpfFormatted = cpfClean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      console.log('🔍 Tentativa 1: CPF formatado:', cpfFormatted);
+      
       const { data: searchData1 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: cpfFormatted } }
+      });
+      
+      console.log('📊 Resultado tentativa 1:', {
+        success: searchData1?.success,
+        totalResultados: searchData1?.data?.length || 0,
+        primeiroCliente: searchData1?.data?.[0] ? {
+          id: searchData1.data[0].id,
+          nome: searchData1.data[0].razao,
+          cpf: searchData1.data[0].cnpj_cpf
+        } : null
       });
       
       if (searchData1?.success && searchData1.data?.length > 0) {
@@ -63,10 +74,21 @@ serve(async (req) => {
 
     // TENTATIVA 2: Buscar por CPF sem formatação
     if (!customer && cpfClean) {
-      console.log('🔄 Tentativa 2: Buscar CPF sem formatação');
+      console.log('🔍 Tentativa 2: CPF limpo:', cpfClean);
+      
       const { data: searchData2 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: cpfClean } }
+      });
+      
+      console.log('📊 Resultado tentativa 2:', {
+        success: searchData2?.success,
+        totalResultados: searchData2?.data?.length || 0,
+        primeiroCliente: searchData2?.data?.[0] ? {
+          id: searchData2.data[0].id,
+          nome: searchData2.data[0].razao,
+          cpf: searchData2.data[0].cnpj_cpf
+        } : null
       });
       
       if (searchData2?.success && searchData2.data?.length > 0) {
@@ -77,10 +99,25 @@ serve(async (req) => {
 
     // TENTATIVA 3: Buscar por telefone
     if (!customer && phoneClean) {
-      console.log('🔄 Tentativa 3: Buscar por telefone');
+      console.log('🔍 Tentativa 3: Telefone:', phoneClean);
+      
       const { data: searchData3 } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { action: 'searchCustomers', params: { query: phoneClean } }
+      });
+      
+      console.log('📊 Resultado tentativa 3:', {
+        success: searchData3?.success,
+        totalResultados: searchData3?.data?.length || 0,
+        primeiroCliente: searchData3?.data?.[0] ? {
+          id: searchData3.data[0].id,
+          nome: searchData3.data[0].razao,
+          telefones: {
+            celular: searchData3.data[0].telefone_celular,
+            whatsapp: searchData3.data[0].whatsapp,
+            comercial: searchData3.data[0].telefone_comercial
+          }
+        } : null
       });
       
       if (searchData3?.success && searchData3.data?.length > 0) {
@@ -91,7 +128,9 @@ serve(async (req) => {
 
     // TENTATIVA 4: Carregar lote e filtrar localmente
     if (!customer) {
-      console.log('🔄 Tentativa 4: Buscar em lote local');
+      console.log('🔍 Tentativa 4: Busca local em lote de 500 clientes');
+      console.log('🔎 Critérios:', { cpfClean, phoneClean });
+      
       const { data: allCustomers } = await supabase.functions.invoke('ixc-integration', {
         headers: invokeHeaders,
         body: { 
@@ -101,7 +140,20 @@ serve(async (req) => {
       });
       
       if (allCustomers?.success && allCustomers.data) {
-        console.log(`📦 Carregados ${allCustomers.data.length} clientes para filtrar`);
+        console.log(`📦 ${allCustomers.data.length} clientes carregados`);
+        
+        // Amostra dos 3 primeiros clientes para debug
+        console.log('📝 Amostra (3 primeiros):', allCustomers.data.slice(0, 3).map((c: any) => ({
+          id: c.id,
+          nome: c.razao,
+          cpf: c.cnpj_cpf,
+          telefones: {
+            celular: c.telefone_celular,
+            fone: c.fone_celular,
+            whatsapp: c.whatsapp,
+            comercial: c.telefone_comercial
+          }
+        })));
         
         customer = allCustomers.data.find((c: any) => {
           const clientCpf = (c.cnpj_cpf || '').replace(/\D/g, '');
@@ -110,11 +162,33 @@ serve(async (req) => {
 
           const cpfMatch = cpfClean && clientCpf === cpfClean;
           const phoneMatch = phoneClean && phones.some((p: string) => p === phoneClean || p.endsWith(phoneClean) || p.includes(phoneClean));
+          
+          // Log detalhado apenas para matches parciais (últimos 4 dígitos)
+          if (cpfMatch || (phoneClean && phones.some(p => p.includes(phoneClean.slice(-4))))) {
+            console.log('🔍 Comparação:', {
+              clienteId: c.id,
+              nome: c.razao,
+              cpfCliente: clientCpf,
+              cpfBusca: cpfClean,
+              cpfMatch,
+              telefonesCliente: phones,
+              telefoneBusca: phoneClean,
+              phoneMatch
+            });
+          }
+          
           return Boolean(cpfMatch || phoneMatch);
         });
         
         if (customer) {
-          console.log('✅ Cliente encontrado no lote local');
+          console.log('✅ Cliente encontrado no lote:', {
+            id: customer.id,
+            nome: customer.razao,
+            cpf: customer.cnpj_cpf
+          });
+        } else {
+          console.log('❌ Nenhum cliente encontrado no lote');
+          console.log('📋 Valores buscados:', { cpfClean, phoneClean });
         }
       }
     }
