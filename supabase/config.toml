@@ -153,3 +153,6 @@ verify_jwt = true
 [functions.generate-system-documentation-pdf]
 verify_jwt = true
 
+[functions.get-function-code]
+verify_jwt = false
+

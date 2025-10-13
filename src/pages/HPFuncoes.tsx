@@ -3,13 +3,34 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Code2, FileText } from "lucide-react";
+import { Download, Code2, FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const HPFuncoes = () => {
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [selectedCode, setSelectedCode] = useState<{ name: string; code: string } | null>(null);
+  const [loadingCode, setLoadingCode] = useState(false);
+
+  const viewCode = async (functionName: string) => {
+    setLoadingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-function-code', {
+        body: { functionName }
+      });
+
+      if (error) throw error;
+
+      setSelectedCode({ name: functionName, code: data.code });
+    } catch (error) {
+      console.error('Error loading code:', error);
+      toast.error("Erro ao carregar código da função");
+    } finally {
+      setLoadingCode(false);
+    }
+  };
 
   const functionsData = {
     agents: [
@@ -180,16 +201,47 @@ const HPFuncoes = () => {
                             </div>
                             <p className="text-sm text-muted-foreground ml-7">{func.desc}</p>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(`supabase/functions/${func.name}/index.ts`);
-                              toast.success("Caminho copiado!");
-                            }}
-                          >
-                            Copiar Path
-                          </Button>
+                          <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => viewCode(func.name)}
+                                  disabled={loadingCode}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Código
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-4xl max-h-[80vh]">
+                                <DialogHeader>
+                                  <DialogTitle className="font-mono">{selectedCode?.name || func.name}</DialogTitle>
+                                </DialogHeader>
+                                <ScrollArea className="h-[60vh] w-full">
+                                  {selectedCode && selectedCode.name === func.name ? (
+                                    <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
+                                      <code className="text-sm font-mono">{selectedCode.code}</code>
+                                    </pre>
+                                  ) : (
+                                    <div className="flex items-center justify-center h-32">
+                                      <p className="text-muted-foreground">Carregando código...</p>
+                                    </div>
+                                  )}
+                                </ScrollArea>
+                              </DialogContent>
+                            </Dialog>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`supabase/functions/${func.name}/index.ts`);
+                                toast.success("Caminho copiado!");
+                              }}
+                            >
+                              Copiar Path
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}
