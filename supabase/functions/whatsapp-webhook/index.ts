@@ -1,20 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { validateHMACRequest } from '../_shared/hmac.ts';
+import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction.ts';
+import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hmac-signature, x-hmac-timestamp',
 };
 
+// Correlation ID para rastreamento end-to-end
+function generateCorrelationId(): string {
+  return `whatsapp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+}
+
 serve(async (req) => {
-  console.log('🎯 Webhook endpoint hit!', {
+  const correlationId = generateCorrelationId();
+  
+  console.log(`🎯 [${correlationId}] Webhook endpoint hit`, {
     method: req.method,
     url: req.url,
-    headers: Object.fromEntries(req.headers.entries())
+    timestamp: new Date().toISOString(),
   });
 
   if (req.method === 'OPTIONS') {
-    console.log('✅ OPTIONS request handled');
+    console.log(`✅ [${correlationId}] OPTIONS request handled`);
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -24,37 +34,79 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-let webhookData: any = null;
-try {
-  const textBody = await req.text();
-  const contentType = req.headers.get('content-type') || '';
+    // Sprint 1: Validação HMAC (opcional, para compatibilidade)
+    const hmacSecret = Deno.env.get('HMAC_SHARED_SECRET');
+    if (hmacSecret) {
+      const hmacValidation = await validateHMACRequest(req.clone(), hmacSecret);
+      if (!hmacValidation.valid) {
+        console.warn(`⚠️ [${correlationId}] HMAC validation failed: ${hmacValidation.error}`);
+        // Não bloqueia por compatibilidade, apenas loga
+      } else {
+        console.log(`✅ [${correlationId}] HMAC validated successfully`);
+      }
+    }
 
-  if (!contentType.includes('application/json')) {
-    console.warn('⚠️ Unexpected Content-Type:', contentType);
-  }
+    let webhookData: any = null;
+    let rawBody = '';
+    
+    try {
+      rawBody = await req.text();
+      const contentType = req.headers.get('content-type') || '';
 
-  if (!textBody || textBody.trim() === '') {
-    console.error('❌ Empty body received from webhook');
-    return new Response(
-      JSON.stringify({ success: false, error: 'Empty request body' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    );
-  }
+      if (!contentType.includes('application/json')) {
+        console.warn(`⚠️ [${correlationId}] Unexpected Content-Type: ${contentType}`);
+      }
 
-  webhookData = JSON.parse(textBody);
-  console.log('📥 Webhook keys:', Object.keys(webhookData));
+      if (!rawBody || rawBody.trim() === '') {
+        console.error(`❌ [${correlationId}] Empty body received from webhook`);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Empty request body', correlationId }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
 
-} catch (e) {
-  console.error('❌ Failed to parse JSON body:', e);
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error: 'Invalid JSON format',
-      details: e instanceof Error ? e.message : 'Unknown error'
-    }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-  );
-}
+      webhookData = JSON.parse(rawBody);
+      console.log(`📥 [${correlationId}] Webhook keys:`, Object.keys(webhookData));
+
+    } catch (e) {
+      console.error(`❌ [${correlationId}] Failed to parse JSON body:`, e);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid JSON format',
+          details: e instanceof Error ? e.message : 'Unknown error',
+          correlationId,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Sprint 1: Controle de idempotência
+    const webhookId = `${webhookData.instance || 'default'}-${webhookData.data?.key?.id || Date.now()}`;
+    
+    const { data: existingWebhook } = await supabase
+      .from('processed_webhooks')
+      .select('id')
+      .eq('webhook_id', webhookId)
+      .maybeSingle();
+
+    if (existingWebhook) {
+      console.log(`⏭️ [${correlationId}] Webhook já processado (idempotência): ${webhookId}`);
+      return new Response(
+        JSON.stringify({ success: true, status: 'already_processed', correlationId }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Registra webhook como processado
+    await supabase.from('processed_webhooks').insert({
+      webhook_id: webhookId,
+      event_type: webhookData.event || 'unknown',
+      request_signature: req.headers.get('x-hmac-signature'),
+      request_timestamp: req.headers.get('x-hmac-timestamp') ? 
+        parseInt(req.headers.get('x-hmac-timestamp')!) : null,
+      metadata: { correlationId, rawBodyLength: rawBody.length },
+    });
 
     // Evolution API envia diferentes tipos de eventos
     const eventType = webhookData.event;
@@ -77,7 +129,14 @@ try {
                            messageData.message?.extendedTextMessage?.text || 
                            'Mensagem de mídia';
 
-      console.log(`📞 Message from ${customerName} (${customerPhone}): ${messageContent}`);
+      // Sprint 1: Log com PII redaction
+      console.log(`📞 [${correlationId}] Message from ${redactPII(customerName, 'logs')} (${redactPII(customerPhone, 'logs')}): ${redactPII(messageContent, 'ai')}`);
+
+      // Sprint 1: Extrai CPF da mensagem (se houver)
+      const extractedCPF = extractCPF(messageContent);
+      if (extractedCPF) {
+        console.log(`🆔 [${correlationId}] CPF detectado na mensagem (mascarado)`);
+      }
 
       // Check for feedback response (números de 1 a 5)
       const feedbackMatch = messageContent.trim().match(/^[1-5]$/);

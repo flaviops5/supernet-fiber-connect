@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { checkRateLimit, formatBlockedTime } from "../_shared/rate-limiter.ts";
+import { getLovableCircuitBreaker } from "../_shared/circuit-breaker.ts";
+import { redactPII, redactPIIObject } from "../_shared/pii-redaction.ts";
+import { logConversationAccess } from "../_shared/lgpd-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-correlation-id',
 };
 
 interface Message {
@@ -20,6 +23,12 @@ interface AgentConfig {
 }
 
 serve(async (req) => {
+  // Sprint 2: Correlation ID para rastreamento
+  const correlationId = req.headers.get('x-correlation-id') || 
+    `routing-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  
+  console.log(`🧭 [${correlationId}] Routing Agent started`);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +36,7 @@ serve(async (req) => {
   try {
     const { message, conversationId, context } = await req.json();
     
-    console.log('Routing Agent - Received message:', message);
+    console.log(`📥 [${correlationId}] Message:`, redactPII(message, 'logs'));
     
     if (!conversationId) {
       throw new Error('conversationId é obrigatório');
@@ -36,6 +45,15 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Sprint 1: LGPD Audit - Registra acesso à conversação
+    await logConversationAccess(
+      supabase,
+      conversationId,
+      undefined,
+      'Roteamento de mensagem para departamento apropriado',
+      req
+    );
 
     // Get routing agent configuration
     const { data: config, error: configError } = await supabase
