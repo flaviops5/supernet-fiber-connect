@@ -44,6 +44,7 @@ import { AddUserForm } from '@/components/AddUserForm';
 import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { WhatsAppApiTester } from '@/components/WhatsAppApiTester';
+import { TestClientFinancialStatus } from '@/components/TestClientFinancialStatus';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -96,6 +97,9 @@ const Dashboard = () => {
 
       {/* WhatsApp API Quick Test */}
       <WhatsAppApiTester />
+
+      {/* Test Client Financial Status */}
+      <TestClientFinancialStatus />
 
       {/* Quick Actions */}
       <Card>
