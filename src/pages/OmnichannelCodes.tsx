@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Code2, FileCode, Folder } from 'lucide-react';
+import { Copy, Check, Code2, FileCode, Folder, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 const OMNICHANNEL_FILES = {
   frontend: [
@@ -103,6 +104,44 @@ export default function OmnichannelCodes() {
     }
   };
 
+  const handleDownloadZip = async () => {
+    try {
+      toast({
+        title: 'Gerando ZIP...',
+        description: 'Aguarde enquanto compilamos os arquivos',
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-omnichannel-zip', {
+        method: 'POST',
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `omnichannel_backend_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'ZIP baixado!',
+        description: 'Os arquivos do backend foram salvos com sucesso',
+      });
+    } catch (error) {
+      console.error('Erro ao baixar ZIP:', error);
+      toast({
+        title: 'Erro ao gerar ZIP',
+        description: 'Não foi possível criar o arquivo',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const totalFiles = OMNICHANNEL_FILES.frontend.length + OMNICHANNEL_FILES.backend.length;
 
   return (
@@ -118,23 +157,35 @@ export default function OmnichannelCodes() {
               Lista de arquivos do sistema para análise por LLMs
             </p>
           </div>
-          <Button
-            onClick={handleCopy}
-            size="lg"
-            className="gap-2"
-          >
-            {copied ? (
-              <>
-                <Check className="h-5 w-5" />
-                Copiado!
-              </>
-            ) : (
-              <>
-                <Copy className="h-5 w-5" />
-                Copiar Prompt
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleCopy}
+              size="lg"
+              className="gap-2"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  Copiado!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-5 w-5" />
+                  Copiar Prompt
+                </>
+              )}
+            </Button>
+            
+            <Button
+              onClick={handleDownloadZip}
+              size="lg"
+              variant="secondary"
+              className="gap-2"
+            >
+              <Download className="h-5 w-5" />
+              Baixar ZIP
+            </Button>
+          </div>
         </div>
 
         <Separator />

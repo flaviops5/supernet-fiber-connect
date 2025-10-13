@@ -159,3 +159,6 @@ verify_jwt = true
 [functions.get-function-code]
 verify_jwt = false
 
+[functions.generate-omnichannel-zip]
+verify_jwt = false
+
