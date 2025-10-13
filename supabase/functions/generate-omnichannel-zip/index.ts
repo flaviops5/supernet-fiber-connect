@@ -11,9 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('📦 Generating Omnichannel ZIP...');
+    console.log('📦 Generating 3 main backend files...');
 
-    // Ler os arquivos reais do sistema de arquivos
+    // Apenas os 3 arquivos principais solicitados
     const files = [
       {
         path: 'whatsapp-webhook/index.ts',
@@ -24,20 +24,8 @@ serve(async (req) => {
         localPath: '../routing-agent/index.ts'
       },
       {
-        path: 'routing-agent/prompts.ts',
-        localPath: '../routing-agent/prompts.ts'
-      },
-      {
-        path: 'routing-agent/config.ts',
-        localPath: '../routing-agent/config.ts'
-      },
-      {
         path: 'send-whatsapp-message/index.ts',
         localPath: '../send-whatsapp-message/index.ts'
-      },
-      {
-        path: '_shared/rate-limiter.ts',
-        localPath: '../_shared/rate-limiter.ts'
       }
     ];
 
@@ -54,162 +42,37 @@ serve(async (req) => {
       })
     );
 
-    // Criar README
-    const readme = `# Omnichannel Backend - SUPERNET FIBRA
-
-Este pacote contém o código backend completo do sistema Omnichannel.
-
-## 📁 Estrutura
-
-\`\`\`
-omnichannel_backend/
-├── whatsapp-webhook/
-│   └── index.ts              # Webhook que recebe mensagens do WhatsApp
-├── routing-agent/
-│   ├── index.ts              # Agente de roteamento inteligente (Cloé)
-│   ├── prompts.ts            # Prompts do sistema
-│   └── config.ts             # Configurações do agente
-├── send-whatsapp-message/
-│   └── index.ts              # Função para enviar mensagens
-└── _shared/
-    └── rate-limiter.ts       # Controle de taxa de mensagens
-\`\`\`
-
-## 🚀 Como Usar
-
-### 1. Supabase Edge Functions
-
-Estes arquivos são Edge Functions do Supabase. Para implantá-los:
-
-\`\`\`bash
-# Instalar Supabase CLI
-npm install -g supabase
-
-# Login
-supabase login
-
-# Link ao projeto
-supabase link --project-ref SEU_PROJECT_REF
-
-# Deploy das funções
-supabase functions deploy whatsapp-webhook
-supabase functions deploy routing-agent
-supabase functions deploy send-whatsapp-message
-\`\`\`
-
-### 2. Variáveis de Ambiente
-
-Configure as seguintes secrets no Supabase:
-
-\`\`\`bash
-# Evolution API (WhatsApp)
-supabase secrets set EVOLUTION_API_KEY=sua-api-key
-supabase secrets set EVOLUTION_API_BASE_URL=https://sua-api.com
-
-# OpenAI (para o agente de IA)
-supabase secrets set OPENAI_API_KEY=sua-openai-key
-\`\`\`
-
-### 3. Configuração do Webhook
-
-Configure o webhook na Evolution API para apontar para:
-\`\`\`
-https://SEU_PROJECT_REF.supabase.co/functions/v1/whatsapp-webhook
-\`\`\`
-
-## 🔄 Fluxo de Funcionamento
-
-1. **WhatsApp Webhook** recebe mensagens do cliente
-2. **Routing Agent (Cloé)** analisa a mensagem e identifica:
-   - CPF do cliente
-   - Intenção (vendas, suporte técnico, financeiro, etc.)
-   - Status do cliente no sistema IXC
-3. Roteia para o agente especializado apropriado
-4. Envia resposta via **Send WhatsApp Message**
-
-## 📚 Agentes Disponíveis
-
-- **sales-agent**: Vendas e novos contratos
-- **support-tech-agent**: Suporte técnico (Luan)
-- **support-financial-agent**: Suporte financeiro (Julia)
-- **automacao-agent**: Automação residencial
-- **telemedicina-agent**: Serviços de telemedicina
-- **logistics-agent**: Agendamentos e instalações
-
-## 🔐 Segurança
-
-- Rate limiting por CPF (máx 10 mensagens/minuto)
-- Validação de CPF antes do roteamento
-- Logs detalhados para auditoria
-- Integração segura com IXC via proxy
-
-## 📊 Monitoramento
-
-Acesse os logs no Supabase Dashboard:
-- Edge Functions > [nome-da-funcao] > Logs
-
-## 🛠️ Tecnologias
-
-- **Runtime**: Deno (Supabase Edge Functions)
-- **IA**: OpenAI GPT-4
-- **WhatsApp**: Evolution API
-- **Database**: Supabase (PostgreSQL)
-- **Billing**: Integração IXC Soft
-
----
-
-**Gerado automaticamente pelo sistema SUPERNET FIBRA**
-`;
-
-    // Criar estrutura de diretórios e arquivos em texto
-    let zipContent = '';
-    
-    // Adicionar README
-    zipContent += `=== README.md ===\n${readme}\n\n`;
-    
-    // Adicionar cada arquivo
-    for (const file of fileContents) {
-      zipContent += `=== ${file.path} ===\n${file.content}\n\n`;
-    }
-
-    // Como alternativa simples ao ZIP, vamos criar um arquivo de texto estruturado
-    // que pode ser facilmente separado depois
-    
-    // Ou podemos usar uma biblioteca ZIP diferente
-    // Vou usar a abordagem de criar um arquivo tar.gz simplificado
-    
-    // Por enquanto, vamos retornar um JSON estruturado que pode ser baixado
-    const bundle = {
-      readme: readme,
-      files: fileContents.reduce((acc, file) => {
-        acc[file.path] = file.content;
-        return acc;
-      }, {} as Record<string, string>)
-    };
-
-    // Converter para formato de texto legível
+    // Criar arquivo de texto limpo com os 3 códigos completos
     const textBundle = `${'='.repeat(80)}
-OMNICHANNEL BACKEND - SUPERNET FIBRA
-Código Fonte Completo
+OMNICHANNEL BACKEND - 3 ARQUIVOS PRINCIPAIS
+Gerado em: ${new Date().toISOString()}
 ${'='.repeat(80)}
 
-${readme}
+INSTRUÇÕES:
+- Este arquivo contém os 3 códigos TypeScript completos
+- Copie cada seção e cole em arquivos separados seguindo a estrutura indicada
+- São Edge Functions do Supabase (deploy via Supabase CLI)
 
-${'='.repeat(80)}
-ARQUIVOS DO SISTEMA
+VARIÁVEIS DE AMBIENTE NECESSÁRIAS:
+- EVOLUTION_API_KEY: Chave da API Evolution
+- EVOLUTION_API_BASE_URL: URL base da API Evolution  
+- OPENAI_API_KEY: Chave da API OpenAI
+- SUPABASE_URL: URL do projeto Supabase
+- SUPABASE_SERVICE_ROLE_KEY: Service role key do Supabase
+
 ${'='.repeat(80)}
 
 ${fileContents.map(file => `
-${'─'.repeat(80)}
-📄 ${file.path}
-${'─'.repeat(80)}
+${'='.repeat(80)}
+📄 ARQUIVO: supabase/functions/${file.path}
+${'='.repeat(80)}
 
 ${file.content}
 
 `).join('\n')}
 
 ${'='.repeat(80)}
-FIM DO PACOTE
+FIM DOS ARQUIVOS
 ${'='.repeat(80)}
 `;
 
@@ -217,7 +80,7 @@ ${'='.repeat(80)}
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="omnichannel-backend.txt"',
+        'Content-Disposition': 'attachment; filename="omnichannel-3-arquivos.txt"',
       },
     });
 

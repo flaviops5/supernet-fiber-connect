@@ -120,7 +120,7 @@ export default function OmnichannelCodes() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `omnichannel-backend-completo.txt`;
+      a.download = `omnichannel-3-arquivos.txt`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -181,7 +181,7 @@ export default function OmnichannelCodes() {
               className="gap-2"
             >
               <Download className="h-5 w-5" />
-              Baixar Código (.txt)
+              Baixar 3 Arquivos (.txt)
             </Button>
           </div>
         </div>
