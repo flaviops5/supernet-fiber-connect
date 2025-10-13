@@ -45,7 +45,6 @@ import { MassOutageAlertCard } from '@/components/MassOutageAlertCard';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { WhatsAppApiTester } from '@/components/WhatsAppApiTester';
 import { TestClientFinancialStatus } from '@/components/TestClientFinancialStatus';
-import { CheckClientOnlineStatus } from '@/components/CheckClientOnlineStatus';
 import { toast } from "sonner";
 
 // Dashboard component
@@ -101,9 +100,6 @@ const Dashboard = () => {
 
       {/* Test Client Financial Status */}
       <TestClientFinancialStatus />
-
-      {/* Check Client Online Status */}
-      <CheckClientOnlineStatus />
 
       {/* Quick Actions */}
       <Card>
