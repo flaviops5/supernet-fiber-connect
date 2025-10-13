@@ -1958,6 +1958,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ixc_cache: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          key: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          key: string
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          key?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           agent_types: string[] | null
@@ -3271,6 +3292,10 @@ export type Database = {
           window_minutes?: number
         }
         Returns: Json
+      }
+      cleanup_expired_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       create_installation_appointment: {
         Args:

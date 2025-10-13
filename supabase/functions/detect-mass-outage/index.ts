@@ -37,9 +37,11 @@ serve(async (req) => {
     const itemsPerPage = 1000;
     const allRadUsers: RadUser[] = [];
 
+    const MAX_PAGES = 3; // LIMITE: máx 3 páginas = 3000 clientes offline
+    
     try {
-      // Buscar apenas clientes offline - SEM LIMITE DE PÁGINAS
-      while (true) {
+      // Buscar clientes offline com LIMITE de páginas para evitar timeout
+      while (page <= MAX_PAGES) {
         const bodyRad = {
           qtype: 'radusuarios.online',
           query: 'N',
@@ -50,7 +52,7 @@ serve(async (req) => {
           sortorder: 'desc',
         };
 
-        console.log(`📄 Buscando página ${page} de clientes offline...`);
+        console.log(`📄 Buscando página ${page}/${MAX_PAGES} de clientes offline...`);
 
         const radData = await callIxcWithRetry(
           IXC_PROXY_URL,
@@ -76,6 +78,10 @@ serve(async (req) => {
         }
         page++;
       }
+      
+      if (page > MAX_PAGES) {
+        console.log(`⚠️ LIMITE de ${MAX_PAGES} páginas atingido. Total: ${allRadUsers.length} clientes`);
+      }
     } catch (error) {
       console.error('❌ Erro ao buscar clientes offline do IXC:', error);
       
@@ -100,8 +106,8 @@ serve(async (req) => {
 
     console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
 
-    // OTIMIZAÇÃO: Limitar a 500 clientes mais críticos para evitar timeout
-    const MAX_CLIENTS_TO_ENRICH = 500;
+    // OTIMIZAÇÃO: Limitar a 200 clientes mais críticos para evitar sobrecarga no IXC
+    const MAX_CLIENTS_TO_ENRICH = 200; // Reduzido de 500 para 200
     const MAX_CLIENTS_PER_PON = 128; // Capacidade máxima de uma porta PON
     
     // CONTROLE DE CONCORRÊNCIA: Limitar requisições paralelas ao IXC
@@ -184,11 +190,57 @@ serve(async (req) => {
           }
 
           try {
-            // OTIMIZAÇÃO: Executar ambas as chamadas em paralelo com retry e backoff
-            const [clientData, equipData] = await retryWithBackoff(() =>
-              Promise.all([
-                // Buscar dados do cliente (incluindo bairro)
-                callIxcWithRetry(
+            // FALLBACK ROBUSTO: Tentar ambas as chamadas, mas continuar mesmo se cliente_equipamento falhar
+            let clientData, equipData;
+            
+            try {
+              // Buscar dados do cliente e equipamento em paralelo
+              [clientData, equipData] = await retryWithBackoff(() =>
+                Promise.all([
+                  // Buscar dados do cliente (incluindo bairro)
+                  callIxcWithRetry(
+                    IXC_PROXY_URL,
+                    'POST',
+                    '/webservice/v1/cliente',
+                    {
+                      qtype: 'cliente.id',
+                      query: clientId,
+                      oper: '=',
+                      page: '1',
+                      rp: '1',
+                      sortname: 'cliente.id',
+                      sortorder: 'desc',
+                    }
+                  ),
+                  // FALLBACK: Se cliente_equipamento falhar (502), retornar vazio
+                  callIxcWithRetry(
+                    IXC_PROXY_URL,
+                    'POST',
+                    '/webservice/v1/cliente_equipamento',
+                    {
+                      qtype: 'cliente_equipamento.id_cliente',
+                      query: clientId,
+                      oper: '=',
+                      page: '1',
+                      rp: '50',
+                      sortname: 'cliente_equipamento.id',
+                      sortorder: 'desc',
+                    }
+                  ).catch(error => {
+                    // FALLBACK ESPECÍFICO: Se endpoint indisponível (502), retornar vazio
+                    if (error.message.includes('502') || error.message.includes('cliente_equipamento')) {
+                      console.warn(`⚠️ Cliente ${clientId}: endpoint cliente_equipamento indisponível, continuando sem dados PON`);
+                      return { data: { registros: [] } };
+                    }
+                    throw error; // Re-throw outros erros
+                  })
+                ])
+              );
+            } catch (error) {
+              // Se falhou completamente, tentar pelo menos buscar o cliente
+              console.warn(`⚠️ Erro ao buscar dados completos do cliente ${clientId}, tentando apenas dados básicos`);
+              try {
+                clientData = await callIxcWithRetry(
                   IXC_PROXY_URL,
                   'POST',
                   '/webservice/v1/cliente',
@@ -201,24 +253,13 @@ serve(async (req) => {
                     sortname: 'cliente.id',
                     sortorder: 'desc',
                   }
-                ),
-                // Buscar equipamento/ONU do cliente
-                callIxcWithRetry(
-                  IXC_PROXY_URL,
-                  'POST',
-                  '/webservice/v1/cliente_equipamento',
-                  {
-                    qtype: 'cliente_equipamento.id_cliente',
-                    query: clientId,
-                    oper: '=',
-                    page: '1',
-                    rp: '50',
-                    sortname: 'cliente_equipamento.id',
-                    sortorder: 'desc',
-                  }
-                )
-              ])
-            );
+                );
+                equipData = { data: { registros: [] } }; // Sem dados de equipamento
+              } catch (fallbackError) {
+                // Falhou tudo, retornar apenas o usuário
+                return { user };
+              }
+            }
 
             // Processar dados do cliente (bairro)
             let bairro = '';
