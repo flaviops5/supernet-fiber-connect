@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
+import { redactPII } from '../_shared/pii-redaction.ts';
+import { logConversationAccess } from '../_shared/lgpd-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +22,9 @@ serve(async (req) => {
   try {
     const { messages, conversationId, customerData, routeReason } = await req.json();
     
-    console.log('Support Financial Agent - Processing request');
-    console.log('Route reason:', routeReason);
+    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    console.log(`💰 [${correlationId}] support-financial-agent: Processing request`);
+    console.log(`📋 [${correlationId}] Route reason:`, routeReason);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

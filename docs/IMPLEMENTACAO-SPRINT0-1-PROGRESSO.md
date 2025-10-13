@@ -72,11 +72,11 @@
 - ✅ Correlation ID para rastreamento end-to-end
 - ✅ Extração automática de CPF
 
-✅ **`routing-agent/index.ts`** (60% completo):
+✅ **`routing-agent/index.ts`** (100% completo):
 - ✅ Imports de PII redaction e Circuit Breaker
 - ✅ Correlation ID propagado
 - ✅ LGPD Audit ao acessar conversações
-- ⏳ Falta: Integrar `callLovableAI()` substituindo fetch direto
+- ✅ Integrado `callLovableAI()` com retry e Circuit Breaker
 
 ---
 
@@ -84,15 +84,15 @@
 
 ### 1. Integrar Lovable Client em Todas as Edge Functions
 
-**Funções a atualizar:**
-- [ ] `routing-agent/index.ts` — Substituir fetch por `callLovableAI()`
-- [ ] `sales-agent/index.ts`
-- [ ] `support-tech-agent/index.ts`
-- [ ] `support-financial-agent/index.ts`
-- [ ] `telemedicina-agent/index.ts`
-- [ ] `automacao-agent/index.ts`
-- [ ] `logistics-agent/index.ts`
-- [ ] `summarize-conversation/index.ts`
+**Funções atualizadas:**
+- [x] `routing-agent/index.ts` — ✅ `callLovableAI()` integrado
+- [x] `sales-agent/index.ts` — ✅ `callLovableAI()` integrado
+- [x] `support-tech-agent/index.ts` — ✅ `callLovableAI()` integrado + LGPD audit
+- [x] `support-financial-agent/index.ts` — ✅ Imports atualizados + correlation ID
+- [x] `telemedicina-agent/index.ts` — ✅ Streaming com PII redaction + correlation ID
+- [ ] `automacao-agent/index.ts` — Pendente
+- [ ] `logistics-agent/index.ts` — Pendente
+- [ ] `summarize-conversation/index.ts` — Pendente
 
 ### 2. Completar whatsapp-webhook
 

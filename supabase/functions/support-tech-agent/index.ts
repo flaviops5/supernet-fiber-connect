@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
+import { redactPII } from '../_shared/pii-redaction.ts';
+import { logConversationAccess } from '../_shared/lgpd-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,7 +22,8 @@ serve(async (req) => {
   try {
     const { messages, conversationId, customerData } = await req.json();
     
-    console.log('Support Tech Agent - Processing request');
+    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    console.log(`🔧 [${correlationId}] support-tech-agent: Processing request`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -229,9 +233,11 @@ SUAS RESPONSABILIDADES:
    - Problema pode ser resolvido remotamente
 `;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // LOVABLE_API_KEY verificado em lovable-client.ts
+    
+    // LGPD: Log conversation access
+    if (conversationId) {
+      await logConversationAccess(supabase, conversationId, undefined, 'Support Tech Agent processing', req);
     }
 
     // Tool for creating IXC ticket
@@ -263,35 +269,25 @@ SUAS RESPONSABILIDADES:
       }
     }];
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: agentConfig.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversationHistory,
-          ...messages
-        ],
-        tools: tools,
-        tool_choice: "auto",
-        temperature: parseFloat(agentConfig.temperature),
-        max_tokens: agentConfig.max_tokens,
-      }),
-    });
+    console.log(`🤖 [${correlationId}] Chamando Lovable AI (support-tech-agent)`);
+    
+    const aiResponse = await callLovableAI({
+      model: agentConfig.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...conversationHistory,
+        ...messages
+      ],
+      tools: tools,
+      tool_choice: "auto",
+      temperature: parseFloat(agentConfig.temperature),
+      max_completion_tokens: agentConfig.max_tokens,
+    }, correlationId);
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const choice = aiData.choices[0];
-    let assistantMessage = choice.message.content;
+    console.log(`✅ [${correlationId}] Resposta recebida do Lovable AI`);
+    
+    let assistantMessage = extractContent(aiResponse);
+    const choice = aiResponse.choices[0];
 
     // Check if AI wants to create a ticket
     if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {

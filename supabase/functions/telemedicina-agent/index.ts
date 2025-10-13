@@ -1,5 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
+import { redactPII } from '../_shared/pii-redaction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,11 +15,9 @@ serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    console.log(`🏥 [${correlationId}] telemedicina-agent: Processing request`);
 
     const systemPrompt = `Você é um assistente especializado em telemedicina da SUPERNET FIBRA.
 
@@ -42,23 +42,38 @@ Se o cliente demonstrar interesse, oriente-o a contratar pelo WhatsApp: 11 99999
 
 Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
 
+    console.log(`🤖 [${correlationId}] Chamando Lovable AI (telemedicina-agent) - streaming`);
+    
+    // For streaming, we need to use fetch directly but with error handling
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY não configurada');
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
+        "X-Correlation-ID": correlationId,
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...messages.map((m: any) => ({
+            ...m,
+            content: m.role === 'user' ? redactPII(m.content, 'ai') : m.content
+          })),
         ],
         stream: true,
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ [${correlationId}] Lovable AI error:`, response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em instantes." }), 
@@ -78,8 +93,6 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
         );
       }
       
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Erro ao processar sua solicitação." }), 
         {
@@ -89,8 +102,9 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
       );
     }
 
+    console.log(`✅ [${correlationId}] Streaming iniciado`);
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Correlation-ID": correlationId },
     });
   } catch (error) {
     console.error("Chat error:", error);

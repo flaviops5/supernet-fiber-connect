@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
+import { redactPII } from '../_shared/pii-redaction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,8 +44,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const correlationId = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    console.log('sales-agent: request start', { correlationId, method: req.method, directOrder, path: new URL(req.url).pathname });
+    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    console.log(`🛒 [${correlationId}] sales-agent: request start`, { method: req.method, directOrder, path: new URL(req.url).pathname });
     
     // Se for uma ordem direta do formulário
     if (directOrder) {
@@ -333,10 +335,7 @@ serve(async (req) => {
       }
     }
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY não configurada');
-    }
+    // LOVABLE_API_KEY verificado em lovable-client.ts
 
     // Busca planos ativos
     const { data: plans } = await supabase
@@ -393,20 +392,15 @@ CONTEXTO DO USUÁRIO: ${userContext ? JSON.stringify(userContext) : 'Novo client
 
 WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        modalities: ['text', 'image'],
-        tools: [
+    console.log(`🤖 [${correlationId}] Chamando Lovable AI (sales-agent)`);
+    
+    const aiResponse = await callLovableAI({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages
+      ],
+      tools: [
           {
             type: 'function',
             function: {
