@@ -233,45 +233,66 @@ export const DiagnosticoClienteCompleto = () => {
         console.error("✗ Erro ao buscar títulos:", error.message);
       }
 
-      // ETAPA 5: Análise da Lógica de Bloqueio
-      console.log("\n🧠 ETAPA 5: Analisando lógica de bloqueio...");
+      // ETAPA 5: Análise da Lógica de Bloqueio e Redução de Velocidade
+      console.log("\n🧠 ETAPA 5: Analisando lógica de bloqueio e redução...");
       const analiseLogica: any = {
         codigosBloqueioProgramados: {
           'CA': 'Cancelado por Atraso',
           'CM': 'Cortado Manualmente', 
           'CB': 'Cortado por Bloqueio',
-          'FA': 'Financeiro em Atraso'
+          'FA': 'Financeiro em Atraso',
+          'R': 'Redução de Velocidade',
+          'A': 'Ativo/Normal'
         },
         statusEncontrado: [],
         deveriaBloqueado: false,
         estaBloqueado: false,
+        estaComReducao: false,
         motivoBloqueio: [],
-        inconsistencias: []
+        inconsistencias: [],
+        politicaBloqueio: {
+          tipo: 'desconhecido',
+          descricao: ''
+        }
       };
 
-      // Analisar contratos
+      // Analisar contratos e identificar tipo de restrição
       if (diagnostico.etapas.contratos?.success) {
         diagnostico.etapas.contratos.contratos.forEach((contrato: any) => {
-          const statusInternet = String(contrato.status || contrato.situacao || '').toUpperCase();
+          const statusInternet = String(contrato.status_internet || contrato.status || '').toUpperCase();
+          const situacaoFinanceira = String(contrato.situacao_financeira_contrato || '').toUpperCase();
           const bloqueado = contrato.bloqueado === 'S' || contrato.bloqueado === true;
+          const pagoAteData = contrato.pago_ate_data || '';
           
           analiseLogica.statusEncontrado.push({
             contratoId: contrato.id,
-            status: statusInternet,
+            statusInternet: statusInternet,
+            situacaoFinanceira: situacaoFinanceira,
             bloqueado: bloqueado,
+            pagoAte: pagoAteData,
             interpretacao: analiseLogica.codigosBloqueioProgramados[statusInternet] || 'Status Desconhecido'
           });
 
-          // Verificar se DEVERIA estar bloqueado pela lógica
-          const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+          // Detectar tipo de restrição
+          const financialBlockStatus = ['CA', 'CM', 'CB'];
+          const reducaoStatus = ['FA', 'R'];
+          
           if (financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet) || bloqueado) {
             analiseLogica.estaBloqueado = true;
-            analiseLogica.motivoBloqueio.push(`Contrato ${contrato.id}: ${statusInternet} (${analiseLogica.codigosBloqueioProgramados[statusInternet] || 'Bloqueado'})`);
+            analiseLogica.politicaBloqueio.tipo = 'bloqueio_total';
+            analiseLogica.politicaBloqueio.descricao = 'Bloqueio Total - Cliente sem acesso à internet';
+            analiseLogica.motivoBloqueio.push(`Contrato ${contrato.id}: ${statusInternet} (BLOQUEIO TOTAL)`);
+          } else if (reducaoStatus.includes(statusInternet) || situacaoFinanceira === 'R') {
+            analiseLogica.estaComReducao = true;
+            analiseLogica.politicaBloqueio.tipo = 'reducao_velocidade';
+            analiseLogica.politicaBloqueio.descricao = 'Redução de Velocidade - Cliente online mas com velocidade limitada';
+            analiseLogica.motivoBloqueio.push(`Contrato ${contrato.id}: ${statusInternet} (REDUÇÃO DE VELOCIDADE - Pago até ${pagoAteData})`);
           }
         });
       }
 
       // Verificar se DEVERIA estar bloqueado baseado nos títulos
+      const hoje = new Date();
       const titulosVencidos = diagnostico.etapas.titulos?.vencidos || 0;
       const valorTotalAtraso = diagnostico.etapas.titulos?.titulosVencidos?.reduce(
         (sum: number, t: any) => sum + parseFloat(t.valor || 0), 
@@ -283,39 +304,80 @@ export const DiagnosticoClienteCompleto = () => {
         analiseLogica.motivoBloqueio.push(`${titulosVencidos} título(s) vencido(s) - R$ ${valorTotalAtraso.toFixed(2)}`);
       }
 
-      // Detectar inconsistências
+      // Detectar inconsistências com base em redução vs bloqueio
       const isOnline = diagnostico.etapas.statusOnline?.isOnline || false;
       
-      if (titulosVencidos > 0 && isOnline && !analiseLogica.estaBloqueado) {
-        analiseLogica.inconsistencias.push({
-          tipo: 'CLIENTE_DEVEDOR_ONLINE',
-          gravidade: 'ALTA',
-          descricao: `Cliente possui ${titulosVencidos} título(s) vencido(s) totalizando R$ ${valorTotalAtraso.toFixed(2)}, está ONLINE mas NÃO está marcado como bloqueado no sistema`,
-          acaoSugerida: 'Verificar se o bloqueio automático está configurado corretamente no IXC'
-        });
+      // Calcular dias de atraso da fatura mais antiga vencida
+      let diasAtrasoMaisAntigo = 0;
+      if (diagnostico.etapas.titulos?.titulosVencidos?.length > 0) {
+        const maisAntigoVencimento = new Date(
+          Math.min(...diagnostico.etapas.titulos.titulosVencidos.map((t: any) => new Date(t.data_vencimento).getTime()))
+        );
+        diasAtrasoMaisAntigo = Math.floor((hoje.getTime() - maisAntigoVencimento.getTime()) / (1000 * 60 * 60 * 24));
       }
 
+      // Análise baseada na política de bloqueio detectada
+      if (analiseLogica.estaComReducao && isOnline && titulosVencidos > 0) {
+        analiseLogica.inconsistencias.push({
+          tipo: 'REDUCAO_VELOCIDADE_ATIVA',
+          gravidade: 'MÉDIA',
+          descricao: `Cliente está ONLINE com REDUÇÃO DE VELOCIDADE por débito de ${titulosVencidos} fatura(s) vencida(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}). Política: redução antes do bloqueio total.`,
+          acaoSugerida: `Sistema funcionando conforme esperado. Após ${diasAtrasoMaisAntigo} dias de atraso, aplicou redução de velocidade. Verificar quando será aplicado bloqueio total.`,
+          detalhamento: {
+            diasAtraso: diasAtrasoMaisAntigo,
+            valorDevido: valorTotalAtraso,
+            titulosVencidos: titulosVencidos,
+            politica: 'Redução → Bloqueio Total'
+          }
+        });
+      }
+      
       if (analiseLogica.estaBloqueado && isOnline) {
         analiseLogica.inconsistencias.push({
           tipo: 'BLOQUEADO_MAS_ONLINE',
           gravidade: 'CRÍTICA',
-          descricao: 'Cliente marcado como BLOQUEADO no sistema mas está ONLINE e navegando',
-          acaoSugerida: 'Possível falha no sistema de bloqueio do concentrador/OLT'
+          descricao: `Cliente marcado como BLOQUEADO TOTALMENTE (${analiseLogica.motivoBloqueio.join(', ')}) mas está ONLINE e navegando`,
+          acaoSugerida: 'URGENTE: Falha no sistema de bloqueio do concentrador/OLT. Cliente deveria estar sem acesso.',
+          detalhamento: {
+            statusSistema: 'Bloqueado',
+            statusReal: 'Online',
+            risco: 'Cliente inadimplente com acesso total'
+          }
         });
       }
 
-      if (!analiseLogica.estaBloqueado && titulosVencidos === 0 && isOnline) {
+      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidos > 0 && isOnline) {
+        analiseLogica.inconsistencias.push({
+          tipo: 'DEVEDOR_SEM_RESTRICAO',
+          gravidade: 'ALTA',
+          descricao: `Cliente possui ${titulosVencidos} título(s) vencido(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}), está ONLINE mas NÃO tem nenhuma restrição no sistema`,
+          acaoSugerida: 'Verificar configuração de bloqueio automático no IXC. Cliente devedor sem qualquer penalidade.',
+          detalhamento: {
+            diasAtraso: diasAtrasoMaisAntigo,
+            valorDevido: valorTotalAtraso,
+            statusEsperado: 'Redução ou Bloqueio',
+            statusAtual: 'Normal'
+          }
+        });
+      }
+
+      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidos === 0 && isOnline) {
         analiseLogica.inconsistencias.push({
           tipo: 'SITUACAO_REGULAR',
           gravidade: 'NENHUMA',
-          descricao: 'Cliente sem débitos, não bloqueado e online - situação regular',
-          acaoSugerida: 'Nenhuma ação necessária'
+          descricao: 'Cliente sem débitos, sem restrições e online - situação completamente regular',
+          acaoSugerida: 'Nenhuma ação necessária',
+          detalhamento: {
+            statusFinanceiro: 'Em dia',
+            statusAcesso: 'Normal',
+            situacao: 'Regular'
+          }
         });
       }
 
       diagnostico.etapas.analiseLogica = analiseLogica;
 
-      // Gerar resumo
+      // Gerar resumo expandido
       diagnostico.resumo = {
         clienteEncontrado: diagnostico.etapas.dadosBasicos?.success || false,
         isOnline: isOnline,
@@ -323,8 +385,11 @@ export const DiagnosticoClienteCompleto = () => {
         temAtraso: diagnostico.etapas.titulos?.temAtraso || false,
         titulosVencidos: titulosVencidos,
         valorTotalAtraso: valorTotalAtraso,
+        diasAtrasoMaisAntigo: diasAtrasoMaisAntigo,
         deveriaBloqueado: analiseLogica.deveriaBloqueado,
         estaBloqueado: analiseLogica.estaBloqueado,
+        estaComReducao: analiseLogica.estaComReducao,
+        politicaBloqueio: analiseLogica.politicaBloqueio,
         temInconsistencias: analiseLogica.inconsistencias.length > 0,
         inconsistencias: analiseLogica.inconsistencias
       };
@@ -336,9 +401,11 @@ export const DiagnosticoClienteCompleto = () => {
       console.log("Tem contratos:", diagnostico.resumo.temContratos);
       console.log("Tem atraso:", diagnostico.resumo.temAtraso);
       console.log("Títulos vencidos:", diagnostico.resumo.titulosVencidos);
+      console.log("Dias de atraso (mais antigo):", diagnostico.resumo.diasAtrasoMaisAntigo);
       console.log("Valor total em atraso: R$", diagnostico.resumo.valorTotalAtraso.toFixed(2));
-      console.log("Deveria estar bloqueado:", diagnostico.resumo.deveriaBloqueado);
-      console.log("Está bloqueado no sistema:", diagnostico.resumo.estaBloqueado);
+      console.log("Está bloqueado (total):", diagnostico.resumo.estaBloqueado);
+      console.log("Está com redução de velocidade:", diagnostico.resumo.estaComReducao);
+      console.log("Política aplicada:", diagnostico.resumo.politicaBloqueio.tipo);
       console.log("Inconsistências detectadas:", diagnostico.resumo.inconsistencias.length);
 
       setResult(diagnostico);
