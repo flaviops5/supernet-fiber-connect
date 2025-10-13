@@ -1838,6 +1838,84 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_analytics: {
+        Row: {
+          active_contracts: number
+          aging: Json
+          arr: number
+          average_ticket: number
+          churn_rate: number
+          churned_contracts: number
+          computation_time_ms: number | null
+          created_at: string
+          created_by: string | null
+          day_bucket: string
+          id: string
+          ixc_api_calls: number | null
+          monthly_revenue: Json
+          mrr: number
+          overdue_amount: number
+          overdue_invoices: number
+          overdue_rate: number
+          plan_performance: Json
+          projected_arr: number
+          projected_mrr: number
+          raw_counts: Json
+          top_debtors: Json
+          total_contracts: number
+        }
+        Insert: {
+          active_contracts: number
+          aging?: Json
+          arr: number
+          average_ticket: number
+          churn_rate: number
+          churned_contracts: number
+          computation_time_ms?: number | null
+          created_at?: string
+          created_by?: string | null
+          day_bucket?: string
+          id?: string
+          ixc_api_calls?: number | null
+          monthly_revenue?: Json
+          mrr: number
+          overdue_amount: number
+          overdue_invoices: number
+          overdue_rate: number
+          plan_performance?: Json
+          projected_arr: number
+          projected_mrr: number
+          raw_counts?: Json
+          top_debtors?: Json
+          total_contracts: number
+        }
+        Update: {
+          active_contracts?: number
+          aging?: Json
+          arr?: number
+          average_ticket?: number
+          churn_rate?: number
+          churned_contracts?: number
+          computation_time_ms?: number | null
+          created_at?: string
+          created_by?: string | null
+          day_bucket?: string
+          id?: string
+          ixc_api_calls?: number | null
+          monthly_revenue?: Json
+          mrr?: number
+          overdue_amount?: number
+          overdue_invoices?: number
+          overdue_rate?: number
+          plan_performance?: Json
+          projected_arr?: number
+          projected_mrr?: number
+          raw_counts?: Json
+          top_debtors?: Json
+          total_contracts?: number
+        }
+        Relationships: []
+      }
       hero_settings: {
         Row: {
           badge_text: string

@@ -92,11 +92,18 @@ O sistema possui **64 Edge Functions** organizadas em `supabase/functions/`, sen
 **Retorna:** Total de clientes online/offline
 
 ### ixc-financial-analytics
-**Função:** Análise financeira  
+**Função:** Análise financeira completa com persistência histórica  
+**Autenticação:** ✅ Requer JWT  
+**Persistência:** ✅ Salva histórico diário na tabela `financial_analytics`  
+**Arquitetura:** Circuit breaker + Structured logger + IXC proxy  
 **Métricas:**
-- Receita mensal/anual
-- Taxa de inadimplência
-- Projeções de fluxo de caixa
+- MRR/ARR e tickets médios
+- Inadimplência com aging (0-30, 31-60, 61-90, 90+ dias)
+- Top 10 devedores
+- Churn rate (global e por plano)
+- Performance por plano
+- Projeções baseadas em churn e inadimplência
+- Série temporal (12 meses)
 
 ### ixc-list-contracts
 **Função:** Listagem de contratos ativos
