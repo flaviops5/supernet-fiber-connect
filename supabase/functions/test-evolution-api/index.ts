@@ -15,56 +15,114 @@ serve(async (req) => {
     const baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
     const phoneNumber = Deno.env.get('EVOLUTION_PHONE_NUMBER');
 
-    console.log('🔍 Testing Evolution API connection...');
-    console.log('📞 Phone Number:', phoneNumber);
-    console.log('🌐 Base URL (raw):', baseUrl);
+    console.log('🔍 Testing Evolution API...');
 
     if (!apiKey || !baseUrl) {
-      throw new Error('Missing Evolution API credentials');
+      throw new Error('Missing Evolution API credentials (EVOLUTION_API_KEY or EVOLUTION_API_BASE_URL)');
     }
 
-    // Normalize base URL to avoid double slashes
+    // Normalize base URL
     const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
 
-    // Test instance status with SDR2
-    const instanceName = 'SDR2';
-    const testUrl = `${normalizedBaseUrl}/instance/connectionState/${instanceName}`;
-
-    console.log('🔗 Testing URL:', testUrl);
-
-    const response = await fetch(testUrl, {
-      method: 'GET',
-      headers: {
-        'apikey': apiKey,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json().catch(() => ({ noJson: true }));
+    // Parse request body to get action
+    let action = 'test-instance';
+    let instanceName = 'SDR2';
     
-    console.log('📥 Evolution API Raw Status:', response.status);
-    console.log('✅ Evolution API Response Body:', JSON.stringify(data, null, 2));
+    try {
+      const body = await req.json();
+      action = body.action || 'test-instance';
+      instanceName = body.instance || 'SDR2';
+      console.log('📋 Action:', action, 'Instance:', instanceName);
+    } catch (e) {
+      console.log('⚠️ No body provided, using defaults');
+    }
 
-    const success = response.ok;
+    // Execute action based on request
+    switch (action) {
+      case 'list-instances': {
+        console.log('📋 Listing all instances...');
+        const listUrl = `${normalizedBaseUrl}/instance/fetchInstances`;
+        console.log('🔗 URL:', listUrl);
 
-    return new Response(
-      JSON.stringify({
-        success,
-        status: response.status,
-        message: success ? 'Evolution API connection successful' : 'Evolution API returned a non-200 status',
-        data,
-        config: {
-          baseUrl: normalizedBaseUrl,
-          phoneNumber,
-          instanceName,
-          testedUrl: testUrl,
-        }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        const response = await fetch(listUrl, {
+          method: 'GET',
+          headers: {
+            'apikey': apiKey,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json().catch(() => ({ error: 'Invalid JSON response' }));
+        console.log('📥 Instances:', JSON.stringify(data, null, 2));
+
+        return new Response(
+          JSON.stringify({
+            success: response.ok,
+            status: response.status,
+            message: response.ok ? 'Instances listed successfully' : 'Failed to list instances',
+            instances: data,
+            config: {
+              baseUrl: normalizedBaseUrl,
+              testedUrl: listUrl,
+            }
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
       }
-    );
+
+      case 'test-instance': {
+        console.log(`🔍 Testing instance: ${instanceName}`);
+        const testUrl = `${normalizedBaseUrl}/instance/connectionState/${instanceName}`;
+        console.log('🔗 URL:', testUrl);
+
+        const response = await fetch(testUrl, {
+          method: 'GET',
+          headers: {
+            'apikey': apiKey,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json().catch(() => ({ error: 'Invalid JSON response' }));
+        console.log('📥 Connection State:', JSON.stringify(data, null, 2));
+
+        return new Response(
+          JSON.stringify({
+            success: response.ok,
+            status: response.status,
+            message: response.ok ? `Instance ${instanceName} connection OK` : `Instance ${instanceName} not found or not connected`,
+            data,
+            config: {
+              baseUrl: normalizedBaseUrl,
+              phoneNumber,
+              instanceName,
+              testedUrl: testUrl,
+            }
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      default: {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Unknown action: ${action}`,
+            validActions: ['list-instances', 'test-instance']
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+    }
   } catch (error) {
     console.error('❌ Evolution API test failed:', error);
     
@@ -72,7 +130,7 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message,
-        details: 'Failed to connect to Evolution API. Check your credentials and base URL.',
+        details: 'Failed to connect to Evolution API. Check credentials and base URL.',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -31,6 +31,7 @@ import Apresentacao from "./pages/Apresentacao";
 import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
 import OmnichannelCodes from "./pages/OmnichannelCodes";
+import TestWhatsAppIntegration from "./pages/TestWhatsAppIntegration";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -78,6 +79,7 @@ const App = () => {
                     <Route path="/teste_fonte_queimada" element={<TesteFonteQueimada />} />
                     <Route path="/gpt_5" element={<GPT5 />} />
                     <Route path="/test-ixc-subjects" element={<TestIXCSubjects />} />
+                    <Route path="/test-whatsapp" element={<TestWhatsAppIntegration />} />
                     <Route path="/system-metrics" element={<SystemMetrics />} />
                     <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/codigo" element={<Codigo />} />
