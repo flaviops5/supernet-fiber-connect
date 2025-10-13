@@ -233,17 +233,100 @@ export const DiagnosticoClienteCompleto = () => {
         console.error("✗ Erro ao buscar títulos:", error.message);
       }
 
+      // ETAPA 5: Análise da Lógica de Bloqueio
+      console.log("\n🧠 ETAPA 5: Analisando lógica de bloqueio...");
+      const analiseLogica: any = {
+        codigosBloqueioProgramados: {
+          'CA': 'Cancelado por Atraso',
+          'CM': 'Cortado Manualmente', 
+          'CB': 'Cortado por Bloqueio',
+          'FA': 'Financeiro em Atraso'
+        },
+        statusEncontrado: [],
+        deveriaBloqueado: false,
+        estaBloqueado: false,
+        motivoBloqueio: [],
+        inconsistencias: []
+      };
+
+      // Analisar contratos
+      if (diagnostico.etapas.contratos?.success) {
+        diagnostico.etapas.contratos.contratos.forEach((contrato: any) => {
+          const statusInternet = String(contrato.status || contrato.situacao || '').toUpperCase();
+          const bloqueado = contrato.bloqueado === 'S' || contrato.bloqueado === true;
+          
+          analiseLogica.statusEncontrado.push({
+            contratoId: contrato.id,
+            status: statusInternet,
+            bloqueado: bloqueado,
+            interpretacao: analiseLogica.codigosBloqueioProgramados[statusInternet] || 'Status Desconhecido'
+          });
+
+          // Verificar se DEVERIA estar bloqueado pela lógica
+          const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
+          if (financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet) || bloqueado) {
+            analiseLogica.estaBloqueado = true;
+            analiseLogica.motivoBloqueio.push(`Contrato ${contrato.id}: ${statusInternet} (${analiseLogica.codigosBloqueioProgramados[statusInternet] || 'Bloqueado'})`);
+          }
+        });
+      }
+
+      // Verificar se DEVERIA estar bloqueado baseado nos títulos
+      const titulosVencidos = diagnostico.etapas.titulos?.vencidos || 0;
+      const valorTotalAtraso = diagnostico.etapas.titulos?.titulosVencidos?.reduce(
+        (sum: number, t: any) => sum + parseFloat(t.valor || 0), 
+        0
+      ) || 0;
+
+      if (titulosVencidos > 0) {
+        analiseLogica.deveriaBloqueado = true;
+        analiseLogica.motivoBloqueio.push(`${titulosVencidos} título(s) vencido(s) - R$ ${valorTotalAtraso.toFixed(2)}`);
+      }
+
+      // Detectar inconsistências
+      const isOnline = diagnostico.etapas.statusOnline?.isOnline || false;
+      
+      if (titulosVencidos > 0 && isOnline && !analiseLogica.estaBloqueado) {
+        analiseLogica.inconsistencias.push({
+          tipo: 'CLIENTE_DEVEDOR_ONLINE',
+          gravidade: 'ALTA',
+          descricao: `Cliente possui ${titulosVencidos} título(s) vencido(s) totalizando R$ ${valorTotalAtraso.toFixed(2)}, está ONLINE mas NÃO está marcado como bloqueado no sistema`,
+          acaoSugerida: 'Verificar se o bloqueio automático está configurado corretamente no IXC'
+        });
+      }
+
+      if (analiseLogica.estaBloqueado && isOnline) {
+        analiseLogica.inconsistencias.push({
+          tipo: 'BLOQUEADO_MAS_ONLINE',
+          gravidade: 'CRÍTICA',
+          descricao: 'Cliente marcado como BLOQUEADO no sistema mas está ONLINE e navegando',
+          acaoSugerida: 'Possível falha no sistema de bloqueio do concentrador/OLT'
+        });
+      }
+
+      if (!analiseLogica.estaBloqueado && titulosVencidos === 0 && isOnline) {
+        analiseLogica.inconsistencias.push({
+          tipo: 'SITUACAO_REGULAR',
+          gravidade: 'NENHUMA',
+          descricao: 'Cliente sem débitos, não bloqueado e online - situação regular',
+          acaoSugerida: 'Nenhuma ação necessária'
+        });
+      }
+
+      diagnostico.etapas.analiseLogica = analiseLogica;
+
       // Gerar resumo
       diagnostico.resumo = {
         clienteEncontrado: diagnostico.etapas.dadosBasicos?.success || false,
-        isOnline: diagnostico.etapas.statusOnline?.isOnline || false,
+        isOnline: isOnline,
         temContratos: (diagnostico.etapas.contratos?.totalContratos || 0) > 0,
         temAtraso: diagnostico.etapas.titulos?.temAtraso || false,
-        titulosVencidos: diagnostico.etapas.titulos?.vencidos || 0,
-        valorTotalAtraso: diagnostico.etapas.titulos?.titulosVencidos?.reduce(
-          (sum: number, t: any) => sum + parseFloat(t.valor || 0), 
-          0
-        ) || 0
+        titulosVencidos: titulosVencidos,
+        valorTotalAtraso: valorTotalAtraso,
+        deveriaBloqueado: analiseLogica.deveriaBloqueado,
+        estaBloqueado: analiseLogica.estaBloqueado,
+        temInconsistencias: analiseLogica.inconsistencias.length > 0,
+        inconsistencias: analiseLogica.inconsistencias
       };
 
       console.log("\n📊 RESUMO DO DIAGNÓSTICO:");
@@ -254,6 +337,9 @@ export const DiagnosticoClienteCompleto = () => {
       console.log("Tem atraso:", diagnostico.resumo.temAtraso);
       console.log("Títulos vencidos:", diagnostico.resumo.titulosVencidos);
       console.log("Valor total em atraso: R$", diagnostico.resumo.valorTotalAtraso.toFixed(2));
+      console.log("Deveria estar bloqueado:", diagnostico.resumo.deveriaBloqueado);
+      console.log("Está bloqueado no sistema:", diagnostico.resumo.estaBloqueado);
+      console.log("Inconsistências detectadas:", diagnostico.resumo.inconsistencias.length);
 
       setResult(diagnostico);
 
@@ -416,6 +502,44 @@ export const DiagnosticoClienteCompleto = () => {
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-48">
                 {JSON.stringify(result.etapas.titulos, null, 2)}
+              </pre>
+            </div>
+          </details>
+
+          <details className="border rounded-lg border-purple-500">
+            <summary className="cursor-pointer p-3 hover:bg-muted flex items-center justify-between font-semibold">
+              <span>🧠 Análise da Lógica de Bloqueio</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result.etapas.analiseLogica, "Análise da Lógica");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </summary>
+            <div className="p-3 bg-muted/50 space-y-3">
+              {result.etapas.analiseLogica?.inconsistencias?.map((inc: any, idx: number) => (
+                <div 
+                  key={idx}
+                  className={`p-3 rounded border-l-4 ${
+                    inc.gravidade === 'CRÍTICA' ? 'border-red-500 bg-red-50 dark:bg-red-950' :
+                    inc.gravidade === 'ALTA' ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' :
+                    'border-green-500 bg-green-50 dark:bg-green-950'
+                  }`}
+                >
+                  <div className="font-semibold text-sm">
+                    {inc.tipo} {inc.gravidade !== 'NENHUMA' && `(${inc.gravidade})`}
+                  </div>
+                  <div className="text-xs mt-1">{inc.descricao}</div>
+                  <div className="text-xs mt-2 italic">→ {inc.acaoSugerida}</div>
+                </div>
+              ))}
+              <pre className="text-xs overflow-auto max-h-48 mt-3">
+                {JSON.stringify(result.etapas.analiseLogica, null, 2)}
               </pre>
             </div>
           </details>
