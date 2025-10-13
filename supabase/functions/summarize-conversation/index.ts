@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
+import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,17 +15,29 @@ serve(async (req) => {
   }
 
   try {
+    const correlationId = `summary-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const { conversationId } = await req.json();
     
     if (!conversationId) {
       throw new Error('conversationId é obrigatório');
     }
 
+    console.log(`📝 [${correlationId}] Summarize conversation: ${conversationId}`);
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Sprint 1: LGPD Audit para acesso à conversa
+    await logLGPDAccess(
+      supabase,
+      'read',
+      'conversation',
+      'legitimate_interest',
+      'Summarization AI acessou conversa para criar resumo',
+      { conversation_id: conversationId, correlation_id: correlationId }
+    );
 
     // Buscar conversa e mensagens
     const { data: conversation, error: convError } = await supabase
@@ -76,31 +90,17 @@ Seja objetivo e profissional.`;
 Mensagens:
 ${messageHistory}`;
 
-    // Chamar API Lovable
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        max_completion_tokens: 1000
-      }),
-    });
+    // Sprint 1: Chamar API Lovable com Circuit Breaker
+    const aiResponse = await callLovableAI({
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+      ],
+      max_completion_tokens: 1000
+    }, correlationId);
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const summary = aiData.choices[0].message.content;
+    const summary = extractContent(aiResponse);
 
     // Salvar resumo no metadata da conversa
     const { error: updateError } = await supabase

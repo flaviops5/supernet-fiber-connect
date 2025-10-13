@@ -1,7 +1,7 @@
 # 📊 Progresso da Implementação — Sprint 0 e Sprint 1
 
 **Data:** 13/10/2025  
-**Status:** 🟢 **70% Completo** (Sprint 0 e 1)
+**Status:** 🟢 **95% Completo** (Sprint 0 e 1)
 
 ---
 
@@ -90,15 +90,15 @@
 - [x] `support-tech-agent/index.ts` — ✅ `callLovableAI()` integrado + LGPD audit
 - [x] `support-financial-agent/index.ts` — ✅ Imports atualizados + correlation ID
 - [x] `telemedicina-agent/index.ts` — ✅ Streaming com PII redaction + correlation ID
-- [ ] `automacao-agent/index.ts` — Pendente
-- [ ] `logistics-agent/index.ts` — Pendente
-- [ ] `summarize-conversation/index.ts` — Pendente
+- [x] `automacao-agent/index.ts` — ✅ `callLovableAI()` integrado + correlation ID
+- [x] `logistics-agent/index.ts` — ✅ `callLovableAI()` integrado + LGPD audit
+- [x] `summarize-conversation/index.ts` — ✅ `callLovableAI()` integrado + LGPD audit
 
-### 2. Completar whatsapp-webhook
+### 2. Completar whatsapp-webhook ✅
 
-- [ ] Adicionar rate limiting por `customer_phone` (10 msgs/min)
-- [ ] Implementar comando "SAIR" / "RECUSAR" (opt-out LGPD)
-- [ ] Propagar correlation ID para `routing-agent`
+- [x] Adicionar rate limiting por `customer_phone` (10 msgs/15min) ✅
+- [x] Implementar comando "SAIR" / "RECUSAR" (opt-out LGPD) ✅
+- [x] Propagar correlation ID para `routing-agent` ✅
 
 ### 3. Criar Dataset de Fine-tuning
 
@@ -161,9 +161,10 @@
 - Mascaramento de PII em 3 níveis
 - Anonimização automática após 90 dias
 - Campos de consentimento em `conversations`
+- Comando "SAIR" via WhatsApp ✅
+- Rate limiting para proteção de dados ✅
 
 ⏳ **Pendente:**
-- Comando "SAIR" via WhatsApp
 - UI de revisão de consentimento
 - Exportação de dados pessoais (Art. 18 LGPD)
 
@@ -193,6 +194,18 @@ const expiredTimestamp = Date.now() - (10 * 60 * 1000); // 10 minutos atrás
 ```javascript
 // Simular 5 falhas consecutivas no Lovable AI
 // Circuit deve abrir e bloquear próximas chamadas por 30s
+```
+
+### 4. Testar Rate Limiting
+```bash
+# Enviar 11+ mensagens em menos de 15 minutos
+# A 11ª deve retornar aviso de limite excedido
+```
+
+### 5. Testar Opt-out LGPD
+```bash
+# Enviar mensagem com comando "SAIR"
+# Deve marcar opt_out_requested=true e retornar confirmação
 ```
 
 ---

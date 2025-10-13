@@ -1,5 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
+import { redactPII } from '../_shared/pii-redaction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,12 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    const correlationId = `automacao-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    console.log(`🏠 [${correlationId}] Automação agent request`);
 
     const systemPrompt = `Você é um assistente especializado em AUTOMAÇÃO RESIDENCIAL da SUPERNET FIBRA, uma empresa de telecomunicações e tecnologia.
 
@@ -128,56 +128,18 @@ WhatsApp: (61) 99947-5886
 
 Seja sempre profissional, prestativo e técnico. Use emojis moderadamente para tornar a conversa mais amigável. 🏠✨`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    });
+    // Sprint 1: Usar callLovableAI com Circuit Breaker e retry
+    const aiResponse = await callLovableAI({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      temperature: 0.7,
+      max_completion_tokens: 1000,
+    }, correlationId);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em instantes." }), 
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Serviço temporariamente indisponível." }), 
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "Erro ao processar sua solicitação." }), 
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const data = await response.json();
-    const assistantMessage = data.choices[0]?.message?.content;
+    const assistantMessage = extractContent(aiResponse);
 
     if (!assistantMessage) {
       throw new Error('Resposta vazia da API');

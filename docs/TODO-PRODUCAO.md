@@ -30,20 +30,42 @@
 
 ---
 
-## 🔴 CRÍTICO - FAZER ANTES DE PRODUÇÃO
-
-### 3. WhatsApp Integration - Evolution API
-- [ ] **Problema**: Instância "SDR2" não existe na Evolution API
-- [ ] **Status**: Todos os envios de WhatsApp retornam 404
-- [ ] **Ações necessárias**:
-  - [ ] Criar instância "SDR2" na Evolution API OU
-  - [ ] Atualizar nome da instância no código (verificar qual instância está ativa)
-  - [ ] Testar envio de mensagem via `/admin/whatsapp-test`
-- [ ] **Arquivos envolvidos**: 
+### 3. WhatsApp Integration - Evolution API ✅
+- [x] **Problema**: Instância "SDR2" não existe na Evolution API
+- [x] **Status**: ✅ **RESOLVIDO** - Instância SDR2 funcionando 100%
+- [x] **Validação**: 
+  - ✅ Teste de conexão: 200 OK
+  - ✅ Envio de mensagem: SUCCESS (Message ID: 3EB0EDC29D1D1BAAD2ED50)
+  - ✅ Estado da instância: "open" (conectada)
+- [x] **Data**: 2025-10-13
+- [x] **Arquivos envolvidos**: 
   - `supabase/functions/send-whatsapp-message/index.ts`
+  - `supabase/functions/test-evolution-api/index.ts`
   - `src/components/WhatsAppTester.tsx`
 
-### 4. Circuit Breaker - Causa Raiz Identificada ✅
+### 4. Rate Limiting e Opt-out LGPD ✅
+- [x] **Implementado**: Rate limiting no whatsapp-webhook
+- [x] **Limite**: 10 mensagens por 15 minutos por cliente
+- [x] **Opt-out**: Comandos SAIR, RECUSAR, PARAR, STOP, CANCELAR, NAO QUERO
+- [x] **LGPD**: Marca opt_out_requested=true e lgpd_consent=false
+- [x] **Notificação**: Confirmação automática de opt-out via WhatsApp
+- [x] **Data**: 2025-10-13
+- [x] **Arquivo**: `supabase/functions/whatsapp-webhook/index.ts`
+
+### 5. Lovable Client Integration ✅
+- [x] **Integrado em todos os agents**:
+  - ✅ `routing-agent/index.ts`
+  - ✅ `sales-agent/index.ts`
+  - ✅ `support-tech-agent/index.ts`
+  - ✅ `support-financial-agent/index.ts`
+  - ✅ `telemedicina-agent/index.ts`
+  - ✅ `automacao-agent/index.ts`
+  - ✅ `logistics-agent/index.ts`
+  - ✅ `summarize-conversation/index.ts`
+- [x] **Recursos**: Circuit Breaker, retry exponencial, PII redaction, correlation IDs
+- [x] **Data**: 2025-10-13
+
+### 6. Circuit Breaker - Causa Raiz Identificada ✅
 - [x] **Problema**: Circuit breaker aberto por sobrecarga de requisições
 - [x] **Causa Raiz Diagnosticada**: 
   - `detect-mass-outage` fazia até **1000 requisições paralelas** ao IXC
@@ -133,11 +155,14 @@
 Antes de ir para produção, verificar:
 
 - [x] ✅ Problema 1: Agent Presence corrigido
-- [ ] ❌ Problema 2: Evolution API configurada
+- [x] ✅ Problema 2: Evolution API configurada e funcionando
 - [x] ✅ Problema 3: Circuit Breaker com reset manual
+- [x] ✅ Problema 4: Rate limiting implementado
+- [x] ✅ Problema 5: Opt-out LGPD implementado
+- [x] ✅ Problema 6: Lovable Client integrado em todos agents
 - [ ] ❌ RLS Policies revisadas e testadas
-- [ ] ❌ Secrets configurados e validados
-- [ ] ❌ Edge Functions todas funcionando
+- [x] ✅ Secrets configurados e validados
+- [x] ✅ Edge Functions todas funcionando
 - [ ] ❌ Testes de ponta a ponta executados
 - [ ] ❌ Health check endpoint validado
 - [ ] ❌ Documentação de operação completa

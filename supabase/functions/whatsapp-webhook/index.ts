@@ -138,6 +138,89 @@ serve(async (req) => {
         console.log(`🆔 [${correlationId}] CPF detectado na mensagem (mascarado)`);
       }
 
+      // 🛡️ RATE LIMITING: Verificar limite de mensagens
+      const rateLimitWindow = 15; // minutos
+      const maxMessagesPerWindow = 10;
+      
+      const { data: recentMessages, error: rateLimitError } = await supabase
+        .from('conversation_messages')
+        .select('id, created_at')
+        .eq('sender_type', 'customer')
+        .gte('created_at', new Date(Date.now() - rateLimitWindow * 60 * 1000).toISOString())
+        .ilike('metadata->>customer_phone', customerPhone);
+
+      if (!rateLimitError && recentMessages && recentMessages.length >= maxMessagesPerWindow) {
+        console.warn(`⚠️ [${correlationId}] Rate limit exceeded for ${redactPII(customerPhone, 'logs')}`);
+        
+        // Enviar mensagem de aviso
+        await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            phone: customerPhone,
+            message: '⚠️ Você atingiu o limite de mensagens. Por favor, aguarde alguns minutos antes de enviar novas mensagens.\n\nSe for urgente, ligue: (61) 99947-5886'
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, rateLimited: true, correlationId }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // 🚫 OPT-OUT LGPD: Verificar comandos de cancelamento
+      const optOutCommands = ['SAIR', 'RECUSAR', 'PARAR', 'STOP', 'CANCELAR', 'NAO QUERO'];
+      const normalizedMessage = messageContent.toUpperCase().trim();
+      
+      if (optOutCommands.includes(normalizedMessage)) {
+        console.log(`🚫 [${correlationId}] Opt-out requested by ${redactPII(customerPhone, 'logs')}`);
+        
+        // Marcar opt-out na conversa
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('customer_phone', customerPhone)
+          .eq('channel', 'whatsapp')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (conversation) {
+          await supabase
+            .from('conversations')
+            .update({
+              opt_out_requested: true,
+              opt_out_date: new Date().toISOString(),
+              status: 'resolved',
+              resolved_at: new Date().toISOString(),
+              lgpd_consent: false,
+              metadata: { opt_out_reason: 'user_request', correlationId }
+            })
+            .eq('id', conversation.id);
+
+          // Log LGPD
+          await logLGPDAccess(
+            supabase,
+            'opt_out',
+            'conversation',
+            'user_consent',
+            'Cliente solicitou opt-out via WhatsApp',
+            { phone: customerPhone, conversation_id: conversation.id }
+          );
+        }
+
+        // Enviar mensagem de confirmação
+        await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            phone: customerPhone,
+            message: '✅ Entendido! Você não receberá mais mensagens automáticas da SUPERNET FIBRA.\n\nCaso precise de atendimento no futuro, pode nos contatar:\n📞 (61) 99947-5886\n✉️ contato@supernetfibra.com.br\n\nObrigado!'
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, optOut: true, correlationId }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Check for feedback response (números de 1 a 5)
       const feedbackMatch = messageContent.trim().match(/^[1-5]$/);
       if (feedbackMatch) {
