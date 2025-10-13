@@ -114,6 +114,7 @@ serve(async (req) => {
         }
 
         const clientName = customer.razao || customer.nome_fantasia || 'Cliente';
+        const clientCpf = customer.cnpj_cpf || 'Sem CPF';
         
         // Verificar se o cliente está com status FA
         const customerStatus = (customer.status || '').toUpperCase();
@@ -122,11 +123,12 @@ serve(async (req) => {
         // Registrar todos os clientes encontrados para debug
         allClientsFound.push({
           name: clientName,
+          cpf: clientCpf,
           status: customerStatus,
           hasOverdueTitle: true
         });
         
-        console.log(`👤 Cliente ${clientName} (${clientId}) - Status: ${customerStatus} - É FA? ${isFAStatus}`);
+        console.log(`👤 Cliente ${clientName} | CPF: ${clientCpf} (ID: ${clientId}) - Status: ${customerStatus} - É FA? ${isFAStatus}`);
         
         if (!isFAStatus) {
           console.log(`⏭️  Pulando ${clientName} - não está em FA`);
@@ -153,11 +155,14 @@ serve(async (req) => {
       const matching = allClientsFound.filter(c => 
         c.name.toLowerCase().includes(testClientName.toLowerCase())
       );
-      console.log(`📋 Clientes que contêm "${testClientName}":`, matching);
+      console.log(`📋 Clientes que contêm "${testClientName}":`, JSON.stringify(matching, null, 2));
       
       if (matching.length === 0) {
         console.log(`⚠️ Nenhum cliente encontrado com nome contendo "${testClientName}"`);
-        console.log(`💡 Primeiros 10 clientes encontrados:`, allClientsFound.slice(0, 10).map(c => `${c.name} (${c.status})`));
+        console.log(`💡 Primeiros 10 clientes encontrados com títulos vencidos:`);
+        allClientsFound.slice(0, 10).forEach(c => {
+          console.log(`  - ${c.name} | CPF: ${c.cpf} | Status: ${c.status}`);
+        });
       }
     }
 
