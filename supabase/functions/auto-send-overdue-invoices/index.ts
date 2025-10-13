@@ -32,15 +32,44 @@ serve(async (req) => {
 
     // 1. Buscar clientes com status FA no IXC
     console.log('📡 Buscando clientes com status FA no IXC...');
-    const { data: customersResp } = await supabase.functions.invoke('ixc-integration', {
+    const { data: customersResp, error: ixcError } = await supabase.functions.invoke('ixc-integration', {
       body: JSON.stringify({ 
         action: 'getCustomersByStatus',
         params: { status: 'FINANCEIRO EM ATRASO', page: 1, limit: 500 }
       })
     });
 
-    if (!customersResp?.success || !customersResp.data) {
-      throw new Error('Erro ao buscar clientes por status no IXC');
+    console.log('📊 Resposta getCustomersByStatus:', { 
+      success: customersResp?.success, 
+      hasData: !!customersResp?.data,
+      dataLength: Array.isArray(customersResp?.data) ? customersResp.data.length : 'não é array',
+      error: ixcError,
+      responsePreview: JSON.stringify(customersResp).substring(0, 500)
+    });
+
+    if (ixcError) {
+      throw new Error(`Erro ao invocar ixc-integration: ${ixcError.message}`);
+    }
+
+    if (!customersResp?.success) {
+      throw new Error(`IXC retornou erro: ${customersResp?.error || 'Erro desconhecido'}`);
+    }
+
+    if (!customersResp.data || !Array.isArray(customersResp.data) || customersResp.data.length === 0) {
+      console.log('⚠️ Nenhum cliente com status FA encontrado');
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: 'Nenhum cliente com status FA encontrado',
+          stats: {
+            totalContracts: 0,
+            contractsFA: 0,
+            sent: 0,
+            errors: 0
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Mantemos o nome "contracts" por compatibilidade com o restante do código
