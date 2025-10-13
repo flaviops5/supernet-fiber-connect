@@ -8,263 +8,404 @@ O sistema possui **64 Edge Functions** organizadas em `supabase/functions/`, sen
 
 ---
 
-## 🧪 Funções de Teste (6)
-
-### test-hmac
-Testa a validação de assinaturas HMAC para comunicação segura entre funções.
-
-### test-evolution-api
-Verifica conectividade e funcionalidade da API Evolution (WhatsApp).
-
-### test-equipment-connectivity
-Testa conectividade com equipamentos de rede (ONUs, rádios).
-
-### test-whatsapp-webhook
-Simula webhooks do WhatsApp para validar fluxo de mensagens.
-
-### test-ixc-connection
-Valida conexão e autenticação com a API do IXC Provedor.
-
-### test-all-ixc-functions
-Executa bateria completa de testes em todas as integrações IXC.
-
----
-
 ## 🤖 Agentes de IA (6)
 
-### automacao-agent
-Agente especializado em automação residencial e dispositivos inteligentes. Responde dúvidas sobre Google Home, Alexa, lâmpadas inteligentes, etc.
-
-### logistics-agent
-Coordena agendamentos de instalação. Coleta dados do cliente, valida disponibilidade e cria compromissos no banco.
-
 ### routing-agent
-Roteador inteligente que analisa mensagens e direciona para o agente especializado correto (vendas, suporte técnico, financeiro, etc.).
+**Função:** Roteador inteligente central  
+**Responsabilidades:**
+- Análise de mensagens do cliente
+- Validação de CPF e busca no IXC
+- Verificação de quedas em massa (mass_outage_events)
+- Roteamento para agente especializado correto
+- Rate limiting por CPF
 
 ### sales-agent
-Agente de vendas que apresenta planos, verifica cobertura por CEP e fecha contratos.
+**Função:** Vendas e novos clientes  
+**Responsabilidades:**
+- Apresentação de planos disponíveis
+- Verificação de cobertura por CEP
+- Fechamento de contratos
+- Criação de leads no IXC
 
-### support-financial-agent
-Suporte financeiro: consulta faturas, envia segunda via, negocia débitos e processa pagamentos.
+### support-tech-agent (Luan)
+**Função:** Suporte técnico especializado  
+**Responsabilidades:**
+- Diagnóstico de problemas de conexão
+- Análise de ONUs e rádios
+- Abertura de chamados técnicos no IXC
+- Agendamento de visitas técnicas
 
-### support-tech-agent
-Suporte técnico: diagnostica problemas de conexão, analisa ONUs/rádios, abre chamados técnicos no IXC.
+### support-financial-agent (Júlia Martins)
+**Função:** Suporte financeiro  
+**Responsabilidades:**
+- Consulta de faturas e débitos
+- Envio de segunda via (PIX/Boleto)
+- Negociação de débitos
+- Processamento de pagamentos
+
+### automacao-agent
+**Função:** Automação residencial  
+**Responsabilidades:**
+- Suporte a dispositivos inteligentes (Google Home, Alexa)
+- Orientação sobre câmeras e sensores
+- Integração com sistemas de automação
+
+### telemedicina-agent
+**Função:** Telemedicina e saúde  
+**Responsabilidades:**
+- Agendamento de consultas
+- Autenticação de pacientes
+- Validação de CPF para telemedicina
+- Listagem de especialidades
 
 ---
 
 ## 🔗 Integrações IXC (15)
 
 ### ixc-proxy
-Proxy centralizado para todas as chamadas à API IXC. Implementa cache, rate limiting, circuit breaker e autenticação unificada.
+**Função:** Proxy centralizado para API IXC  
+**Features:**
+- Autenticação unificada (Basic Auth)
+- Cache inteligente (30s TTL)
+- Rate limiting
+- Circuit breaker pattern
+- HMAC signature validation
 
 ### ixc-integration
-Interface principal para operações IXC: buscar cliente, faturas, contratos, criar chamados, etc.
-
-### ixc-evolution-proxy
-Proxy específico para Evolution API integrada ao IXC.
+**Função:** Interface principal IXC  
+**Endpoints:**
+- searchCustomers: Busca cliente por CPF
+- getCustomerStatus: Status completo do cliente
+- createTicket: Abertura de chamados
+- rebootEquipment: Reinício remoto de ONUs
 
 ### ixc-count-clients
-Conta total de clientes ativos no IXC.
-
-### ixc-discover-gpon-endpoints
-Descobre automaticamente endpoints GPON disponíveis no IXC.
-
-### ixc-endpoints-health
-Verifica saúde (health check) dos endpoints IXC configurados.
+**Função:** Contabilização de clientes  
+**Retorna:** Total de clientes online/offline
 
 ### ixc-financial-analytics
-Analisa dados financeiros: receitas, inadimplência, projeções.
+**Função:** Análise financeira  
+**Métricas:**
+- Receita mensal/anual
+- Taxa de inadimplência
+- Projeções de fluxo de caixa
 
 ### ixc-list-contracts
-Lista contratos de clientes no IXC.
+**Função:** Listagem de contratos ativos
 
 ### ixc-list-plans
-Sincroniza e lista planos disponíveis no IXC.
-
-### ixc-list-subjects
-Lista assuntos/categorias de atendimento do IXC.
+**Função:** Sincronização de planos  
+**Features:** Busca todos os planos ativos no IXC e sincroniza com Supabase
 
 ### ixc-pon-status
-Monitora status de portas PON (GPON).
+**Função:** Monitoramento PON  
+**Monitora:** Status de portas PON (GPON), clientes por porta, nível de sinal
 
 ### ixc-radio-status
-Monitora status de rádios e torres.
+**Função:** Monitoramento de rádios  
+**Monitora:** Torres, rádios, clientes wireless
+
+### ixc-discover-gpon-endpoints
+**Função:** Descoberta automática de endpoints GPON
+
+### ixc-endpoints-health
+**Função:** Health check de endpoints IXC
+
+### ixc-evolution-proxy
+**Função:** Proxy para Evolution API integrado ao IXC
 
 ### ixc-revenue-stats
-Estatísticas detalhadas de receita.
+**Função:** Estatísticas detalhadas de receita
 
 ### ixc-sync-plans
-Sincroniza planos do IXC para o banco Supabase.
+**Função:** Sincronização automática de planos
 
 ### sync-ixc-documentation
-Sincroniza documentação da API IXC para base de conhecimento.
+**Função:** Sincronização de docs da API IXC para knowledge base
 
 ---
 
 ## 💬 WhatsApp e Comunicação (4)
 
 ### whatsapp-webhook
-Recebe webhooks do WhatsApp (Evolution API) e processa mensagens recebidas.
+**Função:** Recebimento de mensagens  
+**Events:** messages.upsert, messages.update, message.ack  
+**Fluxo:**
+1. Recebe webhook do WhatsApp (Evolution API)
+2. Valida evento e extrai dados da mensagem
+3. Cria/atualiza conversa no Supabase
+4. Chama routing-agent para processar
+5. Envia resposta via send-whatsapp-message
 
 ### send-whatsapp-message
-Envia mensagens via WhatsApp com suporte a texto, mídia e templates.
+**Função:** Envio de mensagens  
+**Suporta:**
+- Texto simples
+- Mídia (imagens, áudios, vídeos)
+- Templates estruturados
+- Delay configurável entre mensagens
 
 ### voice-to-text
-Converte áudios de WhatsApp em texto usando IA.
+**Função:** Transcrição de áudio  
+**Features:**
+- Converte áudios do WhatsApp em texto
+- Usa API de transcrição (Whisper ou similar)
+- Processa automaticamente quando cliente envia áudio
 
 ### send-locaweb-email
-Envia emails via API Locaweb com templates personalizados.
+**Função:** Envio de emails  
+**Features:**
+- Templates personalizados
+- Envio via API Locaweb
+- Suporte a HTML e anexos
 
 ---
 
 ## ⚙️ Automação e Tasks (7)
 
 ### auto-send-overdue-invoices
-Envia automaticamente faturas vencidas via WhatsApp para clientes inadimplentes (status FA no IXC).
+**Função:** Envio automático de faturas vencidas  
+**Trigger:** Cron job diário (ou on-demand)  
+**Fluxo:**
+1. Busca clientes com status FA (fatura aberta) no IXC
+2. Gera link de pagamento (PIX/Boleto)
+3. Envia via WhatsApp automaticamente
 
 ### auto-reboot-frozen-equipment
-Reinicia automaticamente equipamentos congelados (sem tráfego) após validações.
+**Função:** Reboot automático de equipamentos congelados  
+**Critérios:**
+- Cliente online mas sem tráfego há 30+ minutos
+- Equipamento não respondendo a ping
+- Não está em período de exclusão (01h-06h)
+- Não está em blacklist
 
 ### check-due-invoices
-Verifica faturas próximas do vencimento e dispara notificações.
+**Função:** Verificação de faturas próximas do vencimento  
+**Notifica:** Clientes com vencimento em 3, 2 e 1 dia(s)
 
 ### check-reboot-candidates
-Identifica equipamentos candidatos a reboot automático.
+**Função:** Identificação de candidatos a reboot  
+**Salva em:** reboot_candidates table
 
 ### check-escalation
-Verifica conversas que precisam de escalação para gestores.
+**Função:** Verificação de escalação de conversas  
+**Regras:**
+- Tempo de espera excedido
+- Palavras-chave de urgência detectadas
+- Cliente insatisfeito (sentiment analysis)
 
 ### retry-failed-actions
-Reprocessa ações que falharam (Dead Letter Queue).
+**Função:** Reprocessamento de ações falhadas (DLQ)  
+**Retry:** Até 3 tentativas com exponential backoff
 
 ### network-maintenance-executor
-Executa manutenções programadas na rede.
+**Função:** Executor de manutenções programadas  
+**Ações:**
+- Notifica clientes afetados
+- Executa scripts de manutenção
+- Registra logs detalhados
 
 ---
 
 ## 📊 Monitoramento (5)
 
 ### detect-mass-outage
-Detecta quedas massivas de conexão usando análise de equipamentos offline.
+**Função:** Detecção de quedas em massa  
+**Critérios:**
+- PON Port: 5+ clientes offline
+- CTO: 3+ clientes offline
+- Região: 6+ clientes offline
+- Dying Gasp: 3+ eventos (falta de energia)
+
+**Salva em:** mass_outage_events table
+
+### mass-outage-executor
+**Função:** Executor de ações para quedas em massa  
+**Ações:**
+1. Cria ticket no IXC (se configurado)
+2. Notifica responsáveis via WhatsApp
+3. Envia alertas para dashboard de monitoramento
+4. Registra em monitoring_logs
 
 ### metrics-collector
-Coleta métricas de desempenho do sistema, agentes e integrações.
+**Função:** Coletor de métricas do sistema  
+**Métricas:**
+- Performance de agentes (duration_ms, success_rate)
+- Taxa de erro por endpoint
+- Circuit breaker status
+- Throughput de mensagens
 
 ### system-health
-Endpoint de health check para monitoramento de infraestrutura.
-
-### check-lovable-ai-config
-Verifica configuração e disponibilidade do Lovable AI Gateway.
+**Função:** Health check endpoint  
+**Verifica:**
+- Database connectivity
+- IXC API status
+- Circuit breaker state
+- Evolution API status
 
 ### reset-circuit-breaker
-Reseta manualmente circuit breakers em estado OPEN.
+**Função:** Reset manual de circuit breakers  
+**Uso:** Emergências quando IXC normaliza após instabilidade
 
 ---
 
 ## 📚 Knowledge Base e Documentação (4)
 
 ### sync-chatbot-knowledge
-Sincroniza conhecimento para chatbot de vendas.
+**Função:** Sincroniza conhecimento para chatbot de vendas
 
 ### sync-github-docs
-Importa documentação do repositório GitHub.
+**Função:** Importa docs do repositório GitHub para knowledge_base
 
 ### sync-knowledge-docs
-Sincroniza documentos markdown para base vetorial.
+**Função:** Sincroniza documentos markdown para base vetorial
 
 ### migrate-knowledge-batch / migrate-knowledge-full
-Migram conhecimento para índice vetorial com embeddings OpenAI.
+**Função:** Migração de conhecimento para índice vetorial  
+**Features:**
+- Gera embeddings via OpenAI (text-embedding-3-small)
+- Processa em lotes de 25 documentos
+- Armazena em knowledge_index com pgvector
 
 ---
 
 ## 🧠 IA e Análise (5)
 
 ### corporate-ai-chat
-Chat corporativo com IA usando RAG (busca vetorial na knowledge base).
+**Função:** Chat corporativo com RAG  
+**Features:**
+- Busca vetorial na knowledge_base
+- Contexto de até 5 documentos mais relevantes
+- Resposta usando Gemini 2.5 Flash
 
 ### ai-auto-tag
-Classifica e adiciona tags automaticamente em conversas usando IA.
+**Função:** Auto-tagging de conversas  
+**Tags:** urgente, financeiro, técnico, vendas, satisfeito, insatisfeito
 
 ### ai-text-review
-Revisa textos de agentes antes do envio, sugerindo melhorias.
+**Função:** Revisão de textos de agentes  
+**Sugestões:**
+- Tom mais empático
+- Correção gramatical
+- Clareza e objetividade
 
 ### ai-suggest-reply
-Sugere respostas para agentes humanos baseado no histórico.
+**Função:** Sugestão de respostas para agentes humanos  
+**Baseado em:** Histórico da conversa + knowledge base
 
-### site-analyzer-agent
-Analisa sites e extrai informações estruturadas.
+### summarize-conversation
+**Função:** Resumo de conversas  
+**Formato:**
+- RESUMO: Breve descrição
+- MOTIVO DO CONTATO: Principal razão
+- RESOLUÇÃO: Como foi tratado
+- TAGS SUGERIDAS: 3-5 tags relevantes
+- PRÓXIMAS AÇÕES: Se houver follow-up
 
 ---
 
 ## 📄 Contratos e Processos (2)
 
 ### generate-contract-pdf
-Gera PDFs de contratos personalizados com dados do cliente.
+**Função:** Geração de PDFs de contratos  
+**Template:** Personalizado por tipo de plano
 
 ### process-contract
-Processa assinatura e armazenamento de contratos.
+**Função:** Processamento de contratos assinados  
+**Fluxo:**
+1. Valida assinatura digital
+2. Armazena PDF em signed-contracts bucket
+3. Registra em signed_contracts table
+4. Notifica equipes (vendas + instalação)
 
 ---
 
 ## 📍 CEP e Localização (2)
 
 ### chatbot-cep-lookup
-Verifica cobertura de internet por CEP.
+**Função:** Verificação de cobertura por CEP  
+**Retorna:** Planos disponíveis para aquela região
 
 ### process-cep-import
-Processa importação em lote de CEPs de cobertura.
+**Função:** Processamento de importação em lote de CEPs  
+**Formato:** CSV com CEP inicial, CEP final, região
 
 ---
 
 ## 💳 Pagamentos (1)
 
 ### send-payment-to-customer
-Envia informações de pagamento (boleto/PIX) para clientes via WhatsApp.
-
----
-
-## 🔧 Manutenção (1)
-
-### process-contract
-Processa fluxo completo de contratação.
+**Função:** Envio de links de pagamento  
+**Formatos:** PIX (QR Code) ou Boleto (PDF)
 
 ---
 
 ## 📈 Projeções e Analytics (1)
 
 ### calculate-projections
-Calcula projeções de fluxo de caixa baseado em dados históricos.
+**Função:** Cálculo de projeções de fluxo de caixa  
+**Cenários:**
+- Otimista: +10% new clients, -5% churn
+- Realista: Manutenção da taxa atual
+- Pessimista: -5% new clients, +10% churn
 
 ---
 
 ## 📞 NPS (1)
 
 ### nps-webhook
-Recebe respostas de pesquisas NPS e processa feedback.
+**Função:** Recebimento de respostas NPS  
+**Processa:**
+- Classifica em promoter/neutral/detractor
+- Calcula NPS score
+- Identifica detractors para follow-up
 
 ---
 
 ## ⚙️ Configuração (1)
 
 ### check-lovable-ai-config
-Valida configuração do Lovable AI Gateway.
+**Função:** Validação de configuração do Lovable AI Gateway  
+**Verifica:** LOVABLE_API_KEY configurada
 
 ---
 
 ## 🏥 Telemedicina (2)
 
 ### telemedicina-agent
-Agente especializado em serviços de telemedicina.
+**Função:** Agente especializado em telemedicina
 
 ### telemedicina-auth / telemedicina-forgot-password
-Autenticação e recuperação de senha para telemedicina.
+**Função:** Autenticação e recuperação de senha
 
 ---
 
 ## 🎙️ Voz (1)
 
 ### voice-to-text
-Transcrição de áudio para texto.
+**Função:** Transcrição de áudio para texto
+
+---
+
+## 🧪 Funções de Teste (6)
+
+### test-hmac
+**Função:** Testa validação de assinaturas HMAC
+
+### test-evolution-api
+**Função:** Verifica conectividade com Evolution API
+
+### test-equipment-connectivity
+**Função:** Testa conectividade com equipamentos de rede
+
+### test-whatsapp-webhook
+**Função:** Simula webhooks do WhatsApp
+
+### test-ixc-connection
+**Função:** Valida conexão e autenticação com IXC
+
+### test-all-ixc-functions
+**Função:** Bateria completa de testes IXC
 
 ---
 
@@ -275,8 +416,9 @@ Todas as funções efetivas implementam:
 - ✅ Validação HMAC (quando aplicável)
 - ✅ Rate limiting por CPF
 - ✅ Circuit breaker pattern
-- ✅ Logging estruturado
+- ✅ Logging estruturado (monitoring_logs)
 - ✅ Tratamento de erros robusto
+- ✅ PII redaction em logs
 
 ---
 
@@ -286,7 +428,11 @@ Todas as funções efetivas implementam:
 2. **Agente → ixc-proxy → IXC API**
 3. **Agente → send-whatsapp-message → Evolution API → Cliente**
 4. **Sistema → auto-send-overdue-invoices → Clientes inadimplentes**
+5. **Cron → detect-mass-outage → mass-outage-executor → Notificações**
 
 ---
 
-**Atualizado em:** 2025-10-13
+**Atualizado em:** 2025-10-13  
+**Total de Edge Functions:** 64  
+**Categorias:** 14  
+**Status:** ✅ 100% Documentado
