@@ -2,11 +2,21 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, XCircle, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export const DiagnosticoClienteCompleto = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const { toast } = useToast();
+
+  const copyToClipboard = (content: any, label: string) => {
+    navigator.clipboard.writeText(JSON.stringify(content, null, 2));
+    toast({
+      title: "Copiado!",
+      description: `${label} copiado para a área de transferência`,
+    });
+  };
 
   const realizarDiagnostico = async () => {
     setLoading(true);
@@ -323,8 +333,19 @@ export const DiagnosticoClienteCompleto = () => {
 
           {/* Detalhes das Etapas */}
           <details className="border rounded-lg">
-            <summary className="cursor-pointer p-3 hover:bg-muted">
-              📋 Dados Básicos do Cliente
+            <summary className="cursor-pointer p-3 hover:bg-muted flex items-center justify-between">
+              <span>📋 Dados Básicos do Cliente</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result.etapas.dadosBasicos, "Dados Básicos");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </summary>
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-48">
@@ -334,8 +355,19 @@ export const DiagnosticoClienteCompleto = () => {
           </details>
 
           <details className="border rounded-lg">
-            <summary className="cursor-pointer p-3 hover:bg-muted">
-              🔌 Status Online (Radusuarios)
+            <summary className="cursor-pointer p-3 hover:bg-muted flex items-center justify-between">
+              <span>🔌 Status Online (Radusuarios)</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result.etapas.statusOnline, "Status Online");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </summary>
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-48">
@@ -345,8 +377,19 @@ export const DiagnosticoClienteCompleto = () => {
           </details>
 
           <details className="border rounded-lg">
-            <summary className="cursor-pointer p-3 hover:bg-muted">
-              📜 Contratos
+            <summary className="cursor-pointer p-3 hover:bg-muted flex items-center justify-between">
+              <span>📜 Contratos</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result.etapas.contratos, "Contratos");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </summary>
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-48">
@@ -356,8 +399,19 @@ export const DiagnosticoClienteCompleto = () => {
           </details>
 
           <details className="border rounded-lg">
-            <summary className="cursor-pointer p-3 hover:bg-muted">
-              💰 Títulos Financeiros
+            <summary className="cursor-pointer p-3 hover:bg-muted flex items-center justify-between">
+              <span>💰 Títulos Financeiros</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result.etapas.titulos, "Títulos Financeiros");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </summary>
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-48">
@@ -367,8 +421,19 @@ export const DiagnosticoClienteCompleto = () => {
           </details>
 
           <details open className="border rounded-lg border-orange-500">
-            <summary className="cursor-pointer p-3 hover:bg-muted font-semibold">
-              📊 Resumo Completo
+            <summary className="cursor-pointer p-3 hover:bg-muted font-semibold flex items-center justify-between">
+              <span>📊 Resumo Completo</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  copyToClipboard(result, "Resumo Completo");
+                }}
+                className="h-7 w-7 p-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
             </summary>
             <div className="p-3 bg-muted/50">
               <pre className="text-xs overflow-auto max-h-96">
