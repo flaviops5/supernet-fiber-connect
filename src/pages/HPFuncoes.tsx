@@ -67,6 +67,7 @@ const HPFuncoes = () => {
       { name: 'support-financial-agent', description: 'Suporte financeiro: consulta faturas, envia segunda via, negocia débitos e processa pagamentos' },
       { name: 'automacao-agent', description: 'Agente especializado em automação residencial e dispositivos inteligentes (Google Home, Alexa, câmeras)' },
       { name: 'telemedicina-agent', description: 'Agente especializado em telemedicina, agendamento de consultas e autenticação de pacientes' },
+      { name: 'logistics-agent', description: 'Coordenador de logística (Érik Souza): agendamento de instalações técnicas, coordenação de equipes e gestão de disponibilidade' },
     ],
     ixc: [
       { name: 'ixc-proxy', description: 'Proxy centralizado para todas as chamadas à API IXC. Implementa cache, rate limiting, circuit breaker e autenticação unificada' },

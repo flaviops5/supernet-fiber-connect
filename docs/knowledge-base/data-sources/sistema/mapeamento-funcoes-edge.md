@@ -8,7 +8,7 @@ O sistema possui **64 Edge Functions** organizadas em `supabase/functions/`, sen
 
 ---
 
-## 🤖 Agentes de IA (6)
+## 🤖 Agentes de IA (7)
 
 ### routing-agent
 **Função:** Roteador inteligente central  
@@ -57,6 +57,14 @@ O sistema possui **64 Edge Functions** organizadas em `supabase/functions/`, sen
 - Autenticação de pacientes
 - Validação de CPF para telemedicina
 - Listagem de especialidades
+
+### logistics-agent
+**Função:** Logística e instalações (Érik Souza)  
+**Responsabilidades:**
+- Agendamento de instalações técnicas
+- Coordenação de equipes de campo
+- Gestão de disponibilidade de técnicos
+- Informações sobre processos logísticos
 
 ---
 
