@@ -444,9 +444,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
           }
         ],
         tool_choice: 'auto'
-      },
-      correlationId
-    });
+      });
 
     // Verificar se há tool calls
     if (hasToolCalls(aiResponse)) {
