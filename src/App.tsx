@@ -24,6 +24,7 @@ import GPT5 from "./pages/GPT5";
 import TestIXCSubjects from "./pages/TestIXCSubjects";
 import SystemMetrics from "./pages/SystemMetrics";
 import CodigoFonte from "./pages/CodigoFonte";
+import HPFuncoes from "./pages/HPFuncoes";
 import Codigo from "./pages/Codigo";
 import QuedasMassaCodigo from "./pages/QuedasMassaCodigo";
 import Apresentacao from "./pages/Apresentacao";
@@ -78,6 +79,7 @@ const App = () => {
                     <Route path="/system-metrics" element={<SystemMetrics />} />
                     <Route path="/codigo_f" element={<CodigoFonte />} />
                     <Route path="/codigo" element={<Codigo />} />
+                    <Route path="/hp_funcoes" element={<HPFuncoes />} />
                     <Route path="/quedas-massa-codigo" element={<QuedasMassaCodigo />} />
                     <Route path="/technical-docs" element={<Navigate to="/admin/knowledge" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />

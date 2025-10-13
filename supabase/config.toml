@@ -150,3 +150,6 @@ verify_jwt = false
 [functions.send-payment-to-customer]
 verify_jwt = true
 
+[functions.generate-system-documentation-pdf]
+verify_jwt = true
+
