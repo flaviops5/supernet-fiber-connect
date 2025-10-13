@@ -2448,6 +2448,39 @@ export type Database = {
           },
         ]
       }
+      monitoring_logs: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          id: string
+          level: string
+          message: string
+          source: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          id?: string
+          level: string
+          message: string
+          source: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          id?: string
+          level?: string
+          message?: string
+          source?: string
+        }
+        Relationships: []
+      }
       network_maintenance_tasks: {
         Row: {
           command: string
@@ -3536,6 +3569,10 @@ export type Database = {
       cleanup_expired_webhooks: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_installation_appointment: {
         Args:

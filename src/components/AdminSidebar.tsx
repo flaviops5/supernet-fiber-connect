@@ -155,6 +155,11 @@ const agentsItems = [
     icon: Monitor,
   },
   {
+    title: "Logs do Sistema",
+    url: "/monitoring/logs",
+    icon: FileText,
+  },
+  {
     title: "Manutenção Inteligente",
     url: "/manutencao",
     icon: Wrench,
