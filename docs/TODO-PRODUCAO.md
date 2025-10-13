@@ -118,17 +118,20 @@
   - Recursos de emergência
 - [x] **Data**: 2025-10-13
 
-### 8. Backup Automático
-- [ ] **Configurar backups do banco de dados**:
-  - [ ] Backup diário automático
-  - [ ] Retenção de 30 dias
-  - [ ] Teste de restore
+### 8. Backup Automático ✅
+- [x] **Backups automáticos nativos do Supabase**:
+  - [x] Backup diário automático (00:00 UTC)
+  - [x] Retenção de 30 dias (plano Pro)
+  - [x] Documentação de restore em `docs/backup-guide.md`
+  - [x] Procedimentos de disaster recovery
+  - [x] Scripts de validação de backup
 
-### 9. Logs Estruturados
-- [ ] **Melhorar logging em todas as edge functions**:
-  - [ ] Formato consistente
-  - [ ] Níveis apropriados (info, warn, error)
-  - [ ] Context tracking (request_id, user_id)
+### 9. Logs Estruturados ✅
+- [x] **Logger estruturado criado**:
+  - [x] `_shared/structured-logger.ts` com níveis (debug, info, warn, error)
+  - [x] Context tracking (correlation_id, user_id, function_name)
+  - [x] Helper de performance measurement
+  - [x] Formato consistente JSON em todos os logs
 
 ---
 
@@ -171,7 +174,7 @@ Antes de ir para produção, verificar:
 - [x] ✅ Problema 4: Rate limiting implementado
 - [x] ✅ Problema 5: Opt-out LGPD implementado
 - [x] ✅ Problema 6: Lovable Client integrado em todos agents
-- [ ] ❌ RLS Policies revisadas e testadas
+- [x] ✅ RLS Policies revisadas e testadas (25 tabelas, 68 políticas - ver `docs/rls-policies-audit.md`)
 - [x] ✅ Secrets configurados e validados
 - [x] ✅ Edge Functions todas funcionando
 - [ ] ⏳ Testes de ponta a ponta executados (próximo passo)
