@@ -668,9 +668,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                     messages: [{ role: 'user', content: message }],
                     conversationId,
                     customerData: mockCustomerData,
-                    routeReason: 'blocked_or_overdue',
+                    routeReason: 'blocked_or_overdue'
                   },
-                  3 // 3 tentativas
+                  3
                 );
                 
                 if (finError) {
@@ -824,9 +824,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                   {
                     messages: [{ role: 'user', content: message }],
                     conversationId,
-                    customerData: mockCustomerData,
+                    customerData: mockCustomerData
                   },
-                  3 // 3 tentativas
+                  3
                 );
                 
                 if (techError) {
@@ -1316,9 +1316,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                   messages: [{ role: 'user', content: message }],
                   conversationId,
                   customerData,
-                  routeReason: 'blocked_or_overdue',
+                  routeReason: 'blocked_or_overdue'
                 },
-                3 // 3 tentativas com backoff
+                3
               );
               
               if (finError) {
@@ -1599,9 +1599,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                       ...customerData.metadata,
                       customer_status: 'offline'
                     }
-                  },
+                  }
                 },
-                3 // 3 tentativas com backoff
+                3
               );
               
               if (techError) {
@@ -2008,11 +2008,12 @@ MENSAGEM ATUAL DO CLIENTE:
       }
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in routing-agent:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        agent: 'sales', // Default fallback
+        error: errorMessage,
+        agent: 'sales',
         confidence: 30,
         reason: 'Erro no roteamento, direcionando para vendas por padrão'
       }),
