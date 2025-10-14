@@ -133,12 +133,16 @@ serve(async (req) => {
     
     // 🔍 DEBUG: Log completo do body recebido
     console.log(`📥 [${correlationId}] Routing-agent recebeu body:`, JSON.stringify(body, null, 2));
-    logger.info("📥 Body recebido no routing-agent", { body });
+    console.log(`📥 [${correlationId}] Campos disponíveis no body:`, Object.keys(body));
+    logger.info("📥 Body recebido no routing-agent", { body, keys: Object.keys(body) });
     
-    // 🧩 Aceitar ambos os formatos (snake_case e camelCase) + auto-gerar UUID
+    // 🧩 Aceitar múltiplos formatos possíveis de campos
     const conversationId = body.conversation_id ?? body.conversationId ?? crypto.randomUUID();
-    const message = body.message_content ?? body.message;
+    const message = body.message_content ?? body.message ?? body.content ?? body.text;
     const context = body.context;
+    
+    console.log(`📥 [${correlationId}] conversationId extraído:`, conversationId);
+    console.log(`📥 [${correlationId}] message extraído:`, message ? redactPII(message, 'logs') : 'UNDEFINED');
     
     // Validar que a mensagem foi enviada
     if (!message) {
