@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
-import { TestMassOutageSimulation } from "@/components/tests/TestMassOutageSimulation";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -51,11 +50,11 @@ const AdminTestes = () => {
 
           <TabsContent value="simulations" className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Simulação de Pane Massiva</h3>
+              <h3 className="text-lg font-semibold mb-4">Teste do Suporte Técnico + Mass Outage</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Ative/desative manualmente o modo de pane massiva para testar comportamento do routing-agent
+                Ative/desative pane massiva e teste o agente técnico (Luan) com detecção integrada
               </p>
-              <TestMassOutageSimulation />
+              <TestSupportTechAgent />
             </div>
 
             <div className="border-t pt-6">
@@ -64,14 +63,6 @@ const AdminTestes = () => {
                 Simulação completa do fluxo de atendimento: desde a solicitação de CPF até o roteamento para o departamento correto
               </p>
               <TestOmnichannelComplete />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste do Suporte Técnico (Luan)</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Testa o agente técnico com detecção de mass outage
-              </p>
-              <TestSupportTechAgent />
             </div>
           </TabsContent>
 

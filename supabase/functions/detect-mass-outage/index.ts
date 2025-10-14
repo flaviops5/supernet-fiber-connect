@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
+import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -696,6 +697,10 @@ serve(async (req) => {
         createdEventKeys.add(eventKey);
         const action = existingEvent ? 'atualizado' : 'criado';
         console.log(`✅ Evento ${action}: ${eventKey}`);
+        
+        // 🔥 Atualizar contexto em memória
+        setMassOutageStatus(true, groupKey, clientsData.length);
+        console.log(`⚡ Contexto atualizado: pane ativa em ${groupKey}`);
       }
     }
 
@@ -815,6 +820,25 @@ serve(async (req) => {
           }
         }
       }
+    }
+
+    // 🔥 Atualizar contexto em memória após resolução
+    const { data: stillActiveEvents } = await supabase
+      .from('mass_outage_events')
+      .select('region_pattern, affected_count')
+      .eq('status', 'active')
+      .order('affected_count', { ascending: false })
+      .limit(1);
+
+    if (stillActiveEvents && stillActiveEvents.length > 0) {
+      // Ainda há eventos ativos - manter contexto ativo com maior evento
+      const topEvent = stillActiveEvents[0];
+      setMassOutageStatus(true, topEvent.region_pattern, topEvent.affected_count);
+      console.log(`⚡ Contexto mantido ativo: ${topEvent.region_pattern} (${topEvent.affected_count} clientes)`);
+    } else {
+      // Nenhum evento ativo - limpar contexto
+      setMassOutageStatus(false, null, 0);
+      console.log(`✅ Contexto limpo: nenhuma pane ativa`);
     }
 
     return new Response(

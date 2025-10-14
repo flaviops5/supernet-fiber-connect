@@ -24,33 +24,20 @@ export const TestSupportTechAgent = () => {
   const createMassOutage = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('mass_outage_events')
-        .insert({
-          event_key: `test-${Date.now()}`,
-          region_pattern: 'SRI',
-          affected_count: 42,
-          affected_logins: ['teste1', 'teste2'],
-          status: 'active',
-          metadata: {
-            test: true,
-            created_by: 'admin_test',
-            description: 'Teste de detecção de mass outage'
-          }
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke("simulate-mass-outage", {
+        body: { action: "activate" }
+      });
 
       if (error) throw error;
 
       setOutageActive(true);
       toast({
-        title: "✅ Mass Outage Criado",
-        description: "Queda massiva simulada em SRI com 42 clientes afetados",
+        title: "✅ Mass Outage Ativado",
+        description: "Simulação: Taguatinga e Samambaia - 1542 clientes afetados",
       });
     } catch (error: any) {
       toast({
-        title: "❌ Erro ao criar outage",
+        title: "❌ Erro ao ativar outage",
         description: error.message,
         variant: "destructive",
       });
@@ -62,10 +49,9 @@ export const TestSupportTechAgent = () => {
   const clearMassOutage = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('mass_outage_events')
-        .update({ status: 'resolved' })
-        .eq('status', 'active');
+      const { data, error } = await supabase.functions.invoke("simulate-mass-outage", {
+        body: { action: "deactivate" }
+      });
 
       if (error) throw error;
 
