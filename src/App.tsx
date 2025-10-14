@@ -54,7 +54,8 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
-            <Route path="/admin/omnichannel-codes" element={<Navigate to="/hp_funcoes" replace />} />
+            <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
+            <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
           <Route path="/atendimento" element={<Atendimento />} />

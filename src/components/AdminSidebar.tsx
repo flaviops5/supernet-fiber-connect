@@ -97,6 +97,11 @@ const marketingItems = [
 
 const documentationItems = [
   {
+    title: "Central de Documentação",
+    url: "/admin/documentacao",
+    icon: Database,
+  },
+  {
     title: "Prompts",
     url: "/admin/prompts",
     icon: Sparkles,
@@ -107,24 +112,9 @@ const documentationItems = [
     icon: FolderOpen,
   },
   {
-    title: "Base de Conhecimento",
-    url: "/admin/knowledge",
-    icon: BookOpen,
-  },
-  {
     title: "IA Corporativa",
     url: "/admin/corporate-ai",
     icon: Brain,
-  },
-  {
-    title: "Omnichannel Codes",
-    url: "/admin/omnichannel-codes",
-    icon: Code2,
-  },
-  {
-    title: "Central de Documentação",
-    url: "/admin/documentacao",
-    icon: Database,
   },
 ];
 
