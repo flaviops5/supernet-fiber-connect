@@ -61,10 +61,13 @@ serve(async (req) => {
     );
   } catch (error) {
     const err = (error as Error)?.message ?? String(error);
-    const logger = createLogger("support-tech-agent");
     logger.error("Erro no suporte técnico", { error: err });
+    
     return new Response(
-      JSON.stringify({ ok: false, error: err }), 
+      JSON.stringify({ 
+        error: err,
+        message: "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente ou entre em contato pelo telefone (11) 99999-9999."
+      }), 
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
