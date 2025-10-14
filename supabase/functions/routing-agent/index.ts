@@ -1637,7 +1637,7 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                 autoRouted: true,
                 routeReason: 'offline',
                 luanResponse: !!techMessage,
-                autoClose: false, // NÃO encerrar - cliente agora está com Luan
+                autoClose: false // NÃO encerrar - cliente agora está com Luan
               }),
               {
                 status: 200,
@@ -1918,7 +1918,7 @@ MENSAGEM ATUAL DO CLIENTE:
             sender_type: 'agent',
             sender_name: 'Julia Martins (Financeiro)',
             content: financialMessage,
-            ai_suggestion: true,
+            ai_suggestion: true
           });
         }
       } catch (e) {
@@ -1955,7 +1955,7 @@ MENSAGEM ATUAL DO CLIENTE:
             sender_type: 'agent',
             sender_name: 'Érik Souza (Logística)',
             content: logisticsMessage,
-            ai_suggestion: true,
+            ai_suggestion: true
           });
         }
       } catch (e) {
