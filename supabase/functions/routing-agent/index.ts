@@ -117,9 +117,10 @@ async function invokeWithRetry(
 }
 
 serve(async (req) => {
-  // Sprint 2: Correlation ID para rastreamento
-  const correlationId = req.headers.get('x-correlation-id') || 
-    `routing-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  // Sprint 2: Correlation ID para rastreamento (corrigido)
+  const headerCid = req.headers.get('x-correlation-id');
+  const fallbackCid = `routing-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const correlationId = headerCid || fallbackCid;
   
   const logger = createLogger("routing-agent", req);
   console.log(`🧭 [${correlationId}] Routing Agent started`);
@@ -128,31 +129,31 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // 🛡️ Validação de Content-Type
+  if (req.headers.get('content-type')?.includes('application/json') !== true) {
+    console.warn('⚠️ Content-Type não é application/json, pode quebrar req.json()');
+  }
+
   try {
-    const body = await req.json().catch(() => ({}));
-    
     // 🔍 DEBUG: Log completo do body recebido
-    console.log(`📥 [${correlationId}] Routing-agent recebeu body:`, JSON.stringify(body, null, 2));
-    console.log(`📥 [${correlationId}] Campos disponíveis no body:`, Object.keys(body));
-    logger.info("📥 Body recebido no routing-agent", { body, keys: Object.keys(body) });
+    console.log(`📥 [${correlationId}] Routing-agent recebeu body:`, JSON.stringify(raw, null, 2));
+    console.log(`📥 [${correlationId}] Campos disponíveis no body:`, Object.keys(raw));
+    logger.info("📥 Body recebido no routing-agent", { body: raw, keys: Object.keys(raw) });
     
-    // 🧩 Aceitar múltiplos formatos possíveis de campos
-    const conversationId = body.conversation_id ?? body.conversationId ?? crypto.randomUUID();
-    const message = body.message_content ?? body.message ?? body.content ?? body.text ?? "";
-    const context = body.context;
+    // 🧩 NORMALIZAÇÃO: Aceitar múltiplos formatos possíveis (snake_case e camelCase)
+    const message = raw.message ?? raw.message_content ?? raw.text ?? raw.content ?? '';
+    const conversationId = raw.conversationId ?? raw.conversation_id ?? raw.conversationID ?? null;
+    const context = raw.context;
     
-    console.log(`📥 [${correlationId}] conversationId extraído:`, conversationId);
-    console.log(`📥 [${correlationId}] message extraído:`, message ? redactPII(message, 'logs') : 'UNDEFINED');
-    
-    // Validar que a mensagem foi enviada
+    // Validações de payload
     if (!message) {
-      console.error(`❌ [${correlationId}] message_content/message ausente`);
-      logger.error("❌ Nenhuma mensagem recebida no body", { body });
+      console.error(`❌ [${correlationId}] message/message_content ausente no body`);
+      logger.error("❌ Nenhuma mensagem recebida", { received: raw });
       return new Response(
         JSON.stringify({ 
           ok: false, 
           error: "message_content é obrigatório",
-          received_body: body
+          received_body: raw
         }), 
         { 
           status: 400,
@@ -161,10 +162,24 @@ serve(async (req) => {
       );
     }
     
-    // Logar se conversationId foi gerado automaticamente
-    if (!body.conversation_id && !body.conversationId) {
-      logger.warn("conversation_id ausente, gerado novo automaticamente", { conversationId });
+    if (!conversationId) {
+      console.error(`❌ [${correlationId}] conversationId/conversation_id ausente no body`);
+      logger.error("❌ conversationId ausente", { received: raw });
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: "conversationId é obrigatório",
+          received_body: raw
+        }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
+    
+    console.log(`📥 [${correlationId}] conversationId extraído:`, conversationId);
+    console.log(`📥 [${correlationId}] message extraído:`, redactPII(message, 'logs'));
     
     console.log(`📥 [${correlationId}] Message:`, redactPII(message, 'logs'));
     console.log(`🆔 [${correlationId}] ConversationId:`, conversationId);
@@ -1496,7 +1511,7 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
               .single();
 
             const existingProtocol = currentConversation?.metadata?.protocol;
-            const alreadyInSupport = currentConversation?.department === 'support_tech';
+            const alreadyInSupport = currentConversation?.department === 'tecnico';
 
             console.log('Departamento atual:', currentConversation?.department);
             console.log('Protocolo existente:', existingProtocol);
@@ -1509,12 +1524,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
               try {
                 const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
                   body: {
-                    messages: [{ role: 'user', content: message }],
-                    conversationId,
-                    customerData: {
-                      ...customerData,
-                      existingProtocol
-                    },
+                    conversation_id: conversationId,
+                    customer_cpf: customerData.customer_cpf,
+                    message: message
                   },
                 });
 
@@ -1559,11 +1571,11 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
             // Generate protocol
             const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-            // Atualizar metadata da conversa com o protocolo e departamento
+            // Atualizar metadata da conversa com o protocolo e departamento (CORRIGIDO: tecnico)
             await supabase
               .from('conversations')
               .update({
-                department: 'support_tech',
+                department: 'tecnico',
                 metadata: {
                   ...currentConversation?.metadata,
                   protocol
@@ -1601,15 +1613,9 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                 supabase,
                 'support-tech-agent',
                 {
-                  messages: [{ role: 'user', content: message }],
-                  conversationId,
-                  customerData: {
-                    ...customerData,
-                    metadata: {
-                      ...customerData.metadata,
-                      customer_status: 'offline'
-                    }
-                  }
+                  conversation_id: conversationId,
+                  customer_cpf: customerData.customer_cpf,
+                  message: message
                 },
                 3
               );
@@ -1622,14 +1628,13 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
                 console.log('✅ Mensagem do Luan recebida:', techMessage.substring(0, 50) + '...');
 
                 // Persist Luan's message server-side (WITHOUT protocol)
-                const luanMessageContent = techMessage + (massOutageMessage || '');
                 const { data: insertResult, error: insertError } = await supabase
                   .from('conversation_messages')
                   .insert({
                     conversation_id: conversationId,
                     sender_type: 'agent',
                     sender_name: 'Luan Silva (Suporte Técnico N1)',
-                    content: luanMessageContent,
+                    content: techMessage,
                     ai_suggestion: true,
                   })
                   .select();
@@ -1650,7 +1655,7 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
 
             // Return Cloé's transfer message (with protocol) + Luan's message (without protocol)
             const finalMessage = techMessage ? 
-              `${cloeTransferMessage}\n\n${techMessage}${massOutageMessage || ''}` :
+              `${cloeTransferMessage}\n\n${techMessage}` :
               cloeTransferMessage;
             
             console.log('🔵 Retornando resposta:', {
