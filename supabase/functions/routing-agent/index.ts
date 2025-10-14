@@ -131,6 +131,10 @@ serve(async (req) => {
   try {
     const body = await req.json();
     
+    // 🔍 DEBUG: Log completo do body recebido
+    console.log(`📥 [${correlationId}] Routing-agent recebeu body:`, JSON.stringify(body, null, 2));
+    logger.info("📥 Body recebido no routing-agent", { body });
+    
     // 🧩 Aceitar ambos os formatos (snake_case e camelCase) + auto-gerar UUID
     const conversationId = body.conversation_id ?? body.conversationId ?? crypto.randomUUID();
     const message = body.message_content ?? body.message;
