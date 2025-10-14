@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   CheckCircle,
   Zap,
+  ArrowLeft,
 } from "lucide-react";
 import {
   LineChart,
@@ -196,21 +197,33 @@ export default function AtlasInsightsPage() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="text-primary" /> Atlas Insights
-          </h1>
-          <Button onClick={triggerAnalysis} disabled={refreshing} variant="default">
-            {refreshing ? (
-              <Loader2 className="animate-spin w-4 h-4 mr-1" />
-            ) : (
-              <RefreshCcw className="w-4 h-4 mr-1" />
-            )}
-            Executar análise
-          </Button>
-        </div>
+      <div className="min-h-screen bg-background p-6">
+        <div className="container mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.location.href = '/admin'}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Zap className="h-8 w-8 text-primary" />
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">Atlas Insights</h1>
+              <p className="text-muted-foreground">
+                Análise e monitoramento de insights do sistema
+              </p>
+            </div>
+            <Button onClick={triggerAnalysis} disabled={refreshing} variant="default">
+              {refreshing ? (
+                <Loader2 className="animate-spin w-4 h-4 mr-1" />
+              ) : (
+                <RefreshCcw className="w-4 h-4 mr-1" />
+              )}
+              Executar análise
+            </Button>
+          </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -378,6 +391,7 @@ export default function AtlasInsightsPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </AuthGuard>
   );
