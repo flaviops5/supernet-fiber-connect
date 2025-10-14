@@ -1,11 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
-import { getMassOutageContext } from "../_shared/mass-outage-helper.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
 serve(async (req) => {
@@ -25,16 +24,24 @@ serve(async (req) => {
 
     logger.info("Luan iniciou atendimento técnico", { conversation_id, customer_cpf });
 
-    // Verificar se há pane massiva ativa (dados frescos) - com fallback seguro
-    let outage = { active: false, affectedRegions: [] as string[], affectedCount: 0 };
+    // Verificar se há pane massiva ativa (dados frescos)
+    let outageActive = false;
+    let outageRegions: string[] = [];
+    let outageCount = 0;
+    
     try {
+      const { getMassOutageContext } = await import("../_shared/mass-outage-helper.ts");
       const ctx = await getMassOutageContext(supabase, conversation_id, 3000);
-      if (ctx && typeof ctx === 'object') {
-        outage = {
-          active: !!ctx.active,
-          affectedRegions: Array.isArray(ctx.affectedRegions) ? ctx.affectedRegions : [],
-          affectedCount: Number(ctx.affectedCount) || 0,
-        };
+      
+      if (ctx && typeof ctx === 'object' && ctx.active) {
+        outageActive = true;
+        outageRegions = Array.isArray(ctx.affectedRegions) ? ctx.affectedRegions : [];
+        outageCount = Number(ctx.affectedCount) || 0;
+        
+        logger.info("Pane massiva detectada", { 
+          regions: outageRegions, 
+          affected: outageCount 
+        });
       }
     } catch (e) {
       logger.warn("Falha ao obter contexto de pane", { error: (e as Error)?.message ?? String(e) });
@@ -43,13 +50,9 @@ serve(async (req) => {
     // Mensagem inicial do Luan
     let initialMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
     
-    if (outage.active) {
-      const regionsText = outage.affectedRegions.join(", ");
-      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${regionsText} afetando ${outage.affectedCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
-      logger.info("Pane massiva detectada", { 
-        regions: outage.affectedRegions, 
-        affected: outage.affectedCount 
-      });
+    if (outageActive && outageRegions.length > 0) {
+      const regionsText = outageRegions.join(", ");
+      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${regionsText} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
     }
     
     const { error: insertErr } = await supabase.from("conversation_messages").insert({
@@ -57,7 +60,7 @@ serve(async (req) => {
       sender_type: "agent",
       sender_name: "Luan Silva",
       content: initialMessage,
-      ai_suggestion: false,
+      ai_suggestion: false
     });
     
     if (insertErr) {
@@ -68,8 +71,15 @@ serve(async (req) => {
     logger.info("Mensagem do Luan enviada", { conversation_id });
 
     return new Response(
-      JSON.stringify({ ok: true, agent: "support_tech" }), 
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        ok: true, 
+        agent: "support_tech",
+        message: initialMessage
+      }), 
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   } catch (error) {
     const err = (error as Error)?.message ?? String(error);
@@ -80,7 +90,10 @@ serve(async (req) => {
         error: err,
         message: "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente ou entre em contato pelo telefone (11) 99999-9999."
       }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
