@@ -94,9 +94,9 @@ export const TestSupportTechAgent = () => {
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
-          cpf: '111.111.111-11',
+          customer_cpf: '111.111.111-11',
           customer_name: 'Cliente Teste Técnico',
-          phone: '11999999999',
+          customer_phone: '11999999999',
           channel: 'whatsapp',
           current_department: 'tecnico',
           assigned_agent_id: null,
