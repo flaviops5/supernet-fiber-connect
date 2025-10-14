@@ -4,7 +4,7 @@ import { FileText, Database, Code2, Brain, Sparkles, Users } from "lucide-react"
 import { KnowledgeBaseTab } from "@/components/documentation/KnowledgeBaseTab";
 import { TechnicalDocsTab } from "@/components/documentation/TechnicalDocsTab";
 import { OmnichannelCodesTab } from "@/components/documentation/OmnichannelCodesTab";
-import { AgentsDocsTab } from "@/components/documentation/AgentsDocsTab";
+import AgentManagement from "@/components/AgentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
 
@@ -50,7 +50,7 @@ const AdminDocumentacao = () => {
           </TabsList>
 
           <TabsContent value="agents" className="space-y-4">
-            <AgentsDocsTab />
+            <AgentManagement />
           </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-4">
