@@ -121,6 +121,11 @@ const documentationItems = [
     url: "/admin/omnichannel-codes",
     icon: Code2,
   },
+  {
+    title: "Central de Documentação",
+    url: "/admin/documentacao",
+    icon: Database,
+  },
 ];
 
 const agentsItems = [

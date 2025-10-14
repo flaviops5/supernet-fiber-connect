@@ -3623,6 +3623,71 @@ export type Database = {
           },
         ]
       }
+      unified_documentation: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          created_by: string | null
+          doc_type: string
+          file_path: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          metadata: Json | null
+          parent_id: string | null
+          search_vector: unknown | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          doc_type: string
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          metadata?: Json | null
+          parent_id?: string | null
+          search_vector?: unknown | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          doc_type?: string
+          file_path?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          metadata?: Json | null
+          parent_id?: string | null
+          search_vector?: unknown | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_documentation_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "unified_documentation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity_logs: {
         Row: {
           activity_description: string

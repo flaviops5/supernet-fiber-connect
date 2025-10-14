@@ -17,6 +17,7 @@ import Monitoramento from "./pages/Monitoramento";
 import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
 import NetworkMaintenance from "./pages/NetworkMaintenance";
+import AdminDocumentacao from "./pages/AdminDocumentacao";
 import Roteamento from "./pages/Roteamento";
 import SimulacaoCompleta from "./pages/SimulacaoCompleta";
 import TesteFonteQueimada from "./pages/TesteFonteQueimada";
@@ -61,6 +62,7 @@ const App = () => {
           <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
+            <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
             
             {/* Public routes with header/footer */}
             <Route path="/*" element={
