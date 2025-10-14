@@ -70,15 +70,18 @@ serve(async (req) => {
 
     const knowledgeContext = techKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
     
-    // Check for active mass outages
-    const { data: activeOutages } = await supabase
-      .from('mass_outage_events')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1);
+    // Check for active mass outages (defensive default)
+    let massOutageContext = '';
+    try {
+      const { data: activeOutages } = await supabase
+        .from('mass_outage_events')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-    const massOutageContext = activeOutages && activeOutages.length > 0 ? `
+      if (activeOutages && activeOutages.length > 0) {
+        massOutageContext = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ ALERTA: QUEDA EM MASSA ATIVA
 ${activeOutages[0].affected_count} clientes afetados
@@ -87,7 +90,11 @@ Início: ${new Date(activeOutages[0].created_at).toLocaleString('pt-BR')}
 
 IMPORTANTE: Informe ao cliente que há uma instabilidade conhecida na região e que a equipe técnica já está trabalhando na solução.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-` : '';
+`;
+      }
+    } catch (e) {
+      console.warn('mass_outage_events fetch failed:', e);
+    }
     
     const ixcToolsNote = `
 
