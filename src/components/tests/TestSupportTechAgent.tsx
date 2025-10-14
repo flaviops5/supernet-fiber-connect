@@ -90,29 +90,47 @@ export const TestSupportTechAgent = () => {
     setTestResults(null);
     
     try {
-      // 1. Limpar conversas de teste antigas
-      await supabase
+      // 1. Buscar conversa existente (evitar duplicação pela unique constraint)
+      const { data: existing, error: selError } = await supabase
         .from('conversations')
-        .delete()
+        .select('id, status, current_department')
         .eq('customer_phone', '11999999999')
-        .eq('channel', 'whatsapp');
+        .eq('channel', 'whatsapp')
+        .maybeSingle();
 
-      // 2. Criar conversa de teste
-      const { data: conversation, error: convError } = await supabase
-        .from('conversations')
-        .insert({
-          customer_cpf: '111.111.111-11',
-          customer_name: 'Cliente Teste Técnico',
-          customer_phone: '11999999999',
-          channel: 'whatsapp',
-          current_department: 'tecnico',
-          assigned_agent_id: null,
-          status: 'waiting'
-        })
-        .select()
-        .single();
+      if (selError) throw selError;
 
-      if (convError) throw convError;
+      let conversation: any;
+
+      if (existing) {
+        // Garantir estado apropriado para o teste
+        await supabase
+          .from('conversations')
+          .update({
+            status: 'waiting',
+            current_department: 'tecnico',
+            assigned_agent_id: null
+          })
+          .eq('id', existing.id);
+        conversation = existing;
+      } else {
+        // 2. Criar conversa de teste
+        const { data: created, error: convError } = await supabase
+          .from('conversations')
+          .insert({
+            customer_cpf: '111.111.111-11',
+            customer_name: 'Cliente Teste Técnico',
+            customer_phone: '11999999999',
+            channel: 'whatsapp',
+            current_department: 'tecnico',
+            assigned_agent_id: null,
+            status: 'waiting'
+          })
+          .select()
+          .single();
+        if (convError) throw convError;
+        conversation = created;
+      }
 
       // 2. Chamar support-tech-agent
       const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
