@@ -6,8 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, ShoppingCart, Wrench, DollarSign, RefreshCw, TestTube2, Settings, Heart } from 'lucide-react';
-import OmnichannelChat from './OmnichannelChat';
+import { Bot, ShoppingCart, Wrench, DollarSign, Settings, Heart } from 'lucide-react';
 import AgentConfigEditor from './AgentConfigEditor';
 
 interface AgentStats {
@@ -41,8 +40,6 @@ const AgentManagement = () => {
   });
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [showTestChat, setShowTestChat] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -105,28 +102,6 @@ const AgentManagement = () => {
     }
   };
 
-  const syncKnowledgeBase = async () => {
-    setSyncing(true);
-    try {
-      const { error } = await supabase.functions.invoke('sync-chatbot-knowledge');
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Base de conhecimento sincronizada',
-        description: 'Todos os agentes foram atualizados com as últimas informações.',
-      });
-    } catch (error: any) {
-      console.error('Error syncing knowledge:', error);
-      toast({
-        title: 'Erro ao sincronizar',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const agents = [
     {
@@ -237,49 +212,12 @@ const AgentManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciamento de Agentes IA</h1>
-          <p className="text-muted-foreground">
-            Sistema inteligente de roteamento e atendimento automatizado
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowTestChat(!showTestChat)}
-            variant="outline"
-            className="gap-2"
-          >
-            <TestTube2 className="w-4 h-4" />
-            {showTestChat ? 'Esconder Teste' : 'Testar Chat'}
-          </Button>
-          <Button
-            onClick={syncKnowledgeBase}
-            disabled={syncing}
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-            Sincronizar Base de Conhecimento
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Gerenciamento de Agentes IA</h1>
+        <p className="text-muted-foreground">
+          Sistema inteligente de roteamento e atendimento automatizado. A base de conhecimento é sincronizada automaticamente quando você altera planos, FAQs ou configurações.
+        </p>
       </div>
-
-      {showTestChat && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TestTube2 className="w-5 h-5" />
-              Chat de Teste - Omnichannel
-            </CardTitle>
-            <CardDescription>
-              Teste o sistema de roteamento e os agentes especializados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <OmnichannelChat />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Agent Stats Grid */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
