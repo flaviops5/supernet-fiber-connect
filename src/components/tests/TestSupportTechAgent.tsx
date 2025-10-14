@@ -199,7 +199,7 @@ export const TestSupportTechAgent = () => {
               className="flex-1"
             >
               <AlertTriangle className="mr-2 h-4 w-4" />
-              Criar Mass Outage (SRI)
+              Ativar Pane Massiva
             </Button>
             <Button
               onClick={clearMassOutage}
@@ -208,7 +208,7 @@ export const TestSupportTechAgent = () => {
               className="flex-1"
             >
               <CheckCircle2 className="mr-2 h-4 w-4" />
-              Resolver Todas
+              Desativar Pane
             </Button>
           </div>
 
@@ -216,7 +216,7 @@ export const TestSupportTechAgent = () => {
             <Alert className="border-orange-600 bg-orange-50 dark:bg-orange-950">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-900 dark:text-orange-100">
-                <strong>⚠️ Mass Outage Ativo:</strong> 42 clientes afetados na região SRI
+                <strong>🚨 Pane Massiva Ativa:</strong> 1542 clientes afetados em Taguatinga e Samambaia
               </AlertDescription>
             </Alert>
           )}
