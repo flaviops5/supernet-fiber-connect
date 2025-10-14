@@ -1993,12 +1993,18 @@ MENSAGEM ATUAL DO CLIENTE:
       }
     }
 
-    const transferMessage = `Perfeito! Transferindo você para ${
-      decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
-      decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
-      decision.agent === 'logistics' ? 'o Érik Souza, da Logística' :
-      'a Julia Martins, do Financeiro'
-    }. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
+    let agentName = 'nosso time';
+    if (decision.agent === 'sales') {
+      agentName = 'o Vicente, nosso especialista em Vendas';
+    } else if (decision.agent === 'support_tech') {
+      agentName = 'nosso Suporte Técnico';
+    } else if (decision.agent === 'logistics') {
+      agentName = 'o Érik Souza, da Logística';
+    } else {
+      agentName = 'a Julia Martins, do Financeiro';
+    }
+    
+    const transferMessage = `Perfeito! Transferindo você para ${agentName}. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
 
     return new Response(
       JSON.stringify({
