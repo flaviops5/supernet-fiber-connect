@@ -1985,7 +1985,7 @@ MENSAGEM ATUAL DO CLIENTE:
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in routing-agent:', error);
     return new Response(
       JSON.stringify({ 
