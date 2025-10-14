@@ -1530,7 +1530,7 @@ MENSAGEM ATUAL DO CLIENTE:
     }
 
     // Check if we need CPF for this agent
-    const needsCPF = decision.agent === 'support_tech' || decision.agent === 'support_financial';
+    const needsCPF = decision.agent === 'support_tech' || decision.agent === 'support_financial' || decision.agent === 'logistics';
     
     // If agent needs CPF and customer not identified, ask for it
     if (needsCPF && !conversation?.customer_cpf) {
@@ -1605,9 +1605,44 @@ MENSAGEM ATUAL DO CLIENTE:
       }
     }
 
+    let logisticsMessage: string | undefined = undefined;
+    if (decision.agent === 'logistics' && conversation?.customer_cpf) {
+      try {
+        const { data: logData, error: logError } = await supabase.functions.invoke('logistics-agent', {
+          body: {
+            messages: [{ role: 'user', content: message }],
+            conversationId,
+            customerData: {
+              customer_cpf: conversation.customer_cpf,
+              customer_name: conversation.customer_name,
+              customer_email: conversation.customer_email,
+              customer_phone: conversation.customer_phone,
+              ixc_client_id: conversation.ixc_client_id,
+            },
+          },
+        });
+        if (logError) {
+          console.error('Erro ao chamar logistics-agent (decision path):', logError);
+        } else if (logData?.message) {
+          logisticsMessage = logData.message as string;
+          
+          await supabase.from('conversation_messages').insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Érik Souza (Logística)',
+            content: logisticsMessage,
+            ai_suggestion: true,
+          });
+        }
+      } catch (e) {
+        console.error('Exceção ao chamar logistics-agent (decision path):', e);
+      }
+    }
+
     const transferMessage = `Perfeito! Transferindo você para ${
       decision.agent === 'sales' ? 'o Vicente, nosso especialista em Vendas' :
       decision.agent === 'support_tech' ? 'nosso Suporte Técnico' :
+      decision.agent === 'logistics' ? 'o Érik Souza, da Logística' :
       'a Julia Martins, do Financeiro'
     }. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
 

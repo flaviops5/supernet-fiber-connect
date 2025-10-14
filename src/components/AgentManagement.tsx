@@ -35,6 +35,7 @@ const AgentManagement = () => {
     sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+    logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
   });
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
@@ -81,6 +82,7 @@ const AgentManagement = () => {
           sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+          logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
         };
 
         conversations.forEach(conv => {
@@ -181,6 +183,21 @@ const AgentManagement = () => {
         'Negociação de débitos',
         'Desbloqueio automático após pagamento',
         'Orientações sobre formas de pagamento',
+      ]
+    },
+    {
+      id: 'logistics',
+      name: 'Logística',
+      icon: Wrench,
+      color: 'bg-purple-500',
+      description: 'Coordenação de instalações e agendamentos',
+      capabilities: [
+        'Agendamento de novas instalações',
+        'Coordenação com equipe técnica',
+        'Gestão de ordens de serviço',
+        'Alocação de técnicos para atendimento',
+        'Controle de estoque de equipamentos',
+        'Reagendamento de visitas técnicas',
       ]
     },
     {
