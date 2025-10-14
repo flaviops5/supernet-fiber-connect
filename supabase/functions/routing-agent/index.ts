@@ -975,10 +975,6 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
           }
         } else {
           // Fluxo normal do IXC
-          console.log('IXC search result:', ixcResult);
-
-        } else {
-          // Fluxo normal do IXC
           console.log('✅ IXC respondeu com sucesso:', ixcResult);
 
           let customerData: any = null;
