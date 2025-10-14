@@ -1970,16 +1970,17 @@ MENSAGEM ATUAL DO CLIENTE:
       'a Julia Martins, do Financeiro'
     }. Um momento! ⏳\n\n📋 *Protocolo de Atendimento:* ${protocol}`;
 
+    const payload = {
+      agent: decision.agent,
+      confidence: decision.confidence,
+      reason: decision.reason,
+      message: transferMessage,
+      protocol,
+      financialMessage: financialMessage,
+      autoClose: false
+    };
     return new Response(
-      JSON.stringify({
-        agent: decision.agent,
-        confidence: decision.confidence,
-        reason: decision.reason,
-        message: transferMessage,
-        protocol,
-        financialMessage,
-        autoClose: false // NÃO encerrar - transferindo para agente especializado
-      }),
+      JSON.stringify(payload),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
