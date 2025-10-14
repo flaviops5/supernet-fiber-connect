@@ -111,11 +111,6 @@ const documentationItems = [
     url: "/admin/documents",
     icon: FolderOpen,
   },
-  {
-    title: "IA Corporativa",
-    url: "/admin/corporate-ai",
-    icon: Brain,
-  },
 ];
 
 const agentsItems = [

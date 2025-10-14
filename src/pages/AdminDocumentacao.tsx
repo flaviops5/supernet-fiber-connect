@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Database, Code2, Brain } from "lucide-react";
+import { FileText, Database, Code2, Brain, Sparkles } from "lucide-react";
 import { KnowledgeBaseTab } from "@/components/documentation/KnowledgeBaseTab";
 import { TechnicalDocsTab } from "@/components/documentation/TechnicalDocsTab";
 import { OmnichannelCodesTab } from "@/components/documentation/OmnichannelCodesTab";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
+import CorporateAI from "@/components/CorporateAI";
 
 const AdminDocumentacao = () => {
   return (
@@ -20,7 +21,7 @@ const AdminDocumentacao = () => {
 
       <Card className="p-6">
         <Tabs defaultValue="knowledge" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="knowledge" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Base Vetorizada
@@ -36,6 +37,10 @@ const AdminDocumentacao = () => {
             <TabsTrigger value="omnichannel" className="flex items-center gap-2">
               <Code2 className="h-4 w-4" />
               Códigos Omnichannel
+            </TabsTrigger>
+            <TabsTrigger value="ai-assistant" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              IA Corporativa
             </TabsTrigger>
           </TabsList>
 
@@ -53,6 +58,10 @@ const AdminDocumentacao = () => {
 
           <TabsContent value="omnichannel" className="space-y-4">
             <OmnichannelCodesTab />
+          </TabsContent>
+
+          <TabsContent value="ai-assistant" className="space-y-4">
+            <CorporateAI />
           </TabsContent>
         </Tabs>
       </Card>

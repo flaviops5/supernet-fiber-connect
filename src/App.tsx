@@ -27,7 +27,6 @@ import HPFuncoes from "./pages/HPFuncoes";
 import Apresentacao from "./pages/Apresentacao";
 import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
-import OmnichannelCodes from "./pages/OmnichannelCodes";
 import MonitoringLogs from "./pages/MonitoringLogs";
 import AtlasInsights from "./pages/AtlasInsights";
 import NotFound from "./pages/NotFound";
@@ -54,8 +53,10 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
+            {/* Redirects for consolidated documentation */}
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
+            <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
           <Route path="/atendimento" element={<Atendimento />} />
@@ -82,7 +83,7 @@ const App = () => {
             <Route path="/test-ixc-subjects" element={<TestIXCSubjects />} />
             <Route path="/system-metrics" element={<SystemMetrics />} />
             <Route path="/hp_funcoes" element={<HPFuncoes />} />
-                    <Route path="/technical-docs" element={<Navigate to="/admin/knowledge" replace />} />
+                    <Route path="/technical-docs" element={<Navigate to="/admin/documentacao" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />
