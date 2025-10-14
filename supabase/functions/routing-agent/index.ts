@@ -22,6 +22,98 @@ interface AgentConfig {
   max_tokens: number;
 }
 
+// ============================================
+// 🆕 FUNÇÃO UNIFICADA DE EXTRAÇÃO DE CPF
+// ============================================
+/**
+ * Extrai CPF de texto, suportando múltiplos formatos:
+ * - 067.239.987-42 (formatado com zero à esquerda)
+ * - 06723998742 (sem formatação)
+ * - 111.111.111-11 (CPFs de teste)
+ */
+function extractCPF(text: string): string | null {
+  // Remove tudo que não é dígito
+  const cleaned = text.replace(/\D/g, '');
+  
+  // Procura sequência de 11 dígitos
+  const match = cleaned.match(/\d{11}/);
+  if (!match) return null;
+  
+  const cpf = match[0];
+  
+  // CPFs de teste permitidos (QA)
+  const testCPFs = [
+    '11111111111',
+    '22222222222',
+    '33333333333',
+    '44444444444',
+    '55555555555',
+    '99999999999'
+  ];
+  
+  // Se for CPF de teste, aceitar imediatamente
+  if (testCPFs.includes(cpf)) {
+    console.log('🧪 CPF de teste identificado:', cpf);
+    return cpf;
+  }
+  
+  // Rejeitar CPFs com todos dígitos iguais (exceto testes)
+  if (/^(\d)\1{10}$/.test(cpf)) {
+    console.log('❌ CPF com dígitos repetidos:', cpf);
+    return null;
+  }
+  
+  console.log('✅ CPF válido extraído:', cpf);
+  return cpf;
+}
+
+// ============================================
+// 🆕 RETRY COM BACKOFF EXPONENCIAL
+// ============================================
+async function invokeWithRetry(
+  supabase: any,
+  functionName: string,
+  body: any,
+  maxAttempts = 3
+): Promise<{ data: any; error: any }> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`🔄 Tentativa ${attempt}/${maxAttempts} para ${functionName}`);
+      
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
+      
+      if (!error) {
+        console.log(`✅ ${functionName} respondeu na tentativa ${attempt}`);
+        return { data, error: null };
+      }
+      
+      console.warn(`⚠️ Tentativa ${attempt} falhou:`, error);
+      
+      // Se não for a última tentativa, aguardar antes de tentar novamente
+      if (attempt < maxAttempts) {
+        const delay = 1000 * attempt; // 1s, 2s, 3s
+        console.log(`⏱️ Aguardando ${delay}ms antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (e) {
+      console.error(`💥 Exceção na tentativa ${attempt}:`, e);
+      
+      if (attempt === maxAttempts) {
+        return { data: null, error: e };
+      }
+      
+      // Aguardar antes de tentar novamente
+      const delay = 1000 * attempt;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  return { 
+    data: null, 
+    error: new Error(`Falha após ${maxAttempts} tentativas`) 
+  };
+}
+
 serve(async (req) => {
   // Sprint 2: Correlation ID para rastreamento
   const correlationId = req.headers.get('x-correlation-id') || 
@@ -98,19 +190,36 @@ serve(async (req) => {
 
     console.log('Conversation data:', conversation);
 
-    // Check if message contains CPF
-    const cpfMatch = message.match(/\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/);
+    // 🆕 BUSCA PRÉVIA DE HISTÓRICO - Tentar extrair CPF de mensagens anteriores
+    let extractedCPF: string | null = null;
     
-    // Validar formato do CPF antes de prosseguir
-    const isValidCPFFormat = (cpf: string): boolean => {
-      const clean = cpf.replace(/\D/g, '');
-      if (clean.length !== 11) return false;
-      if (/^(\d)\1{10}$/.test(clean)) return false; // Rejeita CPFs com todos dígitos iguais
-      return true;
-    };
+    if (!conversation?.customer_cpf) {
+      console.log('🔍 Cliente não identificado - buscando CPF no histórico...');
+      
+      // Concatenar todo o histórico de mensagens
+      const allText = (messages || []).map(m => m.content).join(' ') + ' ' + message;
+      extractedCPF = extractCPF(allText);
+      
+      if (extractedCPF) {
+        console.log('✅ CPF encontrado no histórico:', extractedCPF);
+        // CPF será processado abaixo no fluxo normal
+      } else {
+        console.log('❌ Nenhum CPF encontrado no histórico');
+      }
+    }
+
+    // Check if message contains CPF (usar função extractCPF)
+    const cpfFromCurrentMessage = extractCPF(message);
+    const cpfMatch = cpfFromCurrentMessage ? [cpfFromCurrentMessage, cpfFromCurrentMessage] : null;
     
-    // Se não tem CPF na conversa, solicitar
-    if (!conversation?.customer_cpf && !cpfMatch) {
+    // Validar formato do CPF (agora usa extractCPF que já valida)
+    // Função extractCPF() já valida:
+    // - Formato correto (11 dígitos)
+    // - CPFs de teste permitidos
+    // - Rejeita CPFs com todos dígitos iguais (exceto teste)
+    
+    // Se não tem CPF na conversa E não extraiu do histórico, solicitar
+    if (!conversation?.customer_cpf && !extractedCPF && !cpfMatch) {
       const attempts = conversation?.metadata?.cpf_attempts || 0;
       
       if (attempts >= 3) {
@@ -176,15 +285,16 @@ serve(async (req) => {
       );
     }
     
-    // If CPF was provided, identify customer
-    if (cpfMatch && !conversation?.customer_cpf) {
-      const cpf = cpfMatch[1].replace(/\D/g, '');
+    // If CPF was provided or extracted, identify customer
+    const cpfToProcess = cpfMatch ? cpfMatch[1] : extractedCPF;
+    
+    if (cpfToProcess && !conversation?.customer_cpf) {
+      const cpf = typeof cpfToProcess === 'string' ? cpfToProcess.replace(/\D/g, '') : cpfToProcess;
       
-      // Verificar se é um CPF de teste (permitir antes da validação)
+      // Verificar se é um CPF de teste (já validado por extractCPF)
       const isTestCPF = ['11111111111', '22222222222', '33333333333', '44444444444', '99999999999'].includes(cpf);
       
-      // Validar formato (exceto para CPFs de teste)
-      if (!isTestCPF && !isValidCPFFormat(cpf)) {
+      console.log('CPF found:', cpf, '| Is test:', isTestCPF);
         const attempts = conversation?.metadata?.cpf_attempts || 0;
         
         await supabase
@@ -464,17 +574,21 @@ serve(async (req) => {
 
               let financialMessage: string | undefined = undefined;
               try {
-                const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
-                  body: {
+                const { data: finData, error: finError } = await invokeWithRetry(
+                  supabase,
+                  'support-financial-agent',
+                  {
                     messages: [{ role: 'user', content: message }],
                     conversationId,
                     customerData: mockCustomerData,
                     routeReason: 'blocked_or_overdue',
                   },
-                });
+                  3 // 3 tentativas
+                );
                 
                 if (finError) {
-                  console.error('🔴 ERRO ao chamar support-financial-agent:', finError);
+                  console.error('🔴 ERRO ao chamar support-financial-agent após 3 tentativas:', finError);
+                  financialMessage = "Desculpe, estou com dificuldade técnica no momento. Vou transferir para um atendente humano que entrará em contato em breve. 🙏";
                 } else if (finData?.message) {
                   financialMessage = finData.message as string;
                   
@@ -617,16 +731,20 @@ serve(async (req) => {
 
               let techMessage: string | undefined = undefined;
               try {
-                const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
-                  body: {
+                const { data: techData, error: techError } = await invokeWithRetry(
+                  supabase,
+                  'support-tech-agent',
+                  {
                     messages: [{ role: 'user', content: message }],
                     conversationId,
                     customerData: mockCustomerData,
                   },
-                });
+                  3 // 3 tentativas
+                );
                 
                 if (techError) {
-                  console.error('🔴 ERRO ao chamar support-tech-agent:', techError);
+                  console.error('🔴 ERRO ao chamar support-tech-agent após 3 tentativas:', techError);
+                  techMessage = "Desculpe, estou com dificuldade técnica no momento. Vou transferir para um atendente humano que entrará em contato em breve. 🙏";
                 } else if (techData?.message) {
                   techMessage = techData.message as string;
                   
@@ -732,44 +850,105 @@ serve(async (req) => {
         });
 
         if (ixcError) {
-          console.error('Error searching IXC:', ixcError);
-          throw ixcError;
-        }
-
-        console.log('IXC search result:', ixcResult);
-
-        let customerData: any = null;
-        let clientStatus: any = null;
-        
-        if (ixcResult?.success && ixcResult.data && Array.isArray(ixcResult.data) && ixcResult.data.length > 0) {
-          const customer = ixcResult.data[0];
+          console.error('⚠️ Erro ao buscar no IXC:', ixcError);
           
-          // Get full customer status (online, blocked, etc.)
-          console.log('Getting customer status from IXC...');
-          const { data: statusResult } = await supabase.functions.invoke('ixc-integration', {
-            body: {
-              action: 'getCustomerStatus',
-              params: { id: customer.id }
+          // 🆕 FALLBACK: Tentar buscar no histórico local
+          console.log('🔄 Tentando fallback para histórico local...');
+          
+          const { data: cachedHistory } = await supabase
+            .from('customer_contact_history')
+            .select('*')
+            .eq('cpf', cpf)
+            .eq('was_found_in_ixc', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (cachedHistory) {
+            console.log('✅ Dados encontrados no cache local');
+            
+            // Usar dados do cache
+            customerData = {
+              customer_cpf: cpf,
+              customer_name: cachedHistory.customer_name,
+              customer_email: cachedHistory.customer_email,
+              customer_phone: cachedHistory.customer_phone,
+              ixc_client_id: cachedHistory.ixc_client_id,
+              metadata: {
+                ...conversation?.metadata,
+                source: 'cache_fallback',
+                cached_at: cachedHistory.created_at,
+                original_client_status: cachedHistory.metadata?.client_status
+              }
+            };
+            
+            // Tentar obter status atualizado (mas não bloquear se falhar)
+            try {
+              const { data: statusResult } = await supabase.functions.invoke('ixc-integration', {
+                body: {
+                  action: 'getCustomerStatus',
+                  params: { id: cachedHistory.ixc_client_id }
+                }
+              });
+              
+              if (statusResult?.data) {
+                clientStatus = statusResult.data;
+                customerData.metadata.cliente_status = clientStatus;
+                console.log('✅ Status atualizado via IXC');
+              } else {
+                // Usar status do cache
+                clientStatus = cachedHistory.metadata?.client_status || null;
+                console.log('⚠️ Usando status do cache');
+              }
+            } catch (statusError) {
+              console.warn('⚠️ Erro ao atualizar status, usando cache:', statusError);
+              clientStatus = cachedHistory.metadata?.client_status || null;
             }
-          });
-
-          console.log('Customer status result:', JSON.stringify(statusResult, null, 2));
-          clientStatus = statusResult?.data || null;
-
-          customerData = {
-            customer_cpf: cpf,
-            customer_name: customer.razao || customer.nome_fantasia || 'Cliente',
-            customer_email: customer.email || null,
-            customer_phone: customer.telefone_celular || customer.telefone_comercial || null,
-            ixc_client_id: customer.id,
-            metadata: {
-              ...conversation?.metadata,
-              cliente_status: clientStatus
-            }
-          };
+          } else {
+            console.log('❌ Cliente não encontrado no cache local');
+            throw ixcError; // Lançar erro original se não houver cache
+          }
         } else {
-          // Cliente não encontrado no IXC
-          console.log('❌ CPF não encontrado no IXC');
+          // Fluxo normal do IXC
+          console.log('IXC search result:', ixcResult);
+
+        } else {
+          // Fluxo normal do IXC
+          console.log('✅ IXC respondeu com sucesso:', ixcResult);
+
+          let customerData: any = null;
+          let clientStatus: any = null;
+          
+          if (ixcResult?.success && ixcResult.data && Array.isArray(ixcResult.data) && ixcResult.data.length > 0) {
+            const customer = ixcResult.data[0];
+            
+            // Get full customer status (online, blocked, etc.)
+            console.log('Getting customer status from IXC...');
+            const { data: statusResult } = await supabase.functions.invoke('ixc-integration', {
+              body: {
+                action: 'getCustomerStatus',
+                params: { id: customer.id }
+              }
+            });
+
+            console.log('Customer status result:', JSON.stringify(statusResult, null, 2));
+            clientStatus = statusResult?.data || null;
+
+            customerData = {
+              customer_cpf: cpf,
+              customer_name: customer.razao || customer.nome_fantasia || 'Cliente',
+              customer_email: customer.email || null,
+              customer_phone: customer.telefone_celular || customer.telefone_comercial || null,
+              ixc_client_id: customer.id,
+              metadata: {
+                ...conversation?.metadata,
+                cliente_status: clientStatus
+              }
+            };
+          } else {
+            // Cliente não encontrado no IXC
+            console.log('❌ CPF não encontrado no IXC');
+        }
 
           // 🆕 Registrar tentativa no histórico
           await supabase
@@ -956,29 +1135,23 @@ serve(async (req) => {
               });
             
             try {
-              console.log('🟡 Invocando support-financial-agent com:', {
-                conversationId,
-                hasSupabase: !!supabase,
-                hasCustomerData: !!customerData
-              });
+              console.log('🟡 Invocando support-financial-agent com retry...');
               
-              const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
-                body: {
+              const { data: finData, error: finError } = await invokeWithRetry(
+                supabase,
+                'support-financial-agent',
+                {
                   messages: [{ role: 'user', content: message }],
                   conversationId,
                   customerData,
                   routeReason: 'blocked_or_overdue',
                 },
-              });
-              
-              console.log('🟢 Resposta do support-financial-agent:', { 
-                finData, 
-                finError,
-                hasMessage: !!finData?.message 
-              });
+                3 // 3 tentativas com backoff
+              );
               
               if (finError) {
-                console.error('🔴 ERRO ao chamar support-financial-agent:', finError);
+                console.error('🔴 ERRO ao chamar support-financial-agent após 3 tentativas:', finError);
+                financialMessage = "Desculpe, estou com dificuldade técnica no momento. Vou transferir para um atendente humano que entrará em contato em breve. 🙏";
               } else if (finData?.message) {
                 financialMessage = finData.message as string;
                 console.log('✅ Mensagem da Julia recebida:', financialMessage.substring(0, 50) + '...');
@@ -1240,14 +1413,12 @@ serve(async (req) => {
               });
             
             try {
-              console.log('🟡 Invocando support-tech-agent com:', {
-                conversationId,
-                hasSupabase: !!supabase,
-                hasCustomerData: !!customerData
-              });
+              console.log('🟡 Invocando support-tech-agent com retry...');
               
-              const { data: techData, error: techError } = await supabase.functions.invoke('support-tech-agent', {
-                body: {
+              const { data: techData, error: techError } = await invokeWithRetry(
+                supabase,
+                'support-tech-agent',
+                {
                   messages: [{ role: 'user', content: message }],
                   conversationId,
                   customerData: {
@@ -1258,16 +1429,12 @@ serve(async (req) => {
                     }
                   },
                 },
-              });
-              
-              console.log('🟢 Resposta do support-tech-agent:', { 
-                techData, 
-                techError,
-                hasMessage: !!techData?.message 
-              });
+                3 // 3 tentativas com backoff
+              );
               
               if (techError) {
-                console.error('🔴 ERRO ao chamar support-tech-agent:', techError);
+                console.error('🔴 ERRO ao chamar support-tech-agent após 3 tentativas:', techError);
+                techMessage = "Desculpe, estou com dificuldade técnica no momento. Vou transferir para um atendente humano que entrará em contato em breve. 🙏";
               } else if (techData?.message) {
                 techMessage = techData.message as string;
                 console.log('✅ Mensagem do Luan recebida:', techMessage.substring(0, 50) + '...');
@@ -1558,8 +1725,10 @@ MENSAGEM ATUAL DO CLIENTE:
     let financialMessage: string | undefined = undefined;
     if (decision.agent === 'support_financial' && conversation?.customer_cpf) {
       try {
-        const { data: finData, error: finError } = await supabase.functions.invoke('support-financial-agent', {
-          body: {
+        const { data: finData, error: finError } = await invokeWithRetry(
+          supabase,
+          'support-financial-agent',
+          {
             messages: [{ role: 'user', content: message }],
             conversationId,
             customerData: {
@@ -1570,9 +1739,10 @@ MENSAGEM ATUAL DO CLIENTE:
               metadata: conversation.metadata,
             },
           },
-        });
+          3 // 3 tentativas
+        );
         if (finError) {
-          console.error('Erro ao chamar support-financial-agent (decision path):', finError);
+          console.error('Erro ao chamar support-financial-agent após 3 tentativas:', finError);
         } else if (finData?.message) {
           financialMessage = finData.message as string;
           
@@ -1609,8 +1779,10 @@ MENSAGEM ATUAL DO CLIENTE:
     let logisticsMessage: string | undefined = undefined;
     if (decision.agent === 'logistics' && conversation?.customer_cpf) {
       try {
-        const { data: logData, error: logError } = await supabase.functions.invoke('logistics-agent', {
-          body: {
+        const { data: logData, error: logError } = await invokeWithRetry(
+          supabase,
+          'logistics-agent',
+          {
             messages: [{ role: 'user', content: message }],
             conversationId,
             customerData: {
@@ -1621,9 +1793,10 @@ MENSAGEM ATUAL DO CLIENTE:
               ixc_client_id: conversation.ixc_client_id,
             },
           },
-        });
+          3 // 3 tentativas
+        );
         if (logError) {
-          console.error('Erro ao chamar logistics-agent (decision path):', logError);
+          console.error('Erro ao chamar logistics-agent após 3 tentativas:', logError);
         } else if (logData?.message) {
           logisticsMessage = logData.message as string;
           
