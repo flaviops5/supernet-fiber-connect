@@ -15,7 +15,9 @@ export function WhatsAppApiTester() {
     setResult(null);
     
     try {
-      const { data, error } = await supabase.functions.invoke('test-evolution-api');
+      const { data, error } = await supabase.functions.invoke('test-evolution-api', {
+        body: { action: 'test-instance', instance: 'SDR2' }
+      });
       
       if (error) throw error;
       
