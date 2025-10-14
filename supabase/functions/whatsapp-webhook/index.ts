@@ -297,29 +297,23 @@ serve(async (req) => {
 
       // Se não existe conversação ativa, criar ou reabrir
       if (!conversationId && recentResolved) {
-        // Reabrir conversa recente mantendo dados do cliente
-        console.log('🔄 Reopening recent conversation with existing data');
+        // Reabrir conversa recente atualizando a resolvida
+        console.log('🔄 Reopening recent resolved conversation:', recentResolved.id);
         const { data: reopenedConv, error: reopenError } = await supabase
           .from('conversations')
-          .insert({
-            customer_name: recentResolved.customer_name,
-            customer_phone: customerPhone,
-            customer_cpf: recentResolved.customer_cpf,
-            customer_email: recentResolved.customer_email,
-            ixc_client_id: recentResolved.ixc_client_id,
-            channel: 'whatsapp',
+          .update({
             status: 'waiting',
-            department: recentResolved.department,
-            assigned_agent_id: recentResolved.assigned_agent_id,
             reopened_from_conversation_id: recentResolved.id,
-            reopen_count: 1,
+            reopen_count: (recentResolved.reopen_count || 0) + 1,
             last_message_at: new Date().toISOString(),
             metadata: {
               whatsapp_id: messageData.key?.id,
               instance: webhookData.instance,
-              auto_reopened: true
+              auto_reopened: true,
+              previous_resolved_at: recentResolved.resolved_at
             }
           })
+          .eq('id', recentResolved.id)
           .select()
           .single();
 
@@ -333,9 +327,11 @@ serve(async (req) => {
       
       if (!conversationId) {
         console.log('🆕 Creating new conversation');
+        
+        // UPSERT: criar nova ou atualizar se já existir
         const { data: newConversation, error: createError } = await supabase
           .from('conversations')
-          .insert({
+          .upsert({
             customer_name: customerName,
             customer_phone: customerPhone,
             channel: 'whatsapp',
@@ -345,6 +341,9 @@ serve(async (req) => {
               whatsapp_id: messageData.key?.id,
               instance: webhookData.instance
             }
+          }, {
+            onConflict: 'channel,customer_phone',
+            ignoreDuplicates: false
           })
           .select()
           .single();
