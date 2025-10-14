@@ -129,13 +129,35 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationId, context } = await req.json();
+    const body = await req.json();
+    
+    // 🧩 Aceitar ambos os formatos (snake_case e camelCase) + auto-gerar UUID
+    const conversationId = body.conversation_id ?? body.conversationId ?? crypto.randomUUID();
+    const message = body.message_content ?? body.message;
+    const context = body.context;
+    
+    // Validar que a mensagem foi enviada
+    if (!message) {
+      console.error(`❌ [${correlationId}] message_content/message ausente`);
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: "message_content é obrigatório" 
+        }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Logar se conversationId foi gerado automaticamente
+    if (!body.conversation_id && !body.conversationId) {
+      logger.warn("conversation_id ausente, gerado novo automaticamente", { conversationId });
+    }
     
     console.log(`📥 [${correlationId}] Message:`, redactPII(message, 'logs'));
-    
-    if (!conversationId) {
-      throw new Error('conversationId é obrigatório');
-    }
+    console.log(`🆔 [${correlationId}] ConversationId:`, conversationId);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
