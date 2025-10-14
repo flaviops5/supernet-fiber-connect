@@ -1886,10 +1886,10 @@ MENSAGEM ATUAL DO CLIENTE:
               customer_name: conversation.customer_name,
               customer_email: conversation.customer_email,
               ixc_client_id: conversation.ixc_client_id,
-              metadata: conversation.metadata,
-            },
+              metadata: conversation.metadata
+            }
           },
-          3 // 3 tentativas
+          3
         );
         if (finError) {
           console.error('Erro ao chamar support-financial-agent após 3 tentativas:', finError);
@@ -1940,10 +1940,10 @@ MENSAGEM ATUAL DO CLIENTE:
               customer_name: conversation.customer_name,
               customer_email: conversation.customer_email,
               customer_phone: conversation.customer_phone,
-              ixc_client_id: conversation.ixc_client_id,
-            },
+              ixc_client_id: conversation.ixc_client_id
+            }
           },
-          3 // 3 tentativas
+          3
         );
         if (logError) {
           console.error('Erro ao chamar logistics-agent após 3 tentativas:', logError);
