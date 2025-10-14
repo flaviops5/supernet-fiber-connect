@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { FileText, Database, Code2, Brain, Sparkles } from "lucide-react";
+import { FileText, Database, Code2, Brain, Sparkles, Users } from "lucide-react";
 import { KnowledgeBaseTab } from "@/components/documentation/KnowledgeBaseTab";
 import { TechnicalDocsTab } from "@/components/documentation/TechnicalDocsTab";
 import { OmnichannelCodesTab } from "@/components/documentation/OmnichannelCodesTab";
+import { AgentsDocsTab } from "@/components/documentation/AgentsDocsTab";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
 
@@ -20,8 +21,12 @@ const AdminDocumentacao = () => {
       </div>
 
       <Card className="p-6">
-        <Tabs defaultValue="knowledge" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+        <Tabs defaultValue="agents" className="w-full">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsTrigger value="agents" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Agentes
+            </TabsTrigger>
             <TabsTrigger value="knowledge" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Base Vetorizada
@@ -43,6 +48,10 @@ const AdminDocumentacao = () => {
               IA Corporativa
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="agents" className="space-y-4">
+            <AgentsDocsTab />
+          </TabsContent>
 
           <TabsContent value="knowledge" className="space-y-4">
             <KnowledgeBaseTab />
