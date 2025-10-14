@@ -522,10 +522,23 @@ serve(async (req) => {
         }
 
         if (mockCustomerData) {
-          // Update conversation with mock data
+          // Update conversation with mock data (evitar constraint violation de customer_phone)
+          const updateData: any = {
+            customer_cpf: mockCustomerData.customer_cpf,
+            customer_name: mockCustomerData.customer_name,
+            customer_email: mockCustomerData.customer_email,
+            ixc_client_id: mockCustomerData.ixc_client_id,
+            metadata: mockCustomerData.metadata
+          };
+          
+          // Só atualizar customer_phone se a conversation ainda não tem um
+          if (!conversation?.customer_phone && mockCustomerData.customer_phone) {
+            updateData.customer_phone = mockCustomerData.customer_phone;
+          }
+          
           const { error: updateError } = await supabase
             .from('conversations')
-            .update(mockCustomerData)
+            .update(updateData)
             .eq('id', conversationId);
 
           if (updateError) {
