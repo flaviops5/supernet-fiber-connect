@@ -168,3 +168,6 @@ verify_jwt = false
 [functions.generate-omnichannel-zip]
 verify_jwt = false
 
+[functions.atlas-analyzer]
+verify_jwt = false
+

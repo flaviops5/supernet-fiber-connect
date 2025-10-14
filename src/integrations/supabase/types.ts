@@ -333,6 +333,69 @@ export type Database = {
           },
         ]
       }
+      atlas_config: {
+        Row: {
+          enabled: boolean | null
+          id: string
+          thresholds: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean | null
+          id?: string
+          thresholds?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean | null
+          id?: string
+          thresholds?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      atlas_insights: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          groups: string[] | null
+          id: string
+          kpis: Json | null
+          notifications: Json | null
+          probable_cause: string
+          recommendation: string
+          severity: string
+          timeframe_minutes: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          groups?: string[] | null
+          id?: string
+          kpis?: Json | null
+          notifications?: Json | null
+          probable_cause: string
+          recommendation: string
+          severity: string
+          timeframe_minutes: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          groups?: string[] | null
+          id?: string
+          kpis?: Json | null
+          notifications?: Json | null
+          probable_cause?: string
+          recommendation?: string
+          severity?: string
+          timeframe_minutes?: number
+        }
+        Relationships: []
+      }
       auto_reboot_settings: {
         Row: {
           bandwidth_threshold_kbps: number

@@ -28,6 +28,7 @@ import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
 import OmnichannelCodes from "./pages/OmnichannelCodes";
 import MonitoringLogs from "./pages/MonitoringLogs";
+import AtlasInsights from "./pages/AtlasInsights";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -54,6 +55,7 @@ const App = () => {
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
             <Route path="/admin/omnichannel-codes" element={<OmnichannelCodes />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
+            <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
           <Route path="/atendimento" element={<Atendimento />} />
           <Route path="/perfil-agente" element={<PerfilAgente />} />
           <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
