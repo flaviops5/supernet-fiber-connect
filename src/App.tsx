@@ -18,10 +18,6 @@ import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
 import NetworkMaintenance from "./pages/NetworkMaintenance";
 import AdminDocumentacao from "./pages/AdminDocumentacao";
-import Roteamento from "./pages/Roteamento";
-import SimulacaoCompleta from "./pages/SimulacaoCompleta";
-import TesteFonteQueimada from "./pages/TesteFonteQueimada";
-import TestIXCSubjects from "./pages/TestIXCSubjects";
 import SystemMetrics from "./pages/SystemMetrics";
 import HPFuncoes from "./pages/HPFuncoes";
 import Apresentacao from "./pages/Apresentacao";
@@ -31,6 +27,7 @@ import AdminTestes from "./pages/AdminTestes";
 import MonitoringLogs from "./pages/MonitoringLogs";
 import AtlasInsights from "./pages/AtlasInsights";
 import NotFound from "./pages/NotFound";
+import AdminPrompts from "./pages/AdminPrompts";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
@@ -55,10 +52,18 @@ const App = () => {
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
             <Route path="/admin/testes" element={<AdminTestes />} />
+            <Route path="/admin/prompts" element={<AdminPrompts />} />
             {/* Redirects for consolidated documentation */}
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
+            {/* Redirects for consolidated tests */}
+            <Route path="/simulacao-completa" element={<Navigate to="/admin/testes" replace />} />
+            <Route path="/roteamento" element={<Navigate to="/admin/testes" replace />} />
+            <Route path="/test-ixc-subjects" element={<Navigate to="/admin/testes" replace />} />
+            <Route path="/teste-fonte-queimada" element={<Navigate to="/admin/testes" replace />} />
+            <Route path="/simulacao_completa" element={<Navigate to="/admin/testes" replace />} />
+            <Route path="/teste_fonte_queimada" element={<Navigate to="/admin/testes" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
           <Route path="/atendimento" element={<Atendimento />} />
@@ -79,10 +84,7 @@ const App = () => {
                     <Route path="/telemedicina" element={<Telemedicina />} />
                     <Route path="/automacao-residencial" element={<Automacao />} />
                     <Route path="/blog" element={<Blog />} />
-            <Route path="/roteamento" element={<Roteamento />} />
-            <Route path="/simulacao_completa" element={<SimulacaoCompleta />} />
-            <Route path="/teste_fonte_queimada" element={<TesteFonteQueimada />} />
-            <Route path="/test-ixc-subjects" element={<TestIXCSubjects />} />
+            <Route path="/automacao" element={<Automacao />} />
             <Route path="/system-metrics" element={<SystemMetrics />} />
             <Route path="/hp_funcoes" element={<HPFuncoes />} />
                     <Route path="/technical-docs" element={<Navigate to="/admin/documentacao" replace />} />

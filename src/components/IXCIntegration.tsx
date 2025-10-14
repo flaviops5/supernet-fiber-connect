@@ -13,7 +13,7 @@ import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
 import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
-import TestIXCSubjects from '@/pages/TestIXCSubjects';
+import { TestIXCSubjects } from '@/components/tests/TestIXCSubjects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface IXCCustomer {

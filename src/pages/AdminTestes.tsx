@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
-import TesteFonteQueimada from "./TesteFonteQueimada";
-import SimulacaoCompleta from "./SimulacaoCompleta";
+import { TestSimulacaoCompleta } from "@/components/tests/TestSimulacaoCompleta";
+import { TestFonteQueimada } from "@/components/tests/TestFonteQueimada";
 import ChatFlowTester from "@/components/ChatFlowTester";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
@@ -10,7 +10,7 @@ import { SendPaymentTest } from "@/components/SendPaymentTest";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
 import { IXCEndpointsHealthCheck } from "@/components/IXCEndpointsHealthCheck";
-import TestIXCSubjects from "./TestIXCSubjects";
+import { TestIXCSubjects } from "@/components/tests/TestIXCSubjects";
 import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
 import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
 import { EmailTestSender } from "@/components/EmailTestSender";
@@ -53,12 +53,12 @@ const AdminTestes = () => {
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold mb-4">Simulação Completa de Atendimento</h3>
-                <SimulacaoCompleta />
+                <TestSimulacaoCompleta />
               </div>
               
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-4">Teste de Fonte Queimada</h3>
-                <TesteFonteQueimada />
+                <TestFonteQueimada />
               </div>
             </div>
           </TabsContent>
