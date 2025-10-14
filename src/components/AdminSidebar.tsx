@@ -42,6 +42,7 @@ import {
   Wrench,
   Sparkles,
   Code2,
+  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -110,6 +111,14 @@ const documentationItems = [
     title: "Documentos",
     url: "/admin/documents",
     icon: FolderOpen,
+  },
+];
+
+const testingItems = [
+  {
+    title: "Central de Testes",
+    url: "/admin/testes",
+    icon: FlaskConical,
   },
 ];
 
@@ -396,6 +405,27 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {documentationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Testes & Validação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {testingItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink

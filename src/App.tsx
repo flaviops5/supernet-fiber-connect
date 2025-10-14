@@ -27,6 +27,7 @@ import HPFuncoes from "./pages/HPFuncoes";
 import Apresentacao from "./pages/Apresentacao";
 import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
+import AdminTestes from "./pages/AdminTestes";
 import MonitoringLogs from "./pages/MonitoringLogs";
 import AtlasInsights from "./pages/AtlasInsights";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
+            <Route path="/admin/testes" element={<AdminTestes />} />
             {/* Redirects for consolidated documentation */}
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
