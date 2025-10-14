@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { logConversationAccess } from '../_shared/lgpd-logger.ts';
+import { getMassOutageContext, formatOutageContextForPrompt } from '../_shared/mass-outage-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -70,30 +71,19 @@ serve(async (req) => {
 
     const knowledgeContext = techKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
     
-    // Check for active mass outages
-    let massOutageContext = '';
-    try {
-      const { data: activeOutages } = await supabase
-        .from('mass_outage_events')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (activeOutages && activeOutages.length > 0) {
-        massOutageContext = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ ALERTA: QUEDA EM MASSA ATIVA
-${activeOutages[0].affected_count} clientes afetados
-Região: ${activeOutages[0].region_pattern}
-Detectado em: ${new Date(activeOutages[0].detected_at).toLocaleString('pt-BR')}
-
-IMPORTANTE: Informe ao cliente que há uma instabilidade conhecida na região e que a equipe técnica já está trabalhando na solução.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-      }
-    } catch (e) {
-      console.warn('mass_outage_events fetch failed:', e);
+    // Check for active mass outages using helper v1.1.0
+    console.log(`🔍 [${correlationId}] Verificando panes massivas...`);
+    const outageContext = await getMassOutageContext(supabase, correlationId);
+    const massOutageContext = formatOutageContextForPrompt(outageContext);
+    
+    if (outageContext.active) {
+      console.log(`⚠️ [${correlationId}] Pane ativa detectada:`, {
+        affected_count: outageContext.affectedCount,
+        regions: outageContext.affectedRegions,
+        detected_at: outageContext.detectedAt
+      });
+    } else {
+      console.log(`✅ [${correlationId}] Nenhuma pane ativa`);
     }
     
     const ixcToolsNote = `

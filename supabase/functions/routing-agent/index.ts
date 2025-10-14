@@ -4,6 +4,7 @@ import { checkRateLimit, formatBlockedTime } from "../_shared/rate-limiter.ts";
 import { getLovableCircuitBreaker } from "../_shared/circuit-breaker.ts";
 import { redactPII, redactPIIObject } from "../_shared/pii-redaction.ts";
 import { logConversationAccess } from "../_shared/lgpd-logger.ts";
+import { getCachedOutage, formatOutageContextForPrompt } from "../_shared/mass-outage-helper.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -170,6 +171,55 @@ serve(async (req) => {
     const knowledgeContext = knowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
 
     console.log('Using routing config:', config.model);
+
+    // ⚠️ VERIFICAR PANES MASSIVAS PRIMEIRO (v1.1.0 - cached)
+    console.log(`🔍 [${correlationId}] Verificando panes massivas (cached)...`);
+    const outageContext = await getCachedOutage(supabase, correlationId);
+    const massOutageContext = formatOutageContextForPrompt(outageContext);
+    
+    if (outageContext.active) {
+      console.log(`⚠️ [${correlationId}] Pane ativa detectada - resposta prioritária`);
+      
+      // Retornar imediatamente com informação sobre a pane
+      const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      const outageMessage = `Olá! 👋 Sou a Cloé Martins.
+
+⚠️ Detectamos uma instabilidade geral na região ${outageContext.affectedRegions.join(", ")} afetando ${outageContext.affectedCount} clientes.
+
+Nossa equipe técnica já está trabalhando na normalização. Você não está sozinho nesse problema!
+
+📋 Protocolo: ${protocol}
+
+Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto isso?`;
+      
+      await supabase
+        .from('conversation_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_type: 'agent',
+          sender_name: 'Cloé Martins',
+          content: outageMessage,
+          ai_suggestion: true,
+        });
+      
+      return new Response(
+        JSON.stringify({
+          agent: 'routing',
+          message: outageMessage,
+          protocol,
+          massOutage: true,
+          affectedRegions: outageContext.affectedRegions,
+          affectedCount: outageContext.affectedCount,
+          autoClose: false
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    console.log(`✅ [${correlationId}] Nenhuma pane ativa - fluxo normal`);
 
     // Get conversation history to check if we need CPF
     const { data: messages } = await supabase

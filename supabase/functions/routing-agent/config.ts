@@ -1,49 +1,44 @@
 /**
- * Routing Agent - Configuration
+ * Routing Agent (Cloé Martins) - Configuration v1.1.0
+ * 
+ * MASS OUTAGE INTEGRATION:
+ * - Uses getCachedOutage (5s TTL cache)
+ * - High-volume agent benefits from caching
+ * - Timeout: 3000ms
  */
 
 export const ROUTING_AGENT_CONFIG = {
   // Model settings
-  model: "gpt-4o-mini",
-  temperature: 0.3, // Baixa temperatura para decisões consistentes
-  maxTokens: 500, // Resposta curta (apenas JSON)
+  model: "google/gemini-2.5-flash",
+  temperature: 0.7,
+  maxTokens: 1500,
   
   // Agent behavior
-  maxMessagesInContext: 5, // Apenas contexto recente para decisão rápida
-  enableToolCalling: false, // Não precisa de ferramentas
+  maxMessagesInContext: 10,
+  enableToolCalling: false, // Routing agent não precisa de tools
   
-  // Routing rules
-  defaultAgent: "sales-agent", // Agente padrão para casos ambíguos
-  minConfidenceThreshold: 0.4, // Abaixo disso, vai para default
-  
-  // Agents disponíveis
-  availableAgents: [
-    "sales-agent",
-    "support-tech-agent",
-    "support-financial-agent",
-    "automacao-agent",
-    "telemedicina-agent"
-  ],
-  
-  // Department mapping
-  departmentMapping: {
-    "sales-agent": "comercial",
-    "support-tech-agent": "tecnico",
-    "support-financial-agent": "financeiro",
-    "automacao-agent": "tecnico",
-    "telemedicina-agent": "comercial"
-  },
-  
-  // Priority mapping
-  agentPriority: {
-    "support-tech-agent": 3, // Highest priority
-    "support-financial-agent": 2,
-    "sales-agent": 1,
-    "automacao-agent": 1,
-    "telemedicina-agent": 1
-  },
+  // Business rules
+  maxCPFAttempts: 3,
+  requireCPFBeforeRouting: true,
   
   // Timeouts
-  responseTimeout: 10000, // 10s - Roteamento deve ser rápido
-  toolTimeout: 5000, // Não usado, mas mantido por consistência
+  responseTimeout: 20000,
+  
+  // Mass Outage Integration (v1.1.0)
+  massOutage: {
+    enabled: true,
+    useCached: true, // Routing benefits from cache (high volume)
+    cacheTTL: 5000, // 5 seconds
+    timeout: 3000,
+    skipCPFValidation: true, // Don't ask CPF during mass outage
+    priorityResponse: true // Respond immediately before CPF check
+  },
+  
+  // Rate limiting
+  rateLimit: {
+    enabled: true,
+    windowMinutes: 15,
+    maxAttempts: 5,
+    blockMinutes: 60
+  }
 };

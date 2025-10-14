@@ -1,5 +1,10 @@
 /**
- * Support Tech Agent - Configuration
+ * Support Tech Agent - Configuration v1.1.0
+ * 
+ * MASS OUTAGE INTEGRATION:
+ * - Uses getMassOutageContext (direct query, no cache)
+ * - Critical context requires fresh data
+ * - Timeout: 3000ms
  */
 
 export const SUPPORT_TECH_CONFIG = {
@@ -26,4 +31,12 @@ export const SUPPORT_TECH_CONFIG = {
   // Timeouts
   responseTimeout: 30000,
   toolTimeout: 15000, // Mais tempo para chamadas IXC
+  
+  // Mass Outage Integration (v1.1.0)
+  massOutage: {
+    enabled: true,
+    useCached: false, // Support tech needs fresh data
+    timeout: 3000,
+    priorityOverTroubleshooting: true
+  }
 };
