@@ -1213,6 +1213,9 @@ export type Database = {
           assigned_agent_id: string | null
           channel: Database["public"]["Enums"]["conversation_channel"]
           created_at: string | null
+          current_department:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
           customer_cpf: string | null
           customer_email: string | null
           customer_name: string
@@ -1240,6 +1243,9 @@ export type Database = {
           assigned_agent_id?: string | null
           channel: Database["public"]["Enums"]["conversation_channel"]
           created_at?: string | null
+          current_department?:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
           customer_cpf?: string | null
           customer_email?: string | null
           customer_name: string
@@ -1267,6 +1273,9 @@ export type Database = {
           assigned_agent_id?: string | null
           channel?: Database["public"]["Enums"]["conversation_channel"]
           created_at?: string | null
+          current_department?:
+            | Database["public"]["Enums"]["agent_department"]
+            | null
           customer_cpf?: string | null
           customer_email?: string | null
           customer_name?: string
@@ -4004,6 +4013,7 @@ export type Database = {
         | "financeiro"
         | "administrativo"
         | "logistica"
+        | "routing"
       agent_status: "online" | "busy" | "away" | "offline"
       campaign_channel: "whatsapp" | "sms" | "email" | "call"
       campaign_cta_type:
@@ -4182,6 +4192,7 @@ export const Constants = {
         "financeiro",
         "administrativo",
         "logistica",
+        "routing",
       ],
       agent_status: ["online", "busy", "away", "offline"],
       campaign_channel: ["whatsapp", "sms", "email", "call"],

@@ -5,6 +5,7 @@ import { getLovableCircuitBreaker } from "../_shared/circuit-breaker.ts";
 import { redactPII, redactPIIObject } from "../_shared/pii-redaction.ts";
 import { logConversationAccess } from "../_shared/lgpd-logger.ts";
 import { getCachedOutage, formatOutageContextForPrompt } from "../_shared/mass-outage-helper.ts";
+import { createLogger } from "../_shared/structured-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -120,6 +121,7 @@ serve(async (req) => {
   const correlationId = req.headers.get('x-correlation-id') || 
     `routing-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   
+  const logger = createLogger("routing-agent", req);
   console.log(`🧭 [${correlationId}] Routing Agent started`);
   
   if (req.method === 'OPTIONS') {
@@ -1145,6 +1147,95 @@ Vou te manter informado sobre o andamento. Precisa de mais alguma coisa enquanto
         let returningCustomerGreeting = '';
         if (hasContactHistory && contactCount > 1) {
           returningCustomerGreeting = `Que bom te ver de novo, ${firstName}! `;
+        }
+
+        // 🔹 PATCH DE ESCALAÇÃO: Verificar se deve escalar para suporte técnico
+        const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        
+        logger.info("Cliente identificado, verificando escalonamento", {
+          cpf,
+          protocol,
+          correlationId
+        });
+
+        // 🔹 Invocar check-escalation
+        const { data: escalationResp, error: escErr } = await supabase.functions.invoke("check-escalation", {
+          body: {
+            conversation_id: conversationId,
+            message_content: message,
+            current_department: "routing",
+          },
+        });
+        
+        if (escErr) {
+          logger.error("check-escalation falhou", { error: escErr.message });
+        }
+
+        const shouldEscalate = escalationResp?.should_escalate;
+        const targetDept = escalationResp?.target_department ?? "tecnico";
+
+        // 🔹 Persistir protocolo + atualizar departamento (não bloquear)
+        if (shouldEscalate) {
+          logger.info("Escalonando atendimento", { to: targetDept, protocol });
+          
+          EdgeRuntime.waitUntil(
+            supabase.from("conversations").update({
+              current_department: targetDept,
+              department: targetDept,
+              metadata: {
+                ...(conversation?.metadata ?? {}),
+                protocol,
+                transferred_at: new Date().toISOString(),
+                escalated_from: "routing",
+                escalated_to: targetDept
+              },
+            }).eq("id", conversationId)
+          );
+
+          // 🔹 Invocar Luan (não bloquear resposta da Cloé)
+          EdgeRuntime.waitUntil(
+            supabase.functions.invoke("support-tech-agent", {
+              body: {
+                conversation_id: conversationId,
+                customer_cpf: cpf,
+                message: message
+              },
+            }).then((res) => {
+              logger.info("support-tech-agent invocado", { status: res?.status ?? 0 });
+            }).catch((e) => {
+              logger.error("Falha ao invocar support-tech-agent", { error: String(e) });
+            })
+          );
+
+          // 🔹 Mensagem para o usuário (Cloé)
+          const escalationMessage = 
+            `${returningCustomerGreeting}Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳\n\n` +
+            `📋 *Protocolo:* ${protocol}`;
+          
+          await supabase
+            .from('conversation_messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_name: 'Cloé Martins',
+              content: escalationMessage,
+              ai_suggestion: true,
+            });
+          
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              agent: 'support_tech',
+              message: escalationMessage,
+              protocol,
+              customerIdentified: true,
+              customerData,
+              autoRouted: true,
+              routeReason: 'escalated_to_tech',
+              autoClose: false
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         // ROTEAMENTO SIMPLIFICADO: BLOQUEADO ou FINANCEIRO EM ATRASO → Julia (Financeiro)

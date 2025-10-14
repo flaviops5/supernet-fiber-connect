@@ -18,7 +18,7 @@ interface EscalationSettings {
   enabled: boolean;
 }
 
-type Department = 'administrativo' | 'comercial' | 'financeiro' | 'logistica' | 'tecnico';
+type Department = 'administrativo' | 'comercial' | 'financeiro' | 'logistica' | 'routing' | 'tecnico';
 
 interface EscalationRule {
   id: string;
@@ -35,7 +35,8 @@ const departmentLabels = {
   comercial: 'Comercial',
   tecnico: 'Técnico',
   financeiro: 'Financeiro',
-  logistica: 'Logística'
+  logistica: 'Logística',
+  routing: 'Roteamento (Cloé)'
 };
 
 export default function EscalationSettings() {
