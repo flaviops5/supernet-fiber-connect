@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
+import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,35 +25,23 @@ serve(async (req) => {
 
     logger.info("Luan iniciou atendimento técnico", { conversation_id, customer_cpf });
 
-    // Verificar se há pane massiva ativa (dados frescos)
-    let outageActive = false;
-    let outageRegions: string[] = [];
-    let outageCount = 0;
+    // Verificar se há pane massiva ativa (contexto em memória)
+    let outageActive = massOutageContext.active;
+    let outageRegion = massOutageContext.affectedRegion || "";
+    let outageCount = massOutageContext.affectedCount || 0;
     
-    try {
-      const { getMassOutageContext } = await import("../_shared/mass-outage-helper.ts");
-      const ctx = await getMassOutageContext(supabase, conversation_id, 3000);
-      
-      if (ctx && typeof ctx === 'object' && ctx.active) {
-        outageActive = true;
-        outageRegions = Array.isArray(ctx.affectedRegions) ? ctx.affectedRegions : [];
-        outageCount = Number(ctx.affectedCount) || 0;
-        
-        logger.info("Pane massiva detectada", { 
-          regions: outageRegions, 
-          affected: outageCount 
-        });
-      }
-    } catch (e) {
-      logger.warn("Falha ao obter contexto de pane", { error: (e as Error)?.message ?? String(e) });
+    if (outageActive) {
+      logger.info("Pane massiva detectada", { 
+        region: outageRegion, 
+        affected: outageCount 
+      });
     }
     
     // Mensagem inicial do Luan
     let initialMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
     
-    if (outageActive && outageRegions.length > 0) {
-      const regionsText = outageRegions.join(", ");
-      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${regionsText} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
+    if (outageActive && outageRegion) {
+      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${outageRegion} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
     }
     
     const { error: insertErr } = await supabase.from("conversation_messages").insert({
