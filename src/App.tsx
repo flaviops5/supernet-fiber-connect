@@ -53,7 +53,7 @@ const App = () => {
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
-            <Route path="/admin/omnichannel-codes" element={<OmnichannelCodes />} />
+            <Route path="/admin/omnichannel-codes" element={<Navigate to="/hp_funcoes" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
           <Route path="/atendimento" element={<Atendimento />} />
@@ -81,7 +81,7 @@ const App = () => {
             <Route path="/hp_funcoes" element={<HPFuncoes />} />
                     <Route path="/technical-docs" element={<Navigate to="/admin/knowledge" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
-          <Route path="/autoreboot" element={<AutoRebootDocs />} />
+          <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
