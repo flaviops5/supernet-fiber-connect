@@ -155,6 +155,11 @@ const agentsItems = [
     icon: Monitor,
   },
   {
+    title: "Atlas Insights",
+    url: "/admin/atlas-insights",
+    icon: Brain,
+  },
+  {
     title: "Logs do Sistema",
     url: "/monitoring/logs",
     icon: FileText,

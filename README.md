@@ -119,3 +119,75 @@ As Edge Functions (`ixc-integration`, `ixc-count-clients`) normalizam automatica
 
 **Erro: "Credenciais do IXC não configuradas"**
 - Certifique-se de que `IXC_API_USERNAME` e `IXC_API_PASSWORD` estão definidos nos secrets do Supabase
+
+## 🧠 Atlas Analyzer - Análise Preditiva de Falhas
+
+Sistema avançado de monitoramento que analisa logs e eventos de rede para detectar falhas antes que se tornem críticas.
+
+### Características Principais
+
+- **Análise Multi-Sinal**: Correlaciona dados de logs, mass outage events e status do IXC
+- **Detecção Inteligente**: Identifica padrões de falhas (power_outage, BGP, backbone_break, integration_instability)
+- **Alertas Automáticos**: Envia notificações WhatsApp para severidade HIGH
+- **Agrupamento Geográfico**: PON/CTO/Região para identificar áreas afetadas
+- **Thresholds Dinâmicos**: Configuráveis via banco de dados
+- **Deduplicação**: Evita alertas duplicados em janela de 15 minutos
+- **Análise de Tendências**: Compara com insights anteriores (worsening/stable/improving)
+
+### Acesso
+
+```
+https://seu-projeto.lovable.app/admin/atlas-insights
+```
+
+**Permissões**: Admin e Editor
+
+### Documentação
+
+- 📚 [Documentação Técnica Completa](docs/atlas-analyzer-system.md)
+- 🚀 [Guia Rápido de Uso](docs/atlas-analyzer-quick-start.md)
+
+### Início Rápido
+
+1. **Configurar responsáveis de alerta**
+```sql
+INSERT INTO responsaveis_alerta (nome, telefone, funcao, tipo_evento)
+VALUES ('João Silva', '5561912345678', 'Gerente NOC', 'mass_outage');
+```
+
+2. **Ativar análise automática (cron job a cada 15min)**
+```sql
+SELECT cron.schedule(
+  'atlas-analyzer-15min',
+  '*/15 * * * *',
+  $$
+  SELECT net.http_post(
+    url:='https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/atlas-analyzer',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer <SERVICE_ROLE_KEY>"}'::jsonb,
+    body:='{"windowMinutes":90}'::jsonb
+  );
+  $$
+);
+```
+
+3. **Testar manualmente**
+   - Acesse `/admin/atlas-insights`
+   - Clique em "Executar análise"
+   - Verifique os insights gerados
+
+### Níveis de Severidade
+
+| Nível | Quando aparece | Ação |
+|-------|----------------|------|
+| 🟢 **LOW** | < 2 erros/min | Monitorar |
+| 🟠 **MEDIUM** | 2-5 erros/min | Investigar |
+| 🔴 **HIGH** | > 5 erros/min OU outages críticos | **Alerta automático via WhatsApp + ação imediata** |
+
+### Edge Function
+
+```
+POST /functions/v1/atlas-analyzer
+Body: { "windowMinutes": 90 }
+```
+
+**Retorna**: Insight com severidade, causa provável, KPIs, grupos afetados e status de notificações.

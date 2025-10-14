@@ -60,6 +60,9 @@ const HPFuncoes = () => {
   };
 
   const functionsData = {
+    analytics: [
+      { name: 'atlas-analyzer', description: '🧠 Sistema de análise preditiva de falhas e eventos de rede com notificações automáticas (HIGH severity via WhatsApp)' },
+    ],
     agentes: [
       { name: 'routing-agent', description: 'Roteador inteligente que analisa mensagens e direciona para o agente especializado correto (vendas, suporte técnico, financeiro, etc.)' },
       { name: 'sales-agent', description: 'Agente de vendas que apresenta planos, verifica cobertura por CEP e fecha contratos' },
