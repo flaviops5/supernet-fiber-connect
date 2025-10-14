@@ -1,10 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
-import { TestSimulacaoCompleta } from "@/components/tests/TestSimulacaoCompleta";
-import { TestFonteQueimada } from "@/components/tests/TestFonteQueimada";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
-import ChatFlowTester from "@/components/ChatFlowTester";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -51,21 +48,12 @@ const AdminTestes = () => {
           </TabsList>
 
           <TabsContent value="simulations" className="space-y-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Teste Completo Omnichannel</h3>
-                <TestOmnichannelComplete />
-              </div>
-              
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Simulação Completa de Atendimento</h3>
-                <TestSimulacaoCompleta />
-              </div>
-              
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Teste de Fonte Queimada</h3>
-                <TestFonteQueimada />
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Teste Completo Omnichannel</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Simulação completa do fluxo de atendimento: desde a solicitação de CPF até o roteamento para o departamento correto
+              </p>
+              <TestOmnichannelComplete />
             </div>
           </TabsContent>
 
@@ -122,11 +110,6 @@ const AdminTestes = () => {
 
           <TabsContent value="flows" className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Teste de Fluxo de Chat</h3>
-              <ChatFlowTester />
-            </div>
-
-            <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">Teste de Fluxo de Contrato</h3>
               <TestContractFlow />
             </div>
