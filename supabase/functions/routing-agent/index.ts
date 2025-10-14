@@ -129,7 +129,7 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     
     // 🔍 DEBUG: Log completo do body recebido
     console.log(`📥 [${correlationId}] Routing-agent recebeu body:`, JSON.stringify(body, null, 2));
@@ -138,7 +138,7 @@ serve(async (req) => {
     
     // 🧩 Aceitar múltiplos formatos possíveis de campos
     const conversationId = body.conversation_id ?? body.conversationId ?? crypto.randomUUID();
-    const message = body.message_content ?? body.message ?? body.content ?? body.text;
+    const message = body.message_content ?? body.message ?? body.content ?? body.text ?? "";
     const context = body.context;
     
     console.log(`📥 [${correlationId}] conversationId extraído:`, conversationId);
@@ -147,10 +147,12 @@ serve(async (req) => {
     // Validar que a mensagem foi enviada
     if (!message) {
       console.error(`❌ [${correlationId}] message_content/message ausente`);
+      logger.error("❌ Nenhuma mensagem recebida no body", { body });
       return new Response(
         JSON.stringify({ 
           ok: false, 
-          error: "message_content é obrigatório" 
+          error: "message_content é obrigatório",
+          received_body: body
         }), 
         { 
           status: 400,
