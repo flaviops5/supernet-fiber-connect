@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
+import { getMassOutageContext, formatOutageContextForPrompt } from "../_shared/mass-outage-helper.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,12 +25,26 @@ serve(async (req) => {
 
     logger.info("Luan iniciou atendimento técnico", { conversation_id, customer_cpf });
 
+    // Verificar se há pane massiva ativa (dados frescos)
+    const massOutageContext = await getMassOutageContext(supabase, conversation_id, 3000);
+    const outageAlert = formatOutageContextForPrompt(massOutageContext);
+    
     // Mensagem inicial do Luan
+    let initialMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
+    
+    if (massOutageContext.active) {
+      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${massOutageContext.affectedRegions.join(", ")} afetando ${massOutageContext.affectedCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
+      logger.info("Pane massiva detectada", { 
+        regions: massOutageContext.affectedRegions, 
+        affected: massOutageContext.affectedCount 
+      });
+    }
+    
     const { error: insertErr } = await supabase.from("conversation_messages").insert({
       conversation_id,
       sender_type: "agent",
       sender_name: "Luan Silva",
-      content: "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️",
+      content: initialMessage,
       ai_suggestion: false,
     });
     
