@@ -37,6 +37,7 @@ const AgentManagement = () => {
     support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
     telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+    automacao: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
   });
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
@@ -83,6 +84,8 @@ const AgentManagement = () => {
           support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
           logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+          telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
+          automacao: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
         };
 
         conversations.forEach(conv => {
@@ -202,17 +205,32 @@ const AgentManagement = () => {
     },
     {
       id: 'telemedicina',
-      name: 'Agente de Telemedicina',
+      name: 'Telemedicina',
       icon: Heart,
       color: 'bg-pink-500',
-      description: 'Assistente de telemedicina e saúde',
+      description: 'Atendimento médico online 24h',
       capabilities: [
-        'Explicação sobre telemedicina',
-        'Apresentação de planos e especialidades',
-        'Informações sobre consultas 24h',
-        'Orientações sobre receitas digitais',
-        'Esclarecimento sobre especialidades disponíveis',
-        'Suporte para contratação do serviço',
+        'Apresentação de planos de telemedicina',
+        'Agendamento de consultas online',
+        'Informações sobre especialidades',
+        'Orientações sobre consultas 24h',
+        'Suporte sobre receitas digitais',
+        'Esclarecimentos sobre atendimento',
+      ]
+    },
+    {
+      id: 'automacao',
+      name: 'Automação Residencial',
+      icon: Settings,
+      color: 'bg-cyan-500',
+      description: 'Consultoria em casa inteligente',
+      capabilities: [
+        'Apresentação de pacotes de automação',
+        'Análise de economia de energia',
+        'Demonstração de funcionalidades',
+        'Cálculo de ROI e retorno',
+        'Agendamento de visita técnica',
+        'Orientações sobre smart home',
       ]
     }
   ];
