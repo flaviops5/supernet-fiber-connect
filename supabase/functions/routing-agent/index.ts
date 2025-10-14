@@ -180,8 +180,11 @@ serve(async (req) => {
     if (cpfMatch && !conversation?.customer_cpf) {
       const cpf = cpfMatch[1].replace(/\D/g, '');
       
-      // Validar formato
-      if (!isValidCPFFormat(cpf)) {
+      // Verificar se é um CPF de teste (permitir antes da validação)
+      const isTestCPF = ['11111111111', '22222222222', '33333333333', '44444444444', '99999999999'].includes(cpf);
+      
+      // Validar formato (exceto para CPFs de teste)
+      if (!isTestCPF && !isValidCPFFormat(cpf)) {
         const attempts = conversation?.metadata?.cpf_attempts || 0;
         
         await supabase
@@ -296,9 +299,7 @@ serve(async (req) => {
         wasFoundInIXC: lastContact?.was_found_in_ixc
       });
 
-      // MOCK DATA FOR TESTING - Check if it's a test CPF
-      const isTestCPF = ['11111111111', '22222222222', '33333333333', '44444444444', '99999999999'].includes(cpf);
-      
+      // MOCK DATA FOR TESTING - Check if it's a test CPF (já verificado acima)
       if (isTestCPF) {
         console.log('🧪 TEST CPF detected - using mock data');
         
