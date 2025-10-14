@@ -1979,6 +1979,7 @@ MENSAGEM ATUAL DO CLIENTE:
       financialMessage: financialMessage,
       autoClose: false
     };
+    
     return new Response(
       JSON.stringify(payload),
       {
