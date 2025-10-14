@@ -90,7 +90,14 @@ export const TestSupportTechAgent = () => {
     setTestResults(null);
     
     try {
-      // 1. Criar conversa de teste
+      // 1. Limpar conversas de teste antigas
+      await supabase
+        .from('conversations')
+        .delete()
+        .eq('customer_phone', '11999999999')
+        .eq('channel', 'whatsapp');
+
+      // 2. Criar conversa de teste
       const { data: conversation, error: convError } = await supabase
         .from('conversations')
         .insert({
