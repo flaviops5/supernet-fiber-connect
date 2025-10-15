@@ -30,8 +30,7 @@ serve(async (req) => {
       ixc_client_id,
       suggested_action,
       client_is_offline,
-      cpf_not_found,
-      isFirstMessage: !message || message.trim() === ""
+      cpf_not_found
     });
 
     // Buscar histórico de mensagens da conversa

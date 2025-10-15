@@ -83,25 +83,21 @@ serve(async (req) => {
       let askCPFMessage: string;
       if (!cpfAttempt.isValid && message.replace(/\D/g, '').length === 11) {
         // CPF com 11 dígitos mas inválido
-        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
+        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET. 📋 Protocolo: ${protocol}
 
 ⚠️ O CPF informado (${cpfAttempt.maskedCPF}) parece estar **incorreto**. 
 
 Por favor, **verifique os números** e envie novamente.
 
-📋 Protocolo: ${protocol}
-
-Exemplo: 000.000.000-00`;
+Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
         logger.info("CPF inválido detectado", { masked: cpfAttempt.maskedCPF });
       } else {
         // Sem CPF na mensagem
-        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
+        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET. 📋 Protocolo: ${protocol}
 
 Para começarmos, preciso do seu CPF para localizar seu cadastro.
 
-📋 Protocolo: ${protocol}
-
-Por favor, me informe seu CPF (apenas números):`;
+Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       }
 
       await supabase.from("conversation_messages").insert({
