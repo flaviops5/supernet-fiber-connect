@@ -162,45 +162,6 @@ export const IXCEndpointTester = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const renderEndpointList = (endpoints: EndpointTest[]) => {
-    const grouped = endpoints.reduce((acc, ep) => {
-      const cat = ep.category || 'Outros';
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(ep);
-      return acc;
-    }, {} as Record<string, EndpointTest[]>);
-
-    return (
-      <ScrollArea className="h-[400px] rounded-md border">
-        <div className="p-4 space-y-4">
-          {Object.entries(grouped).map(([category, eps]) => (
-            <div key={category}>
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">
-                {category} ({eps.length})
-              </h4>
-              <div className="space-y-2">
-                {eps.map((endpoint, index) => (
-                  <Card key={index} className="bg-muted/50">
-                    <CardContent className="py-2 px-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <code className="text-xs font-mono font-semibold">
-                          /webservice/v1/{endpoint.endpoint}
-                        </code>
-                        <Badge variant="outline" className="text-xs">{endpoint.method}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {endpoint.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-    );
-  };
 
   return (
     <Card>
@@ -226,17 +187,25 @@ export const IXCEndpointTester = () => {
           </TabsList>
 
           <TabsContent value="main" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Endpoints essenciais para operação do sistema (Clientes, Contratos, Financeiro, Suporte)
-            </p>
-            {renderEndpointList(MAIN_ENDPOINTS)}
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Teste {MAIN_ENDPOINTS.length} endpoints essenciais para operação do sistema
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Clientes, Contratos, Financeiro, Suporte, Comunicação e Relatórios
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="gpon" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Endpoints relacionados a equipamentos GPON/PON, diagnóstico e infraestrutura de fibra
-            </p>
-            {renderEndpointList(GPON_ENDPOINTS)}
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Teste {GPON_ENDPOINTS.length} endpoints relacionados a infraestrutura GPON
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Equipamentos, Monitoramento, Diagnóstico e Infraestrutura de Fibra
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
 
