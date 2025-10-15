@@ -10,6 +10,102 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { getOnuSignalStatus } from '../_shared/ixc-client.ts';
 
+/**
+ * Interpreta valores de potência RX (Recepção)
+ */
+function interpretRX(rx: number): { status: string; level: string; message: string; emoji: string } {
+  if (rx > -8) {
+    return {
+      status: 'critical',
+      level: '🔴 Saturado',
+      message: 'Risco de dano ao equipamento',
+      emoji: '🔴'
+    };
+  }
+  if (rx >= -12) {
+    return {
+      status: 'excellent',
+      level: '🟢 Excelente',
+      message: 'Sinal ideal',
+      emoji: '🟢'
+    };
+  }
+  if (rx >= -20) {
+    return {
+      status: 'excellent',
+      level: '🟢 Excelente',
+      message: 'Sinal ideal',
+      emoji: '🟢'
+    };
+  }
+  if (rx >= -25) {
+    return {
+      status: 'acceptable',
+      level: '🟡 Aceitável',
+      message: 'Funcionando, mas atenção',
+      emoji: '🟡'
+    };
+  }
+  if (rx >= -26) {
+    return {
+      status: 'acceptable',
+      level: '🟡 Aceitável',
+      message: 'Funcionando, mas atenção',
+      emoji: '🟡'
+    };
+  }
+  if (rx >= -28) {
+    return {
+      status: 'weak',
+      level: '🟠 Fraco',
+      message: 'Risco de instabilidade',
+      emoji: '🟠'
+    };
+  }
+  return {
+    status: 'critical',
+    level: '🔴 Crítico',
+    message: 'Problema grave de sinal',
+    emoji: '🔴'
+  };
+}
+
+/**
+ * Interpreta valores de potência TX (Transmissão)
+ */
+function interpretTX(tx: number): { status: string; level: string; message: string; emoji: string } {
+  if (tx > 2) {
+    return {
+      status: 'critical',
+      level: '🔴 Alto demais',
+      message: 'Risco de saturação',
+      emoji: '🔴'
+    };
+  }
+  if (tx >= 0 && tx <= 1) {
+    return {
+      status: 'ideal',
+      level: '🟢 Ideal',
+      message: 'Transmissão perfeita',
+      emoji: '🟢'
+    };
+  }
+  if (tx >= -2 && tx < 0) {
+    return {
+      status: 'acceptable',
+      level: '🟡 Aceitável',
+      message: 'Funcionando normalmente',
+      emoji: '🟡'
+    };
+  }
+  return {
+    status: 'low',
+    level: '🟠 Baixo',
+    message: 'Verificar equipamento',
+    emoji: '🟠'
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -45,19 +141,52 @@ Deno.serve(async (req) => {
 
     const result = await getOnuSignalStatus(ixcProxyUrl, clientId);
 
-    // Extrair dados relevantes
+    // Extrair e interpretar valores de TX/RX
+    const rxValue = result.data?.rx ? parseFloat(result.data.rx) : null;
+    const txValue = result.data?.tx ? parseFloat(result.data.tx) : null;
+
+    const rxInterpretation = rxValue !== null ? interpretRX(rxValue) : null;
+    const txInterpretation = txValue !== null ? interpretTX(txValue) : null;
+
+    // Diagnóstico geral
+    let diagnosis = 'Não foi possível obter leitura do sinal';
+    let action = 'Verificar conexão com equipamento';
+
+    if (rxInterpretation && txInterpretation) {
+      if (rxInterpretation.status === 'critical') {
+        diagnosis = '⚠️ Problema crítico de sinal detectado';
+        action = 'Abrir atendimento URGENTE para inspeção da rede óptica';
+      } else if (rxInterpretation.status === 'weak') {
+        diagnosis = 'Sinal de recepção fraco detectado';
+        action = 'Abrir atendimento para verificar cabo/conector';
+      } else if (rxInterpretation.status === 'excellent' && txInterpretation.status === 'ideal') {
+        diagnosis = 'Sinal óptico dentro dos padrões ideais';
+        action = 'Problema não está relacionado ao sinal - investigar outras causas';
+      } else {
+        diagnosis = 'Sinal funcionando, mas requer atenção';
+        action = 'Monitorar e considerar inspeção preventiva';
+      }
+    }
+
     const signalData = {
       clientId,
       timestamp: new Date().toISOString(),
       rawData: result.data,
-      // Dados típicos retornados pelo endpoint:
-      // - TX (potência de transmissão)
-      // - RX (potência de recepção)
-      // - Status da ONU
-      // - Temperatura (se disponível)
+      rx: rxValue !== null ? {
+        value: rxValue,
+        unit: 'dBm',
+        ...rxInterpretation
+      } : null,
+      tx: txValue !== null ? {
+        value: txValue,
+        unit: 'dBm',
+        ...txInterpretation
+      } : null,
+      diagnosis,
+      recommendedAction: action
     };
 
-    console.log('✅ Dados de sinal obtidos:', JSON.stringify(signalData, null, 2));
+    console.log('✅ Dados de sinal obtidos e interpretados:', JSON.stringify(signalData, null, 2));
 
     return new Response(
       JSON.stringify({
