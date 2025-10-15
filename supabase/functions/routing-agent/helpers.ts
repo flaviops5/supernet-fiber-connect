@@ -300,7 +300,7 @@ export function determineTargetDepartment(
     return "tecnico";
   }
 
-  // Keywords financeiras (evita falso positivo com "plano" em contexto técnico)
+  // Keywords financeiras
   if (
     /\b(boleto|fatura|pagamento|débito|mensalidade|pagar|pix)\b/i.test(msgLower) &&
     !/\b(novo|ótimo|funcionando)\b/i.test(msgLower)
@@ -308,7 +308,12 @@ export function determineTargetDepartment(
     return "financeiro";
   }
 
-  // Cliente não encontrado SEM keywords específicas → prospects (Vicente)
+  // CPF informado mas não encontrado no IXC → enviar para técnico (evita perder cliente existente)
+  if (!clientStatus.found && (clientStatus.cpf || extractCPF(messageContent))) {
+    return "tecnico";
+  }
+
+  // Cliente não encontrado SEM indícios → comercial (prospect)
   if (!clientStatus.found) {
     return "comercial";
   }
