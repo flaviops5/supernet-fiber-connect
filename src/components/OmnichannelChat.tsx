@@ -144,104 +144,74 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
       let finalAgent = currentAgent;
       let responseMessage = '';
 
-      // Verificar departamento da conversa
-      const { data: conversation } = await supabase
-        .from('conversations')
-        .select('department')
-        .eq('id', activeConversationId)
-        .single();
+      // Verificar se a conversa já tem mensagens (não é a primeira interação)
+      const { data: existingMessages } = await supabase
+        .from('conversation_messages')
+        .select('id')
+        .eq('conversation_id', activeConversationId)
+        .limit(1);
 
-      // Se já tem departamento atribuído, enviar direto para o agente especializado
-      if (conversation?.department) {
-        console.log('📨 Enviando para agente do departamento:', conversation.department);
-        
-        // Salvar mensagem do cliente
-        await supabase.from('conversation_messages').insert({
-          conversation_id: activeConversationId,
-          sender_type: 'customer',
-          sender_name: customerData?.name || 'Cliente',
-          content: userMessage.content
-        });
+      const isFirstInteraction = !existingMessages || existingMessages.length === 0;
 
-        let agentFunction = '';
-        if (conversation.department === 'comercial') agentFunction = 'sales-agent';
-        else if (conversation.department === 'tecnico') agentFunction = 'support-tech-agent';
-        else if (conversation.department === 'financeiro') agentFunction = 'support-financial-agent';
+      // Se não é a primeira interação, verificar departamento e enviar direto ao agente
+      if (!isFirstInteraction) {
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('department')
+          .eq('id', activeConversationId)
+          .single();
 
-        if (agentFunction) {
-          const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
-            body: {
-              conversation_id: activeConversationId,
-              customer_cpf: customerData?.cpf,
-              message: userMessage.content,
-            },
+        // Se já tem departamento atribuído, enviar direto para o agente especializado
+        if (conversation?.department) {
+          console.log('📨 Continuando com agente do departamento:', conversation.department);
+          
+          // Salvar mensagem do cliente
+          await supabase.from('conversation_messages').insert({
+            conversation_id: activeConversationId,
+            sender_type: 'customer',
+            sender_name: customerData?.name || 'Cliente',
+            content: userMessage.content
           });
 
-          if (agentError) {
-            console.error('❌ Erro ao chamar agente:', agentError);
-            throw agentError;
+          let agentFunction = '';
+          if (conversation.department === 'comercial') agentFunction = 'sales-agent';
+          else if (conversation.department === 'tecnico') agentFunction = 'support-tech-agent';
+          else if (conversation.department === 'financeiro') agentFunction = 'support-financial-agent';
+
+          if (agentFunction) {
+            const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
+              body: {
+                conversation_id: activeConversationId,
+                customer_cpf: customerData?.cpf,
+                message: userMessage.content,
+              },
+            });
+
+            if (agentError) {
+              console.error('❌ Erro ao chamar agente:', agentError);
+              throw agentError;
+            }
+
+            // Atualizar estado do agente
+            setCurrentAgent(agentFunction);
           }
 
-          // Atualizar estado do agente
-          setCurrentAgent(agentFunction);
+          await loadConversationMessages(activeConversationId);
+          setIsLoading(false);
+          return;
         }
-
-        await loadConversationMessages(activeConversationId);
-        setIsLoading(false);
-        return;
       }
 
-      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
-      if (currentAgent === 'routing' || !conversation?.department) {
-        console.log('📨 Enviando para agente do departamento:', conversation.department);
-        
-        // Salvar mensagem do cliente
-        await supabase.from('conversation_messages').insert({
-          conversation_id: activeConversationId,
-          sender_type: 'customer',
-          sender_name: customerData?.name || 'Cliente',
-          content: userMessage.content
-        });
+      // Primeira interação ou sem departamento: passa pelo routing-agent
+      // Salvar mensagem do cliente ANTES de chamar routing-agent
+      await supabase.from('conversation_messages').insert({
+        conversation_id: activeConversationId,
+        sender_type: 'customer',
+        sender_name: customerData?.name || 'Cliente',
+        content: userMessage.content
+      });
 
-        let agentFunction = '';
-        if (conversation.department === 'comercial') agentFunction = 'sales-agent';
-        else if (conversation.department === 'tecnico') agentFunction = 'support-tech-agent';
-        else if (conversation.department === 'financeiro') agentFunction = 'support-financial-agent';
-
-        if (agentFunction) {
-          const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
-            body: {
-              conversation_id: activeConversationId,
-              customer_cpf: customerData?.cpf,
-              message: userMessage.content,
-            },
-          });
-
-          if (agentError) {
-            console.error('❌ Erro ao chamar agente:', agentError);
-            throw agentError;
-          }
-
-          // Atualizar estado do agente
-          setCurrentAgent(agentFunction);
-        }
-
-        await loadConversationMessages(activeConversationId);
-        setIsLoading(false);
-        return;
-      }
-
-      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
-      if (currentAgent === 'routing' || !conversation?.department) {
-        // Salvar mensagem do cliente ANTES de chamar routing-agent
-        await supabase.from('conversation_messages').insert({
-          conversation_id: activeConversationId,
-          sender_type: 'customer',
-          sender_name: customerData?.name || 'Cliente',
-          content: userMessage.content
-        });
-
-        const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
+      const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
           body: {
             message: userMessage.content,
             conversationId: activeConversationId,
@@ -316,142 +286,6 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         setIsLoading(false);
         return;
 
-        finalAgent = routingData?.agent || 'routing';
-        responseMessage = routingData?.message || 'Como posso ajudar?';
-        
-        // Atualizar agente se mudou
-        if (finalAgent !== currentAgent) {
-          setCurrentAgent(finalAgent);
-          
-          // Se foi atribuído um agente especializado, atribuir agente humano disponível
-          if (activeConversationId && finalAgent !== 'routing') {
-            const deptMap: Record<string, 'comercial' | 'tecnico' | 'financeiro'> = {
-              'sales': 'comercial',
-              'support_tech': 'tecnico',
-              'support_financial': 'financeiro'
-            };
-            const dept = deptMap[finalAgent as keyof typeof deptMap];
-            
-            if (dept) {
-              // Buscar agente disponível do departamento
-              const { data: availableAgents, error: agentError } = await supabase
-                .rpc('get_available_agents_for_department', {
-                  dept: dept,
-                  include_universal: true
-                });
-
-              if (agentError) {
-                console.error('Error finding available agent:', agentError);
-              }
-
-              let assignedAgentId = null;
-              
-              if (availableAgents && availableAgents.length > 0) {
-                // Pegar o primeiro agente disponível com menor carga
-                assignedAgentId = availableAgents[0].user_id;
-                
-                // Incrementar contador de conversas do agente
-                const { error: presenceError } = await supabase
-                  .from('agent_presence')
-                  .update({ 
-                    current_conversations: availableAgents[0].current_load + 1,
-                    last_activity: new Date().toISOString()
-                  })
-                  .eq('user_id', assignedAgentId);
-
-                if (presenceError) {
-                  console.error('Error updating agent presence:', presenceError);
-                }
-              }
-
-              // Atualizar conversa com departamento e agente atribuído
-              await supabase
-                .from('conversations')
-                .update({ 
-                  department: dept,
-                  assigned_agent_id: assignedAgentId,
-                  status: assignedAgentId ? 'active' : 'waiting'
-                })
-                .eq('id', activeConversationId);
-              
-              console.log('Department updated to:', dept, 'Agent assigned:', assignedAgentId);
-              
-              // Se não há agente disponível, notificar
-              if (!assignedAgentId) {
-                responseMessage += '\n\n⏳ No momento não há agentes disponíveis. Você foi adicionado à fila de atendimento e em breve um de nossos atendentes irá assumir esta conversa.';
-              }
-            }
-          }
-        }
-      } else {
-        // Já temos um agente especializado atribuído - enviar DIRETO para ele
-        const agentEndpointMap: Record<string, string> = {
-          'sales': 'sales-agent',
-          'support_tech': 'support-tech-agent',
-          'support_financial': 'support-financial-agent'
-        };
-        
-        const endpoint = agentEndpointMap[currentAgent];
-        if (!endpoint) throw new Error(`Agente desconhecido: ${currentAgent}`);
-
-        // Preparar mensagens no formato esperado pelos agentes
-        const conversationMessages = messages.map(m => ({ 
-          role: m.role === 'user' ? 'user' : 'assistant', 
-          content: m.content 
-        }));
-
-        const { data: agentData, error: agentError } = await supabase.functions.invoke(endpoint, {
-          body: {
-            messages: [
-              ...conversationMessages,
-              { role: 'user', content: userMessage.content }
-            ],
-            conversationId: activeConversationId,
-            customerData: customerData || {},
-            routeReason: currentAgent === 'support_financial' ? 'blocked_or_overdue' : undefined
-          }
-        });
-
-        if (agentError) throw agentError;
-
-        responseMessage = agentData?.message || 'Entendido. Como mais posso ajudar?';
-        finalAgent = currentAgent; // mantém o agente atual
-      }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: responseMessage,
-        agent: finalAgent,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Persistir no banco SOMENTE se routing-agent NÃO salvou
-      if (activeConversationId && currentAgent !== 'routing') {
-        const agentLabelMap: Record<string, string> = {
-          routing: 'Cloé',
-          sales: 'Vicente - Vendas',
-          support_tech: 'Luan - Suporte Técnico',
-          support_financial: 'Julia - Financeiro'
-        };
-        
-        await supabase.from('conversation_messages').insert([
-          {
-            conversation_id: activeConversationId,
-            sender_type: 'customer',
-            sender_name: customerData?.name || 'Cliente',
-            content: userMessage.content
-          },
-          {
-            conversation_id: activeConversationId,
-            sender_type: 'agent',
-            sender_name: agentLabelMap[finalAgent] || finalAgent,
-            content: responseMessage,
-            ai_suggestion: true
-          }
-        ]);
-      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
