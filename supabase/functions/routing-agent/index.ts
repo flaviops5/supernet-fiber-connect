@@ -148,7 +148,7 @@ Por favor, me informe seu CPF (apenas números):`;
           conversation_id: conversationId,
           customer_cpf: clientStatus.cpf ?? null,
           ixc_client_id: clientStatus.id ?? null,
-          message,
+          message: "", // Handoff inicial: força saudação e lógica de offline/reboot
           suggested_action: clientStatus.suggestAutoReboot ? "auto_reboot" : null,
           client_is_offline: clientStatus.isOffline === true, // 🆕 Status do cliente
         },
