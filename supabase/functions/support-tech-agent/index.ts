@@ -23,7 +23,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    logger.info("Luan atendendo", { conversation_id, customer_cpf, message });
+    logger.info("Luan atendendo", { 
+      conversation_id, 
+      customer_cpf, 
+      message,
+      ixc_client_id,
+      suggested_action,
+      client_is_offline,
+      isFirstMessage: !message || message.trim() === ""
+    });
 
     // Buscar histórico de mensagens da conversa
     const { data: messageHistory } = await supabase
@@ -36,6 +44,14 @@ serve(async (req) => {
 
     // Verificar se é a primeira mensagem (quando vem do routing-agent sem message)
     const isFirstMessage = !message || message.trim() === "" || !hasHistory;
+    
+    logger.info("Verificação de primeira mensagem", {
+      isFirstMessage,
+      hasMessage: !!message,
+      messageLength: message?.length,
+      hasHistory,
+      historyLength: messageHistory?.length
+    });
 
     // Verificar se há pane massiva ativa (contexto em memória)
     let outageActive = massOutageContext.active;
@@ -53,6 +69,12 @@ serve(async (req) => {
 
     // Se é a primeira mensagem, enviar saudação
     if (isFirstMessage) {
+      logger.info("Luan enviando mensagem inicial", {
+        outageActive,
+        suggested_action,
+        client_is_offline,
+        ixc_client_id
+      });
       // Buscar informações da conversa para personalizar a mensagem
       const { data: conversation } = await supabase
         .from("conversations")
@@ -71,6 +93,7 @@ serve(async (req) => {
         responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vou fazer um reinício remoto do seu equipamento agora - isso leva cerca de 1 minuto... 🔄`;
       } else if (client_is_offline) {
         // Cliente offline - começar troubleshooting
+        logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
         responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
       } else {
         // Mensagem genérica para outros casos

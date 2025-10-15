@@ -136,6 +136,13 @@ Por favor, me informe seu CPF (apenas números):`;
 
     // 📤 Invocar agente especializado DEPOIS da mensagem de transferência
     if (targetDepartment === "tecnico") {
+      logger.info("Invocando Luan (support-tech-agent)", {
+        cpf_redacted: `***${clientStatus.cpf?.slice(-3)}`,
+        ixc_client_id: clientStatus.id,
+        isOffline: clientStatus.isOffline,
+        suggestAutoReboot: clientStatus.suggestAutoReboot
+      });
+      
       const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
         body: {
           conversation_id: conversationId,
@@ -147,6 +154,7 @@ Por favor, me informe seu CPF (apenas números):`;
         },
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
+      else logger.info("Luan invocado com sucesso");
     }
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
