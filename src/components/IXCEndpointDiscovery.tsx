@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +112,11 @@ export const IXCEndpointDiscovery = () => {
       setLoading(false);
     }
   };
+
+  // Executar descoberta automaticamente ao carregar
+  useEffect(() => {
+    discoverEndpoints();
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
