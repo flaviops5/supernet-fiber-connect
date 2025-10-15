@@ -173,12 +173,12 @@ serve(async (req) => {
 
       logger.info("Mensagem inicial do Luan enviada");
 
-      // 🆕 EXECUTAR REBOOT EM BACKGROUND (não bloqueia resposta)
+      // 🆕 EXECUTAR REBOOT E AGUARDAR CONCLUSÃO
       if (suggested_action === "auto_reboot" && ixc_client_id) {
-        logger.info("Iniciando reboot automático em background", { ixc_client_id });
+        logger.info("Iniciando reboot automático", { ixc_client_id });
         
         // Promise com timeout de 90 segundos
-        const rebootPromise = Promise.race([
+        await Promise.race([
           supabase.functions.invoke("reboot-client-equipment", {
             body: { ixc_client_id, customer_cpf }
           }),
@@ -264,9 +264,6 @@ serve(async (req) => {
               logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
             });
           });
-
-        // Usar EdgeRuntime.waitUntil para garantir que a promise complete
-        (globalThis as any).EdgeRuntime?.waitUntil(rebootPromise);
       }
     } else {
       // Continuar atendimento com análise contextual
