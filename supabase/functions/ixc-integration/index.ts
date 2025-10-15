@@ -409,16 +409,47 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
 
       const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
       if (ok && data && data.registros) {
-        const registros = normalizeRegistros(data.registros);
+        let registros = normalizeRegistros(data.registros);
+        console.log(`📊 ${attempt.qtype}: IXC retornou ${registros.length} registros (total: ${data.total || 'N/A'})`);
+        
         if (Array.isArray(registros) && registros.length > 0) {
-          console.log(`searchCustomers: sucesso com ${attempt.qtype} - ${registros.length} resultados`);
-          return registros as IXCCustomer[];
+          // 🔍 FILTRO LOCAL: Se IXC retornou muitos resultados (>10), filtra localmente
+          if (registros.length > 10 && cleanNumber) {
+            console.log(`⚠️ IXC retornou muitos resultados (${registros.length}), filtrando localmente...`);
+            
+            // Se buscando por CPF, filtra por CPF exato
+            if (isCpfCnpj) {
+              registros = registros.filter(c => {
+                const cpfClean = c.cnpj_cpf?.replace(/\D/g, '') || '';
+                return cpfClean === cleanNumber || cpfClean === cleanNumber.padStart(11, '0');
+              });
+              console.log(`🎯 Após filtro CPF: ${registros.length} resultados`);
+            }
+            
+            // Se buscando por telefone, filtra por telefone
+            if (isPhone) {
+              registros = registros.filter(c => {
+                const tel = c.telefone_celular?.replace(/\D/g, '') || '';
+                const fone = c.fone_celular?.replace(/\D/g, '') || '';
+                const whats = (c as any).whatsapp?.replace(/\D/g, '') || '';
+                return tel.includes(cleanNumber) || fone.includes(cleanNumber) || whats.includes(cleanNumber);
+              });
+              console.log(`📞 Após filtro telefone: ${registros.length} resultados`);
+            }
+          }
+          
+          if (registros.length > 0) {
+            console.log(`✅ searchCustomers: sucesso com ${attempt.qtype} - ${registros.length} resultado(s)`);
+            return registros as IXCCustomer[];
+          } else {
+            console.log(`❌ searchCustomers: ${attempt.qtype} - 0 resultados após filtro local`);
+          }
         } else {
-          console.log(`searchCustomers: ${attempt.qtype} retornou 0 resultados`);
+          console.log(`❌ searchCustomers: ${attempt.qtype} retornou 0 resultados`);
         }
       }
     } catch (e) {
-      console.warn(`searchCustomers: tentativa ${attempt.qtype} falhou:`, (e as Error)?.message);
+      console.warn(`⚠️ searchCustomers: tentativa ${attempt.qtype} falhou:`, (e as Error)?.message);
       // Continua para próxima tentativa
     }
   }
