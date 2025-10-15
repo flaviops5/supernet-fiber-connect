@@ -35,6 +35,7 @@ export interface ClientRoutingStatus {
   status?: string;
   isBlocked: boolean;
   isOffline: boolean;
+  suggestAutoReboot?: boolean; // 🆕 Flag para reboot automático
   error?: ErrorCode;
   errorMessage?: string;
 }
@@ -211,6 +212,7 @@ export async function getClientRoutingStatus(
         status.status?.toLowerCase() || ""
       ),
       isOffline,
+      suggestAutoReboot: isOffline && !massOutageContext.active, // 🆕 Sugerir reboot se offline e sem pane massiva
     };
   } catch (err: any) {
     console.error("❌ Erro ao buscar cliente IXC:", err.message);

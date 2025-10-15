@@ -16,7 +16,7 @@ serve(async (req) => {
   const logger = createLogger("support-tech-agent", req);
 
   try {
-    const { conversation_id, customer_cpf, message } = await req.json();
+    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -59,6 +59,11 @@ serve(async (req) => {
         responseMessage += `\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${outageRegion} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
       }
       
+      // 🆕 REBOOT AUTOMÁTICO: Se Cloé sugeriu auto-reboot
+      if (suggested_action === "auto_reboot" && ixc_client_id) {
+        responseMessage += `\n\nVi aqui que sua internet está offline. Vou iniciar um reinício remoto do equipamento - isso leva cerca de 1 minuto... 🔄`;
+      }
+
       const { error: insertErr } = await supabase.from("conversation_messages").insert({
         conversation_id,
         sender_type: "agent",
@@ -73,6 +78,39 @@ serve(async (req) => {
       }
 
       logger.info("Mensagem inicial do Luan enviada");
+
+      // 🆕 EXECUTAR REBOOT EM BACKGROUND (não bloqueia resposta)
+      if (suggested_action === "auto_reboot" && ixc_client_id) {
+        logger.info("Iniciando reboot automático em background", { ixc_client_id });
+        
+        // Executar em background (não await)
+        supabase.functions.invoke("reboot-client-equipment", {
+          body: { ixc_client_id, customer_cpf }
+        }).then(async ({ data: rebootResult, error: rebootError }) => {
+          logger.info("Reboot concluído", { 
+            success: rebootResult?.ok, 
+            isOnline: rebootResult?.is_online 
+          });
+
+          // Enviar atualização ao cliente
+          let updateMessage = "";
+          if (rebootResult?.is_online) {
+            updateMessage = "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!\n\nTesta aí pra mim? Consegue navegar agora?";
+          } else {
+            updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline.\n\nPreciso que você verifique:\n\n🔌 As luzes do aparelho estão acesas?\n💡 Especialmente a luz PON/LOS - está verde ou vermelha?";
+          }
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: updateMessage,
+            ai_suggestion: false
+          });
+        }).catch(err => {
+          logger.error("Erro no reboot background", { error: err.message });
+        });
+      }
     } else {
       // Continuar atendimento com análise contextual
       logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });

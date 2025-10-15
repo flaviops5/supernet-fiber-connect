@@ -21,7 +21,8 @@ export const SUPPORT_TECH_CONFIG = {
   allowedTools: [
     "criar_atendimento_ixc",
     "test_equipment_connectivity",
-    "ixc_client_lookup"
+    "ixc_client_lookup",
+    "reboot_client_equipment" // 🆕 Reboot manual sob demanda
   ],
   
   // Business rules

@@ -140,7 +140,9 @@ Por favor, me informe seu CPF (apenas números):`;
         body: {
           conversation_id: conversationId,
           customer_cpf: clientStatus.cpf ?? null,
+          ixc_client_id: clientStatus.id ?? null,
           message,
+          suggested_action: clientStatus.suggestAutoReboot ? "auto_reboot" : null, // 🆕 Flag para reboot
         },
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
