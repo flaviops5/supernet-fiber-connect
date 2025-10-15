@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -20,60 +20,31 @@ export const TestSupportTechAgent = () => {
   const [loading, setLoading] = useState(false);
   const [outageActive, setOutageActive] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
+  const { toast } = useToast();
 
-const { toast } = useToast();
+  // Simples: detectar se última mensagem do Luan tem "reinici" e próxima não tem conclusão
+  const messages = testResults?.messages || [];
+  const lastLuanMsg = [...messages].reverse().find((m: any) => 
+    m.sender_type === 'agent' && /Luan/i.test(m.sender_name || '')
+  );
+  const isRebootMsg = lastLuanMsg && /(reinici|reinício remoto|reboot)/i.test(lastLuanMsg.content || '');
+  const hasCompletion = messages.some((m: any, idx: number) => {
+    if (!lastLuanMsg) return false;
+    const luanIdx = messages.findIndex((msg: any) => msg.id === lastLuanMsg.id);
+    return idx > luanIdx && 
+           m.sender_type === 'agent' && 
+           /(ONLINE|offline|Reboot|religado|falhou|verifique)/i.test(m.content || '');
+  });
+  
+  const showLoader = isRebootMsg && !hasCompletion;
+  const rebootStartedAt = lastLuanMsg?.created_at ? Date.parse(lastLuanMsg.created_at) : Date.now();
 
-  // Detecta reboot em progresso baseado nas mensagens do Luan
-  const messagesList = useMemo(() => testResults?.messages || [], [testResults]);
-  const lastAgentTrigger = useMemo(() => {
-    for (let i = messagesList.length - 1; i >= 0; i--) {
-      const m = messagesList[i];
-      if (
-        (m.sender_type === 'agent' || /Luan/i.test(m.sender_name || '')) &&
-        /(reinici|reinício remoto|reboot)/i.test(m.content || '')
-      ) {
-        return m;
-      }
-    }
-    return undefined;
-  }, [messagesList]);
-
-  const hasCompletionAfterTrigger = useMemo(() => {
-    if (!lastAgentTrigger) return false;
-    const idx = messagesList.findIndex((m: any) => m.id === lastAgentTrigger.id);
-    if (idx === -1) return false;
-    return messagesList.slice(idx + 1).some((m: any) =>
-      (m.sender_type === 'agent' || /Luan/i.test(m.sender_name || '')) &&
-      /(ONLINE|ainda está offline|Reboot executado|religado|falhou)/i.test(m.content || '')
-    );
-  }, [messagesList, lastAgentTrigger]);
-
-  const rebootInProgress = !!lastAgentTrigger && !hasCompletionAfterTrigger;
-  const rebootStartedAt = lastAgentTrigger ? Date.parse(lastAgentTrigger.created_at) : undefined;
-
-  // Realtime status derivado de equipment_reboots
-  const rebootStatus = testResults?.reboot_event?.status as string | undefined;
-  const rebootInProgressRT = useMemo(() => rebootStatus ? !/(completed|success|failed|error)/i.test(rebootStatus) : false, [rebootStatus]);
-
-  // Polling leve enquanto o reboot estiver em progresso para atualizar mensagens
-  useEffect(() => {
-    if (!rebootInProgress || !testResults?.conversation_id) return;
-    const id = setInterval(async () => {
-      const { data: messages } = await supabase
-        .from('conversation_messages')
-        .select('*')
-        .eq('conversation_id', testResults.conversation_id)
-        .order('created_at', { ascending: true });
-      setTestResults((prev: any) => (prev ? { ...prev, messages: messages || [] } : prev));
-    }, 4000);
-    return () => clearInterval(id);
-  }, [rebootInProgress, testResults?.conversation_id]);
-
-  // Realtime: atualizar mensagens assim que Luan enviar algo
+  // Realtime: apenas escutar novas mensagens
   useEffect(() => {
     if (!testResults?.conversation_id) return;
+    
     const channel = supabase
-      .channel('conversation-messages-live')
+      .channel('test-messages')
       .on(
         'postgres_changes',
         {
@@ -83,9 +54,8 @@ const { toast } = useToast();
           filter: `conversation_id=eq.${testResults.conversation_id}`,
         },
         (payload: any) => {
-          const newMsg = payload.new as any;
-          setTestResults((prev: any) =>
-            prev ? { ...prev, messages: [...(prev.messages || []), newMsg] } : prev
+          setTestResults((prev: any) => 
+            prev ? { ...prev, messages: [...prev.messages, payload.new] } : prev
           );
         }
       )
@@ -95,30 +65,6 @@ const { toast } = useToast();
       supabase.removeChannel(channel);
     };
   }, [testResults?.conversation_id]);
-
-  // Realtime: acompanhar status em equipment_reboots pelo ixc_client_id
-  useEffect(() => {
-    if (!testResults?.ixc_client_id) return;
-    const channel = supabase
-      .channel('equipment-reboots-live')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'equipment_reboots',
-          filter: `ixc_client_id=eq.${testResults.ixc_client_id}`,
-        },
-        (payload: any) => {
-          setTestResults((prev: any) => prev ? { ...prev, reboot_event: payload.new } : prev);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [testResults?.ixc_client_id]);
 
   const createMassOutage = async () => {
     setLoading(true);
@@ -188,18 +134,12 @@ const { toast } = useToast();
       let conversation: any;
 
       if (existing) {
-        // Garantir estado apropriado para o teste
         await supabase
           .from('conversations')
-          .update({
-            status: 'waiting',
-            current_department: 'tecnico',
-            assigned_agent_id: null
-          })
+          .update({ status: 'waiting', current_department: 'tecnico', assigned_agent_id: null })
           .eq('id', existing.id);
         conversation = existing;
       } else {
-        // 2. Criar conversa de teste
         const { data: created, error: convError } = await supabase
           .from('conversations')
           .insert({
@@ -217,35 +157,22 @@ const { toast } = useToast();
         conversation = created;
       }
 
-      // Buscar ixc_client_id para assinar updates de reboot
-      const { data: convData } = await supabase
-        .from('conversations')
-        .select('ixc_client_id')
-        .eq('id', conversation.id)
-        .maybeSingle();
-
       // 2. Chamar support-tech-agent
       const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
         'support-tech-agent',
-        {
-          body: {
-            conversation_id: conversation.id,
-            customer_cpf: '111.111.111-11',
-            message: 'Test'
-          }
-        }
+        { body: { conversation_id: conversation.id, customer_cpf: '111.111.111-11', message: 'Test' } }
       );
 
       if (agentError) throw agentError;
 
-      // 3. Buscar mensagens da conversa
+      // 3. Buscar mensagens
       const { data: messages } = await supabase
         .from('conversation_messages')
         .select('*')
         .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
-      // 4. Verificar se há mass outage ativo
+      // 4. Verificar mass outage
       const { data: outages } = await supabase
         .from('mass_outage_events')
         .select('*')
@@ -255,11 +182,9 @@ const { toast } = useToast();
       setTestResults({
         success: true,
         conversation_id: conversation.id,
-        ixc_client_id: convData?.ixc_client_id || null,
         messages: messages || [],
         outage_detected: (outages?.length || 0) > 0,
         outage_data: outages?.[0] || null,
-        reboot_event: null,
       });
 
       toast({
@@ -394,28 +319,11 @@ const { toast } = useToast();
                       )}
                     </CardContent>
                   </Card>
-
-{(rebootInProgress || rebootInProgressRT) && (
+                  
+                  {showLoader && (
                     <RebootLoader totalSeconds={60} startedAt={rebootStartedAt} />
                   )}
 
-                  {testResults?.reboot_event && (
-                    <Card className="border-2">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Zap className="h-4 w-4" />
-                          Status do Reboot (Realtime)
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-xs space-y-1 bg-muted p-3 rounded">
-                          <p><strong>Status:</strong> {testResults.reboot_event.status}</p>
-                          <p><strong>Mensagem:</strong> {testResults.reboot_event.result_message || '—'}</p>
-                          <p><strong>Atualizado em:</strong> {new Date(testResults.reboot_event.updated_at || testResults.reboot_event.created_at).toLocaleTimeString()}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                   {/* Mensagens */}
                   <Card className="border-2">
                     <CardHeader className="pb-3">
