@@ -157,7 +157,6 @@ serve(async (req) => {
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
         }
       }
-      }
 
       const { error: insertErr } = await supabase.from("conversation_messages").insert({
         conversation_id,
