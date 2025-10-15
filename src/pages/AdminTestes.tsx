@@ -9,6 +9,7 @@ import { SendPaymentTest } from "@/components/SendPaymentTest";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
 import { IXCEndpointsHealthCheck } from "@/components/IXCEndpointsHealthCheck";
+import { IXCEndpointDiscovery } from "@/components/IXCEndpointDiscovery";
 import { TestIXCSubjects } from "@/components/tests/TestIXCSubjects";
 import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
 import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
@@ -76,6 +77,14 @@ const AdminTestes = () => {
 
               <TabsContent value="ixc" className="space-y-6">
                 <div>
+                  <h3 className="text-lg font-semibold mb-4">Descoberta de Endpoints GPON</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Testa todos os endpoints PON/GPON disponíveis no IXC para identificar quais estão funcionais
+                  </p>
+                  <IXCEndpointDiscovery />
+                </div>
+
+                <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4">Teste de Conexão IXC</h3>
                   <IXCConnectionTester />
                 </div>
