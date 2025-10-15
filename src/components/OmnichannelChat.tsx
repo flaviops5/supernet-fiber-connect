@@ -171,37 +171,52 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
 
         // Se foi transferido para departamento especializado, chamar o agente correto
         if (routingData.targetDepartment && routingData.targetDepartment !== 'cloe') {
+          console.log('🎯 Transferindo para departamento:', routingData.targetDepartment);
+          
           let agentFunction = '';
           if (routingData.targetDepartment === 'comercial') agentFunction = 'sales-agent';
           else if (routingData.targetDepartment === 'tecnico') agentFunction = 'support-tech-agent';
           else if (routingData.targetDepartment === 'financeiro') agentFunction = 'support-financial-agent';
 
           if (agentFunction) {
+            console.log('📞 Invocando agente:', agentFunction);
             try {
-              const { data: agentResponse } = await supabase.functions.invoke(agentFunction, {
+              const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
                 body: {
-                  conversation_id: activeConversationId,
-                  message: userMessage,
+                  messages: [{ role: 'user', content: userMessage.content }],
                   userContext: {
                     protocol: routingData.protocol,
                     department: routingData.targetDepartment,
+                    customerData,
                   },
                 },
               });
 
-              if (agentResponse?.message) {
+              console.log('🤖 Resposta do agente:', agentResponse);
+              
+              if (agentError) {
+                console.error('❌ Erro ao chamar agente:', agentError);
+                throw agentError;
+              }
+
+              // Sales-agent retorna mensagem diretamente ou em um objeto
+              const agentMessage = typeof agentResponse === 'string' 
+                ? agentResponse 
+                : agentResponse?.message || agentResponse?.content;
+
+              if (agentMessage) {
                 await supabase.from('conversation_messages').insert({
                   conversation_id: activeConversationId,
                   sender_type: 'agent',
                   sender_name: routingData.targetDepartment === 'comercial' ? 'Vicente' : 
                               routingData.targetDepartment === 'tecnico' ? 'Luan' : 'Julia',
-                  content: agentResponse.message,
+                  content: agentMessage,
                 });
               }
 
               await loadConversationMessages(activeConversationId);
             } catch (error) {
-              console.error('Erro ao chamar agente especializado:', error);
+              console.error('❌ Erro ao chamar agente especializado:', error);
             }
           }
         }
