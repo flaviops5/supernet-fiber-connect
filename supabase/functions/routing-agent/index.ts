@@ -10,8 +10,9 @@ import {
   createSanitizedMetadata,
   ErrorCode,
   redactCPF,
+  detectInputType,
 } from "./helpers.ts";
-import { validateAndMaskCPF, detectInputType } from "../_shared/validateAndMaskCPF.ts";
+import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,15 @@ serve(async (req) => {
 
     // 🧩 NOVA INTEGRAÇÃO IXC: Buscar cliente e determinar status
     const clientStatus = await getClientRoutingStatus(supabase, message);
+    
+    // ✅ Validação defensiva de resposta nula
+    if (!clientStatus) {
+      logger.error("getClientRoutingStatus retornou null/undefined");
+      return new Response(
+        JSON.stringify({ ok: false, error: "Erro ao buscar status do cliente" }),
+        { headers: corsHeaders, status: 500 }
+      );
+    }
     
     // 🔐 Log mascarado do status
     const cpfForLog = clientStatus.cpf ? redactCPF(clientStatus.cpf) : null;
@@ -155,26 +165,37 @@ Por favor, me informe seu CPF (apenas números):`;
         content: msg.content,
       })) || [];
 
-      // Gerar resposta da Cloé usando Lovable AI
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: ROUTING_AGENT_CONFIG.model,
-          messages: [
-            { role: "system", content: ROUTING_AGENT_SYSTEM_PROMPT },
-            ...conversationHistory.slice(-ROUTING_AGENT_CONFIG.maxMessagesInContext),
-          ],
-          temperature: ROUTING_AGENT_CONFIG.temperature,
-          max_tokens: ROUTING_AGENT_CONFIG.maxTokens,
-        }),
-      });
+      // Gerar resposta da Cloé usando Lovable AI com fallback
+      let cloeMessage = "Como posso ajudar?";
+      
+      try {
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: ROUTING_AGENT_CONFIG.model,
+            messages: [
+              { role: "system", content: ROUTING_AGENT_SYSTEM_PROMPT },
+              ...conversationHistory.slice(-ROUTING_AGENT_CONFIG.maxMessagesInContext),
+            ],
+            temperature: ROUTING_AGENT_CONFIG.temperature,
+            max_tokens: ROUTING_AGENT_CONFIG.maxTokens,
+          }),
+        });
 
-      const aiData = await aiResponse.json();
-      const cloeMessage = aiData.choices?.[0]?.message?.content || "Como posso ajudar?";
+        if (!aiResponse.ok) {
+          throw new Error(`Lovable AI error: ${aiResponse.status}`);
+        }
+
+        const aiData = await aiResponse.json();
+        cloeMessage = aiData.choices?.[0]?.message?.content || "Olá! Como posso ajudar você hoje?";
+      } catch (aiError: any) {
+        logger.error("Erro ao chamar Lovable AI", { error: aiError.message });
+        cloeMessage = "Olá! Estou aqui para ajudar. Qual é sua necessidade hoje?";
+      }
 
       // Salvar resposta da Cloé
       await supabase.from("conversation_messages").insert({

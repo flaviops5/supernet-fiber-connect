@@ -8,8 +8,28 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { massOutageContext } from "../_shared/mass-outage-helper.ts";
-import { validateAndMaskCPF, detectInputType } from "../_shared/validateAndMaskCPF.ts";
+import { massOutageContext, setMassOutageStatus } from "../_shared/mass-outage-helper.ts";
+import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
+
+/**
+ * Detecta tipo de entrada (CPF, telefone ou desconhecido)
+ */
+export function detectInputType(message: string): 'cpf' | 'telefone' | 'unknown' {
+  const cleaned = message.replace(/\D/g, '');
+  
+  // Verifica se é um CPF (11 dígitos)
+  if (cleaned.length === 11) {
+    const result = validateAndMaskCPF(message);
+    if (result.isValid) return 'cpf';
+  }
+  
+  // Verifica se é telefone (10-11 dígitos)
+  if (cleaned.length >= 10 && cleaned.length <= 11) {
+    return 'telefone';
+  }
+  
+  return 'unknown';
+}
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -116,6 +136,7 @@ export async function getClientRoutingStatus(
   // 1. Extrair CPF
   const cpf = extractCPF(message);
   if (!cpf) {
+    console.log("❌ CPF não identificado na mensagem");
     return {
       found: false,
       isBlocked: false,
@@ -154,8 +175,14 @@ export async function getClientRoutingStatus(
       dataLength: Array.isArray(searchResult?.data) ? searchResult.data.length : 0,
     });
 
+    // ✅ Validação defensiva de resposta nula
+    if (!searchResult || searchError) {
+      console.warn("⚠️ IXC searchCustomers retornou resultado nulo ou erro", { searchError });
+      return await getFallbackFromHistory(supabase, cpf);
+    }
+
     // Validação explícita de resposta (evita mascaramento de erros)
-    if (searchError || !searchResult?.success) {
+    if (!searchResult.success) {
       console.warn("⚠️ IXC searchCustomers falhou, tentando fallback histórico");
       return await getFallbackFromHistory(supabase, cpf);
     }
