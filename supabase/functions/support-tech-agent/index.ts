@@ -177,33 +177,71 @@ serve(async (req) => {
       if (suggested_action === "auto_reboot" && ixc_client_id) {
         logger.info("Iniciando reboot automático em background", { ixc_client_id });
         
+        // Promise com timeout de 90 segundos
+        const rebootWithTimeout = Promise.race([
+          supabase.functions.invoke("reboot-client-equipment", {
+            body: { ixc_client_id, customer_cpf }
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
+          )
+        ]);
+
         // Executar em background (não await)
-        supabase.functions.invoke("reboot-client-equipment", {
-          body: { ixc_client_id, customer_cpf }
-        }).then(async ({ data: rebootResult, error: rebootError }) => {
-          logger.info("Reboot concluído", { 
-            success: rebootResult?.ok, 
-            isOnline: rebootResult?.is_online 
-          });
+        rebootWithTimeout
+          .then(async (response: any) => {
+            const { data: rebootResult, error: rebootError } = response;
+            
+            if (rebootError) {
+              logger.error("Erro ao executar reboot", { error: rebootError.message });
+              throw rebootError;
+            }
 
-          // Enviar atualização ao cliente
-          let updateMessage = "";
-          if (rebootResult?.is_online) {
-            updateMessage = "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!\n\nTesta aí pra mim? Consegue navegar agora?";
-          } else {
-            updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline.\n\nPreciso que você verifique:\n\n🔌 As luzes do aparelho estão acesas?\n💡 Especialmente a luz PON/LOS - está verde ou vermelha?";
-          }
+            logger.info("Reboot concluído", { 
+              success: rebootResult?.ok, 
+              isOnline: rebootResult?.is_online,
+              duration_ms: rebootResult?.duration_ms
+            });
 
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: updateMessage,
-            ai_suggestion: false
+            // Enviar atualização ao cliente baseada no resultado
+            let updateMessage = "";
+            if (rebootResult?.is_online) {
+              updateMessage = "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!\n\nTesta aí pra mim? Consegue navegar agora?";
+            } else if (rebootResult?.ok === false) {
+              // Reboot falhou (equipamento não respondeu)
+              updateMessage = "⚠️ Tentei reiniciar remotamente, mas não consegui comunicação com o equipamento.\n\nPreciso que você faça o seguinte:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando ligar!";
+            } else {
+              // Reboot executado mas cliente ainda offline
+              updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline.\n\nPreciso que você verifique:\n\n🔌 As luzes do aparelho estão acesas?\n💡 Especialmente a luz PON/LOS - está verde ou vermelha?";
+            }
+
+            await supabase.from("conversation_messages").insert({
+              conversation_id,
+              sender_type: "agent",
+              sender_name: "Luan Silva",
+              content: updateMessage,
+              ai_suggestion: false
+            });
+          })
+          .catch(async (err) => {
+            logger.error("Erro no reboot background", { 
+              error: err.message,
+              isTimeout: err.message.includes("Timeout")
+            });
+
+            // Mensagem de fallback para o cliente
+            const fallbackMessage = "⚠️ Não consegui concluir o reinício remoto (problema de comunicação).\n\nVamos fazer manualmente:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando as luzes acenderem!";
+
+            await supabase.from("conversation_messages").insert({
+              conversation_id,
+              sender_type: "agent",
+              sender_name: "Luan Silva",
+              content: fallbackMessage,
+              ai_suggestion: false
+            }).catch(insertErr => {
+              logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
+            });
           });
-        }).catch(err => {
-          logger.error("Erro no reboot background", { error: err.message });
-        });
       }
     } else {
       // Continuar atendimento com análise contextual
