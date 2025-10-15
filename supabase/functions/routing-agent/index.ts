@@ -85,7 +85,7 @@ Por favor, me informe seu CPF (apenas números):`;
 
     // 🎯 Determinar departamento de destino
     const targetDepartment = determineTargetDepartment(clientStatus, message);
-    logger.info("Departamento determinado", { targetDepartment });
+    logger.info("Departamento determinado", { targetDepartment, clientFound: clientStatus.found });
 
     // 💬 Atualizar conversa com dados sanitizados (LGPD)
     await supabase.from("conversations").update({
@@ -140,7 +140,8 @@ Por favor, me informe seu CPF (apenas números):`;
         cpf_redacted: `***${clientStatus.cpf?.slice(-3)}`,
         ixc_client_id: clientStatus.id,
         isOffline: clientStatus.isOffline,
-        suggestAutoReboot: clientStatus.suggestAutoReboot
+        suggestAutoReboot: clientStatus.suggestAutoReboot,
+        cpf_not_found: !clientStatus.found
       });
       
       const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
@@ -150,7 +151,8 @@ Por favor, me informe seu CPF (apenas números):`;
           ixc_client_id: clientStatus.id ?? null,
           message: "", // Handoff inicial: força saudação e lógica de offline/reboot
           suggested_action: clientStatus.suggestAutoReboot ? "auto_reboot" : null,
-          client_is_offline: clientStatus.isOffline === true, // 🆕 Status do cliente
+          client_is_offline: clientStatus.isOffline === true,
+          cpf_not_found: !clientStatus.found, // 🆕 Indica que CPF não foi encontrado
         },
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });

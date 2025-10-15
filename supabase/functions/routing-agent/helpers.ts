@@ -163,7 +163,7 @@ export async function getClientRoutingStatus(
       hasData: !!searchResult,
       success: searchResult?.success,
       dataExists: !!searchResult?.data,
-      registrosLength: searchResult?.data?.registros?.length || 0,
+      dataLength: Array.isArray(searchResult?.data) ? searchResult.data.length : 0,
     });
 
     // Validação explícita de resposta (evita mascaramento de erros)
@@ -172,7 +172,8 @@ export async function getClientRoutingStatus(
       return await getFallbackFromHistory(supabase, cpf);
     }
 
-    const clientes = searchResult.data?.registros || [];
+    // 🔧 FIX: ixc-integration retorna array direto em 'data', não em 'data.registros'
+    const clientes = Array.isArray(searchResult.data) ? searchResult.data : [];
     console.log("👥 Clientes encontrados:", clientes.length);
     
     if (clientes.length === 0) {

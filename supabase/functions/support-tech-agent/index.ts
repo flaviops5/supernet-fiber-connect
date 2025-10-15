@@ -16,7 +16,7 @@ serve(async (req) => {
   const logger = createLogger("support-tech-agent", req);
 
   try {
-    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action, client_is_offline } = await req.json();
+    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action, client_is_offline, cpf_not_found } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -30,6 +30,7 @@ serve(async (req) => {
       ixc_client_id,
       suggested_action,
       client_is_offline,
+      cpf_not_found,
       isFirstMessage: !message || message.trim() === ""
     });
 
@@ -73,31 +74,89 @@ serve(async (req) => {
         outageActive,
         suggested_action,
         client_is_offline,
-        ixc_client_id
+        ixc_client_id,
+        cpf_not_found
       });
+      
       // Buscar informações da conversa para personalizar a mensagem
       const { data: conversation } = await supabase
         .from("conversations")
-        .select("customer_name")
+        .select("customer_name, metadata")
         .eq("id", conversation_id)
         .single();
 
       const customerName = conversation?.customer_name || "cliente";
+      const cpfRetryCount = (conversation?.metadata as any)?.cpf_retry_count || 0;
 
-      // Mensagem inicial seguindo o prompt do sistema
-      if (outageActive && outageRegion) {
-        // Caso especial: Pane massiva
-        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
-      } else if (suggested_action === "auto_reboot" && ixc_client_id) {
-        // Caso especial: Auto-reboot sugerido pela Cloé
-        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vou fazer um reinício remoto do seu equipamento agora - isso leva cerca de 1 minuto... 🔄`;
-      } else if (client_is_offline) {
-        // Cliente offline - começar troubleshooting
-        logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
-        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
+      // 🚨 CASO ESPECIAL: CPF não encontrado
+      if (cpf_not_found) {
+        if (cpfRetryCount >= 2) {
+          // Já tentou 3 vezes (0, 1, 2) - transferir para humano
+          logger.info("Luan: CPF não encontrado após 3 tentativas - transferindo para humano");
+          responseMessage = `${customerName}, não consegui localizar seu CPF no sistema após algumas tentativas. 😕\n\nVou te transferir para um atendente humano que pode te ajudar melhor com isso. Só um momento! ⏳`;
+          
+          // Atualizar conversa para status "aguardando humano"
+          await supabase
+            .from("conversations")
+            .update({
+              status: "active",
+              department: "tecnico",
+              assigned_agent_id: null,
+              metadata: {
+                ...(conversation?.metadata as any || {}),
+                needs_human_transfer: true,
+                transfer_reason: "cpf_not_found_after_retries"
+              }
+            })
+            .eq("id", conversation_id);
+        } else {
+          // Primeira ou segunda tentativa - pedir CPF novamente
+          const attemptNumber = cpfRetryCount + 1;
+          logger.info(`Luan: CPF não encontrado - tentativa ${attemptNumber}/3`);
+          
+          responseMessage = `${customerName}, não encontrei esse CPF no nosso sistema. 🔍\n\nPode confirmar o CPF para mim? Digite apenas os números, por favor.\n\n(Tentativa ${attemptNumber} de 3)`;
+          
+          // Incrementar contador de retry
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(conversation?.metadata as any || {}),
+                cpf_retry_count: cpfRetryCount + 1
+              }
+            })
+            .eq("id", conversation_id);
+        }
       } else {
-        // Mensagem genérica para outros casos
-        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
+        // Resetar contador se CPF foi encontrado
+        if (cpfRetryCount > 0) {
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(conversation?.metadata as any || {}),
+                cpf_retry_count: 0
+              }
+            })
+            .eq("id", conversation_id);
+        }
+
+        // Mensagem inicial seguindo o prompt do sistema
+        if (outageActive && outageRegion) {
+          // Caso especial: Pane massiva
+          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
+        } else if (suggested_action === "auto_reboot" && ixc_client_id) {
+          // Caso especial: Auto-reboot sugerido pela Cloé
+          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vou fazer um reinício remoto do seu equipamento agora - isso leva cerca de 1 minuto... 🔄`;
+        } else if (client_is_offline) {
+          // Cliente offline - começar troubleshooting
+          logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
+          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
+        } else {
+          // Mensagem genérica para outros casos
+          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
+        }
+      }
       }
 
       const { error: insertErr } = await supabase.from("conversation_messages").insert({
