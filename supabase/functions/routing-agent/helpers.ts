@@ -76,7 +76,15 @@ export function extractCPF(message: string): string | null {
     if (matches && matches.length > 0) {
       const cpf = matches[0].replace(/\D/g, "");
       if (cpf.length === 11) {
-        return cpf;
+        // 🔍 GARANTIR que sempre tenha 11 dígitos (preservar zero à esquerda)
+        const cpfPadded = cpf.padStart(11, '0');
+        console.log("🔍 CPF extraído e formatado", { 
+          original: cpf, 
+          padded: cpfPadded,
+          length: cpfPadded.length,
+          redacted: `***${cpfPadded.slice(-3)}`
+        });
+        return cpfPadded;
       }
     }
   }
@@ -129,7 +137,12 @@ export async function getClientRoutingStatus(
   }
 
   // 🔍 Log detalhado para debug
-  console.log("📞 Buscando cliente no IXC", { cpf: `***${cpf.slice(-3)}` });
+  console.log("📞 Buscando cliente no IXC", { 
+    cpf: `***${cpf.slice(-3)}`,
+    cpfLength: cpf.length,
+    cpfFull: cpf, // Log completo para debug (remover depois)
+    cpfType: typeof cpf
+  });
 
   // 2. Buscar cliente no IXC
   try {
@@ -140,7 +153,7 @@ export async function getClientRoutingStatus(
       {
         body: {
           action: "searchCustomers",
-          params: { query: cpf },
+          params: { query: String(cpf) }, // Garantir que é string
         },
       }
     );

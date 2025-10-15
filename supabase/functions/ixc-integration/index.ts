@@ -331,27 +331,42 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   const isCpfCnpj = /^\d{11,14}$/.test(cleanNumber);
   const isPhone = /^\d{10,13}$/.test(cleanNumber);
   
-  console.log('🔍 searchCustomers:', { raw, cleanNumber, isCpfCnpj, isPhone });
+  console.log('🔍 searchCustomers:', { 
+    raw, 
+    cleanNumber, 
+    cleanNumberLength: cleanNumber.length,
+    cleanNumberType: typeof cleanNumber,
+    isCpfCnpj, 
+    isPhone 
+  });
   
   // Baseado na documentação: usar "L" para operador LIKE (contém), "=" para igualdade exata
   const attempts: Array<{ qtype: string; oper: string; sortname: string; q: string }> = [];
   
   // Se for CPF/CNPJ, tenta buscar primeiro por igualdade exata (com formatação)
   if (isCpfCnpj) {
+    // 🔍 GARANTIR que CPF tenha 11 dígitos (preservar zero à esquerda)
+    const cleanNumberPadded = cleanNumber.padStart(cleanNumber.length === 11 ? 11 : 14, '0');
+    
     // Formata CPF: 000.000.000-00 ou CNPJ: 00.000.000/0000-00
-    let formatted = cleanNumber;
-    if (cleanNumber.length === 11) {
-      formatted = cleanNumber.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else if (cleanNumber.length === 14) {
-      formatted = cleanNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    let formatted = cleanNumberPadded;
+    if (cleanNumberPadded.length === 11) {
+      formatted = cleanNumberPadded.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else if (cleanNumberPadded.length === 14) {
+      formatted = cleanNumberPadded.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
     }
     
-    console.log('🔍 Tentando buscar por CPF/CNPJ:', { formatted, cleanNumber });
+    console.log('🔍 Tentando buscar por CPF/CNPJ:', { 
+      cleanNumber, 
+      cleanNumberPadded,
+      formatted,
+      length: cleanNumberPadded.length
+    });
     attempts.push(
       { qtype: 'cliente.cnpj_cpf', oper: '=', sortname: 'cliente.razao', q: formatted },
       { qtype: 'cnpj_cpf',         oper: '=', sortname: 'razao',         q: formatted },
-      { qtype: 'cliente.cnpj_cpf', oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
-      { qtype: 'cnpj_cpf',         oper: 'L', sortname: 'razao',         q: cleanNumber },
+      { qtype: 'cliente.cnpj_cpf', oper: 'L', sortname: 'cliente.razao', q: cleanNumberPadded },
+      { qtype: 'cnpj_cpf',         oper: 'L', sortname: 'razao',         q: cleanNumberPadded },
     );
   }
   
