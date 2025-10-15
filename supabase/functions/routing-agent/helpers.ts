@@ -164,6 +164,7 @@ export async function getClientRoutingStatus(
       success: searchResult?.success,
       dataExists: !!searchResult?.data,
       dataLength: Array.isArray(searchResult?.data) ? searchResult.data.length : 0,
+      dataPreview: Array.isArray(searchResult?.data) ? searchResult.data.slice(0, 2) : searchResult?.data,
     });
 
     // Validação explícita de resposta (evita mascaramento de erros)

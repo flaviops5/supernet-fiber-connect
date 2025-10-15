@@ -404,6 +404,8 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
         sortname: attempt.sortname,
         sortorder: 'asc',
       };
+      
+      console.log(`🔍 Tentativa: ${attempt.qtype} com query="${attempt.q}"`);
 
       const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, form);
       if (ok && data && data.registros) {
@@ -411,6 +413,8 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
         if (Array.isArray(registros) && registros.length > 0) {
           console.log(`searchCustomers: sucesso com ${attempt.qtype} - ${registros.length} resultados`);
           return registros as IXCCustomer[];
+        } else {
+          console.log(`searchCustomers: ${attempt.qtype} retornou 0 resultados`);
         }
       }
     } catch (e) {
