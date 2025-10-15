@@ -8,8 +8,7 @@ import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatu
 import { SendPaymentTest } from "@/components/SendPaymentTest";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
-import { IXCEndpointsHealthCheck } from "@/components/IXCEndpointsHealthCheck";
-import { IXCEndpointDiscovery } from "@/components/IXCEndpointDiscovery";
+import { IXCEndpointTester } from "@/components/IXCEndpointTester";
 import { TestIXCSubjects } from "@/components/tests/TestIXCSubjects";
 import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
 import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
@@ -77,11 +76,11 @@ const AdminTestes = () => {
 
               <TabsContent value="ixc" className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Descoberta de Endpoints GPON</h3>
+                  <h3 className="text-lg font-semibold mb-4">Testador Unificado de Endpoints</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Testa todos os endpoints PON/GPON disponíveis no IXC para identificar quais estão funcionais
+                    Teste endpoints principais e GPON do IXC em um único lugar
                   </p>
-                  <IXCEndpointDiscovery />
+                  <IXCEndpointTester />
                 </div>
 
                 <div className="border-t pt-6">
@@ -92,11 +91,6 @@ const AdminTestes = () => {
                 <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4">Teste de Todas as Funções IXC</h3>
                   <IXCFunctionsTester />
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Health Check de Endpoints IXC</h3>
-                  <IXCEndpointsHealthCheck />
                 </div>
 
                 <div className="border-t pt-6">
@@ -145,8 +139,11 @@ const AdminTestes = () => {
 
           <TabsContent value="health" className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Health Check de Endpoints IXC</h3>
-              <IXCEndpointsHealthCheck />
+              <h3 className="text-lg font-semibold mb-4">Testador Unificado de Endpoints IXC</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Health check dos endpoints principais e GPON
+              </p>
+              <IXCEndpointTester />
             </div>
           </TabsContent>
         </Tabs>

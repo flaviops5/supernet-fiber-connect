@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Wifi, WifiOff, Activity, FileText, CheckCircle2, XCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
-import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
+import { IXCEndpointTester } from '@/components/IXCEndpointTester';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import { TestIXCSubjects } from '@/components/tests/TestIXCSubjects';
@@ -972,7 +972,7 @@ const IXCIntegration = () => {
         </TabsContent>
 
         <TabsContent value="health">
-          <IXCEndpointsHealthCheck />
+          <IXCEndpointTester />
         </TabsContent>
       </Tabs>
     </div>
