@@ -118,8 +118,25 @@ Por favor, informe seu CPF (apenas números):`;
       );
     }
 
-    // 📤 Invocar agente especializado ANTES de enviar mensagem de transferência
-    let invokeSuccess = false;
+    // 💬 Mensagem de transferência (envia ANTES de invocar agente)
+    const departmentNames: Record<string, string> = {
+      financeiro: "Financeiro (Julia)",
+      tecnico: "Técnico (Luan)",
+      comercial: "Comercial (Vicente)",
+    };
+
+    const transferMessage = `Perfeito! Transferindo você para nosso time ${departmentNames[targetDepartment]}. Um momento! ⏳
+
+📋 *Protocolo de Atendimento:* ${protocol}`;
+
+    await supabase.from("conversation_messages").insert({
+      conversation_id: conversationId,
+      sender_type: "agent",
+      sender_name: "Cloé Martins",
+      content: transferMessage,
+    });
+
+    // 📤 Invocar agente especializado DEPOIS da mensagem de transferência
     if (targetDepartment === "tecnico") {
       const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
         body: {
@@ -128,28 +145,7 @@ Por favor, informe seu CPF (apenas números):`;
           message,
         },
       });
-      invokeSuccess = !techError;
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
-    }
-
-    // 💬 Mensagem de transferência (apenas se invoke teve sucesso ou não aplicável)
-    if (invokeSuccess || targetDepartment !== "tecnico") {
-      const departmentNames: Record<string, string> = {
-        financeiro: "Financeiro (Julia)",
-        tecnico: "Técnico (Luan)",
-        comercial: "Comercial (Vicente)",
-      };
-
-      const transferMessage = `Perfeito! Transferindo você para nosso time ${departmentNames[targetDepartment]}. Um momento! ⏳
-
-📋 *Protocolo de Atendimento:* ${protocol}`;
-
-      await supabase.from("conversation_messages").insert({
-        conversation_id: conversationId,
-        sender_type: "agent",
-        sender_name: "Cloé Martins",
-        content: transferMessage,
-      });
     }
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
