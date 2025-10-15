@@ -35,7 +35,7 @@ O sistema possui **CPFs de teste** (mock data) para validar todos os cenários s
 
 ## 🔍 Cenários de Teste
 
-### **Cenário 1: Cliente Offline - Suporte Técnico**
+### **Cenário 1: Cliente Offline - Suporte Técnico (com Reboot Híbrido)**
 **CPF:** `111.111.111-11`
 
 #### Passos:
@@ -43,23 +43,32 @@ O sistema possui **CPFs de teste** (mock data) para validar todos os cenários s
 2. Cloé pergunta: "Olá! Sou a Cloé Martins 😊. Para começarmos, você poderia me informar seu CPF?"
 3. Enviar: `111.111.111-11`
 4. Sistema consulta histórico → valida no IXC (mock)
-5. Detecta: Cliente OFFLINE, sem pendências
+5. Detecta: Cliente OFFLINE, sem pendências, sem pane massiva
 
-#### Resultado Esperado:
+#### Resultado Esperado (Fluxo Híbrido):
 ```
 ✅ Cloé Martins: "Perfeito! Transferindo você para nosso Suporte Técnico. Um momento! ⏳"
 📋 Protocolo: PROT-XXXXX
 
-✅ Luan Silva: "Olá! Vejo que sua conexão está offline..."
+✅ Luan Silva: "Olá! Sou o Luan do suporte técnico. 
+Vi aqui que sua internet está offline. Vou iniciar um reinício remoto do equipamento - isso leva cerca de 1 minuto... 🔄"
+
+[~66 segundos depois, automaticamente]
+
+✅ Luan Silva: "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE! 
+Testa aí pra mim?"
 ```
 
-#### Validações:
-- [ ] Consulta `customer_contact_history` antes do IXC
-- [ ] Registra contato no histórico
-- [ ] Gera protocolo de atendimento
-- [ ] Transfere para Luan (Técnico)
-- [ ] Atualiza `conversations.department = 'tecnico'`
-- [ ] Luan executa diagnóstico técnico
+#### Validações do Fluxo Híbrido:
+- [ ] Cloé detecta OFFLINE e adiciona flag `suggestAutoReboot: true`
+- [ ] Cloé transfere para Luan com flag `suggested_action: "auto_reboot"`
+- [ ] Luan responde IMEDIATAMENTE (< 1s) ao cliente
+- [ ] Luan executa `reboot-client-equipment` em BACKGROUND (não await)
+- [ ] Cliente não fica esperando (experiência assíncrona)
+- [ ] Após ~66s, Luan envia atualização automática com resultado
+- [ ] Se ONLINE: mensagem de sucesso
+- [ ] Se ainda OFFLINE: Luan continua troubleshooting manual
+- [ ] Registro em `equipment_reboots` tabela
 
 ---
 

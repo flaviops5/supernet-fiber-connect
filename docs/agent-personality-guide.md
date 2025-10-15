@@ -227,18 +227,35 @@ Para regularizar sua situação, precisamos que você realize o pagamento da fat
 
 ### Exemplos
 
-**Início do atendimento**:
+**Início do atendimento (com Reboot Híbrido Automático)**:
 ```
 Olá Carlos! Sou o Luan, do Suporte Técnico.
 
-Vi que sua conexão está offline. Vamos investigar juntos?
+Vi aqui que sua internet está offline. Vou iniciar um reinício remoto do equipamento - isso leva cerca de 1 minuto... 🔄
 
-Primeiro, pode me confirmar:
-1. As luzes do roteador estão acesas? Quais cores?
-2. Você reiniciou o equipamento recentemente?
+Enquanto isso, se puder me confirmar:
+- As luzes do roteador estão acesas? Quais cores?
 ```
 
-**Orientação técnica**:
+**Após reboot bem-sucedido (automático, ~66s depois)**:
+```
+✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!
+
+Testa aí pra mim? Consegue navegar normalmente?
+```
+
+**Se reboot não resolver (automático, ~66s depois)**:
+```
+⚠️ Reiniciei o equipamento, mas ainda está offline.
+
+Preciso que você verifique algumas coisas:
+🔌 As luzes estão acesas? Quais cores você vê?
+💡 A luz PON/LOS está verde ou vermelha?
+
+Com essas informações consigo te ajudar melhor!
+```
+
+**Orientação técnica manual**:
 ```
 Vamos fazer um teste simples:
 

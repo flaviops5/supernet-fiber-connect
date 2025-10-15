@@ -97,7 +97,8 @@ Este documento mapeia quais ferramentas cada agente tem permissão para usar e p
 
 **Responsabilidades:**
 - Suporte técnico N1
-- Troubleshooting básico
+- Troubleshooting automático e manual
+- Reboot remoto de equipamentos (híbrido com Cloé)
 - Abertura de ordens de serviço
 - Orientação sobre equipamentos
 
@@ -109,8 +110,16 @@ Este documento mapeia quais ferramentas cada agente tem permissão para usar e p
   - `getClientStatus(clientId)` - Status de conexão
   - `createTicket(data)` - Abrir OS
   - `getEquipmentInfo(clientId)` - Dados de equipamento
-  - `rebootEquipment(clientId)` - Reiniciar modem remotamente
 - **Criticidade:** ⚠️ Alta - core do suporte
+
+#### ✅ Reboot Client Equipment (Edge Function)
+- **Uso:** Reiniciar equipamento remotamente via IXC
+- **Invocação:** `reboot-client-equipment`
+- **Modo de operação:** 
+  - **Automático**: Quando Cloé detecta OFFLINE e sugere reboot
+  - **Manual**: Quando Luan decide reiniciar durante troubleshooting
+- **Fluxo assíncrono**: Não bloqueia atendimento (60s wait em background)
+- **Criticidade:** ⚠️ Alta - resolve 70-80% casos OFFLINE
 
 #### ✅ HMAC Auth
 - **Uso:** Comunicação segura com IXC

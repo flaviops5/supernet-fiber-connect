@@ -152,8 +152,14 @@ const response = await supabase.functions.invoke('ixc-proxy', {
 - **Tools**:
   - `get_connection_status`: Status PPPoE/ONT
   - `check_mass_outage`: Verifica quedas em massa
-  - `reboot_equipment`: Reinicia equipamento
+  - `reboot_client_equipment`: Reinicia equipamento (manual ou automático)
+  - `test_equipment_connectivity`: Testa conectividade
+  - `ixc_client_lookup`: Busca cliente no IXC
   - `create_ticket`: Abre chamado no IXC
+- **Fluxo Híbrido de Reboot**: 
+  - Cloé detecta cliente OFFLINE → passa flag `suggested_action: "auto_reboot"`
+  - Luan responde instantaneamente + executa reboot em background (60s)
+  - Resultado enviado automaticamente ao cliente após verificação
 
 #### D. Support Financial Agent
 - **Função**: Questões financeiras e faturas
