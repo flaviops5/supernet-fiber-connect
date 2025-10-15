@@ -9,7 +9,9 @@ import {
   determineTargetDepartment,
   createSanitizedMetadata,
   ErrorCode,
+  redactCPF,
 } from "./helpers.ts";
+import { validateAndMaskCPF, detectInputType } from "../_shared/validateAndMaskCPF.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,28 +43,56 @@ serve(async (req) => {
 
     logger.info("Routing Agent iniciado", { conversationId });
 
+    // 🔍 Detectar tipo de entrada (CPF, telefone, outro)
+    const inputType = detectInputType(message);
+    logger.info("Tipo de entrada detectado", { inputType });
+
     // Gerar protocolo único
     const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     logger.info("Protocolo gerado", { protocol });
 
     // 🧩 NOVA INTEGRAÇÃO IXC: Buscar cliente e determinar status
     const clientStatus = await getClientRoutingStatus(supabase, message);
+    
+    // 🔐 Log mascarado do status
+    const cpfForLog = clientStatus.cpf ? redactCPF(clientStatus.cpf) : null;
     logger.info("Status do cliente obtido", { 
       found: clientStatus.found, 
       error: clientStatus.error,
       isBlocked: clientStatus.isBlocked,
       isOffline: clientStatus.isOffline,
+      cpf_masked: cpfForLog,
+      inputType,
     });
 
     // 🚨 CASO ESPECIAL: CPF não identificado
     if (clientStatus.error === ErrorCode.NO_CPF) {
-      const askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
+      // 🧪 Verificar se mensagem parece ser um CPF inválido
+      const cpfAttempt = validateAndMaskCPF(message);
+      
+      let askCPFMessage: string;
+      if (!cpfAttempt.isValid && message.replace(/\D/g, '').length === 11) {
+        // CPF com 11 dígitos mas inválido
+        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
+
+⚠️ O CPF informado (${cpfAttempt.maskedCPF}) parece estar **incorreto**. 
+
+Por favor, **verifique os números** e envie novamente.
+
+📋 Protocolo: ${protocol}
+
+Exemplo: 000.000.000-00`;
+        logger.info("CPF inválido detectado", { masked: cpfAttempt.maskedCPF });
+      } else {
+        // Sem CPF na mensagem
+        askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
 
 Para começarmos, preciso do seu CPF para localizar seu cadastro.
 
 📋 Protocolo: ${protocol}
 
 Por favor, me informe seu CPF (apenas números):`;
+      }
 
       await supabase.from("conversation_messages").insert({
         conversation_id: conversationId,

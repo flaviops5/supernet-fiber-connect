@@ -9,6 +9,7 @@
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
+import { validateAndMaskCPF, detectInputType } from "../_shared/validateAndMaskCPF.ts";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -56,6 +57,7 @@ export interface SanitizedMetadata {
 
 /**
  * Extrai e valida CPF de uma mensagem de texto
+ * ✅ AGORA COM VALIDAÇÃO REAL usando validateAndMaskCPF
  * 
  * Aceita formatos:
  * - 123.456.789-10
@@ -63,41 +65,30 @@ export interface SanitizedMetadata {
  * - CPF: 123.456.789-10
  * 
  * @param message - Mensagem do cliente
- * @returns CPF formatado sem pontuação ou null
+ * @returns CPF válido formatado ou null
  */
 export function extractCPF(message: string): string | null {
-  const patterns = [
-    /\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b/g,
-    /\b(\d{11})\b/g,
-  ];
-
-  for (const pattern of patterns) {
-    const matches = message.match(pattern);
-    if (matches && matches.length > 0) {
-      const cpf = matches[0].replace(/\D/g, "");
-      if (cpf.length === 11) {
-        // 🔍 GARANTIR que sempre tenha 11 dígitos (preservar zero à esquerda)
-        const cpfPadded = cpf.padStart(11, '0');
-        console.log("🔍 CPF extraído e formatado", { 
-          length: cpfPadded.length,
-          redacted: `***${cpfPadded.slice(-3)}`
-        });
-        return cpfPadded;
-      }
-    }
+  const result = validateAndMaskCPF(message);
+  
+  if (result.isValid && result.cleanCPF) {
+    console.log("🔍 CPF extraído e validado:", result.maskedCPF);
+    return result.cleanCPF;
   }
+  
+  console.log("❌ CPF não encontrado ou inválido:", result.error || "formato incorreto");
   return null;
 }
 
 /**
- * Reduz CPF para últimos 3 dígitos (LGPD)
+ * Reduz CPF para últimos 4 dígitos (LGPD)
+ * ✅ AGORA USA validateAndMaskCPF para mascaramento consistente
  * 
  * @param cpf - CPF completo (11 dígitos)
- * @returns CPF redacted (ex: "***789")
+ * @returns CPF mascarado (ex: "*******7-10")
  */
 export function redactCPF(cpf: string): string {
-  if (!cpf || cpf.length !== 11) return "***";
-  return `***${cpf.slice(-3)}`;
+  const result = validateAndMaskCPF(cpf);
+  return result.maskedCPF;
 }
 
 // ============================================================================
