@@ -174,3 +174,6 @@ verify_jwt = false
 [functions.atlas-analyzer]
 verify_jwt = false
 
+[functions.graylog-logs-export]
+verify_jwt = false
+
