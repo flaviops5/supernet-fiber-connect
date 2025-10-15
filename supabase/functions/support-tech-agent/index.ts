@@ -178,16 +178,19 @@ serve(async (req) => {
         logger.info("Iniciando reboot automático", { ixc_client_id });
         
         // Promise com timeout de 90 segundos
-        await Promise.race([
-          supabase.functions.invoke("reboot-client-equipment", {
-            body: { ixc_client_id, customer_cpf }
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
-          )
-        ])
-          .then(async (response: any) => {
-            const { data: rebootResult, error: rebootError } = response;
+        const rebootPromise = supabase.functions.invoke("reboot-client-equipment", {
+          body: { ixc_client_id, customer_cpf }
+        });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
+        );
+
+        try {
+          const { data: rebootResult, error: rebootError } = await Promise.race([
+            rebootPromise,
+            timeoutPromise
+          ]) as any;
             
             if (rebootError) {
               logger.error("Erro ao executar reboot", { error: rebootError.message });
@@ -241,9 +244,9 @@ serve(async (req) => {
               await new Promise(r => setTimeout(r, 250));
               
               const { error: updateError } = await supabase.from("conversations").update({
-                status: "escalated",
+                status: "transferred",
                 priority: 2,
-                tags: ["reboot_failed", "needs_field_tech"],
+                tags: ["reboot_failed", "needs_field_tech", "escalated"],
                 metadata: {
                   escalation_reason: "Equipment offline after remote reboot",
                   escalated_at: new Date().toISOString(),
@@ -261,30 +264,29 @@ serve(async (req) => {
               
               logger.info("✅ Conversa escalada para técnico de campo", { 
                 conversation_id, 
-                status: "escalated",
-                tags: ["reboot_failed", "needs_field_tech"]
+                status: "transferred",
+                tags: ["reboot_failed", "needs_field_tech", "escalated"]
               });
             }
-          })
-          .catch(async (err) => {
-            logger.error("Erro no reboot background", { 
-              error: err.message,
-              isTimeout: err.message.includes("Timeout")
-            });
-
-            // Mensagem de fallback para o cliente
-            const fallbackMessage = "⚠️ Não consegui concluir o reinício remoto (problema de comunicação).\n\nVamos fazer manualmente:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando as luzes acenderem!";
-
-            await supabase.from("conversation_messages").insert({
-              conversation_id,
-              sender_type: "agent",
-              sender_name: "Luan Silva",
-              content: fallbackMessage,
-              ai_suggestion: false
-            }).catch(insertErr => {
-              logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
-            });
+        } catch (err: any) {
+          logger.error("Erro no reboot background", { 
+            error: err.message,
+            isTimeout: err.message?.includes("Timeout")
           });
+
+          // Mensagem de fallback para o cliente
+          const fallbackMessage = "⚠️ Não consegui concluir o reinício remoto (problema de comunicação).\n\nVamos fazer manualmente:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando as luzes acenderem!";
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: fallbackMessage,
+            ai_suggestion: false
+          }).catch(insertErr => {
+            logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
+          });
+        }
       }
     } else {
       // Continuar atendimento com análise contextual
@@ -337,10 +339,8 @@ serve(async (req) => {
       JSON.stringify({ 
         ok: true, 
         agent: "support_tech",
-        message: responseMessage,
-        escalated: needsEscalation ?? false,
-        conversation_status: needsEscalation ? "escalated" : "active"
-      }), 
+        message: responseMessage
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
