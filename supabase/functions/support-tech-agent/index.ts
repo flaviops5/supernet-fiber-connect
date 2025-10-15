@@ -23,7 +23,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    logger.info("Luan iniciou atendimento técnico", { conversation_id, customer_cpf });
+    logger.info("Luan atendendo", { conversation_id, customer_cpf, message });
+
+    // Verificar se é a primeira mensagem (quando vem do routing-agent sem message)
+    const isFirstMessage = !message || message.trim() === "";
 
     // Verificar se há pane massiva ativa (contexto em memória)
     let outageActive = massOutageContext.active;
@@ -37,33 +40,65 @@ serve(async (req) => {
       });
     }
     
-    // Mensagem inicial do Luan
-    let initialMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
-    
-    if (outageActive && outageRegion) {
-      initialMessage = `${initialMessage}\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${outageRegion} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
-    }
-    
-    const { error: insertErr } = await supabase.from("conversation_messages").insert({
-      conversation_id,
-      sender_type: "agent",
-      sender_name: "Luan Silva",
-      content: initialMessage,
-      ai_suggestion: false
-    });
-    
-    if (insertErr) {
-      logger.error("Erro ao inserir mensagem", { error: insertErr.message });
-      throw insertErr;
-    }
+    let responseMessage = "";
 
-    logger.info("Mensagem do Luan enviada", { conversation_id });
+    // Se é a primeira mensagem, enviar saudação
+    if (isFirstMessage) {
+      responseMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
+      
+      if (outageActive && outageRegion) {
+        responseMessage += `\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${outageRegion} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
+      }
+      
+      const { error: insertErr } = await supabase.from("conversation_messages").insert({
+        conversation_id,
+        sender_type: "agent",
+        sender_name: "Luan Silva",
+        content: responseMessage,
+        ai_suggestion: false
+      });
+      
+      if (insertErr) {
+        logger.error("Erro ao inserir mensagem", { error: insertErr.message });
+        throw insertErr;
+      }
+
+      logger.info("Mensagem inicial do Luan enviada");
+    } else {
+      // Continuar atendimento com análise da mensagem
+      logger.info("Luan continuando atendimento", { message });
+
+      // Aqui você pode adicionar lógica mais sofisticada com IA
+      // Por enquanto, vamos usar respostas básicas
+      if (message.toLowerCase().includes("sem internet") || message.toLowerCase().includes("offline")) {
+        responseMessage = "Entendi que você está sem internet. Vou verificar o status da sua conexão...\n\nPode me informar se as luzes do seu equipamento estão acesas? 💡";
+      } else if (message.toLowerCase().includes("lento") || message.toLowerCase().includes("devagar")) {
+        responseMessage = "Certo, vou te ajudar com a lentidão. Primeiro, vamos fazer alguns testes básicos.\n\nVocê está conectado por cabo ou Wi-Fi? 📶";
+      } else {
+        responseMessage = "Entendi sua situação. Vou te ajudar! Para dar continuidade, você pode me passar mais detalhes sobre o problema? 🔧";
+      }
+
+      const { error: insertErr } = await supabase.from("conversation_messages").insert({
+        conversation_id,
+        sender_type: "agent",
+        sender_name: "Luan Silva",
+        content: responseMessage,
+        ai_suggestion: false
+      });
+      
+      if (insertErr) {
+        logger.error("Erro ao inserir mensagem de continuação", { error: insertErr.message });
+        throw insertErr;
+      }
+
+      logger.info("Luan respondeu ao cliente");
+    }
 
     return new Response(
       JSON.stringify({ 
         ok: true, 
         agent: "support_tech",
-        message: initialMessage
+        message: responseMessage
       }), 
       { 
         status: 200, 

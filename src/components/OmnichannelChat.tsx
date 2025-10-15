@@ -144,8 +144,95 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
       let finalAgent = currentAgent;
       let responseMessage = '';
 
+      // Verificar departamento da conversa
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('department')
+        .eq('id', activeConversationId)
+        .single();
+
+      // Se já tem departamento atribuído, enviar direto para o agente especializado
+      if (conversation?.department) {
+        console.log('📨 Enviando para agente do departamento:', conversation.department);
+        
+        // Salvar mensagem do cliente
+        await supabase.from('conversation_messages').insert({
+          conversation_id: activeConversationId,
+          sender_type: 'customer',
+          sender_name: customerData?.name || 'Cliente',
+          content: userMessage.content
+        });
+
+        let agentFunction = '';
+        if (conversation.department === 'comercial') agentFunction = 'sales-agent';
+        else if (conversation.department === 'tecnico') agentFunction = 'support-tech-agent';
+        else if (conversation.department === 'financeiro') agentFunction = 'support-financial-agent';
+
+        if (agentFunction) {
+          const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
+            body: {
+              conversation_id: activeConversationId,
+              customer_cpf: customerData?.cpf,
+              message: userMessage.content,
+            },
+          });
+
+          if (agentError) {
+            console.error('❌ Erro ao chamar agente:', agentError);
+            throw agentError;
+          }
+
+          // Atualizar estado do agente
+          setCurrentAgent(agentFunction);
+        }
+
+        await loadConversationMessages(activeConversationId);
+        setIsLoading(false);
+        return;
+      }
+
       // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
-      if (currentAgent === 'routing') {
+      if (currentAgent === 'routing' || !conversation?.department) {
+        console.log('📨 Enviando para agente do departamento:', conversation.department);
+        
+        // Salvar mensagem do cliente
+        await supabase.from('conversation_messages').insert({
+          conversation_id: activeConversationId,
+          sender_type: 'customer',
+          sender_name: customerData?.name || 'Cliente',
+          content: userMessage.content
+        });
+
+        let agentFunction = '';
+        if (conversation.department === 'comercial') agentFunction = 'sales-agent';
+        else if (conversation.department === 'tecnico') agentFunction = 'support-tech-agent';
+        else if (conversation.department === 'financeiro') agentFunction = 'support-financial-agent';
+
+        if (agentFunction) {
+          const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
+            body: {
+              conversation_id: activeConversationId,
+              customer_cpf: customerData?.cpf,
+              message: userMessage.content,
+            },
+          });
+
+          if (agentError) {
+            console.error('❌ Erro ao chamar agente:', agentError);
+            throw agentError;
+          }
+
+          // Atualizar estado do agente
+          setCurrentAgent(agentFunction);
+        }
+
+        await loadConversationMessages(activeConversationId);
+        setIsLoading(false);
+        return;
+      }
+
+      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
+      if (currentAgent === 'routing' || !conversation?.department) {
         // Salvar mensagem do cliente ANTES de chamar routing-agent
         await supabase.from('conversation_messages').insert({
           conversation_id: activeConversationId,
@@ -177,6 +264,11 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
           if (routingData.targetDepartment === 'comercial') agentFunction = 'sales-agent';
           else if (routingData.targetDepartment === 'tecnico') agentFunction = 'support-tech-agent';
           else if (routingData.targetDepartment === 'financeiro') agentFunction = 'support-financial-agent';
+
+          // Atualizar estado do agente
+          if (agentFunction) {
+            setCurrentAgent(agentFunction);
+          }
 
           if (agentFunction) {
             console.log('📞 Invocando agente:', agentFunction);
