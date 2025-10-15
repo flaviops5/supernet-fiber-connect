@@ -92,7 +92,7 @@ serve(async (req) => {
       {
         body: {
           action: "restartModem",
-          params: { clientId },
+          params: { customerId: clientId }, // 🔧 FIX: nome correto do parâmetro
         },
       }
     );
@@ -136,8 +136,7 @@ serve(async (req) => {
       }
     );
 
-    const finalStatus = statusResult?.data?.conexao || "unknown";
-    const isOnline = finalStatus === "online";
+    const isOnline = statusResult?.data?.isOnline === true; // 🔧 FIX: campo correto é isOnline (boolean)
 
     // 6. Atualizar registro de reboot
     await supabase
@@ -150,7 +149,6 @@ serve(async (req) => {
       .eq("id", rebootRecord?.id);
 
     logger.info("Reboot finalizado", { 
-      status: finalStatus, 
       isOnline,
       reboot_id: rebootRecord?.id
     });
@@ -162,7 +160,6 @@ serve(async (req) => {
         client_id: clientId,
         reboot_executed: true,
         wait_time_seconds: 60,
-        final_status: finalStatus,
         is_online: isOnline,
         message: isOnline 
           ? "Equipamento religado e ONLINE!" 
