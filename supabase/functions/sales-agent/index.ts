@@ -350,9 +350,13 @@ serve(async (req) => {
       .select('company_whatsapp')
       .single();
 
+    // Extrai protocolo se disponível  
+    const protocol = (userContext as any)?.protocol;
+    const protocolMsg = protocol ? `\n\nProtocolo de atendimento: ${protocol}` : '';
+
     const systemPrompt = `Você é o Vicente, consultor de Vendas especializado em planos de internet fibra óptica.
 
-SEU OBJETIVO: Vender planos de internet e agendar instalação de forma CONVERSACIONAL.
+SEU OBJETIVO: Vender planos de internet e agendar instalação de forma CONVERSACIONAL.${protocolMsg}
 
 PLANOS DISPONÍVEIS:
 ${plans?.map(p => `- ${p.name}: ${p.speed} por R$ ${p.price}/mês - ${p.description || ''}`).join('\n')}

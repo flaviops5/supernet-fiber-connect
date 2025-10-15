@@ -260,11 +260,12 @@ async function getFallbackFromHistory(
  * Determina departamento de destino baseado em status e conteúdo da mensagem
  * 
  * Lógica de roteamento:
- * - Cliente não encontrado → comercial (Vicente - prospects)
  * - Cliente bloqueado → financeiro (Julia)
  * - Cliente offline → tecnico (Luan)
- * - Cliente online + keywords financeiras → financeiro
  * - Cliente online + keywords técnicas → tecnico
+ * - Cliente online + keywords financeiras → financeiro
+ * - Cliente não encontrado + keywords técnicas → tecnico (suporte a ex-clientes)
+ * - Cliente não encontrado → comercial (Vicente - prospects)
  * - Padrão → cloe (continua atendimento)
  * 
  * @param clientStatus - Status do cliente
@@ -275,10 +276,7 @@ export function determineTargetDepartment(
   clientStatus: ClientRoutingStatus,
   messageContent: string
 ): "comercial" | "financeiro" | "tecnico" | "cloe" {
-  // Cliente não encontrado → prospects (Vicente)
-  if (!clientStatus.found) {
-    return "comercial";
-  }
+  const msgLower = messageContent.toLowerCase();
 
   // Cliente bloqueado → financeiro (Julia)
   if (clientStatus.isBlocked) {
@@ -290,8 +288,17 @@ export function determineTargetDepartment(
     return "tecnico";
   }
 
-  // Análise de intenção por palavras-chave (contexto negativo para reduzir falsos positivos)
-  const msgLower = messageContent.toLowerCase();
+  // Análise de intenção por palavras-chave (mesmo para clientes não encontrados)
+  
+  // Keywords técnicas (problema de conexão/internet)
+  if (
+    /\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar|não funciona|problema técnico)\b/i.test(
+      msgLower
+    ) &&
+    !/\b(novo|ótimo|funcionando bem)\b/i.test(msgLower)
+  ) {
+    return "tecnico";
+  }
 
   // Keywords financeiras (evita falso positivo com "plano" em contexto técnico)
   if (
@@ -301,14 +308,9 @@ export function determineTargetDepartment(
     return "financeiro";
   }
 
-  // Keywords técnicas (evita falso positivo com "wifi novo está ótimo")
-  if (
-    /\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar)\b/i.test(
-      msgLower
-    ) &&
-    !/\b(novo|ótimo|funcionando bem)\b/i.test(msgLower)
-  ) {
-    return "tecnico";
+  // Cliente não encontrado SEM keywords específicas → prospects (Vicente)
+  if (!clientStatus.found) {
+    return "comercial";
   }
 
   // Padrão: Cloé continua atendimento

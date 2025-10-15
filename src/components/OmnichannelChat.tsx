@@ -168,8 +168,46 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
 
         // Após resposta do routing-agent, sempre recarregar mensagens salvas no banco
         await loadConversationMessages(activeConversationId);
+
+        // Se foi transferido para departamento especializado, chamar o agente correto
+        if (routingData.targetDepartment && routingData.targetDepartment !== 'cloe') {
+          let agentFunction = '';
+          if (routingData.targetDepartment === 'comercial') agentFunction = 'sales-agent';
+          else if (routingData.targetDepartment === 'tecnico') agentFunction = 'support-tech-agent';
+          else if (routingData.targetDepartment === 'financeiro') agentFunction = 'support-financial-agent';
+
+          if (agentFunction) {
+            try {
+              const { data: agentResponse } = await supabase.functions.invoke(agentFunction, {
+                body: {
+                  conversation_id: activeConversationId,
+                  message: userMessage,
+                  userContext: {
+                    protocol: routingData.protocol,
+                    department: routingData.targetDepartment,
+                  },
+                },
+              });
+
+              if (agentResponse?.message) {
+                await supabase.from('conversation_messages').insert({
+                  conversation_id: activeConversationId,
+                  sender_type: 'agent',
+                  sender_name: routingData.targetDepartment === 'comercial' ? 'Vicente' : 
+                              routingData.targetDepartment === 'tecnico' ? 'Luan' : 'Julia',
+                  content: agentResponse.message,
+                });
+              }
+
+              await loadConversationMessages(activeConversationId);
+            } catch (error) {
+              console.error('Erro ao chamar agente especializado:', error);
+            }
+          }
+        }
+
         setIsLoading(false);
-        return; // Mensagens já carregadas do banco
+        return;
 
         finalAgent = routingData?.agent || 'routing';
         responseMessage = routingData?.message || 'Como posso ajudar?';

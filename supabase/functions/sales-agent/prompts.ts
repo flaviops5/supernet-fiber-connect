@@ -62,7 +62,7 @@ Use a tool \`process_contract\` passando:
 
 ### 6. FECHAMENTO
 - Recapitule: plano escolhido, velocidade, valor, data de instalação
-- Envie número de protocolo/contrato
+- **NÃO gere novo protocolo** - use o protocolo já fornecido pelo sistema
 - Agradeça e confirme canais de suporte
 
 ## 🛠️ FERRAMENTAS DISPONÍVEIS
