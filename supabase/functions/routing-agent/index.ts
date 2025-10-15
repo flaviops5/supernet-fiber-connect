@@ -56,13 +56,13 @@ serve(async (req) => {
 
     // 🚨 CASO ESPECIAL: CPF não identificado
     if (clientStatus.error === ErrorCode.NO_CPF) {
-      const askCPFMessage = `Olá! 👋 Eu sou a Cloé Martins, assistente virtual da SUPERNET.
+      const askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET.
 
-Para melhor atendê-lo, preciso validar seu CPF.
+Para começarmos, preciso do seu CPF para localizar seu cadastro.
 
 📋 Protocolo: ${protocol}
 
-Por favor, informe seu CPF (apenas números):`;
+Por favor, me informe seu CPF (apenas números):`;
 
       await supabase.from("conversation_messages").insert({
         conversation_id: conversationId,
@@ -125,9 +125,7 @@ Por favor, informe seu CPF (apenas números):`;
       comercial: "Comercial (Vicente)",
     };
 
-    const transferMessage = `Perfeito! Transferindo você para nosso time ${departmentNames[targetDepartment]}. Um momento! ⏳
-
-📋 *Protocolo de Atendimento:* ${protocol}`;
+    const transferMessage = `Perfeito! Vou te transferir para o time ${departmentNames[targetDepartment]}. Um momento! ⏳`;
 
     await supabase.from("conversation_messages").insert({
       conversation_id: conversationId,
