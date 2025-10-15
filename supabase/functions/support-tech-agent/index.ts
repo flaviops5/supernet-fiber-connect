@@ -229,11 +229,11 @@ serve(async (req) => {
             });
             
             if (insertError) {
-              logger.error("Erro ao inserir mensagem de conclusão do reboot", { error: insertError.message });
-              throw new Error(insertError.message);
+              logger.error("❌ Erro ao inserir mensagem de conclusão", { error: insertError });
+              throw new Error(`Failed to insert message: ${insertError.message}`);
             }
             
-            logger.info("Mensagem de conclusão do reboot enviada", { needsEscalation });
+            logger.info("✅ Mensagem de conclusão do reboot enviada", { needsEscalation });
             
             // Se precisa escalar, aguardar 250ms e marcar conversa para técnico de campo
             if (needsEscalation) {
@@ -252,11 +252,18 @@ serve(async (req) => {
               }).eq("id", conversation_id);
               
               if (updateError) {
-                logger.error("Erro ao escalar conversa", { error: updateError.message });
-                throw new Error(updateError.message);
+                logger.error("❌ CRÍTICO: Falha ao escalar conversa", { 
+                  conversation_id, 
+                  error: updateError 
+                });
+                throw new Error(`Failed to escalate conversation: ${updateError.message}`);
               }
               
-              logger.info("Conversa escalada para técnico de campo", { conversation_id });
+              logger.info("✅ Conversa escalada para técnico de campo", { 
+                conversation_id, 
+                status: "escalated",
+                tags: ["reboot_failed", "needs_field_tech"]
+              });
             }
           })
           .catch(async (err) => {
