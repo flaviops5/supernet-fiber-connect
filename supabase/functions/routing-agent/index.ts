@@ -3,6 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ROUTING_AGENT_CONFIG } from "./config.ts";
 import { CLOE_MARTINS_SYSTEM_PROMPT } from "./prompts.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
+import { createLogger } from "../_shared/structured-logger.ts";
+import {
+  getClientRoutingStatus,
+  determineTargetDepartment,
+  createSanitizedMetadata,
+  ErrorCode,
+} from "./helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +19,11 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const logger = createLogger("routing-agent", req);
+
   try {
     // Parse seguro do body
     const body = await req.json().catch(() => ({}));
@@ -20,93 +32,131 @@ serve(async (req) => {
     const customerData = body.customerData ?? {};
 
     if (!conversationId || !message) {
-      console.error("❌ conversationId ou message ausente", body);
+      logger.error("conversationId ou message ausente", { body });
       return new Response(
         JSON.stringify({ ok: false, error: "conversationId e message são obrigatórios", body }),
         { headers: corsHeaders, status: 400 }
       );
     }
 
-    // Inicialização Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log(`🧭 [${conversationId}] Routing Agent started`);
+    logger.info("Routing Agent iniciado", { conversationId });
 
     // Gerar protocolo único
     const protocol = `PROT-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    logger.info("Protocolo gerado", { protocol });
 
-    // Atualizar conversa com protocolo
-    await supabase
-      .from("conversations")
-      .update({
-        metadata: { protocol },
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
-
-    // Verificar queda em massa
-    const isMassOutage = ROUTING_AGENT_CONFIG.massOutage.enabled && massOutageContext?.active;
-
-    // Montar contexto base do modelo
-    const systemPrompt = CLOE_MARTINS_SYSTEM_PROMPT.replaceAll("[GERAR]", protocol);
-    const context = `
-      ${systemPrompt}
-      CPF_VALIDATED: ${!!customerData?.cpf}
-      MASS_OUTAGE_ACTIVE: ${isMassOutage}
-      CLIENTE: ${customerData?.name ?? "Desconhecido"}
-      STATUS: ${customerData?.status ?? "Indefinido"}
-      MENSAGEM: ${message}
-    `;
-
-    // Decidir departamento de destino
-    let targetDepartment = "comercial";
-    if (/\b(boleto|fatura|pagamento)\b/i.test(message)) targetDepartment = "financeiro";
-    else if (/\b(internet|lenta|conexão|sem sinal|travando)\b/i.test(message)) targetDepartment = "tecnico";
-    else if (/\b(agendar|instalação|visita|logística)\b/i.test(message)) targetDepartment = "logistica";
-
-    console.log(`📊 Departamento identificado: ${targetDepartment}`);
-
-    // Mensagem de transferência
-    const transferMessage = `Perfeito! Transferindo você para nosso Suporte ${targetDepartment}. Um momento! ⏳
-
-📋 *Protocolo de Atendimento:* ${protocol}`;
-
-    await supabase.from("conversation_messages").insert({
-      conversation_id: conversationId,
-      sender_type: "agent",
-      sender_name: "Cloé Martins",
-      content: transferMessage,
+    // 🧩 NOVA INTEGRAÇÃO IXC: Buscar cliente e determinar status
+    const clientStatus = await getClientRoutingStatus(supabase, message);
+    logger.info("Status do cliente obtido", { 
+      found: clientStatus.found, 
+      error: clientStatus.error,
+      isBlocked: clientStatus.isBlocked,
+      isOffline: clientStatus.isOffline,
     });
 
-    // Atualizar departamento da conversa
-    await supabase
-      .from("conversations")
-      .update({
-        department: targetDepartment,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId);
+    // 🚨 CASO ESPECIAL: CPF não identificado
+    if (clientStatus.error === ErrorCode.NO_CPF) {
+      const askCPFMessage = `Olá! 👋 Para melhor atendê-lo, preciso validar seu CPF.
 
-    // Se destino for técnico → chama Luan
+📋 *Protocolo:* ${protocol}
+
+Por favor, informe seu CPF (apenas números):`;
+
+      await supabase.from("conversation_messages").insert({
+        conversation_id: conversationId,
+        sender_type: "agent",
+        sender_name: "Cloé Martins",
+        content: askCPFMessage,
+      });
+
+      await supabase.from("conversations").update({
+        metadata: createSanitizedMetadata(protocol, clientStatus),
+        updated_at: new Date().toISOString(),
+      }).eq("id", conversationId);
+
+      logger.info("Solicitação de CPF enviada");
+      return new Response(
+        JSON.stringify({ ok: true, protocol, needsCPF: true }),
+        { headers: corsHeaders, status: 200 }
+      );
+    }
+
+    // 🎯 Determinar departamento de destino
+    const targetDepartment = determineTargetDepartment(clientStatus, message);
+    logger.info("Departamento determinado", { targetDepartment });
+
+    // 💬 Atualizar conversa com dados sanitizados (LGPD)
+    await supabase.from("conversations").update({
+      customer_name: clientStatus.name || "Cliente",
+      department: targetDepartment,
+      metadata: createSanitizedMetadata(protocol, clientStatus),
+      updated_at: new Date().toISOString(),
+    }).eq("id", conversationId);
+
+    // 📝 Registrar histórico de contato
+    if (clientStatus.found && clientStatus.cpf) {
+      await supabase.from("customer_contact_history").insert({
+        cpf: clientStatus.cpf,
+        customer_name: clientStatus.name,
+        ixc_client_id: clientStatus.id,
+        contact_channel: "whatsapp",
+        contact_reason: "routing",
+        was_found_in_ixc: true,
+        conversation_id: conversationId,
+        metadata: { protocol, department: targetDepartment },
+      });
+    }
+
+    // 🚀 Se Cloé continua atendendo, não transfere
+    if (targetDepartment === "cloe") {
+      logger.info("Cloé continua atendimento");
+      return new Response(
+        JSON.stringify({ ok: true, protocol, targetDepartment: "cloe" }),
+        { headers: corsHeaders, status: 200 }
+      );
+    }
+
+    // 📤 Invocar agente especializado ANTES de enviar mensagem de transferência
+    let invokeSuccess = false;
     if (targetDepartment === "tecnico") {
       const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
         body: {
           conversation_id: conversationId,
-          customer_cpf: customerData?.cpf ?? null,
+          customer_cpf: clientStatus.cpf ?? null,
           message,
         },
       });
-      if (techError) console.error("❌ Erro ao chamar Luan:", techError);
+      invokeSuccess = !techError;
+      if (techError) logger.error("Erro ao chamar Luan", { error: techError });
     }
 
+    // 💬 Mensagem de transferência (apenas se invoke teve sucesso ou não aplicável)
+    if (invokeSuccess || targetDepartment !== "tecnico") {
+      const departmentNames: Record<string, string> = {
+        financeiro: "Financeiro (Julia)",
+        tecnico: "Técnico (Luan)",
+        comercial: "Comercial (Vicente)",
+      };
+
+      const transferMessage = `Perfeito! Transferindo você para nosso time ${departmentNames[targetDepartment]}. Um momento! ⏳
+
+📋 *Protocolo de Atendimento:* ${protocol}`;
+
+      await supabase.from("conversation_messages").insert({
+        conversation_id: conversationId,
+        sender_type: "agent",
+        sender_name: "Cloé Martins",
+        content: transferMessage,
+      });
+    }
+
+    logger.info("Roteamento concluído", { protocol, targetDepartment });
     return new Response(
       JSON.stringify({ ok: true, protocol, targetDepartment }),
       { headers: corsHeaders, status: 200 }
     );
-  } catch (err) {
-    console.error("❌ Error in routing-agent:", err);
+  } catch (err: any) {
+    logger.error("Erro crítico no routing-agent", { error: err.message, stack: err.stack });
     return new Response(
       JSON.stringify({ ok: false, error: err.message }),
       { headers: corsHeaders, status: 500 }
