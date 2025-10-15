@@ -150,7 +150,7 @@ export async function getClientRoutingStatus(
       {
         body: {
           action: "searchCustomers",
-          params: { query: String(cpf) }, // Garantir que é string
+          params: { query: String(cpf), mode: "cpf" }, // Forçar busca por CPF
         },
       }
     );

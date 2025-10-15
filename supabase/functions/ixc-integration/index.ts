@@ -120,7 +120,7 @@ serve(async (req) => {
         if (!params.query) {
           throw new Error('Query de busca é obrigatória');
         }
-        result = await searchCustomers(baseUrl, auth, params.query);
+        result = await searchCustomers(baseUrl, auth, params.query, params);
         break;
       
       case 'testConnection':
@@ -322,20 +322,25 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
   return null;
 }
 
-async function searchCustomers(baseUrl: string, auth: string, query: string): Promise<IXCCustomer[]> {
+async function searchCustomers(baseUrl: string, auth: string, query: string, options?: any): Promise<IXCCustomer[]> {
   const raw = String(query ?? '').trim();
   const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
   
-  // Remove pontos e traços para buscar CPF/CNPJ/Telefone
+  // Remove pontuação para identificar número
   const cleanNumber = raw.replace(/[.\-\/\(\)\s]/g, '');
-  const isCpfCnpj = /^\d{11,14}$/.test(cleanNumber);
-  const isPhone = !isCpfCnpj && /^\d{10,13}$/.test(cleanNumber);
+  const mode = typeof options?.mode === 'string' ? String(options.mode).toLowerCase() : undefined;
+  const isCpfMode = mode === 'cpf';
+  const isPhoneMode = mode === 'phone';
   
+  const isCpfCnpj = isCpfMode || /^\d{11,14}$/.test(cleanNumber);
+  const isPhone = !isCpfCnpj && (isPhoneMode || /^\d{10,13}$/.test(cleanNumber));
+  
+  const mask = (val: string) => (val && val.length > 4 ? '*'.repeat(val.length - 4) + val.slice(-4) : val);
   console.log('🔍 searchCustomers:', { 
-    raw, 
-    cleanNumber, 
-    cleanNumberLength: cleanNumber.length,
-    cleanNumberType: typeof cleanNumber,
+    rawRedacted: raw.replace(/\d/g, '*'),
+    cleanNumberRedacted: mask(cleanNumber),
+    length: cleanNumber.length,
+    mode,
     isCpfCnpj, 
     isPhone 
   });
@@ -407,7 +412,8 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   
   // Se for telefone, tenta várias combinações
   if (isPhone) {
-    console.log('🔍 Tentando buscar por telefone:', cleanNumber);
+    const masked = cleanNumber && cleanNumber.length > 4 ? '*'.repeat(cleanNumber.length - 4) + cleanNumber.slice(-4) : cleanNumber;
+    console.log('🔍 Tentando buscar por telefone:', masked);
     attempts.push(
       { qtype: 'cliente.telefone_celular', oper: 'L', sortname: 'cliente.razao', q: cleanNumber },
       { qtype: 'telefone_celular',         oper: 'L', sortname: 'razao',         q: cleanNumber },
