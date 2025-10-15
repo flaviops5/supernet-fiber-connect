@@ -138,8 +138,16 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
       let finalAgent = currentAgent;
       let responseMessage = '';
 
-        // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
+      // Se ainda não temos agente atribuído, passa pela Cloé para orquestração inicial
       if (currentAgent === 'routing') {
+        // Salvar mensagem do cliente ANTES de chamar routing-agent
+        await supabase.from('conversation_messages').insert({
+          conversation_id: activeConversationId,
+          sender_type: 'customer',
+          sender_name: customerData?.name || 'Cliente',
+          content: userMessage.content
+        });
+
         const { data: routingData, error: routingError } = await supabase.functions.invoke('routing-agent', {
           body: {
             message: userMessage.content,
@@ -149,6 +157,15 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         });
 
         if (routingError) throw routingError;
+
+        console.log('🧭 Routing response:', routingData);
+
+        // Se routing-agent salvou mensagem (needsCPF, transfer, etc), recarregar do banco
+        if (routingData?.needsCPF || routingData?.targetDepartment) {
+          await loadConversationMessages();
+          setIsLoading(false);
+          return; // Mensagens já carregadas do banco
+        }
 
         finalAgent = routingData?.agent || 'routing';
         responseMessage = routingData?.message || 'Como posso ajudar?';
@@ -261,8 +278,8 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Persistir no banco
-      if (activeConversationId) {
+      // Persistir no banco SOMENTE se routing-agent NÃO salvou
+      if (activeConversationId && currentAgent !== 'routing') {
         const agentLabelMap: Record<string, string> = {
           routing: 'Cloé',
           sales: 'Vicente - Vendas',
