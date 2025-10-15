@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Wifi, WifiOff, Activity, FileText, CheckCircle2, XCircle, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { IXCContractsList } from '@/components/IXCContractsList';
-import { IXCEndpointDiscovery } from '@/components/IXCEndpointDiscovery';
 import { IXCEndpointsHealthCheck } from '@/components/IXCEndpointsHealthCheck';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
@@ -343,13 +342,12 @@ const IXCIntegration = () => {
       </div>
 
       <Tabs defaultValue="integration" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="integration">Integração</TabsTrigger>
           <TabsTrigger value="subjects">Assuntos</TabsTrigger>
           <TabsTrigger value="connection">Teste de Conexão</TabsTrigger>
           <TabsTrigger value="functions">Teste de Funções</TabsTrigger>
           <TabsTrigger value="health">Health Check</TabsTrigger>
-          <TabsTrigger value="discovery">Discovery GPON</TabsTrigger>
         </TabsList>
 
         <TabsContent value="integration" className="space-y-6">
@@ -975,10 +973,6 @@ const IXCIntegration = () => {
 
         <TabsContent value="health">
           <IXCEndpointsHealthCheck />
-        </TabsContent>
-
-        <TabsContent value="discovery">
-          <IXCEndpointDiscovery />
         </TabsContent>
       </Tabs>
     </div>
