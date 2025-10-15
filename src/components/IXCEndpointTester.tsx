@@ -64,6 +64,9 @@ const MAIN_ENDPOINTS: EndpointTest[] = [
   
   // COMUNICAÇÃO
   { endpoint: 'botaoAjax_22282', method: 'POST', description: 'Enviar SMS/Omnichannel', category: 'Comunicação' },
+  
+  // RELATÓRIOS
+  { endpoint: 'botao_rel_22991', method: 'POST', description: 'Relatório customizado 22991', category: 'Relatórios' },
 ];
 
 // Endpoints GPON para descoberta
