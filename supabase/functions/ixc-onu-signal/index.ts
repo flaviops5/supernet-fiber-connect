@@ -145,14 +145,23 @@ Deno.serve(async (req) => {
     const rxValue = result.data?.rx ? parseFloat(result.data.rx) : null;
     const txValue = result.data?.tx ? parseFloat(result.data.tx) : null;
 
-    const rxInterpretation = rxValue !== null ? interpretRX(rxValue) : null;
-    const txInterpretation = txValue !== null ? interpretTX(txValue) : null;
+    // Verificar se equipamento está offline (TX e RX = 0.00)
+    const isOffline = rxValue === 0 && txValue === 0;
+
+    const rxInterpretation = rxValue !== null && !isOffline ? interpretRX(rxValue) : null;
+    const txInterpretation = txValue !== null && !isOffline ? interpretTX(txValue) : null;
 
     // Diagnóstico geral
     let diagnosis = 'Não foi possível obter leitura do sinal';
     let action = 'Verificar conexão com equipamento';
+    let equipmentStatus = 'unknown';
 
-    if (rxInterpretation && txInterpretation) {
+    if (isOffline) {
+      diagnosis = '🔌 Equipamento OFFLINE detectado (TX: 0.00 / RX: 0.00)';
+      action = 'Confirmar problema de ENERGIA - Verificar se equipamento está ligado, fonte de alimentação e cabos de energia';
+      equipmentStatus = 'offline';
+    } else if (rxInterpretation && txInterpretation) {
+      equipmentStatus = 'online';
       if (rxInterpretation.status === 'critical') {
         diagnosis = '⚠️ Problema crítico de sinal detectado';
         action = 'Abrir atendimento URGENTE para inspeção da rede óptica';
@@ -172,6 +181,8 @@ Deno.serve(async (req) => {
       clientId,
       timestamp: new Date().toISOString(),
       rawData: result.data,
+      equipmentStatus,
+      isOffline,
       rx: rxValue !== null ? {
         value: rxValue,
         unit: 'dBm',

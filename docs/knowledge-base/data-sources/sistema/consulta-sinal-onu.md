@@ -30,13 +30,21 @@ Luan deve consultar TX/RX quando:
 
 ## 📊 Valores de Referência
 
+### ⚠️ Equipamento Offline
+
+| TX/RX | Status | Interpretação |
+|-------|--------|---------------|
+| 0.00 / 0.00 | 🔌 OFFLINE | Equipamento desligado - Problema de ENERGIA |
+
+**Ação:** Verificar se equipamento está ligado, fonte de alimentação e cabos de energia.
+
 ### Potência RX (Recepção)
 
 | Faixa (dBm) | Status | Interpretação |
 |-------------|--------|---------------|
-| -20 a -12 | 🟢 Excelente | Sinal ideal |
-| -25 a -20 | 🟡 Aceitável | Funcionando, mas atenção |
-| -28 a -25 | 🟠 Fraco | Risco de instabilidade |
+| -25 a -12 | 🟢 Excelente | Sinal ideal |
+| -26 a -25 | 🟡 Aceitável | Funcionando, mas atenção |
+| -28 a -26 | 🟠 Fraco | Risco de instabilidade |
 | < -28 | 🔴 Crítico | Problema grave de sinal |
 | > -8 | 🔴 Saturado | Risco de dano ao equipamento |
 
@@ -69,17 +77,43 @@ const signal = await supabase.functions.invoke('ixc-onu-signal', {
   "data": {
     "clientId": "123",
     "timestamp": "2025-10-15T22:00:00Z",
+    "equipmentStatus": "online",
+    "isOffline": false,
     "rawData": {
       "tx": "0.5",
       "rx": "-18.2",
       "status": "online",
       "temperatura": "45°C"
-    }
+    },
+    "rx": {
+      "value": -18.2,
+      "unit": "dBm",
+      "status": "excellent",
+      "level": "🟢 Excelente",
+      "message": "Sinal ideal"
+    },
+    "tx": {
+      "value": 0.5,
+      "unit": "dBm",
+      "status": "ideal",
+      "level": "🟢 Ideal",
+      "message": "Transmissão perfeita"
+    },
+    "diagnosis": "Sinal óptico dentro dos padrões ideais",
+    "recommendedAction": "Problema não está relacionado ao sinal - investigar outras causas"
   }
 }
 ```
 
 ### 3️⃣ Diagnóstico Automático
+
+**Exemplo 0: Equipamento Offline (TX e RX = 0.00)**
+```
+TX: 0.00 dBm
+RX: 0.00 dBm
+→ Diagnóstico: 🔌 Equipamento OFFLINE - Problema de ENERGIA
+→ Ação: Verificar equipamento ligado, fonte e cabos de energia
+```
 
 **Exemplo 1: Sinal Normal**
 ```
@@ -112,6 +146,10 @@ TX: -3 dBm (baixo)
 ### Ao Consultar
 
 > "Vou verificar o sinal da sua ONU para diagnóstico técnico... 🔍"
+
+### Equipamento Offline (TX e RX = 0.00)
+
+> "🔌 Detectei que o equipamento está OFFLINE (sem sinal TX/RX). Isso confirma problema de ENERGIA. Por favor, verifique se o equipamento está ligado, a fonte de alimentação e os cabos de energia."
 
 ### Sinal Normal
 
