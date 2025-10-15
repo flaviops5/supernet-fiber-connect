@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,12 +14,56 @@ import {
   PlayCircle,
   XCircle
 } from "lucide-react";
+import RebootLoader from "@/components/atendimento/RebootLoader";
 
 export const TestSupportTechAgent = () => {
   const [loading, setLoading] = useState(false);
   const [outageActive, setOutageActive] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
-  const { toast } = useToast();
+
+const { toast } = useToast();
+
+  // Detecta reboot em progresso baseado nas mensagens do Luan
+  const messagesList = useMemo(() => testResults?.messages || [], [testResults]);
+  const lastAgentTrigger = useMemo(() => {
+    for (let i = messagesList.length - 1; i >= 0; i--) {
+      const m = messagesList[i];
+      if (
+        (m.sender_type === 'agent' || /Luan/i.test(m.sender_name || '')) &&
+        /(reinici|reinício remoto|reboot)/i.test(m.content || '')
+      ) {
+        return m;
+      }
+    }
+    return undefined;
+  }, [messagesList]);
+
+  const hasCompletionAfterTrigger = useMemo(() => {
+    if (!lastAgentTrigger) return false;
+    const idx = messagesList.findIndex((m: any) => m.id === lastAgentTrigger.id);
+    if (idx === -1) return false;
+    return messagesList.slice(idx + 1).some((m: any) =>
+      (m.sender_type === 'agent' || /Luan/i.test(m.sender_name || '')) &&
+      /(ONLINE|ainda está offline|Reboot executado|religado|falhou)/i.test(m.content || '')
+    );
+  }, [messagesList, lastAgentTrigger]);
+
+  const rebootInProgress = !!lastAgentTrigger && !hasCompletionAfterTrigger;
+  const rebootStartedAt = lastAgentTrigger ? Date.parse(lastAgentTrigger.created_at) : undefined;
+
+  // Polling leve enquanto o reboot estiver em progresso para atualizar mensagens
+  useEffect(() => {
+    if (!rebootInProgress || !testResults?.conversation_id) return;
+    const id = setInterval(async () => {
+      const { data: messages } = await supabase
+        .from('conversation_messages')
+        .select('*')
+        .eq('conversation_id', testResults.conversation_id)
+        .order('created_at', { ascending: true });
+      setTestResults((prev: any) => (prev ? { ...prev, messages: messages || [] } : prev));
+    }, 4000);
+    return () => clearInterval(id);
+  }, [rebootInProgress, testResults?.conversation_id]);
 
   const createMassOutage = async () => {
     setLoading(true);
@@ -287,6 +331,9 @@ export const TestSupportTechAgent = () => {
                     </CardContent>
                   </Card>
 
+{rebootInProgress && (
+                    <RebootLoader totalSeconds={60} startedAt={rebootStartedAt} />
+                  )}
                   {/* Mensagens */}
                   <Card className="border-2">
                     <CardHeader className="pb-3">
