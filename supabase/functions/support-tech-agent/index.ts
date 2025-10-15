@@ -202,14 +202,16 @@ serve(async (req) => {
 
             // Enviar atualização ao cliente baseada no resultado
             let updateMessage = "";
+            const needsEscalation = !rebootResult?.is_online && rebootResult?.ok !== false;
+            
             if (rebootResult?.is_online) {
               updateMessage = "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!\n\nTesta aí pra mim? Consegue navegar agora?";
             } else if (rebootResult?.ok === false) {
               // Reboot falhou (equipamento não respondeu)
               updateMessage = "⚠️ Tentei reiniciar remotamente, mas não consegui comunicação com o equipamento.\n\nPreciso que você faça o seguinte:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando ligar!";
             } else {
-              // Reboot executado mas cliente ainda offline
-              updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline.\n\nPreciso que você verifique:\n\n🔌 As luzes do aparelho estão acesas?\n💡 Especialmente a luz PON/LOS - está verde ou vermelha?";
+              // Reboot executado mas cliente ainda offline → FLUXO DE ESCALONAMENTO
+              updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline após 60 segundos.\n\n**Isso pode indicar:**\n🔴 Problema de sinal óptico (fibra)\n🔴 Equipamento com defeito\n🔴 Problema na rede\n\n**Próximo passo:** Vou escalar para nossa equipe técnica de campo verificar o sinal da ONU e a conexão física.\n\nVocê receberá contato em até 4 horas úteis. Enquanto isso, se as luzes do equipamento voltarem, me avise!";
             }
 
             await supabase.from("conversation_messages").insert({
@@ -217,10 +219,31 @@ serve(async (req) => {
               sender_type: "agent",
               sender_name: "Luan Silva",
               content: updateMessage,
-              ai_suggestion: false
+              ai_suggestion: false,
+              metadata: needsEscalation ? { 
+                reboot_failed_escalation: true, 
+                ixc_client_id,
+                reason: "equipment_offline_after_reboot" 
+              } : {}
             });
             
-            logger.info("Mensagem de conclusão do reboot enviada");
+            // Se precisa escalar, marcar conversa para técnico de campo
+            if (needsEscalation) {
+              await supabase.from("conversations").update({
+                status: "escalated",
+                priority: 2,
+                tags: ["reboot_failed", "needs_field_tech"],
+                metadata: {
+                  escalation_reason: "Equipment offline after remote reboot",
+                  escalated_at: new Date().toISOString(),
+                  ixc_client_id
+                }
+              }).eq("id", conversation_id);
+              
+              logger.info("Conversa escalada para técnico de campo", { conversation_id });
+            }
+            
+            logger.info("Mensagem de conclusão do reboot enviada", { needsEscalation });
           })
           .catch(async (err) => {
             logger.error("Erro no reboot background", { 
