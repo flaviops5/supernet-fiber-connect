@@ -51,7 +51,7 @@ graph TD
     
     GetStatus --> CheckBlocked{Cliente está<br/>BLOQUEADO ou<br/>em ATRASO?}
     
-    CheckBlocked -->|✅ SIM| RouteFinancial["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito! Transferindo você<br/>para nosso Suporte Financeiro.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    CheckBlocked -->|✅ SIM| RouteFinancial["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito, [NOME]!<br/>Vou te transferir para o Financeiro.<br/>Um momento! ⏳'"]
     
     RouteFinancial --> TransferFinancial[🔄 Julia Martins<br/>Suporte Financeiro]
     TransferFinancial --> FinancialDesbloqueio{Julia tenta<br/>desbloqueio<br/>automático<br/>IMEDIATAMENTE?}
@@ -66,7 +66,7 @@ graph TD
     
     CheckMassOutage -->|✅ SIM - Cliente Afetado| MassOutageAlert["🚨 CLOÉ MARTINS INFORMA DIRETAMENTE<br/><br/>Olá [Nome]! 👋<br/><br/>🚨 INTERRUPÇÃO EM MASSA DETECTADA<br/><br/>Identifiquei que você está afetado<br/>por uma interrupção na sua região.<br/><br/>📊 Situação atual:<br/>• X clientes afetados<br/>• Detectado em: [timestamp]<br/>• Causa: [se identificada]<br/><br/>✅ Nossa equipe técnica já está<br/>trabalhando na solução.<br/><br/>NÃO É PROBLEMA NO SEU EQUIPAMENTO.<br/>Pedimos desculpas pelo transtorno! 🙏"]
     
-    CheckMassOutage -->|❌ NÃO - Cliente OK| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito! Transferindo você<br/>para nosso Suporte Técnico.<br/>Um momento! ⏳<br/><br/>📋 Protocolo: PROT-XXXXX'"]
+    CheckMassOutage -->|❌ NÃO - Cliente OK| RouteSupport["🔴 ROTEAMENTO AUTOMÁTICO<br/><br/>Cloé Martins: 'Perfeito, [NOME]!<br/>Vou te transferir para o Técnico.<br/>Um momento! ⏳'"]
     
     MassOutageAlert --> End3([FIM - Aguarda Normalização])
     RouteSupport --> TransferSupport[🔄 Luan Silva<br/>Suporte Técnico N1]
@@ -106,6 +106,7 @@ graph TD
 
 ### 🆕 Novidades nesta versão:
 - **Tom Humanizado**: Cloé Martins é humana, não mais "assistente virtual"
+- **Protocolo Único**: O protocolo é gerado apenas UMA vez na primeira interação e NÃO é repetido nas transferências
 - **Informação de Status**: Julia **SEMPRE** informa o status do cliente (ONLINE/OFFLINE, BLOQUEADO/LIBERADO) antes de qualquer ação
 - **Desbloqueio Imediato**: Julia tenta desbloqueio automático IMEDIATAMENTE ao receber o cliente
 - **Histórico de Contatos**: Consulta banco de dados ANTES do IXC para personalizar atendimento
