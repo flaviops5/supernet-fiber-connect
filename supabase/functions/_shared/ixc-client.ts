@@ -226,3 +226,29 @@ export function resetCircuitBreaker() {
   circuitBreaker.state = 'closed';
   console.log('🔧 Circuit breaker manually reset to CLOSED');
 }
+
+/**
+ * Busca dados de sinal TX/RX da ONU (potência óptica)
+ * Endpoint: botao_rel_22991 (Relatório de Potência/Resumo ONU)
+ */
+export async function getOnuSignalStatus(
+  proxyUrl: string,
+  clientId: string
+): Promise<any> {
+  console.log(`📡 Buscando dados TX/RX para cliente ${clientId}...`);
+  
+  try {
+    const result = await callIxcWithRetry(
+      proxyUrl,
+      'POST',
+      '/webservice/v1/botao_rel_22991',
+      { id: clientId }
+    );
+    
+    console.log('✅ Dados TX/RX obtidos com sucesso');
+    return result;
+  } catch (error) {
+    console.error('❌ Erro ao buscar dados TX/RX:', error);
+    throw error;
+  }
+}

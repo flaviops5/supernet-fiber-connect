@@ -177,3 +177,6 @@ verify_jwt = false
 [functions.graylog-logs-export]
 verify_jwt = false
 
+[functions.ixc-onu-signal]
+verify_jwt = false
+

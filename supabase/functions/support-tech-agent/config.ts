@@ -22,7 +22,8 @@ export const SUPPORT_TECH_CONFIG = {
     "criar_atendimento_ixc",
     "test_equipment_connectivity",
     "ixc_client_lookup",
-    "reboot_client_equipment" // 🆕 Reboot manual sob demanda
+    "reboot_client_equipment", // Reboot manual sob demanda
+    "get_onu_signal_status" // 🆕 Consulta TX/RX para diagnóstico
   ],
   
   // Business rules

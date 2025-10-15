@@ -201,9 +201,11 @@ Cliente não encontrado? ❌ → Comercial (Vicente)
 
 ### Média Prioridade
 
-4. **Implementar verificação TX/RX:**
-   - Integrar dados de sinal do IXC
-   - Adicionar ao diagnóstico de Luan
+4. ✅ **Implementar verificação TX/RX:**
+   - ✅ Edge function `ixc-onu-signal` criada
+   - ✅ Helper `getOnuSignalStatus` em `ixc-client.ts`
+   - ✅ Ferramenta adicionada ao Luan (`get_onu_signal_status`)
+   - ✅ Documentação com valores de referência
 
 5. **Criar dashboard de métricas:**
    - Taxa de sucesso de reboot

@@ -339,11 +339,33 @@ Luan: "Me diz quais luzes estão acesas no modem:
 | LAN | Apagado | Cabo desconectado | Pedir para reconectar |
 | Todos apagados | - | Equipamento sem energia | Verificar energia local |
 
-#### 4️⃣ Verificação TX/RX no IXC (Opcional)
+#### 4️⃣ Verificação TX/RX no IXC
 ```typescript
-// Luan pode verificar valores de sinal no IXC antes de escalar
-// Se TX/RX fora dos padrões → confirma problema de sinal
+// Edge Function: ixc-onu-signal
+// Endpoint IXC: botao_rel_22991
+
+const signal = await supabase.functions.invoke('ixc-onu-signal', {
+  body: { clientId: '123' }
+});
+
+// Retorna:
+// - TX: Potência de transmissão (dBm)
+// - RX: Potência de recepção (dBm)
+// - Status: Online/Offline/Degraded
+// - Temperatura (opcional)
+
+// Valores de referência típicos:
+// RX: -28 a -8 dBm (ideal: -20 a -12 dBm)
+// TX: -3 a +2 dBm (ideal: 0 a +1 dBm)
 ```
+
+**Interpretação para Luan:**
+| Condição | RX (dBm) | TX (dBm) | Diagnóstico |
+|----------|----------|----------|-------------|
+| Normal | -20 a -12 | 0 a +1 | Sinal OK |
+| Fraco | < -25 | < -2 | Verificar conectores/cabo |
+| Forte demais | > -8 | > +2 | Risco de saturação |
+| Crítico | < -28 ou > -8 | - | Abrir atendimento urgente |
 
 #### 5️⃣ Escalação para Logística
 ```
