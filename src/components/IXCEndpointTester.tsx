@@ -263,40 +263,40 @@ export const IXCEndpointTester = () => {
             <Separator />
             
             {/* Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card>
-                <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4 pb-3">
                   <div className="text-2xl font-bold">{results.summary.total}</div>
                   <p className="text-xs text-muted-foreground">Total</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-green-600">
+              <Card className="bg-green-50 dark:bg-green-950/30">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {results.summary.functional}
                   </div>
                   <p className="text-xs text-muted-foreground">Funcionais</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-red-600">
+              <Card className="bg-red-50 dark:bg-red-950/30">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {results.summary.notFound}
                   </div>
                   <p className="text-xs text-muted-foreground">Não Encontrados</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-orange-600">
+              <Card className="bg-orange-50 dark:bg-orange-950/30">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                     {results.summary.ixcErrors}
                   </div>
                   <p className="text-xs text-muted-foreground">Erros IXC</p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-gray-600">
+              <Card className="bg-gray-50 dark:bg-gray-950/30">
+                <CardContent className="pt-4 pb-3">
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
                     {results.summary.otherErrors}
                   </div>
                   <p className="text-xs text-muted-foreground">Outros Erros</p>
@@ -304,82 +304,103 @@ export const IXCEndpointTester = () => {
               </Card>
             </div>
 
-            {/* Functional Endpoints */}
-            {results.functionalEndpoints.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  Endpoints Funcionais ({results.functionalEndpoints.length})
-                </h3>
-                <ScrollArea className="h-[200px] rounded-md border">
-                  <div className="p-4 space-y-2">
-                    {results.functionalEndpoints.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950 rounded">
-                        <code className="text-xs font-mono">{item.endpoint}</code>
-                        <Badge variant="outline" className="text-xs">
-                          {item.recordCount} registros
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-
-            {/* IXC Error Endpoints */}
-            {results.ixcErrorEndpoints.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-orange-500" />
-                  Endpoints com Erro IXC ({results.ixcErrorEndpoints.length})
-                </h3>
-                <ScrollArea className="h-[200px] rounded-md border">
-                  <div className="p-4 space-y-2">
-                    {results.ixcErrorEndpoints.map((item, idx) => (
-                      <div key={idx} className="p-2 bg-orange-50 dark:bg-orange-950 rounded space-y-1">
-                        <code className="text-xs font-mono font-semibold">{item.endpoint}</code>
-                        <p className="text-xs text-muted-foreground">{item.errorMessage}</p>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-
-            {/* All Results */}
+            {/* Results by Category */}
             <div>
-              <h3 className="font-semibold text-sm mb-2">Resultados Detalhados</h3>
-              <ScrollArea className="h-[300px] rounded-md border">
-                <div className="p-4 space-y-2">
-                  {results.allResults.map((result, idx) => (
-                    <Card key={idx}>
-                      <CardContent className="py-3 px-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-2 flex-1">
-                            {getStatusIcon(result.status)}
-                            <div className="flex-1">
-                              <code className="text-xs font-mono font-semibold">
-                                {result.endpoint}
-                              </code>
-                              {result.message && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {result.message}
-                                </p>
-                              )}
+              <h3 className="font-semibold mb-3">Resultados por Categoria</h3>
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-3 pr-4">
+                  {(() => {
+                    const endpoints = activeTab === 'main' ? MAIN_ENDPOINTS : GPON_ENDPOINTS;
+                    const grouped = endpoints.reduce((acc, ep) => {
+                      const cat = ep.category || 'Outros';
+                      if (!acc[cat]) acc[cat] = [];
+                      acc[cat].push(ep);
+                      return acc;
+                    }, {} as Record<string, EndpointTest[]>);
+
+                    return Object.entries(grouped).map(([category, eps]) => {
+                      const categoryResults = eps.map(ep => 
+                        results.allResults.find(r => r.endpoint === ep.endpoint)
+                      ).filter(Boolean);
+
+                      const categoryStats = {
+                        total: categoryResults.length,
+                        functional: categoryResults.filter(r => r?.status === 'EXISTS').length,
+                        errors: categoryResults.filter(r => r?.status !== 'EXISTS').length,
+                      };
+
+                      return (
+                        <Card key={category}>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-sm">{category}</CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/50">
+                                  {categoryStats.functional} OK
+                                </Badge>
+                                {categoryStats.errors > 0 && (
+                                  <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/50">
+                                    {categoryStats.errors} erros
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {result.statusCode && (
-                              <Badge variant="outline" className="text-xs">
-                                {result.statusCode}
-                              </Badge>
-                            )}
-                            {getStatusBadge(result.status)}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {eps.map((endpoint) => {
+                              const result = results.allResults.find(r => r.endpoint === endpoint.endpoint);
+                              if (!result) return null;
+
+                              const statusColors = {
+                                EXISTS: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900',
+                                NOT_FOUND: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900',
+                                IXC_ERROR: 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900',
+                                ERROR: 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900',
+                              };
+
+                              const colorClass = statusColors[result.status as keyof typeof statusColors] || 'bg-gray-50 dark:bg-gray-950/30';
+
+                              return (
+                                <div key={endpoint.endpoint} className={`p-3 rounded-lg border ${colorClass}`}>
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                                      {getStatusIcon(result.status)}
+                                      <div className="flex-1 min-w-0">
+                                        <code className="text-xs font-mono font-semibold break-all">
+                                          {endpoint.endpoint}
+                                        </code>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          {endpoint.description}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {result.recordCount !== undefined && (
+                                        <Badge variant="outline" className="text-xs whitespace-nowrap">
+                                          {result.recordCount} registros
+                                        </Badge>
+                                      )}
+                                      {getStatusBadge(result.status)}
+                                    </div>
+                                  </div>
+                                  {result.message && (
+                                    <p className="text-xs text-muted-foreground mt-2 ml-6">
+                                      💬 {result.message}
+                                    </p>
+                                  )}
+                                  {result.duration && (
+                                    <p className="text-xs text-muted-foreground mt-1 ml-6">
+                                      ⏱️ {result.duration}ms
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </CardContent>
+                        </Card>
+                      );
+                    });
+                  })()}
                 </div>
               </ScrollArea>
             </div>
