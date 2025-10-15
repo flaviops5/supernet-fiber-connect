@@ -167,7 +167,7 @@ Por favor, me informe seu CPF (apenas números):`;
 
       // 🆕 Criar contexto atual do cliente para a IA
       const contextMessage = clientStatus.found
-        ? `[CONTEXTO INTERNO - Cliente encontrado: ${clientStatus.nome}, CPF ${clientStatus.cpf_masked}, ${clientStatus.isBlocked ? 'BLOQUEADO' : 'ativo'}, ${clientStatus.isOffline ? 'OFFLINE' : 'online'}. Use estas informações para personalizar o atendimento.]`
+        ? `[CONTEXTO INTERNO - Cliente encontrado: ${clientStatus.name}, CPF ${clientStatus.cpf_masked}, ${clientStatus.isBlocked ? 'BLOQUEADO' : 'ativo'}, ${clientStatus.isOffline ? 'OFFLINE' : 'online'}. Use estas informações para personalizar o atendimento.]`
         : `[CONTEXTO INTERNO - Cliente NÃO encontrado no sistema com este CPF]`;
 
       // Gerar resposta da Cloé usando Lovable AI com fallback
