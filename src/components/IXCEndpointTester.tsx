@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Search, CheckCircle2, XCircle, AlertCircle, Activity } from "lucide-react";
+import { Loader2, Search, CheckCircle2, XCircle, AlertCircle, Activity, ChevronDown, ChevronRight } from "lucide-react";
 
 interface EndpointTest {
   endpoint: string;
@@ -81,6 +82,19 @@ const IXC_ENDPOINTS: EndpointTest[] = [
 export const IXCEndpointTester = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<DiscoveryResult | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
 
   const testEndpoints = async () => {
     setLoading(true);
@@ -253,24 +267,42 @@ export const IXCEndpointTester = () => {
                         errors: categoryResults.filter(r => r?.status !== 'EXISTS').length,
                       };
 
+                      const isExpanded = expandedCategories.has(category);
+
                       return (
-                        <Card key={category}>
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-sm">{category}</CardTitle>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/50">
-                                  {categoryStats.functional} OK
-                                </Badge>
-                                {categoryStats.errors > 0 && (
-                                  <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/50">
-                                    {categoryStats.errors} erros
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-2">
+                        <Collapsible
+                          key={category}
+                          open={isExpanded}
+                          onOpenChange={() => toggleCategory(category)}
+                        >
+                          <Card className="cursor-pointer hover:border-primary/50 transition-colors">
+                            <CollapsibleTrigger className="w-full">
+                              <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                    )}
+                                    <CardTitle className="text-sm">{category}</CardTitle>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/50">
+                                      {categoryStats.functional} OK
+                                    </Badge>
+                                    {categoryStats.errors > 0 && (
+                                      <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/50">
+                                        {categoryStats.errors} erros
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            
+                            <CollapsibleContent>
+                              <CardContent className="space-y-2 pt-0">
                             {eps.map((endpoint) => {
                               const result = results.allResults.find(r => r.endpoint === endpoint.endpoint);
                               if (!result) return null;
@@ -320,8 +352,10 @@ export const IXCEndpointTester = () => {
                                 </div>
                               );
                             })}
-                          </CardContent>
-                        </Card>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
                       );
                     });
                   })()}
