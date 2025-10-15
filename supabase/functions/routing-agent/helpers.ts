@@ -79,8 +79,6 @@ export function extractCPF(message: string): string | null {
         // 🔍 GARANTIR que sempre tenha 11 dígitos (preservar zero à esquerda)
         const cpfPadded = cpf.padStart(11, '0');
         console.log("🔍 CPF extraído e formatado", { 
-          original: cpf, 
-          padded: cpfPadded,
           length: cpfPadded.length,
           redacted: `***${cpfPadded.slice(-3)}`
         });
@@ -138,9 +136,8 @@ export async function getClientRoutingStatus(
 
   // 🔍 Log detalhado para debug
   console.log("📞 Buscando cliente no IXC", { 
-    cpf: `***${cpf.slice(-3)}`,
+    cpf_redacted: `***${cpf.slice(-3)}`,
     cpfLength: cpf.length,
-    cpfFull: cpf, // Log completo para debug (remover depois)
     cpfType: typeof cpf
   });
 
@@ -164,7 +161,6 @@ export async function getClientRoutingStatus(
       success: searchResult?.success,
       dataExists: !!searchResult?.data,
       dataLength: Array.isArray(searchResult?.data) ? searchResult.data.length : 0,
-      dataPreview: Array.isArray(searchResult?.data) ? searchResult.data.slice(0, 2) : searchResult?.data,
     });
 
     // Validação explícita de resposta (evita mascaramento de erros)
