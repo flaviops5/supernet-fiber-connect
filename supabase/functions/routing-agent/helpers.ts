@@ -227,11 +227,19 @@ export async function getClientRoutingStatus(
     const status = statusResult.data;
 
     // 4. Verificar pane em massa (evita falso encaminhamento técnico)
-    let isOffline = status.conexao === "offline";
+    // 🔧 FIX: Campo correto é isOnline (boolean), não conexao
+    let isOffline = status.isOnline === false; // Cliente offline quando isOnline é false
     if (massOutageContext.active && isOffline) {
       console.log("🚨 Pane em massa ativa - ajustando status offline");
       isOffline = false; // Cliente não vai para técnico durante pane massiva
     }
+
+    console.log("📊 Status do cliente processado:", {
+      isOnline: status.isOnline,
+      isOffline,
+      pppoeLogin: status.pppoeLogin,
+      lastConnection: status.lastConnection
+    });
 
     // 5. Retornar status completo
     return {
