@@ -64,7 +64,89 @@ Se diagnóstico indicar problema no modem:
 - Aguardar 3-5 minutos para sincronização
 - Testar novamente
 
-**Se persistir:** Usar ferramenta `criar_atendimento_ixc`
+**Se persistir após reboot:** Seguir para Etapa 5
+
+### Etapa 5: Troubleshooting Pós-Reboot (Cliente Ainda Offline)
+
+#### 5.1 Verificar Alimentação Elétrica
+
+**Perguntar ao cliente:**
+- "O equipamento está ligado na tomada? ✅"
+- "A fonte de energia está conectada? 🔌"
+- "O botão Power está ligado (se houver)? 💡"
+
+**Se equipamento estava desligado:**
+- Pedir para ligar
+- Aguardar 3-5 minutos
+- Verificar se voltou online
+- Se SIM → Problema resolvido
+- Se NÃO → Continuar para 5.2
+
+#### 5.2 Diagnóstico por LEDs
+
+**Identificar o problema:**
+
+| Situação | Diagnóstico | Ação |
+|----------|-------------|------|
+| Todos LEDs apagados | Sem energia local | Verificar energia da residência/fonte |
+| PON/LOS vermelho | Problema de sinal óptico | **Abrir atendimento IXC** |
+| PON/LOS piscando | Sincronizando | Aguardar mais 2 minutos |
+| Power apagado | Equipamento sem energia | Verificar tomada/cabo de força |
+| LAN apagado | Cabo desconectado | Reconectar cabo ethernet |
+
+#### 5.3 Problema de Sinal Confirmado (PON Vermelho)
+
+**Luan deve:**
+
+1. Confirmar o diagnóstico:
+   ```
+   "Luz PON vermelha indica problema no sinal óptico da fibra.
+   Isso pode ser:
+   - Fibra danificada
+   - Problema no equipamento da rede
+   - Conector solto na caixa de emenda"
+   ```
+
+2. Abrir atendimento técnico no IXC:
+   ```
+   Usar tool: criar_atendimento_ixc
+   Tipo: "Problema de sinal óptico - PON vermelho"
+   Descrição: "Cliente [nome] - Equipamento offline após reboot. 
+               LED PON/LOS vermelho. Necessário verificar sinal óptico 
+               e integridade da fibra."
+   ```
+
+3. Transferir para LOGÍSTICA:
+   ```
+   "Protocolo IXC: [número]
+   
+   Vou transferir você para nossa equipe de logística que vai 
+   agendar a visita técnica. Você receberá contato em até 4 horas úteis."
+   
+   [Atualizar conversation: department = "logistica"]
+   ```
+
+#### 5.4 Equipamento com Defeito
+
+**Se todas as luzes estão OK mas sem internet:**
+- Possível problema no equipamento
+- Abrir atendimento IXC para troca
+- Transferir para logística
+
+#### 5.5 O que NÃO Fazer
+
+- ❌ Escalar para "equipe técnica de campo"
+- ❌ Prometer visita sem abrir atendimento IXC
+- ❌ Pular verificações (sempre seguir ordem: energia → luzes → sinal)
+- ❌ Dizer "vou acionar o NOC"
+
+### Etapa 6: Encerramento Adequado
+
+**Após transferir para logística:**
+- Confirmar protocolo IXC gerado
+- Informar prazo de contato (4 horas úteis)
+- Despedir-se educadamente
+- Sistema fecha conversa automaticamente
 
 ---
 

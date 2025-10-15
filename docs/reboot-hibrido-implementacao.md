@@ -218,20 +218,38 @@ T=66s   | Luan: "✅ Ótima notícia! Seu equipamento já está ONLINE! Testa a�
 ```
 T=0s    | Cliente: "Minha internet caiu"
 T=1s    | Luan: "Olá! Vou iniciar reinício remoto... 🔄"
-T=66s   | Luan: "⚠️ Reiniciei o equipamento, mas ainda está offline.
-        |        Preciso que você verifique:
-        |        🔌 As luzes estão acesas?
-        |        💡 A luz PON/LOS está verde ou vermelha?"
+T=66s   | Luan: "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline.
         |
-        | [Luan continua troubleshooting manual]
-        | Cliente: "Luz PON está vermelha"
-        | Luan: "Problema de sinal da rede. Vou abrir chamado técnico..."
+        | Vamos verificar juntos:
+        | 
+        | 1️⃣ O equipamento está ligado na tomada?
+        | 2️⃣ A fonte de energia está conectada?
+        | 3️⃣ O botão Power está ligado?"
+        |
+Cliente: "Sim, está tudo ligado"
+        |
+Luan:   | "Ok! Agora me diz:
+        | 🔴 Quais luzes estão acesas no modem?
+        | 💡 Alguma está piscando ou vermelha?"
+        |
+Cliente: "A luz PON/LOS está vermelha"
+        |
+Luan:   | "Entendi! Luz PON vermelha indica problema no sinal óptico da fibra.
+        |
+        | Vou abrir um atendimento técnico no sistema (IXC) e transferir 
+        | para nossa equipe de logística que vai agendar uma visita técnica.
+        |
+        | Protocolo: [número]"
+        |
+        | [Conversa transferida para departamento de LOGÍSTICA]
 ```
 
 **Resultado:**  
-- Reboot já foi tentado (não perdeu tempo)
-- Troubleshooting avança direto para causa raiz
-- Cliente não repete etapas
+- ✅ Reboot já foi tentado (não perdeu tempo)
+- ✅ Troubleshooting estruturado (energia → equipamento → sinal)
+- ✅ Atendimento aberto no IXC automaticamente
+- ✅ Transferido para LOGÍSTICA (não técnico de campo)
+- ❌ NUNCA escala diretamente para "equipe técnica de campo"
 
 ## 🛡️ Proteções e Edge Cases
 
@@ -289,6 +307,82 @@ if (rebootError || !rebootResult?.success) {
 
 **Redução de 80% no tempo de resolução para 70% dos casos**
 
+## 🔧 Protocolo de Troubleshooting (Pós-Reboot)
+
+### Quando o Reboot NÃO Resolve
+
+**Fluxo estruturado que Luan DEVE seguir:**
+
+#### 1️⃣ Verificação de Energia
+```
+Luan: "Vamos verificar a alimentação elétrica:
+       • O equipamento está ligado na tomada?
+       • A fonte de energia está conectada?
+       • O botão Power está ligado (se houver)?"
+```
+
+#### 2️⃣ Verificação das Luzes (LEDs)
+```
+Luan: "Me diz quais luzes estão acesas no modem:
+       🟢 Power (verde fixo = ok)
+       🔴 PON/LOS (verde fixo = ok | vermelho = problema de sinal)
+       🟡 LAN (piscando verde = ok)
+       🔵 Wi-Fi (verde/azul fixo = ok)"
+```
+
+#### 3️⃣ Diagnóstico por LED
+
+| LED | Estado | Diagnóstico | Ação |
+|-----|--------|-------------|------|
+| Power | Apagado | Sem energia | Verificar tomada/fonte |
+| PON/LOS | Vermelho | Problema de sinal óptico | Abrir atendimento IXC |
+| LAN | Apagado | Cabo desconectado | Pedir para reconectar |
+| Todos apagados | - | Equipamento sem energia | Verificar energia local |
+
+#### 4️⃣ Verificação TX/RX no IXC (Opcional)
+```typescript
+// Luan pode verificar valores de sinal no IXC antes de escalar
+// Se TX/RX fora dos padrões → confirma problema de sinal
+```
+
+#### 5️⃣ Escalação para Logística
+```
+Luan: "Identificado problema de [diagnóstico].
+       
+       Vou abrir um atendimento técnico e transferir para 
+       nossa equipe de logística que vai agendar a visita.
+       
+       Protocolo IXC: [número]"
+       
+[Usar tool: criar_atendimento_ixc]
+[Transferir conversa para: departamento LOGÍSTICA]
+```
+
+### ⚠️ O que Luan NUNCA Deve Fazer
+
+- ❌ Escalar diretamente para "equipe técnica de campo"
+- ❌ Dizer "vou acionar o NOC"
+- ❌ Prometer visita técnica sem abrir atendimento no IXC
+- ❌ Pular etapas de verificação (energia → luzes → sinal)
+
+### ✅ Fluxo Correto
+
+```mermaid
+graph TD
+    A[Reboot falhou] --> B{Equipamento ligado?}
+    B -->|NÃO| C[Pedir para ligar]
+    B -->|SIM| D[Verificar LEDs]
+    C --> E{Voltou online?}
+    E -->|SIM| F[Problema resolvido]
+    E -->|NÃO| D
+    D --> G{PON/LOS verde?}
+    G -->|SIM| H[Problema no equipamento/cabo]
+    G -->|NÃO| I[Problema de sinal óptico]
+    H --> J[Abrir atendimento IXC]
+    I --> J
+    J --> K[Transferir para LOGÍSTICA]
+```
+
 ## 🔧 Manutenção e Evolução
 
 ### Melhorias Futuras Possíveis
@@ -311,6 +405,12 @@ if (rebootError || !rebootResult?.success) {
    ```typescript
    // Rastrear taxa de sucesso por região/equipamento
    // Ajustar threshold de timeout por modelo
+   ```
+
+4. **Integração TX/RX**
+   ```typescript
+   // Buscar valores de sinal no IXC antes de escalar
+   // Adicionar dados técnicos ao atendimento
    ```
 
 ## 📚 Referências

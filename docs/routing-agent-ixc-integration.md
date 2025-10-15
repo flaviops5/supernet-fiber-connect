@@ -31,10 +31,22 @@ WhatsApp → routing-agent/index.ts
 extractCPF(message: string): string | null
 ```
 
-Aceita formatos:
-- `123.456.789-10`
-- `12345678910`
-- `CPF: 123.456.789-10`
+**Formatos aceitos (atualizado em 15/10/2025):**
+- ✅ Com pontuação: `128.930.562-53`
+- ✅ Sem pontuação: `12893056253`
+- ✅ Com prefixo: `CPF: 123.456.789-10`
+- ✅ Com prefixo: `meu cpf é 12345678910`
+
+**Mensagem inicial da Cloé:**
+```
+Olá! 👋 Sou a Cloé Martins da SUPERNET. 📋 Protocolo: PROT-XXX
+
+Para começarmos, preciso do seu CPF para localizar seu cadastro.
+
+Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.
+```
+
+**Nota:** O protocolo agora aparece na mesma linha do cumprimento inicial para melhor experiência visual.
 
 ### 2. Busca no IXC
 
