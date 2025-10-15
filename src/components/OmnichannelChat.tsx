@@ -160,12 +160,10 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
 
         console.log('🧭 Routing response:', routingData);
 
-        // Se routing-agent salvou mensagem (needsCPF, transfer, etc), recarregar do banco
-        if (routingData?.needsCPF || routingData?.targetDepartment) {
-          await loadConversationMessages();
-          setIsLoading(false);
-          return; // Mensagens já carregadas do banco
-        }
+        // Após resposta do routing-agent, sempre recarregar mensagens salvas no banco
+        await loadConversationMessages();
+        setIsLoading(false);
+        return; // Mensagens já carregadas do banco
 
         finalAgent = routingData?.agent || 'routing';
         responseMessage = routingData?.message || 'Como posso ajudar?';

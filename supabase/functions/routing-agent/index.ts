@@ -56,9 +56,11 @@ serve(async (req) => {
 
     // 🚨 CASO ESPECIAL: CPF não identificado
     if (clientStatus.error === ErrorCode.NO_CPF) {
-      const askCPFMessage = `Olá! 👋 Para melhor atendê-lo, preciso validar seu CPF.
+      const askCPFMessage = `Olá! 👋 Eu sou a Cloé Martins, assistente virtual da SUPERNET.
 
-📋 *Protocolo:* ${protocol}
+Para melhor atendê-lo, preciso validar seu CPF.
+
+📋 Protocolo: ${protocol}
 
 Por favor, informe seu CPF (apenas números):`;
 
