@@ -129,6 +129,8 @@ export async function getClientRoutingStatus(
 
   // 2. Buscar cliente no IXC
   try {
+    console.log("🔍 Buscando cliente no IXC com CPF:", cpf);
+    
     const { data: searchResult, error: searchError } = await supabase.functions.invoke(
       "ixc-integration",
       {
@@ -139,18 +141,30 @@ export async function getClientRoutingStatus(
       }
     );
 
+    console.log("📊 IXC searchCustomers response:", {
+      hasError: !!searchError,
+      hasData: !!searchResult,
+      success: searchResult?.success,
+      dataExists: !!searchResult?.data,
+      registrosLength: searchResult?.data?.registros?.length || 0,
+    });
+
     // Validação explícita de resposta (evita mascaramento de erros)
-    if (searchError || !searchResult?.success || !searchResult?.data) {
+    if (searchError || !searchResult?.success) {
       console.warn("⚠️ IXC searchCustomers falhou, tentando fallback histórico");
       return await getFallbackFromHistory(supabase, cpf);
     }
 
-    const clientes = searchResult.data.registros || [];
+    const clientes = searchResult.data?.registros || [];
+    console.log("👥 Clientes encontrados:", clientes.length);
+    
     if (clientes.length === 0) {
+      console.log("❌ Nenhum cliente encontrado no IXC");
       return await getFallbackFromHistory(supabase, cpf);
     }
 
     const cliente = clientes[0];
+    console.log("✅ Cliente encontrado:", { id: cliente.id, nome: cliente.razao });
 
     // 3. Buscar status detalhado
     const { data: statusResult, error: statusError } = await supabase.functions.invoke(
