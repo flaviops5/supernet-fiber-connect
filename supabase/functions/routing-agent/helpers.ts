@@ -128,6 +128,21 @@ export async function getClientRoutingStatus(
     };
   }
 
+  // 🧪 MOCK DE TESTE: CPF 111.111.111-11 simula cliente offline
+  if (cpf === "11111111111") {
+    console.log("🧪 CPF de teste detectado - simulando cliente offline");
+    return {
+      found: true,
+      cpf,
+      name: "Cliente Teste",
+      id: "mock-123",
+      status: "ativo",
+      isBlocked: false,
+      isOffline: true,
+      suggestAutoReboot: true,
+    };
+  }
+
   // 2. Buscar cliente no IXC
   try {
     console.log("🔍 Buscando cliente no IXC com CPF:", cpf);
