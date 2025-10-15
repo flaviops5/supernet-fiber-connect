@@ -75,12 +75,18 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
     }
   };
 
-  const loadConversationMessages = async () => {
+  const loadConversationMessages = async (convId?: string) => {
+    const targetId = convId || conversationId;
+    if (!targetId) {
+      console.warn('⚠️ Sem conversationId para carregar mensagens');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('conversation_messages')
         .select('*')
-        .eq('conversation_id', conversationId)
+        .eq('conversation_id', targetId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -161,7 +167,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         console.log('🧭 Routing response:', routingData);
 
         // Após resposta do routing-agent, sempre recarregar mensagens salvas no banco
-        await loadConversationMessages();
+        await loadConversationMessages(activeConversationId);
         setIsLoading(false);
         return; // Mensagens já carregadas do banco
 
