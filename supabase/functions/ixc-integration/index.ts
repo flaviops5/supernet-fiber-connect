@@ -329,7 +329,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
   // Remove pontos e traços para buscar CPF/CNPJ/Telefone
   const cleanNumber = raw.replace(/[.\-\/\(\)\s]/g, '');
   const isCpfCnpj = /^\d{11,14}$/.test(cleanNumber);
-  const isPhone = /^\d{10,13}$/.test(cleanNumber);
+  const isPhone = !isCpfCnpj && /^\d{10,13}$/.test(cleanNumber);
   
   console.log('🔍 searchCustomers:', { 
     raw, 
@@ -362,6 +362,41 @@ async function searchCustomers(baseUrl: string, auth: string, query: string): Pr
       formatted,
       length: cleanNumberPadded.length
     });
+
+    // 1) Tenta com grid_param (mais confiável em algumas instalações IXC)
+    try {
+      const gridForms: Record<string, string>[] = [
+        {
+          qtype: 'cliente.id', query: '1', oper: '>=', page: '1', rp: '50',
+          sortname: 'cliente.razao', sortorder: 'asc',
+          grid_param: JSON.stringify([{ TB: 'cliente.cnpj_cpf', OP: '=', P: formatted }])
+        },
+        {
+          qtype: 'cliente.id', query: '1', oper: '>=', page: '1', rp: '50',
+          sortname: 'cliente.razao', sortorder: 'asc',
+          grid_param: JSON.stringify([{ TB: 'cnpj_cpf', OP: '=', P: formatted }])
+        }
+      ];
+      for (const gf of gridForms) {
+        const { ok, data } = await postIXC(`${baseUrl}/cliente`, auth, gf);
+        if (ok && data?.registros) {
+          let regs = normalizeRegistros(data.registros);
+          // Filtro local por CPF exato
+          regs = regs.filter((c) => {
+            const cpfClean = (c.cnpj_cpf || '').replace(/\D/g, '');
+            return cpfClean === cleanNumber || cpfClean === cleanNumberPadded;
+          });
+          if (regs.length > 0) {
+            console.log(`✅ grid_param CPF encontrou ${regs.length} resultado(s)`);
+            return regs as IXCCustomer[];
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ grid_param CPF falhou:', (e as Error)?.message);
+    }
+    
+    // 2) Se grid_param não trouxe nada, cai para tentativas com qtype/query
     attempts.push(
       { qtype: 'cliente.cnpj_cpf', oper: '=', sortname: 'cliente.razao', q: formatted },
       { qtype: 'cnpj_cpf',         oper: '=', sortname: 'razao',         q: formatted },
