@@ -65,6 +65,33 @@ const { toast } = useToast();
     return () => clearInterval(id);
   }, [rebootInProgress, testResults?.conversation_id]);
 
+  // Realtime: atualizar mensagens assim que Luan enviar algo
+  useEffect(() => {
+    if (!testResults?.conversation_id) return;
+    const channel = supabase
+      .channel('conversation-messages-live')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversation_messages',
+          filter: `conversation_id=eq.${testResults.conversation_id}`,
+        },
+        (payload: any) => {
+          const newMsg = payload.new as any;
+          setTestResults((prev: any) =>
+            prev ? { ...prev, messages: [...(prev.messages || []), newMsg] } : prev
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [testResults?.conversation_id]);
+
   const createMassOutage = async () => {
     setLoading(true);
     try {
