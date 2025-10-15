@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Search, CheckCircle2, XCircle, AlertCircle, Activity } from "lucide-react";
@@ -40,8 +39,8 @@ interface DiscoveryResult {
   allResults: EndpointResult[];
 }
 
-// Endpoints principais do sistema
-const MAIN_ENDPOINTS: EndpointTest[] = [
+// Todos os endpoints organizados por categoria funcional
+const IXC_ENDPOINTS: EndpointTest[] = [
   // CLIENTES
   { endpoint: 'cliente', method: 'GET', description: 'Listar clientes', category: 'Clientes' },
   { endpoint: 'cliente_arquivo', method: 'POST', description: 'Arquivos do cliente', category: 'Clientes' },
@@ -66,73 +65,54 @@ const MAIN_ENDPOINTS: EndpointTest[] = [
   { endpoint: 'botaoAjax_22282', method: 'POST', description: 'Enviar SMS/Omnichannel', category: 'Comunicação' },
   
   // RELATÓRIOS
-  { endpoint: 'botao_rel_22991', method: 'POST', description: 'Relatório customizado 22991', category: 'Relatórios' },
-];
-
-// Endpoints GPON para descoberta
-const GPON_ENDPOINTS: EndpointTest[] = [
-  // Equipamentos
+  { endpoint: 'botao_rel_22991', method: 'POST', description: 'Relatório customizado', category: 'Relatórios' },
+  
+  // EQUIPAMENTOS
   { endpoint: 'cliente_equipamento', method: 'POST', description: 'Equipamentos do cliente', category: 'Equipamentos' },
   { endpoint: 'equipamento_fibra', method: 'POST', description: 'Equipamentos de fibra', category: 'Equipamentos' },
   { endpoint: 'pon_onu', method: 'POST', description: 'ONUs na rede PON', category: 'Equipamentos' },
-  { endpoint: 'equipamento', method: 'POST', description: 'Equipamentos gerais', category: 'Equipamentos' },
   
-  // Monitoramento
-  { endpoint: 'pon_olt', method: 'POST', description: 'OLTs na rede', category: 'Monitoramento' },
-  { endpoint: 'pon_sinal', method: 'POST', description: 'Status do sinal PON', category: 'Monitoramento' },
-  { endpoint: 'cliente_conexao_historico', method: 'POST', description: 'Histórico de conexões', category: 'Monitoramento' },
-  
-  // Diagnóstico
-  { endpoint: 'pon_diagnostico', method: 'POST', description: 'Diagnóstico geral PON', category: 'Diagnóstico' },
-  { endpoint: 'pon_rx_power', method: 'POST', description: 'Potência de recepção (RX)', category: 'Diagnóstico' },
-  { endpoint: 'pon_tx_power', method: 'POST', description: 'Potência de transmissão (TX)', category: 'Diagnóstico' },
-  { endpoint: 'diagnostico_rede', method: 'POST', description: 'Diagnóstico de rede', category: 'Diagnóstico' },
-  
-  // Infraestrutura
-  { endpoint: 'fibra_cto', method: 'POST', description: 'CTOs da rede', category: 'Infraestrutura' },
-  { endpoint: 'fibra_splitter', method: 'POST', description: 'Splitters da rede', category: 'Infraestrutura' },
-  { endpoint: 'fibra_cabo', method: 'POST', description: 'Cabos de fibra', category: 'Infraestrutura' },
-  { endpoint: 'su_olt', method: 'GET', description: 'Listar OLTs (suporte)', category: 'Infraestrutura' },
-  { endpoint: 'su_olt_pon', method: 'GET', description: 'Portas PON das OLTs', category: 'Infraestrutura' },
+  // REDE & INFRAESTRUTURA
+  { endpoint: 'radusuarios', method: 'GET', description: 'Usuários conectados (Radius)', category: 'Rede' },
+  { endpoint: 'su_olt', method: 'GET', description: 'Listar OLTs', category: 'Rede' },
+  { endpoint: 'su_olt_pon', method: 'GET', description: 'Portas PON das OLTs', category: 'Rede' },
 ];
 
 export const IXCEndpointTester = () => {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<DiscoveryResult | null>(null);
-  const [activeTab, setActiveTab] = useState<'main' | 'gpon'>('main');
 
-  const testEndpoints = async (endpoints: EndpointTest[]) => {
+  const testEndpoints = async () => {
     setLoading(true);
     setResults(null);
 
     try {
+      console.log('🔍 Testando endpoints:', IXC_ENDPOINTS.map(e => e.endpoint));
+      
       const { data, error } = await supabase.functions.invoke('ixc-discover-gpon-endpoints', {
-        body: { endpoints: endpoints.map(e => e.endpoint) }
+        body: { endpoints: IXC_ENDPOINTS.map(e => e.endpoint) }
       });
+
+      console.log('📦 Resposta da API:', data);
 
       if (error) throw error;
 
       if (data.success) {
         setResults(data);
         toast.success(
-          `Teste concluído! ${data.summary.functional} funcionais, ${data.summary.ixcErrors} com erro IXC.`
+          `Teste concluído! ${data.summary.functional} funcionais de ${data.summary.total} testados.`
         );
       } else {
         throw new Error(data.error || 'Erro no teste');
       }
     } catch (error) {
-      console.error('Erro no teste:', error);
+      console.error('❌ Erro no teste:', error);
       toast.error(
         error instanceof Error ? error.message : 'Erro ao testar endpoints'
       );
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleTest = () => {
-    const endpoints = activeTab === 'main' ? MAIN_ENDPOINTS : GPON_ENDPOINTS;
-    testEndpoints(endpoints);
   };
 
   const getStatusIcon = (status: string) => {
@@ -171,58 +151,32 @@ export const IXCEndpointTester = () => {
           Testador de Endpoints IXC
         </CardTitle>
         <CardDescription>
-          Teste a disponibilidade dos endpoints principais e GPON do IXC
+          Teste a disponibilidade e funcionamento de {IXC_ENDPOINTS.length} endpoints do IXC organizados por categoria
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'main' | 'gpon')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="main">
-              Endpoints Principais ({MAIN_ENDPOINTS.length})
-            </TabsTrigger>
-            <TabsTrigger value="gpon">
-              Endpoints GPON ({GPON_ENDPOINTS.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="main" className="space-y-4">
-            <div className="text-center py-8 space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Teste {MAIN_ENDPOINTS.length} endpoints essenciais para operação do sistema
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Clientes, Contratos, Financeiro, Suporte, Comunicação e Relatórios
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="gpon" className="space-y-4">
-            <div className="text-center py-8 space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Teste {GPON_ENDPOINTS.length} endpoints relacionados a infraestrutura GPON
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Equipamentos, Monitoramento, Diagnóstico e Infraestrutura de Fibra
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
+        <div className="text-center py-4">
+          <p className="text-sm text-muted-foreground mb-2">
+            Categorias: Clientes, Contratos, Financeiro, Suporte, Comunicação, Relatórios, Equipamentos e Rede
+          </p>
+        </div>
 
         <Button 
-          onClick={handleTest} 
+          onClick={testEndpoints} 
           disabled={loading}
           className="w-full"
+          size="lg"
         >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Testando endpoints...
+              Testando {IXC_ENDPOINTS.length} endpoints...
             </>
           ) : (
             <>
               <Search className="mr-2 h-4 w-4" />
-              Testar {activeTab === 'main' ? 'Principais' : 'GPON'}
+              Testar Todos os Endpoints ({IXC_ENDPOINTS.length})
             </>
           )}
         </Button>
@@ -279,8 +233,7 @@ export const IXCEndpointTester = () => {
               <ScrollArea className="h-[500px]">
                 <div className="space-y-3 pr-4">
                   {(() => {
-                    const endpoints = activeTab === 'main' ? MAIN_ENDPOINTS : GPON_ENDPOINTS;
-                    const grouped = endpoints.reduce((acc, ep) => {
+                    const grouped = IXC_ENDPOINTS.reduce((acc, ep) => {
                       const cat = ep.category || 'Outros';
                       if (!acc[cat]) acc[cat] = [];
                       acc[cat].push(ep);
@@ -288,9 +241,11 @@ export const IXCEndpointTester = () => {
                     }, {} as Record<string, EndpointTest[]>);
 
                     return Object.entries(grouped).map(([category, eps]) => {
-                      const categoryResults = eps.map(ep => 
-                        results.allResults.find(r => r.endpoint === ep.endpoint)
-                      ).filter(Boolean);
+                      const categoryResults = eps.map(ep => {
+                        const result = results.allResults.find(r => r.endpoint === ep.endpoint);
+                        console.log(`📊 Categoria ${category} - Endpoint ${ep.endpoint}:`, result);
+                        return result;
+                      }).filter(Boolean);
 
                       const categoryStats = {
                         total: categoryResults.length,
