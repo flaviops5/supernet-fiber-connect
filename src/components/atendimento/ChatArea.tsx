@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import TagManager from './TagManager';
 import MessageShortcuts from './MessageShortcuts';
 import AISuggestion from './AISuggestion';
 import TextReview from './TextReview';
+import RebootLoader from './RebootLoader';
 
 interface Message {
   id: string;
@@ -37,7 +38,34 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [conversationTags, setConversationTags] = useState<string[]>([]);
   const [showTextReview, setShowTextReview] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Detect reboot-in-progress based on agent messages (Luan)
+  const lastAgentTrigger = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (
+        m.sender_type === 'agent' &&
+        /(reinici|reinício remoto|reboot)/i.test(m.content)
+      ) {
+        return m;
+      }
+    }
+    return undefined;
+  }, [messages]);
+
+  const hasCompletionAfterTrigger = useMemo(() => {
+    if (!lastAgentTrigger) return false;
+    const idx = messages.findIndex((m) => m.id === lastAgentTrigger.id);
+    if (idx === -1) return false;
+    return messages.slice(idx + 1).some((m) =>
+      m.sender_type === 'agent' &&
+      /(ONLINE|ainda está offline|Reboot executado|religado)/i.test(m.content)
+    );
+  }, [messages, lastAgentTrigger]);
+
+  const rebootInProgress = !!lastAgentTrigger && !hasCompletionAfterTrigger;
+  const rebootStartedAt = lastAgentTrigger ? Date.parse(lastAgentTrigger.created_at) : undefined;
 
   const loadConversationTags = async () => {
     if (!conversationId) return;
@@ -230,6 +258,9 @@ export default function ChatArea({ conversationId, agentDepartment }: Props) {
             </div>
           </div>
         ))}
+{rebootInProgress && (
+          <RebootLoader totalSeconds={60} startedAt={rebootStartedAt} />
+        )}
         <div ref={messagesEndRef} />
       </CardContent>
 
