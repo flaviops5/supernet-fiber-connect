@@ -214,7 +214,8 @@ serve(async (req) => {
               updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline após 60 segundos.\n\n**Isso pode indicar:**\n🔴 Problema de sinal óptico (fibra)\n🔴 Equipamento com defeito\n🔴 Problema na rede\n\n**Próximo passo:** Vou escalar para nossa equipe técnica de campo verificar o sinal da ONU e a conexão física.\n\nVocê receberá contato em até 4 horas úteis. Enquanto isso, se as luzes do equipamento voltarem, me avise!";
             }
 
-            await supabase.from("conversation_messages").insert({
+            // Inserir mensagem de conclusão do reboot com checagem de erro
+            const { error: insertError } = await supabase.from("conversation_messages").insert({
               conversation_id,
               sender_type: "agent",
               sender_name: "Luan Silva",
@@ -227,9 +228,19 @@ serve(async (req) => {
               } : {}
             });
             
-            // Se precisa escalar, marcar conversa para técnico de campo
+            if (insertError) {
+              logger.error("Erro ao inserir mensagem de conclusão do reboot", { error: insertError.message });
+              throw new Error(insertError.message);
+            }
+            
+            logger.info("Mensagem de conclusão do reboot enviada", { needsEscalation });
+            
+            // Se precisa escalar, aguardar 250ms e marcar conversa para técnico de campo
             if (needsEscalation) {
-              await supabase.from("conversations").update({
+              // Delay para evitar race condition entre insert e update
+              await new Promise(r => setTimeout(r, 250));
+              
+              const { error: updateError } = await supabase.from("conversations").update({
                 status: "escalated",
                 priority: 2,
                 tags: ["reboot_failed", "needs_field_tech"],
@@ -240,10 +251,13 @@ serve(async (req) => {
                 }
               }).eq("id", conversation_id);
               
+              if (updateError) {
+                logger.error("Erro ao escalar conversa", { error: updateError.message });
+                throw new Error(updateError.message);
+              }
+              
               logger.info("Conversa escalada para técnico de campo", { conversation_id });
             }
-            
-            logger.info("Mensagem de conclusão do reboot enviada", { needsEscalation });
           })
           .catch(async (err) => {
             logger.error("Erro no reboot background", { 
@@ -316,7 +330,9 @@ serve(async (req) => {
       JSON.stringify({ 
         ok: true, 
         agent: "support_tech",
-        message: responseMessage
+        message: responseMessage,
+        escalated: needsEscalation ?? false,
+        conversation_status: needsEscalation ? "escalated" : "active"
       }), 
       { 
         status: 200, 
