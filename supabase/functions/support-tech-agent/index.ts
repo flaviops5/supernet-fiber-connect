@@ -25,8 +25,17 @@ serve(async (req) => {
 
     logger.info("Luan atendendo", { conversation_id, customer_cpf, message });
 
+    // Buscar histórico de mensagens da conversa
+    const { data: messageHistory } = await supabase
+      .from("conversation_messages")
+      .select("sender_type, content")
+      .eq("conversation_id", conversation_id)
+      .order("created_at", { ascending: true });
+
+    const hasHistory = messageHistory && messageHistory.length > 0;
+
     // Verificar se é a primeira mensagem (quando vem do routing-agent sem message)
-    const isFirstMessage = !message || message.trim() === "";
+    const isFirstMessage = !message || message.trim() === "" || !hasHistory;
 
     // Verificar se há pane massiva ativa (contexto em memória)
     let outageActive = massOutageContext.active;
@@ -65,17 +74,31 @@ serve(async (req) => {
 
       logger.info("Mensagem inicial do Luan enviada");
     } else {
-      // Continuar atendimento com análise da mensagem
-      logger.info("Luan continuando atendimento", { message });
+      // Continuar atendimento com análise contextual
+      logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });
 
-      // Aqui você pode adicionar lógica mais sofisticada com IA
-      // Por enquanto, vamos usar respostas básicas
-      if (message.toLowerCase().includes("sem internet") || message.toLowerCase().includes("offline")) {
-        responseMessage = "Entendi que você está sem internet. Vou verificar o status da sua conexão...\n\nPode me informar se as luzes do seu equipamento estão acesas? 💡";
-      } else if (message.toLowerCase().includes("lento") || message.toLowerCase().includes("devagar")) {
-        responseMessage = "Certo, vou te ajudar com a lentidão. Primeiro, vamos fazer alguns testes básicos.\n\nVocê está conectado por cabo ou Wi-Fi? 📶";
+      // Analisar contexto baseado no histórico
+      const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
+      const currentMessage = message.toLowerCase();
+
+      // Lógica de troubleshooting baseada em contexto
+      if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
+        // Cliente está sem internet
+        if (currentMessage.includes("não") && (currentMessage.includes("acesa") || currentMessage.includes("luz"))) {
+          // Luzes apagadas = sem energia
+          responseMessage = "Entendi! Se as luzes do equipamento não estão acesas, pode ser falta de energia.\n\n🔌 Por favor, verifique:\n\n1. Se o cabo de força está bem conectado na tomada\n2. Se a tomada está funcionando (teste com outro aparelho)\n3. Se há energia elétrica no local\n\nApós verificar, me avise o resultado!";
+        } else if (currentMessage.includes("sim") || currentMessage.includes("acesa") || currentMessage.includes("luz")) {
+          // Luzes acesas mas sem internet
+          responseMessage = "Ok, as luzes estão acesas. Vamos fazer mais alguns testes! 🔍\n\nComo estão as luzes especificamente?\n\n💡 LOS (vermelha) - Indica problema de sinal\n💚 PON/INTERNET (verde) - Indica conexão OK\n⚡ POWER (verde) - Indica energia OK\n\nQuais luzes estão acesas e quais não estão?";
+        } else {
+          responseMessage = "Entendi. Vamos continuar o diagnóstico! 🔧\n\nVocê está conectado por cabo de rede ou Wi-Fi?\n\nIsso vai me ajudar a identificar se o problema é no equipamento ou na conexão sem fio.";
+        }
+      } else if (conversationContext.includes("lento") || conversationContext.includes("devagar")) {
+        // Cliente com internet lenta
+        responseMessage = "Certo, sobre a lentidão... Vamos fazer alguns testes!\n\n📊 Pode fazer um teste de velocidade em www.fast.com e me passar o resultado?\n\nEnquanto isso, me diga:\n1. Está conectado por cabo ou Wi-Fi?\n2. Quantos dispositivos estão conectados agora?";
       } else {
-        responseMessage = "Entendi sua situação. Vou te ajudar! Para dar continuidade, você pode me passar mais detalhes sobre o problema? 🔧";
+        // Resposta genérica contextualizada
+        responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
       }
 
       const { error: insertErr } = await supabase.from("conversation_messages").insert({
