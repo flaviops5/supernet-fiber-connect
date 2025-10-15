@@ -18,7 +18,7 @@ interface EscalationSettings {
   enabled: boolean;
 }
 
-type Department = 'administrativo' | 'comercial' | 'financeiro' | 'logistica' | 'routing' | 'tecnico';
+type Department = 'administrativo' | 'cloe' | 'comercial' | 'financeiro' | 'logistica' | 'routing' | 'tecnico';
 
 interface EscalationRule {
   id: string;
@@ -32,11 +32,12 @@ interface EscalationRule {
 }
 
 const departmentLabels = {
+  cloe: 'Cloé (IA)',
   comercial: 'Comercial',
   tecnico: 'Técnico',
   financeiro: 'Financeiro',
   logistica: 'Logística',
-  routing: 'Roteamento (Cloé)'
+  routing: 'Roteamento'
 };
 
 export default function EscalationSettings() {

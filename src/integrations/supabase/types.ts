@@ -3385,6 +3385,51 @@ export type Database = {
           },
         ]
       }
+      secure_logs: {
+        Row: {
+          correlation_id: string | null
+          created_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          event: string
+          function: string
+          id: string
+          level: string
+          message: string | null
+          metadata: Json | null
+          timestamp: string | null
+          user_role: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          event: string
+          function: string
+          id?: string
+          level: string
+          message?: string | null
+          metadata?: Json | null
+          timestamp?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          event?: string
+          function?: string
+          id?: string
+          level?: string
+          message?: string | null
+          metadata?: Json | null
+          timestamp?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           created_at: string
@@ -4014,6 +4059,7 @@ export type Database = {
         | "administrativo"
         | "logistica"
         | "routing"
+        | "cloe"
       agent_status: "online" | "busy" | "away" | "offline"
       campaign_channel: "whatsapp" | "sms" | "email" | "call"
       campaign_cta_type:
@@ -4193,6 +4239,7 @@ export const Constants = {
         "administrativo",
         "logistica",
         "routing",
+        "cloe",
       ],
       agent_status: ["online", "busy", "away", "offline"],
       campaign_channel: ["whatsapp", "sms", "email", "call"],
