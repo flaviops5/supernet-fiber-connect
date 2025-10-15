@@ -51,6 +51,10 @@ const { toast } = useToast();
   const rebootInProgress = !!lastAgentTrigger && !hasCompletionAfterTrigger;
   const rebootStartedAt = lastAgentTrigger ? Date.parse(lastAgentTrigger.created_at) : undefined;
 
+  // Realtime status derivado de equipment_reboots
+  const rebootStatus = testResults?.reboot_event?.status as string | undefined;
+  const rebootInProgressRT = useMemo(() => rebootStatus ? !/(completed|success|failed|error)/i.test(rebootStatus) : false, [rebootStatus]);
+
   // Polling leve enquanto o reboot estiver em progresso para atualizar mensagens
   useEffect(() => {
     if (!rebootInProgress || !testResults?.conversation_id) return;
@@ -91,6 +95,30 @@ const { toast } = useToast();
       supabase.removeChannel(channel);
     };
   }, [testResults?.conversation_id]);
+
+  // Realtime: acompanhar status em equipment_reboots pelo ixc_client_id
+  useEffect(() => {
+    if (!testResults?.ixc_client_id) return;
+    const channel = supabase
+      .channel('equipment-reboots-live')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'equipment_reboots',
+          filter: `ixc_client_id=eq.${testResults.ixc_client_id}`,
+        },
+        (payload: any) => {
+          setTestResults((prev: any) => prev ? { ...prev, reboot_event: payload.new } : prev);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [testResults?.ixc_client_id]);
 
   const createMassOutage = async () => {
     setLoading(true);
@@ -189,6 +217,13 @@ const { toast } = useToast();
         conversation = created;
       }
 
+      // Buscar ixc_client_id para assinar updates de reboot
+      const { data: convData } = await supabase
+        .from('conversations')
+        .select('ixc_client_id')
+        .eq('id', conversation.id)
+        .maybeSingle();
+
       // 2. Chamar support-tech-agent
       const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
         'support-tech-agent',
@@ -220,9 +255,11 @@ const { toast } = useToast();
       setTestResults({
         success: true,
         conversation_id: conversation.id,
+        ixc_client_id: convData?.ixc_client_id || null,
         messages: messages || [],
         outage_detected: (outages?.length || 0) > 0,
         outage_data: outages?.[0] || null,
+        reboot_event: null,
       });
 
       toast({
@@ -358,8 +395,26 @@ const { toast } = useToast();
                     </CardContent>
                   </Card>
 
-{rebootInProgress && (
+{(rebootInProgress || rebootInProgressRT) && (
                     <RebootLoader totalSeconds={60} startedAt={rebootStartedAt} />
+                  )}
+
+                  {testResults?.reboot_event && (
+                    <Card className="border-2">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          Status do Reboot (Realtime)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-xs space-y-1 bg-muted p-3 rounded">
+                          <p><strong>Status:</strong> {testResults.reboot_event.status}</p>
+                          <p><strong>Mensagem:</strong> {testResults.reboot_event.result_message || '—'}</p>
+                          <p><strong>Atualizado em:</strong> {new Date(testResults.reboot_event.updated_at || testResults.reboot_event.created_at).toLocaleTimeString()}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
                   {/* Mensagens */}
                   <Card className="border-2">
