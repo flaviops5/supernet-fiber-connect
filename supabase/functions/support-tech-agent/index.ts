@@ -178,17 +178,14 @@ serve(async (req) => {
         logger.info("Iniciando reboot automático em background", { ixc_client_id });
         
         // Promise com timeout de 90 segundos
-        const rebootWithTimeout = Promise.race([
+        const rebootPromise = Promise.race([
           supabase.functions.invoke("reboot-client-equipment", {
             body: { ixc_client_id, customer_cpf }
           }),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
           )
-        ]);
-
-        // Executar em background (não await)
-        rebootWithTimeout
+        ])
           .then(async (response: any) => {
             const { data: rebootResult, error: rebootError } = response;
             
@@ -222,6 +219,8 @@ serve(async (req) => {
               content: updateMessage,
               ai_suggestion: false
             });
+            
+            logger.info("Mensagem de conclusão do reboot enviada");
           })
           .catch(async (err) => {
             logger.error("Erro no reboot background", { 
@@ -242,6 +241,9 @@ serve(async (req) => {
               logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
             });
           });
+
+        // Usar EdgeRuntime.waitUntil para garantir que a promise complete
+        (globalThis as any).EdgeRuntime?.waitUntil(rebootPromise);
       }
     } else {
       // Continuar atendimento com análise contextual
