@@ -16,7 +16,7 @@ serve(async (req) => {
   const logger = createLogger("support-tech-agent", req);
 
   try {
-    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action } = await req.json();
+    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action, client_is_offline } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -53,15 +53,28 @@ serve(async (req) => {
 
     // Se é a primeira mensagem, enviar saudação
     if (isFirstMessage) {
-      responseMessage = "Olá! Sou o Luan do suporte técnico. Recebi seu protocolo e vou te ajudar agora! ⚙️";
-      
+      // Buscar informações da conversa para personalizar a mensagem
+      const { data: conversation } = await supabase
+        .from("conversations")
+        .select("customer_name")
+        .eq("id", conversation_id)
+        .single();
+
+      const customerName = conversation?.customer_name || "cliente";
+
+      // Mensagem inicial seguindo o prompt do sistema
       if (outageActive && outageRegion) {
-        responseMessage += `\n\n⚠️ ATENÇÃO: Detectamos uma instabilidade na região de ${outageRegion} afetando ${outageCount} clientes. Nossa equipe técnica já está trabalhando na solução.`;
-      }
-      
-      // 🆕 REBOOT AUTOMÁTICO: Se Cloé sugeriu auto-reboot
-      if (suggested_action === "auto_reboot" && ixc_client_id) {
-        responseMessage += `\n\nVi aqui que sua internet está offline. Vou iniciar um reinício remoto do equipamento - isso leva cerca de 1 minuto... 🔄`;
+        // Caso especial: Pane massiva
+        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
+      } else if (suggested_action === "auto_reboot" && ixc_client_id) {
+        // Caso especial: Auto-reboot sugerido pela Cloé
+        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vou fazer um reinício remoto do seu equipamento agora - isso leva cerca de 1 minuto... 🔄`;
+      } else if (client_is_offline) {
+        // Cliente offline - começar troubleshooting
+        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
+      } else {
+        // Mensagem genérica para outros casos
+        responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
       }
 
       const { error: insertErr } = await supabase.from("conversation_messages").insert({
@@ -128,8 +141,11 @@ serve(async (req) => {
         } else if (currentMessage.includes("sim") || currentMessage.includes("acesa") || currentMessage.includes("luz")) {
           // Luzes acesas mas sem internet
           responseMessage = "Ok, as luzes estão acesas. Vamos fazer mais alguns testes! 🔍\n\nComo estão as luzes especificamente?\n\n💡 LOS (vermelha) - Indica problema de sinal\n💚 PON/INTERNET (verde) - Indica conexão OK\n⚡ POWER (verde) - Indica energia OK\n\nQuais luzes estão acesas e quais não estão?";
+        } else if (currentMessage.includes("sem internet")) {
+          // Cliente acabou de reportar o problema - começar troubleshooting
+          responseMessage = "Entendi, você está sem internet. Vamos resolver isso! 🔧\n\n**Primeiro passo:** As luzes do seu equipamento estão acesas?\n\n💡 Me diga especialmente sobre a luz **PON/LOS** - está **verde** ou **vermelha**?";
         } else {
-          responseMessage = "Entendi. Vamos continuar o diagnóstico! 🔧\n\nVocê está conectado por cabo de rede ou Wi-Fi?\n\nIsso vai me ajudar a identificar se o problema é no equipamento ou na conexão sem fio.";
+          responseMessage = "Certo. Vamos continuar o diagnóstico! 🔧\n\nVocê está conectado por cabo de rede ou Wi-Fi?\n\nIsso vai me ajudar a identificar se o problema é no equipamento ou na conexão sem fio.";
         }
       } else if (conversationContext.includes("lento") || conversationContext.includes("devagar")) {
         // Cliente com internet lenta
