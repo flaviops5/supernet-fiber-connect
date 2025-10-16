@@ -213,9 +213,9 @@ serve(async (req) => {
       }
 
       logger.info("Mensagem inicial do Luan enviada");
-    } else {
-      // Continuar atendimento com análise contextual
-      logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });
+      } else {
+        // Continuar atendimento com análise contextual
+        logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });
 
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
@@ -225,8 +225,35 @@ serve(async (req) => {
       if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
         // Cliente está sem internet
         if (currentMessage.includes("não") && (currentMessage.includes("acesa") || currentMessage.includes("luz"))) {
-          // Luzes apagadas = sem energia
-          responseMessage = "Entendi! Se as luzes do equipamento não estão acesas, pode ser falta de energia.\n\n🔌 Por favor, verifique:\n\n1. Se o cabo de força está bem conectado na tomada\n2. Se a tomada está funcionando (teste com outro aparelho)\n3. Se há energia elétrica no local\n\nApós verificar, me avise o resultado!";
+          // 🔌 FLUXO: Luzes apagadas = Verificação de energia
+          responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌
+
+Por favor, confira:
+
+1️⃣ **Equipamento está ligado na tomada?** ✅
+2️⃣ **Fonte de energia está conectada?** 🔌  
+3️⃣ **Botão Power está ligado (se houver)?** 💡
+4️⃣ **Tem energia elétrica no local?** Testa em outro aparelho
+
+Me avise após verificar!`;
+        } else if (currentMessage.includes("sim") && (currentMessage.includes("ligado") || currentMessage.includes("tomada") || currentMessage.includes("energia"))) {
+          // Cliente confirmou que equipamento tem energia mas ainda está offline
+          responseMessage = `Ok! O equipamento está com energia. Vamos fazer um teste manual de reinicialização: 🔄
+
+1️⃣ **DESLIGUE** o equipamento da tomada
+2️⃣ **AGUARDE** 30 segundos completos ⏱️
+3️⃣ **LIGUE** novamente
+4️⃣ **AGUARDE** 1-2 minutos para sincronização 🔄
+
+As luzes vão piscar e depois estabilizar. Me avise quando terminar!`;
+        } else if (currentMessage.includes("terminei") || currentMessage.includes("religado") || currentMessage.includes("liguei")) {
+          // Cliente terminou o reboot manual
+          responseMessage = `Perfeito! Aguarde mais 1 minuto para sincronização completa. ⏳
+
+Enquanto isso, me diga: **as luzes estabilizaram?** 
+
+💡 **PON/LOS** - está verde fixo?  
+⚡ **POWER** - está verde fixo?`;
         } else if (currentMessage.includes("sim") || currentMessage.includes("acesa") || currentMessage.includes("luz")) {
           // Luzes acesas mas sem internet
           responseMessage = "Ok, as luzes estão acesas. Vamos fazer mais alguns testes! 🔍\n\nComo estão as luzes especificamente?\n\n💡 LOS (vermelha) - Indica problema de sinal\n💚 PON/INTERNET (verde) - Indica conexão OK\n⚡ POWER (verde) - Indica energia OK\n\nQuais luzes estão acesas e quais não estão?";

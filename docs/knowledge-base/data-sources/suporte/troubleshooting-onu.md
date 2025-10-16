@@ -61,7 +61,7 @@ version: "1.3"
 
 Se diagnóstico indicar problema no modem:
 - Solicitar desligar 30s e religar
-- Aguardar 3-5 minutos para sincronização
+- Aguardar 1-2 minutos para sincronização
 - Testar novamente
 
 **Se persistir após reboot:** Seguir para Etapa 5
@@ -77,7 +77,7 @@ Se diagnóstico indicar problema no modem:
 
 **Se equipamento estava desligado:**
 - Pedir para ligar
-- Aguardar 3-5 minutos
+- Aguardar 1-2 minutos
 - Verificar se voltou online
 - Se SIM → Problema resolvido
 - Se NÃO → Continuar para 5.2
