@@ -96,7 +96,9 @@ serve(async (req) => {
         .eq("id", conversation_id)
         .single();
 
-      const customerName = conversation?.customer_name || "cliente";
+      // Extrair apenas o primeiro nome
+      const fullName = conversation?.customer_name || "cliente";
+      const customerName = fullName.split(' ')[0];
       const cpfRetryCount = (conversation?.metadata as any)?.cpf_retry_count || 0;
 
       // 🚨 CASO ESPECIAL: CPF não encontrado

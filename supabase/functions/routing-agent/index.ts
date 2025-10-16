@@ -87,17 +87,13 @@ serve(async (req) => {
 
 ⚠️ O CPF informado (${cpfAttempt.maskedCPF}) parece estar **incorreto**. 
 
-Por favor, **verifique os números** e envie novamente.
-
-Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
+Por favor, **verifique os números** e envie novamente 😊`;
         logger.info("CPF inválido detectado", { masked: cpfAttempt.maskedCPF });
       } else {
         // Sem CPF na mensagem
         askCPFMessage = `Olá! 👋 Sou a Cloé Martins da SUPERNET. 📋 Protocolo: ${protocol}
 
-Para começarmos, preciso do seu CPF para localizar seu cadastro.
-
-Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
+Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve levar menos de 1 minuto, por favor aguarde 😊`;
       }
 
       await supabase.from("conversation_messages").insert({
@@ -147,11 +143,14 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
 
     // 🔔 Mensagem de confirmação após CPF validado
     if (clientStatus.found) {
+      // Extrair apenas o primeiro nome
+      const firstName = clientStatus.name?.split(' ')[0] || 'Cliente';
+      
       await supabase.from("conversation_messages").insert({
         conversation_id: conversationId,
         sender_type: "agent",
         sender_name: "Cloé Martins",
-        content: `Olá ${clientStatus.name}! Me dê um minuto que vou verificar sua conta... 🔍`,
+        content: `Olá ${firstName}! Me dê mais um minutinho para verificar tudo!`,
       });
     }
 
