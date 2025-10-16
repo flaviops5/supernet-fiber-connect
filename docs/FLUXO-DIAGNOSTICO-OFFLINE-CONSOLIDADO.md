@@ -13,7 +13,7 @@
 | Ação | Tempo | Justificativa |
 |------|-------|---------------|
 | Desligar roteador | **60 segundos** | Capacitor descarregar + tempo alinhamento OLT |
-| Aguardar sincronização | **3-5 minutos** | Cliente executar + equipamento sincronizar |
+| Aguardar sincronização | **1 minuto** | Cliente executar + equipamento sincronizar |
 | Timeout resposta cliente | **30 segundos** | Tempo máximo para cliente confirmar ação |
 
 ### 🔄 Hierarquia de Ações
@@ -67,6 +67,7 @@ Se SIM:
 "Essa luz indica problema no sinal da fibra óptica. 
 Vou te enviar as instruções para tentar resolver:
 
+[VÍDEO/IMAGEM] - Luz vermelha piscando ONU/ONT
 [VÍDEO/IMAGEM] - Como remover e reconectar o conector verde
 
 ⚠️ ATENÇÃO:
@@ -75,7 +76,9 @@ Vou te enviar as instruções para tentar resolver:
 - Não dobre o cabo
 - Reconecte firmemente até ouvir 'click'
 
-Aguarde 3-5 minutos após reconectar para o equipamento sincronizar.
+Aguarde 1 minuto após reconectar para o equipamento sincronizar.
+
+Veja se a LUZ VERMELHA parou de PISCAR e agora está VERDE FIXA.
 
 Me avise quando terminar."
 ```
@@ -90,10 +93,11 @@ Me avise quando terminar."
 
 **Fluxo:**
 1. ✅ **Reboot MANUAL** (60 segundos desligado)
-2. ⏱️ Aguardar 3-5 minutos sincronização
-3. ❌ **Se continuar offline:** Manipulação do conector verde
-4. ⏱️ Aguardar 3-5 minutos
-5. ❌ **Se persistir:** Abrir atendimento IXC → **Transferir para LOGÍSTICA**
+2. ⏱️ Aguardar 1 minuto sincronização
+3. ✅ Verificar se LUZ VERMELHA parou de PISCAR e ficou VERDE FIXA
+4. ❌ **Se continuar offline:** Manipulação do conector verde
+5. ⏱️ Aguardar 1 minuto
+6. ❌ **Se persistir:** Abrir atendimento IXC → **Transferir para LOGÍSTICA**
 
 **Frases Luan:**
 ```
@@ -105,17 +109,17 @@ Vamos fazer o seguinte:
 2️⃣ AGUARDE 60 segundos (1 minuto completo)
 3️⃣ LIGUE novamente
 
-Aguarde de 3 a 5 minutos para o equipamento sincronizar com a rede.
+Aguarde 1 minuto para o equipamento sincronizar com a rede.
 
 Me avise quando ligar."
 ```
 
 Após cliente confirmar que ligou:
 ```
-"Perfeito! Agora aguarde mais 3 minutos para o equipamento sincronizar 
+"Perfeito! Agora aguarde mais 1 minuto para o equipamento sincronizar 
 e tente navegar.
 
-Voltou a funcionar?"
+Veja se voltou a funcionar?"
 ```
 
 Se NÃO voltou:
@@ -129,7 +133,7 @@ do equipamento e reconecte novamente.
 
 ⚠️ Cuidado: segure pela base, não force, não dobre.
 
-Aguarde 3-5 minutos e me avise."
+Aguarde 1 minuto, veja se a LUZ VERMELHA parou de PISCAR e ficou VERDE FIXA, e me avise."
 ```
 
 Se AINDA não voltou:
@@ -154,8 +158,9 @@ agendar a visita. Contato em até 4 horas úteis."
 1. ✅ Verificar se LUZ PON está **PISCANDO** (sincronizando)
 2. ⏱️ Se piscando: aguardar 2-3 minutos
 3. ❌ Se continuar: Manipulação conector verde
-4. ⏱️ Aguardar 3-5 minutos
-5. ❌ **Se persistir:** Abrir atendimento IXC → **Transferir para SUPORTE**
+4. ⏱️ Aguardar 1 minuto
+5. ✅ Verificar se luz PON parou de PISCAR e ficou FIXA
+6. ❌ **Se persistir:** Abrir atendimento IXC → **Transferir para SUPORTE**
 
 **Frases Luan:**
 ```
@@ -169,7 +174,9 @@ Está piscando?"
 
 Se SIM (piscando):
 ```
-"Ok, isso significa que está tentando sincronizar.
+"Ok, luz PON piscando indica sinal óptico fora do padrão.
+Às vezes vai navegar, outras vezes não.
+
 Aguarde mais 2-3 minutos e teste a conexão.
 
 Voltou?"
@@ -181,7 +188,7 @@ Se NÃO voltou ou luz não pisca:
 
 [VÍDEO/IMAGEM] - Instrução conector verde
 
-Aguarde 3-5 minutos após reconectar."
+Aguarde 1 minuto após reconectar."
 ```
 
 Se persistir:
@@ -223,34 +230,43 @@ que vai agendar a visita com urgência.
 
 ---
 
-### Cenário E: QUALQUER TX/RX + FINANCEIRO BLOQUEADO
+### Cenário E: QUALQUER TX/RX + FINANCEIRO EM ATRASO OU BLOQUEADO
 
 **Diagnóstico:** Inadimplência (sempre verificar PRIMEIRO)
+**Responsável:** Julia (Suporte Financeiro)
 
 **Fluxo:**
 1. ✅ Verificar status financeiro no IXC
-2. ✅ Se BLOQUEADO por inadimplência:
-   - Oferecer desbloqueio de confiança
-   - Enviar Boleto/PIX
+2. ✅ Se BLOQUEADO ou FINANCEIRO EM ATRASO:
+   - Efetuar desbloqueio de confiança
+   - Avisar cliente sobre o desbloqueio
+   - Enviar Boleto e PIX
+   - Explicar tempo de compensação
    - Perguntar se precisa de algo mais
    - Finalizar conversa (NÃO escalona)
 
-**Frases Luan:**
+**Frases Julia:**
 ```
 "Verifiquei que há pendências financeiras que estão impedindo 
 sua conexão.
 
-Posso te ajudar de duas formas:
+Efetuei o desbloqueio de confiança. Sua internet já está funcionando!
+Você tem 24 horas para regularizar o pagamento.
 
-1️⃣ Desbloqueio de Confiança (24h para regularizar)
-2️⃣ Envio de nova fatura atualizada
+Estou te enviando o Boleto e o PIX atualizados.
 
-O que prefere?"
+⚠️ IMPORTANTE sobre formas de pagamento:
+• PIX: Desbloqueio automático em menos de 5 segundos
+• BOLETO: Seu banco pode demorar até 48 horas para confirmar o pagamento. 
+  Se pagar por boleto e quiser desbloqueio rápido, nos envie o comprovante 
+  que faremos a baixa manual.
+
+Precisa de mais alguma ajuda?"
 ```
 
 Após resolver financeiro:
 ```
-"Pronto! [Ação realizada]
+"Pronto! Desbloqueio efetuado e fatura enviada.
 
 Precisa de mais alguma ajuda?"
 
@@ -267,19 +283,20 @@ Tenha um ótimo dia! 😊"
 ## 🚨 Integração Mass Outage
 
 ### Prioridade MÁXIMA
+**Responsável:** Cloé (Routing Agent)
 
 **SEMPRE verificar ANTES de iniciar qualquer diagnóstico:**
 
 ```
 Se mass_outage.active === true:
-  → Luan informa sobre queda em massa
+  → Cloé informa sobre queda em massa
   → NÃO tenta reboot
   → NÃO abre atendimento individual
   → Informa previsão de normalização
   → Finaliza conversa
 ```
 
-**Frases Luan (Mass Outage Ativo):**
+**Frases Cloé (Mass Outage Ativo):**
 ```
 "Identifiquei que estamos com uma QUEDA EM MASSA na região 
 de [REGIÃO] afetando [NÚMERO] clientes.
@@ -302,9 +319,9 @@ Lamento o transtorno. Tem algo mais que posso ajudar?"
 ```mermaid
 graph TD
     A[Cliente reporta OFFLINE] --> B{Mass Outage?}
-    B -->|SIM| Z[Avisar queda em massa + Finalizar]
+    B -->|SIM| Z[Cloé: Avisar queda em massa + Finalizar]
     B -->|NÃO| C{Financeiro OK?}
-    C -->|BLOQUEADO| D[Resolver financeiro + Finalizar]
+    C -->|BLOQUEADO| D[Julia: Resolver financeiro + Finalizar]
     C -->|OK| E{Cloé tentou reboot?}
     E -->|NÃO| F[Luan sugere reboot remoto]
     E -->|SIM| G[Consultar TX/RX]
