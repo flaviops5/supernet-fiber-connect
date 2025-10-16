@@ -345,31 +345,53 @@ graph TD
 - ✅ **Confirmado:** Reboot remoto (Cloé) SEMPRE antes de Luan atuar
 
 ### 2. Manipulação do Conector Verde
-- ❓ **Vídeo demonstrativo:** Já existe ou precisa criar?
-- ❓ **Imagem ilustrativa:** Modelo de ONU mais comum?
-- ❓ **Texto instrução:** Validar frases finais?
+- ✅ **Vídeo demonstrativo:** Já existe. Upload: `src/assets/` ou `public/videos/`
+- ✅ **Imagem ilustrativa:** Qualquer modelo de ONU
+- ✅ **Texto instrução:** Frases validadas e incluídas nos cenários A, B, C
+
+**Todas as frases de instrução do conector verde:**
+```
+⚠️ ATENÇÃO:
+- Segure o conector pela BASE (não pelo cabo)
+- Retire com cuidado (não force)
+- Não dobre o cabo
+- Reconecte firmemente até ouvir 'click'
+
+Aguarde 1 minuto após reconectar para o equipamento sincronizar.
+Veja se a LUZ VERMELHA parou de PISCAR e agora está VERDE FIXA.
+```
 
 ### 3. Transferências para Departamentos
 - ✅ **Logística:** Cenários A, B (agendamento instalação/troca)
 - ✅ **Suporte:** Cenários C, D (verificação técnica rede)
-- ❓ **Critério de urgência:** D é prioridade absoluta?
+- ✅ **Critério de urgência:** Mass Outage é a ÚNICA prioridade absoluta
 
 ### 4. Timeout e Sincronização
 - ✅ **60s desligar:** Padronizado
 - ✅ **3-5 min sincronizar:** Após reboot manual ou conector
-- ❓ **2-3 min:** Apenas quando PON piscando?
-- ❓ **30s timeout:** Cliente não responde → O que fazer?
+- ✅ **2-3 min:** Sim, apenas quando PON piscando (Cenário C)
+- ✅ **Timeout resposta cliente:**
+  - Aguardar 1:30 → Perguntar novamente
+  - Aguardar 5 minutos → Perguntar novamente
+  - Após 15 minutos sem resposta → Fechar interação com mensagem:
+    ```
+    "Fechando interação por falta de contato. 
+    Quando precisar é só chamar novamente!"
+    ```
 
 ### 5. Como Luan Confirma Sucesso?
-- ✅ Serviço volta ONLINE (sistema detecta)
+- ✅ Serviço volta ONLINE (sistema detecta automaticamente)
 - ✅ Cliente responde "feito" ou "voltou"
-- ❓ Se cliente não responde em 30s, Luan deve perguntar novamente?
-- ❓ Quantas tentativas antes de considerar "sem resposta"?
+- ✅ **Lógica de tentativas:**
+  - 1ª tentativa: imediata (após instrução)
+  - 2ª tentativa: após 1:30 minuto
+  - 3ª tentativa: após 5 minutos
+  - Após 15 minutos: Fechar interação por falta de contato
 
 ### 6. Casos Especiais
-- ❓ E se cliente recusar fazer procedimento manual?
-- ❓ E se cliente já fez reboot antes de falar com Luan?
-- ❓ Como tratar "já tentei tudo" do cliente?
+- ✅ **Cliente recusa procedimento manual:** Transferir para atendente humano do setor de SUPORTE
+- ✅ **Cliente já fez reboot antes:** Luan executa apenas procedimentos que NÃO precisam do cliente (consulta TX/RX, verificações de sistema)
+- ✅ **Cliente diz "já tentei tudo":** Transferir para atendente humano do setor de SUPORTE
 
 ---
 
