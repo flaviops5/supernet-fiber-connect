@@ -224,7 +224,20 @@ serve(async (req) => {
       // Lógica de troubleshooting baseada em contexto
       if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
         // Cliente está sem internet
-        if (currentMessage.includes("não") && (currentMessage.includes("acesa") || currentMessage.includes("luz"))) {
+        // Normalizar variações comuns de escrita
+        const isNegation = /\b(n(ã|a)o|nao)\b/.test(currentMessage);
+        const mentionsLight = /(luz|luzes|led|leds|pon|los|power)/.test(currentMessage);
+        const saysOff =
+          /(apag(ad|a|adas|ados)|sem luz|desligad[oa]s?)/.test(currentMessage) ||
+          (isNegation && /(aces[ao]s?|acesas|acessas)/.test(currentMessage)) ||
+          /(n[ãa]o est[ãa]o? aces[sa]s?)/.test(currentMessage);
+        const saysPowerAvailable =
+          /(sim|ok|tem|est[aá]|t[áa])/.test(currentMessage) &&
+          /(ligad[oa]s?|na tomada|energia|for[cç]a|corrente)/.test(currentMessage);
+        const rebootCompleted =
+          /(terminei|re(liguei|ligado)|pronto|feito|finalizei)/.test(currentMessage);
+
+        if (saysOff && mentionsLight) {
           // 🔌 FLUXO: Luzes apagadas = Verificação de energia
           responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌
 
@@ -233,10 +246,10 @@ Por favor, confira:
 1️⃣ **Equipamento está ligado na tomada?** ✅
 2️⃣ **Fonte de energia está conectada?** 🔌  
 3️⃣ **Botão Power está ligado (se houver)?** 💡
-4️⃣ **Tem energia elétrica no local?** Testa em outro aparelho
+4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho
 
 Me avise após verificar!`;
-        } else if (currentMessage.includes("sim") && (currentMessage.includes("ligado") || currentMessage.includes("tomada") || currentMessage.includes("energia"))) {
+        } else if (saysPowerAvailable) {
           // Cliente confirmou que equipamento tem energia mas ainda está offline
           responseMessage = `Ok! O equipamento está com energia. Vamos fazer um teste manual de reinicialização: 🔄
 
@@ -246,7 +259,7 @@ Me avise após verificar!`;
 4️⃣ **AGUARDE** 1-2 minutos para sincronização 🔄
 
 As luzes vão piscar e depois estabilizar. Me avise quando terminar!`;
-        } else if (currentMessage.includes("terminei") || currentMessage.includes("religado") || currentMessage.includes("liguei")) {
+        } else if (rebootCompleted) {
           // Cliente terminou o reboot manual
           responseMessage = `Perfeito! Aguarde mais 1 minuto para sincronização completa. ⏳
 
@@ -254,15 +267,16 @@ Enquanto isso, me diga: **as luzes estabilizaram?**
 
 💡 **PON/LOS** - está verde fixo?  
 ⚡ **POWER** - está verde fixo?`;
-        } else if (currentMessage.includes("sim") || currentMessage.includes("acesa") || currentMessage.includes("luz")) {
+        } else if ((mentionsLight && !saysOff) || /aces[ao]s?|acesas|acessas/.test(currentMessage)) {
           // Luzes acesas mas sem internet
           responseMessage = "Ok, as luzes estão acesas. Vamos fazer mais alguns testes! 🔍\n\nComo estão as luzes especificamente?\n\n💡 LOS (vermelha) - Indica problema de sinal\n💚 PON/INTERNET (verde) - Indica conexão OK\n⚡ POWER (verde) - Indica energia OK\n\nQuais luzes estão acesas e quais não estão?";
         } else if (currentMessage.includes("sem internet")) {
           // Cliente acabou de reportar o problema - começar troubleshooting
-          responseMessage = "Entendi, você está sem internet. Vamos resolver isso! 🔧\n\n**Primeiro passo:** As luzes do seu equipamento estão acesas?\n\n💡 Me diga especialmente sobre a luz **PON/LOS** - está **verde** ou **vermelha**?";
+          responseMessage = "Entendi, você está sem internet. Vamos resolver isso! 🔧\n\nPrimeiro passo: As luzes do seu equipamento estão acesas?\n\n💡 Me diga especialmente sobre a luz PON/LOS - está verde ou vermelha?";
         } else {
-          responseMessage = "Certo. Vamos continuar o diagnóstico! 🔧\n\nVocê está conectado por cabo de rede ou Wi-Fi?\n\nIsso vai me ajudar a identificar se o problema é no equipamento ou na conexão sem fio.";
+          responseMessage = "Certo. Vamos continuar o diagnóstico! 🔧\n\nVocê está conectado por cabo de rede ou Wi‑Fi?\n\nIsso vai me ajudar a identificar se o problema é no equipamento ou na conexão sem fio.";
         }
+
       } else if (conversationContext.includes("lento") || conversationContext.includes("devagar")) {
         // Cliente com internet lenta
         responseMessage = "Certo, sobre a lentidão... Vamos fazer alguns testes!\n\n📊 Pode fazer um teste de velocidade em www.fast.com e me passar o resultado?\n\nEnquanto isso, me diga:\n1. Está conectado por cabo ou Wi-Fi?\n2. Quantos dispositivos estão conectados agora?";
