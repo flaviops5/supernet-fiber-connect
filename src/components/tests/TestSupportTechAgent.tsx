@@ -116,22 +116,16 @@ export const TestSupportTechAgent = () => {
     }
   };
 
-  const testClienteOfflineSemOutage = async () => {
+  const testLuanEscalation = async () => {
     setLoading(true);
     setTestResults(null);
     
     try {
-      // 1. Garantir que mass outage está DESATIVADA
-      await supabase.functions.invoke("simulate-mass-outage", {
-        body: { action: "deactivate" }
-      });
-      setOutageActive(false);
-
-      // 2. Buscar conversa existente
+      // 1. Buscar conversa existente (evitar duplicação pela unique constraint)
       const { data: existing, error: selError } = await supabase
         .from('conversations')
         .select('id, status, current_department')
-        .eq('customer_phone', '11988887777')
+        .eq('customer_phone', '11999999999')
         .eq('channel', 'whatsapp')
         .maybeSingle();
 
@@ -142,23 +136,18 @@ export const TestSupportTechAgent = () => {
       if (existing) {
         await supabase
           .from('conversations')
-          .update({ 
-            status: 'waiting', 
-            current_department: 'cloe',
-            assigned_agent_id: null,
-            metadata: null 
-          })
+          .update({ status: 'waiting', current_department: 'tecnico', assigned_agent_id: null })
           .eq('id', existing.id);
         conversation = existing;
       } else {
         const { data: created, error: convError } = await supabase
           .from('conversations')
           .insert({
-            customer_cpf: '222.222.222-22',
-            customer_name: 'Cliente Offline Teste',
-            customer_phone: '11988887777',
+            customer_cpf: '111.111.111-11',
+            customer_name: 'Cliente Teste Técnico',
+            customer_phone: '11999999999',
             channel: 'whatsapp',
-            current_department: 'cloe',
+            current_department: 'tecnico',
             assigned_agent_id: null,
             status: 'waiting'
           })
@@ -168,52 +157,39 @@ export const TestSupportTechAgent = () => {
         conversation = created;
       }
 
-      // 3. Chamar routing-agent (Cloé) - ela deve detectar offline e rotear para Luan
-      const { data: cloeResponse, error: cloeError } = await supabase.functions.invoke(
-        'routing-agent',
-        { 
-          body: { 
-            conversation_id: conversation.id,
-            message: 'Minha internet está fora',
-            customer_cpf: '222.222.222-22'
-          } 
-        }
+      // 2. Chamar support-tech-agent
+      const { data: agentResponse, error: agentError } = await supabase.functions.invoke(
+        'support-tech-agent',
+        { body: { conversation_id: conversation.id, customer_cpf: '111.111.111-11', message: 'Test' } }
       );
 
-      if (cloeError) throw cloeError;
+      if (agentError) throw agentError;
 
-      // 4. Aguardar atualização do departamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 5. Buscar mensagens e conversa atualizada
+      // 3. Buscar mensagens
       const { data: messages } = await supabase
         .from('conversation_messages')
         .select('*')
         .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
-      const { data: updatedConv } = await supabase
-        .from('conversations')
-        .select('current_department, metadata')
-        .eq('id', conversation.id)
-        .single();
-
-      // 6. Verificar se foi roteado para Luan
-      const routedToLuan = updatedConv?.current_department === 'tecnico';
+      // 4. Verificar mass outage
+      const { data: outages } = await supabase
+        .from('mass_outage_events')
+        .select('*')
+        .eq('status', 'active')
+        .limit(1);
 
       setTestResults({
         success: true,
         conversation_id: conversation.id,
         messages: messages || [],
-        outage_detected: false,
-        routed_to_luan: routedToLuan,
-        current_department: updatedConv?.current_department,
-        metadata: updatedConv?.metadata,
+        outage_detected: (outages?.length || 0) > 0,
+        outage_data: outages?.[0] || null,
       });
 
       toast({
-        title: routedToLuan ? "✅ Teste OK - Roteado para Luan" : "⚠️ Não roteou para Luan",
-        description: `Departamento atual: ${updatedConv?.current_department}`,
+        title: "✅ Teste Concluído",
+        description: `Conversa ${conversation.id} criada e Luan acionado`,
       });
     } catch (error: any) {
       toast({
@@ -293,12 +269,12 @@ export const TestSupportTechAgent = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
-            onClick={testClienteOfflineSemOutage}
+            onClick={testLuanEscalation}
             disabled={loading}
             className="w-full"
           >
             <PlayCircle className="mr-2 h-4 w-4" />
-            Testar Cliente Offline → Roteamento para Luan
+            Executar Teste Completo
           </Button>
 
           {testResults && (
@@ -314,40 +290,33 @@ export const TestSupportTechAgent = () => {
                     </AlertDescription>
                   </Alert>
 
-                   {/* Roteamento */}
+                   {/* Mass Outage Detection */}
                   <Card className="border-2">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm flex items-center gap-2">
-                        <Wrench className="h-4 w-4" />
-                        Roteamento Cloé → Luan
+                        <Zap className="h-4 w-4" />
+                        Detecção de Mass Outage
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        {testResults.routed_to_luan ? (
-                          <Badge className="bg-green-600">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            Roteado Corretamente para Luan
-                          </Badge>
-                        ) : (
+                      {testResults.outage_detected ? (
+                        <div className="space-y-2">
                           <Badge variant="destructive">
-                            <XCircle className="mr-1 h-3 w-3" />
-                            Não foi roteado para Luan
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            Outage Detectado
                           </Badge>
-                        )}
-                        <div className="text-xs space-y-1 bg-muted p-3 rounded">
-                          <p><strong>Departamento Atual:</strong> {testResults.current_department}</p>
-                          <p><strong>Mass Outage:</strong> {testResults.outage_detected ? 'Detectada' : 'Não detectada ✓'}</p>
-                          {testResults.metadata && (
-                            <details className="mt-2">
-                              <summary className="cursor-pointer font-semibold">Metadata</summary>
-                              <pre className="text-xs mt-1 overflow-auto">
-                                {JSON.stringify(testResults.metadata, null, 2)}
-                              </pre>
-                            </details>
-                          )}
+                          <div className="text-xs space-y-1 bg-muted p-3 rounded">
+                            <p><strong>Região:</strong> {testResults.outage_data.region_pattern}</p>
+                            <p><strong>Clientes Afetados:</strong> {testResults.outage_data.affected_count}</p>
+                            <p><strong>Status:</strong> {testResults.outage_data.status}</p>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <Badge variant="outline">
+                          <CheckCircle2 className="mr-1 h-3 w-3" />
+                          Nenhum Outage Ativo
+                        </Badge>
+                      )}
                     </CardContent>
                   </Card>
                   
@@ -408,19 +377,16 @@ export const TestSupportTechAgent = () => {
         <CardContent>
           <ol className="space-y-2 list-decimal list-inside text-sm">
             <li>
-              <strong>✅ Sem Mass Outage:</strong> Badge deve mostrar "Não detectada ✓"
+              <strong>✅ Mass Outage Detectado:</strong> O Luan deve mencionar a queda na mensagem inicial
             </li>
             <li>
-              <strong>✅ Cloé Detecta Offline:</strong> Cliente reporta sem internet
+              <strong>✅ Mensagem Contém Região:</strong> Deve indicar "SRI" e número de clientes afetados
             </li>
             <li>
-              <strong>✅ Roteamento para Luan:</strong> Departamento atual deve ser "tecnico"
+              <strong>✅ Conversa Criada:</strong> Deve aparecer na fila de atendimento técnico
             </li>
             <li>
-              <strong>✅ Luan Recebe Contexto:</strong> Metadata deve conter informações de diagnóstico
-            </li>
-            <li>
-              <strong>✅ Mensagem de Transferência:</strong> Cloé deve informar transferência para suporte técnico
+              <strong>✅ Logs Estruturados:</strong> Verifique os logs da edge function para detalhes
             </li>
           </ol>
 
