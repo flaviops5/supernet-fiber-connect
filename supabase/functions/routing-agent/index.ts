@@ -155,76 +155,6 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       });
     }
 
-    // 🚀 Se Cloé continua atendendo, gera uma resposta contextual
-    if (targetDepartment === "cloe") {
-      logger.info("Cloé continua atendimento - gerando resposta");
-      
-      // Buscar histórico da conversa
-      const { data: messages } = await supabase
-        .from("conversation_messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
-
-      const conversationHistory = messages?.map((msg) => ({
-        role: msg.sender_type === "customer" ? "user" : "assistant",
-        content: msg.content,
-      })) || [];
-
-      // 🆕 Criar contexto atual do cliente para a IA
-      const contextMessage = clientStatus.found
-        ? `[CONTEXTO INTERNO - Cliente encontrado: ${clientStatus.name}, CPF ${clientStatus.cpf_masked}, ${clientStatus.isBlocked ? 'BLOQUEADO' : 'ativo'}, ${clientStatus.isOffline ? 'OFFLINE' : 'online'}. Use estas informações para personalizar o atendimento.]`
-        : `[CONTEXTO INTERNO - Cliente NÃO encontrado no sistema com este CPF]`;
-
-      // Gerar resposta da Cloé usando Lovable AI com fallback
-      let cloeMessage = "Como posso ajudar?";
-      
-      try {
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: ROUTING_AGENT_CONFIG.model,
-            messages: [
-              { role: "system", content: ROUTING_AGENT_SYSTEM_PROMPT },
-              ...conversationHistory.slice(-ROUTING_AGENT_CONFIG.maxMessagesInContext),
-              { role: "system", content: contextMessage }, // 🆕 Adiciona contexto atual
-            ],
-            temperature: ROUTING_AGENT_CONFIG.temperature,
-            max_tokens: ROUTING_AGENT_CONFIG.maxTokens,
-          }),
-        });
-
-        if (!aiResponse.ok) {
-          throw new Error(`Lovable AI error: ${aiResponse.status}`);
-        }
-
-        const aiData = await aiResponse.json();
-        cloeMessage = aiData.choices?.[0]?.message?.content || "Olá! Como posso ajudar você hoje?";
-      } catch (aiError: any) {
-        logger.error("Erro ao chamar Lovable AI", { error: aiError.message });
-        cloeMessage = "Olá! Estou aqui para ajudar. Qual é sua necessidade hoje?";
-      }
-
-      // Salvar resposta da Cloé
-      await supabase.from("conversation_messages").insert({
-        conversation_id: conversationId,
-        sender_type: "agent",
-        sender_name: "Cloé Martins",
-        content: cloeMessage,
-      });
-
-      logger.info("Resposta da Cloé gerada", { messagePreview: cloeMessage.slice(0, 50) });
-      
-      return new Response(
-        JSON.stringify({ ok: true, protocol, targetDepartment: "cloe", message: cloeMessage }),
-        { headers: corsHeaders, status: 200 }
-      );
-    }
-
     // 📤 Fluxo específico para suporte técnico
     if (targetDepartment === "tecnico") {
       logger.info("Cliente offline detectado - iniciando fluxo de reboot pela Cloé", {
@@ -338,22 +268,98 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
       else logger.info("✅ Luan invocado com sucesso");
-    } else {
-      // 💬 Para outros departamentos, enviar mensagem de transferência
-      const departmentNames: Record<string, string> = {
-        financeiro: "Financeiro (Julia)",
-        comercial: "Comercial (Vicente)",
-      };
+      
+      logger.info("Roteamento concluído", { protocol, targetDepartment });
+      return new Response(
+        JSON.stringify({ ok: true, protocol, targetDepartment }),
+        { headers: corsHeaders, status: 200 }
+      );
+    }
 
-      const transferMessage = `Perfeito! Vou te transferir para o time ${departmentNames[targetDepartment]}. Um momento! ⏳`;
+    // 🚀 Se Cloé continua atendendo, gera uma resposta contextual
+    if (targetDepartment === "cloe") {
+      logger.info("Cloé continua atendimento - gerando resposta");
+      
+      // Buscar histórico da conversa
+      const { data: messages } = await supabase
+        .from("conversation_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
 
+      const conversationHistory = messages?.map((msg) => ({
+        role: msg.sender_type === "customer" ? "user" : "assistant",
+        content: msg.content,
+      })) || [];
+
+      // 🆕 Criar contexto atual do cliente para a IA
+      const contextMessage = clientStatus.found
+        ? `[CONTEXTO INTERNO - Cliente encontrado: ${clientStatus.name}, CPF ${clientStatus.cpf_masked}, ${clientStatus.isBlocked ? 'BLOQUEADO' : 'ativo'}, ${clientStatus.isOffline ? 'OFFLINE' : 'online'}. Use estas informações para personalizar o atendimento.]`
+        : `[CONTEXTO INTERNO - Cliente NÃO encontrado no sistema com este CPF]`;
+
+      // Gerar resposta da Cloé usando Lovable AI com fallback
+      let cloeMessage = "Como posso ajudar?";
+      
+      try {
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: ROUTING_AGENT_CONFIG.model,
+            messages: [
+              { role: "system", content: ROUTING_AGENT_SYSTEM_PROMPT },
+              ...conversationHistory.slice(-ROUTING_AGENT_CONFIG.maxMessagesInContext),
+              { role: "system", content: contextMessage }, // 🆕 Adiciona contexto atual
+            ],
+            temperature: ROUTING_AGENT_CONFIG.temperature,
+            max_tokens: ROUTING_AGENT_CONFIG.maxTokens,
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error(`Lovable AI error: ${aiResponse.status}`);
+        }
+
+        const aiData = await aiResponse.json();
+        cloeMessage = aiData.choices?.[0]?.message?.content || "Olá! Como posso ajudar você hoje?";
+      } catch (aiError: any) {
+        logger.error("Erro ao chamar Lovable AI", { error: aiError.message });
+        cloeMessage = "Olá! Estou aqui para ajudar. Qual é sua necessidade hoje?";
+      }
+
+      // Salvar resposta da Cloé
       await supabase.from("conversation_messages").insert({
         conversation_id: conversationId,
         sender_type: "agent",
         sender_name: "Cloé Martins",
-        content: transferMessage,
+        content: cloeMessage,
       });
+
+      logger.info("Resposta da Cloé gerada", { messagePreview: cloeMessage.slice(0, 50) });
+      
+      return new Response(
+        JSON.stringify({ ok: true, protocol, targetDepartment: "cloe", message: cloeMessage }),
+        { headers: corsHeaders, status: 200 }
+      );
     }
+
+    // 💬 Para outros departamentos, enviar mensagem de transferência
+    const departmentNames: Record<string, string> = {
+      financeiro: "Financeiro (Julia)",
+      comercial: "Comercial (Vicente)",
+    };
+
+    const transferMessage = `Perfeito! Vou te transferir para o time ${departmentNames[targetDepartment]}. Um momento! ⏳`;
+
+    await supabase.from("conversation_messages").insert({
+      conversation_id: conversationId,
+      sender_type: "agent",
+      sender_name: "Cloé Martins",
+      content: transferMessage,
+    });
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
     return new Response(
