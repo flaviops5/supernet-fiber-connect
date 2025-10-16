@@ -231,6 +231,9 @@ serve(async (req) => {
         // Detecta relatos de que o equipamento NÃO LIGA de jeito nenhum
         const cantPowerOn = /((n[ãa]o|nao)\s*(liga|acende|d[aá]\s*sinal|funciona)(\s*de jeito nenhum|\s*nada)?|nao\s*liga|nao\s*acende|morto|queimad[oa]|pifad[oa]|sem\s*sinal\s*de\s*vida)/i.test(currentMessage);
         
+        // Detecta quando nada funcionou após tentativas (escalação necessária)
+        const nothingWorked = /((n[ãa]o|nao)\s*(ligou|deu\s*cert[oa]|funcionou|resolveu|adiantou)|sem\s*sucess[oa]|nada\s*(deu\s*cert[oa]|funcionou|resolveu)|continua\s*(sem|offline|fora)|ainda\s*(n[ãa]o|sem)|persist(e|iu))/i.test(currentMessage);
+        
         // Detecta "apagado/desligado/sem luz/tudo apagado" + variações de "não acesas"
         const saysOff =
           /(apag(ad[oa]s?|ou)|sem luz|desligad[oa]s?|tud[oa] (apagad|desligad|escur)|escur[oa])/i.test(currentMessage) ||
@@ -246,7 +249,10 @@ serve(async (req) => {
         const rebootCompleted =
           /(termin(ei|ado|ou)|re(liguei|ligado|conect)|pronto|feito|ok|fiz|j[aá]\s*(liguei|conectei|re(liguei|conect)))/i.test(currentMessage);
 
-        if (cantPowerOn) {
+        if (nothingWorked) {
+          // Nada funcionou após tentativas -> sugerir escalação/visita técnica
+          responseMessage = `Entendo sua frustração! 😔 Já tentamos várias soluções mas o problema persiste.\n\nVou **abrir um atendimento técnico prioritário** para você:\n\n🔧 **Visita técnica** - Técnico irá verificar equipamento e instalação\n📦 **Troca de equipamento** - Se necessário\n⚡ **Verificação de rede externa** - Análise completa\n\nConfirma para eu abrir o chamado? Digite **SIM** para confirmar.`;
+        } else if (cantPowerOn) {
           // Equipamento não liga de jeito nenhum -> foco total em energia/fonte
           responseMessage = `Entendi! O equipamento não liga de jeito nenhum. Vamos focar na alimentação. 🔌\n\nPor favor, teste:\n\n1️⃣ Conecte em **outra tomada** (de preferência sem filtro/benjamim)\n2️⃣ Verifique se a **fonte original** está bem conectada no roteador e na tomada\n3️⃣ Confira o **botão Power** (se houver) e o **cabo de energia**\n\nSe mesmo assim **não ligar**, me avise aqui que eu **abro um atendimento prioritário** para troca/visita técnica.`;
         } else if (saysOff) {
