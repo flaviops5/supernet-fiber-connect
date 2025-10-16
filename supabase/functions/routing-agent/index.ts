@@ -145,6 +145,16 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       });
     }
 
+    // 🔔 Mensagem de confirmação após CPF validado
+    if (clientStatus.found) {
+      await supabase.from("conversation_messages").insert({
+        conversation_id: conversationId,
+        sender_type: "agent",
+        sender_name: "Cloé Martins",
+        content: `Olá ${clientStatus.name}! Me dê um minuto que vou verificar sua conta... 🔍`,
+      });
+    }
+
     // 🚀 Se Cloé continua atendendo, gera uma resposta contextual
     if (targetDepartment === "cloe") {
       logger.info("Cloé continua atendimento - gerando resposta");
@@ -215,23 +225,7 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       );
     }
 
-    // 💬 Mensagem de transferência (envia ANTES de invocar agente)
-    const departmentNames: Record<string, string> = {
-      financeiro: "Financeiro (Julia)",
-      tecnico: "Técnico (Luan)",
-      comercial: "Comercial (Vicente)",
-    };
-
-    const transferMessage = `Perfeito! Vou te transferir para o time ${departmentNames[targetDepartment]}. Um momento! ⏳`;
-
-    await supabase.from("conversation_messages").insert({
-      conversation_id: conversationId,
-      sender_type: "agent",
-      sender_name: "Cloé Martins",
-      content: transferMessage,
-    });
-
-    // 📤 Invocar agente especializado DEPOIS da mensagem de transferência
+    // 📤 Fluxo específico para suporte técnico
     if (targetDepartment === "tecnico") {
       logger.info("Cliente offline detectado - iniciando fluxo de reboot pela Cloé", {
         cpf_redacted: `***${clientStatus.cpf?.slice(-3)}`,
@@ -251,7 +245,7 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
           conversation_id: conversationId,
           sender_type: "agent",
           sender_name: "Cloé Martins",
-          content: "Detectei que você está offline. Vou tentar reiniciar seu equipamento remotamente... 🔄\n\nIsso leva cerca de 1 minuto.",
+          content: "Detectei que você está offline. Vou tentar reiniciar seu equipamento remotamente... 🔄\n\nIsso vai demorar mais um minutinho, por favor aguarde.",
         });
 
         try {
@@ -344,6 +338,21 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
       else logger.info("✅ Luan invocado com sucesso");
+    } else {
+      // 💬 Para outros departamentos, enviar mensagem de transferência
+      const departmentNames: Record<string, string> = {
+        financeiro: "Financeiro (Julia)",
+        comercial: "Comercial (Vicente)",
+      };
+
+      const transferMessage = `Perfeito! Vou te transferir para o time ${departmentNames[targetDepartment]}. Um momento! ⏳`;
+
+      await supabase.from("conversation_messages").insert({
+        conversation_id: conversationId,
+        sender_type: "agent",
+        sender_name: "Cloé Martins",
+        content: transferMessage,
+      });
     }
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
