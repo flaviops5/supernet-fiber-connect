@@ -31,18 +31,18 @@ export default function RebootLoader({ totalSeconds = 60, startedAt }: RebootLoa
   }, [secondsRemaining, totalSeconds]);
 
   return (
-    <div className="w-full flex justify-center mt-2 animate-fade-in">
+    <div className="w-full flex justify-center mt-2 animate-in fade-in duration-300">
       <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3 shadow-sm">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" aria-hidden />
-        <div className="flex flex-col">
-          <div className="text-sm font-medium">Reiniciando seu roteador…</div>
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+        <div className="flex flex-col min-w-[240px]">
+          <div className="text-sm font-medium text-foreground">Reiniciando seu roteador…</div>
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <Timer className="h-3 w-3" />
             {secondsRemaining > 0 ? `Aguarde ~${secondsRemaining}s` : 'Finalizando verificação…'}
           </div>
-          <div className="mt-2 h-1.5 w-full rounded-full bg-border/60 overflow-hidden">
+          <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full bg-primary transition-all duration-500"
+              className="h-full bg-primary transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
