@@ -224,18 +224,24 @@ serve(async (req) => {
       // Lógica de troubleshooting baseada em contexto
       if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
         // Cliente está sem internet
-        // Normalizar variações comuns de escrita
-        const isNegation = /\b(n(ã|a)o|nao)\b/.test(currentMessage);
-        const mentionsLight = /(luz|luzes|led|leds|pon|los|power)/.test(currentMessage);
+        // Normalizar variações comuns de escrita (com erros de digitação e coloquialismo)
+        const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
+        const mentionsLight = /(luz(es)?|led(s)?|pon|los|power|lampada|pisca)/i.test(currentMessage);
+        
+        // Detecta "apagado/desligado/sem luz/tudo apagado" + variações de "não acesas"
         const saysOff =
-          /(apag(ad|a|adas|ados)|sem luz|desligad[oa]s?)/.test(currentMessage) ||
-          (isNegation && /(aces[ao]s?|acesas|acessas)/.test(currentMessage)) ||
-          /(n[ãa]o est[ãa]o? aces[sa]s?)/.test(currentMessage);
+          /(apag(ad[oa]s?|ou)|sem luz|desligad[oa]s?|tud[oa] (apagad|desligad|escur)|escur[oa])/i.test(currentMessage) ||
+          (isNegation && /(aces[ao]s?|acesas|acessas|piscando)/i.test(currentMessage)) ||
+          /(n[ãa]o\s*(t[aá]|est[aáã]o?)\s*(aces[sa]s?|ligad))/i.test(currentMessage);
+        
+        // Detecta confirmação de energia: "sim/ok/tá ligado/tem energia/na tomada"
         const saysPowerAvailable =
-          /(sim|ok|tem|est[aá]|t[áa])/.test(currentMessage) &&
-          /(ligad[oa]s?|na tomada|energia|for[cç]a|corrente)/.test(currentMessage);
+          /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
+          /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage);
+        
+        // Detecta conclusão do reboot: "terminei/já liguei/pronto/ok feito"
         const rebootCompleted =
-          /(terminei|re(liguei|ligado)|pronto|feito|finalizei)/.test(currentMessage);
+          /(termin(ei|ado|ou)|re(liguei|ligado|conect)|pronto|feito|ok|fiz|j[aá]\s*(liguei|conectei|re(liguei|conect)))/i.test(currentMessage);
 
         if (saysOff && mentionsLight) {
           // 🔌 FLUXO: Luzes apagadas = Verificação de energia
