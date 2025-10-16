@@ -16,7 +16,17 @@ serve(async (req) => {
   const logger = createLogger("support-tech-agent", req);
 
   try {
-    const { conversation_id, customer_cpf, message, ixc_client_id, suggested_action, client_is_offline, cpf_not_found } = await req.json();
+    const { 
+      conversation_id, 
+      customer_cpf, 
+      message, 
+      ixc_client_id, 
+      reboot_attempted, 
+      reboot_result, 
+      onu_signal,
+      client_is_offline, 
+      cpf_not_found 
+    } = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -28,7 +38,8 @@ serve(async (req) => {
       customer_cpf, 
       message,
       ixc_client_id,
-      suggested_action,
+      reboot_attempted,
+      has_onu_signal: !!onu_signal,
       client_is_offline,
       cpf_not_found
     });
@@ -71,7 +82,8 @@ serve(async (req) => {
     if (isFirstMessage) {
       logger.info("Luan enviando mensagem inicial", {
         outageActive,
-        suggested_action,
+        reboot_attempted,
+        has_onu_signal: !!onu_signal,
         client_is_offline,
         ixc_client_id,
         cpf_not_found
@@ -144,11 +156,39 @@ serve(async (req) => {
         if (outageActive && outageRegion) {
           // Caso especial: Pane massiva
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
-        } else if (suggested_action === "auto_reboot" && ixc_client_id) {
-          // Caso especial: Auto-reboot sugerido pela Cloé
-          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vou fazer um reinício remoto do seu equipamento agora - isso leva cerca de 1 minuto... 🔄`;
+        } else if (reboot_attempted && onu_signal) {
+          // Cloé já tentou reboot - começar diagnóstico TX/RX
+          const tx = onu_signal.tx_power || 0;
+          const rx = onu_signal.rx_power || 0;
+
+          logger.info("Luan: Analisando sinal ONU após reboot falho", { tx, rx });
+
+          // Determinar cenário baseado em TX/RX
+          let scenario = "";
+          let scenarioMessage = "";
+
+          if (tx === 0 && rx === 0) {
+            // CENÁRIO A: Sem sinal
+            scenario = "A";
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, verifique:\n1️⃣ Equipamento está **ligado na tomada**?\n2️⃣ Fonte de energia está **conectada**?\n3️⃣ Botão **Power** está ligado?\n\nMe avise após verificar!`;
+          } else if (rx >= -23 && rx <= -18 && tx >= -1 && tx <= 2) {
+            // CENÁRIO B: Sinal normal mas offline (equipamento travado)
+            scenario = "B";
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nVerifiquei o sinal da ONU e está **dentro dos padrões** (RX: ${rx} dBm / TX: ${tx} dBm).\n\n🔧 Vamos tentar manualmente:\n1️⃣ **DESLIGUE** o roteador da tomada\n2️⃣ **AGUARDE** 60 segundos completos\n3️⃣ **LIGUE** novamente\n\nMe avise quando terminar!`;
+          } else if (rx >= -28 && rx <= -24) {
+            // CENÁRIO C: Sinal fraco
+            scenario = "C";
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a luz **PON** ou **LOS** está **PISCANDO** (não fixa).\n\nEstá piscando?`;
+          } else {
+            // CENÁRIO D: Sinal crítico
+            scenario = "D";
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei um **PROBLEMA CRÍTICO** no sinal da fibra (RX: ${rx} dBm).\n\n⚠️ Isso requer inspeção urgente da nossa equipe técnica.\n\nVou abrir um atendimento prioritário agora mesmo!`;
+          }
+
+          responseMessage = scenarioMessage;
+          logger.info("Cenário diagnosticado", { scenario, tx, rx });
         } else if (client_is_offline) {
-          // Cliente offline - começar troubleshooting
+          // Cliente offline sem tentativa de reboot (fallback)
           logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
         } else {
@@ -171,122 +211,6 @@ serve(async (req) => {
       }
 
       logger.info("Mensagem inicial do Luan enviada");
-
-      // 🆕 EXECUTAR REBOOT E AGUARDAR CONCLUSÃO
-      if (suggested_action === "auto_reboot" && ixc_client_id) {
-        logger.info("Iniciando reboot automático", { ixc_client_id });
-        
-        // Promise com timeout de 90 segundos
-        const rebootPromise = supabase.functions.invoke("reboot-client-equipment", {
-          body: { ixc_client_id, customer_cpf }
-        });
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
-        );
-
-        try {
-          const { data: rebootResult, error: rebootError } = await Promise.race([
-            rebootPromise,
-            timeoutPromise
-          ]) as any;
-            
-            if (rebootError) {
-              logger.error("Erro ao executar reboot", { error: rebootError.message });
-              throw rebootError;
-            }
-
-            logger.info("Reboot concluído", { 
-              success: rebootResult?.ok, 
-              isOnline: rebootResult?.is_online,
-              duration_ms: rebootResult?.duration_ms
-            });
-
-            // Enviar atualização ao cliente baseada no resultado
-            let updateMessage = "";
-            const needsEscalation = !rebootResult?.is_online && rebootResult?.ok !== false;
-            
-            if (rebootResult?.is_online) {
-              updateMessage = "✅ Ótima notícia! Seu equipamento foi religado e já está ONLINE!\n\nTesta aí pra mim? Consegue navegar agora?";
-            } else if (rebootResult?.ok === false) {
-              // Reboot falhou (equipamento não respondeu)
-              updateMessage = "⚠️ Tentei reiniciar remotamente, mas não consegui comunicação com o equipamento.\n\nPreciso que você faça o seguinte:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando ligar!";
-            } else {
-              // Reboot executado mas cliente ainda offline → FLUXO DE ESCALONAMENTO
-              updateMessage = "⚠️ Reiniciei o equipamento remotamente, mas ele ainda está offline após 60 segundos.\n\n**Isso pode indicar:**\n🔴 Problema de sinal óptico (fibra)\n🔴 Equipamento com defeito\n🔴 Problema na rede\n\n**Próximo passo:** Vou escalar para nossa equipe técnica de campo verificar o sinal da ONU e a conexão física.\n\nVocê receberá contato em até 4 horas úteis. Enquanto isso, se as luzes do equipamento voltarem, me avise!";
-            }
-
-            // Inserir mensagem de conclusão do reboot com checagem de erro
-            const { error: insertError } = await supabase.from("conversation_messages").insert({
-              conversation_id,
-              sender_type: "agent",
-              sender_name: "Luan Silva",
-              content: updateMessage,
-              ai_suggestion: false,
-              metadata: needsEscalation ? { 
-                reboot_failed_escalation: true, 
-                ixc_client_id,
-                reason: "equipment_offline_after_reboot" 
-              } : {}
-            });
-            
-            if (insertError) {
-              logger.error("❌ Erro ao inserir mensagem de conclusão", { error: insertError });
-              throw new Error(`Failed to insert message: ${insertError.message}`);
-            }
-            
-            logger.info("✅ Mensagem de conclusão do reboot enviada", { needsEscalation });
-            
-            // Se precisa escalar, aguardar 250ms e marcar conversa para técnico de campo
-            if (needsEscalation) {
-              // Delay para evitar race condition entre insert e update
-              await new Promise(r => setTimeout(r, 250));
-              
-              const { error: updateError } = await supabase.from("conversations").update({
-                status: "transferred",
-                priority: 2,
-                tags: ["reboot_failed", "needs_field_tech", "escalated"],
-                metadata: {
-                  escalation_reason: "Equipment offline after remote reboot",
-                  escalated_at: new Date().toISOString(),
-                  ixc_client_id
-                }
-              }).eq("id", conversation_id);
-              
-              if (updateError) {
-                logger.error("❌ CRÍTICO: Falha ao escalar conversa", { 
-                  conversation_id, 
-                  error: updateError 
-                });
-                throw new Error(`Failed to escalate conversation: ${updateError.message}`);
-              }
-              
-              logger.info("✅ Conversa escalada para técnico de campo", { 
-                conversation_id, 
-                status: "transferred",
-                tags: ["reboot_failed", "needs_field_tech", "escalated"]
-              });
-            }
-        } catch (err: any) {
-          logger.error("Erro no reboot background", { 
-            error: err.message,
-            isTimeout: err.message?.includes("Timeout")
-          });
-
-          // Mensagem de fallback para o cliente
-          const fallbackMessage = "⚠️ Não consegui concluir o reinício remoto (problema de comunicação).\n\nVamos fazer manualmente:\n\n1. 🔌 Desconecte o cabo de força do equipamento\n2. ⏱️ Aguarde 30 segundos\n3. 🔌 Reconecte o cabo\n\nMe avisa quando as luzes acenderem!";
-
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: fallbackMessage,
-            ai_suggestion: false
-          }).catch(insertErr => {
-            logger.error("Erro ao inserir mensagem de fallback", { error: insertErr.message });
-          });
-        }
-      }
     } else {
       // Continuar atendimento com análise contextual
       logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });

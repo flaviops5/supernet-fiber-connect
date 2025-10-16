@@ -233,12 +233,100 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
 
     // 📤 Invocar agente especializado DEPOIS da mensagem de transferência
     if (targetDepartment === "tecnico") {
-      logger.info("Invocando Luan (support-tech-agent)", {
+      logger.info("Cliente offline detectado - iniciando fluxo de reboot pela Cloé", {
         cpf_redacted: `***${clientStatus.cpf?.slice(-3)}`,
         ixc_client_id: clientStatus.id,
         isOffline: clientStatus.isOffline,
-        suggestAutoReboot: clientStatus.suggestAutoReboot,
-        cpf_not_found: !clientStatus.found
+      });
+
+      let rebootResult = null;
+      let onuSignal = null;
+
+      // 🔄 CLOÉ EXECUTA REBOOT se cliente está offline
+      if (clientStatus.isOffline && clientStatus.id) {
+        logger.info("Cloé executando reboot remoto", { ixc_client_id: clientStatus.id });
+        
+        // Mensagem informando sobre o reboot
+        await supabase.from("conversation_messages").insert({
+          conversation_id: conversationId,
+          sender_type: "agent",
+          sender_name: "Cloé Martins",
+          content: "Detectei que você está offline. Vou tentar reiniciar seu equipamento remotamente... 🔄\n\nIsso leva cerca de 1 minuto.",
+        });
+
+        try {
+          // Executar reboot com timeout de 90s
+          const rebootPromise = supabase.functions.invoke("reboot-client-equipment", {
+            body: { 
+              ixc_client_id: clientStatus.id, 
+              customer_cpf: clientStatus.cpf 
+            }
+          });
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
+          );
+
+          const { data, error } = await Promise.race([rebootPromise, timeoutPromise]) as any;
+          
+          if (!error && data) {
+            rebootResult = data;
+            logger.info("Reboot concluído pela Cloé", { 
+              success: data.ok, 
+              isOnline: data.is_online 
+            });
+
+            // Se voltou online, confirmar e finalizar
+            if (data.is_online) {
+              await supabase.from("conversation_messages").insert({
+                conversation_id: conversationId,
+                sender_type: "agent",
+                sender_name: "Cloé Martins",
+                content: "✅ Pronto! Seu equipamento voltou online!\n\nTesta aí pra mim? Consegue navegar?",
+              });
+
+              // Não transferir para Luan - sucesso!
+              logger.info("Reboot bem-sucedido - cliente voltou online");
+              return new Response(
+                JSON.stringify({ ok: true, protocol, targetDepartment: "cloe", reboot_success: true }),
+                { headers: corsHeaders, status: 200 }
+              );
+            }
+          }
+        } catch (rebootError: any) {
+          logger.error("Erro no reboot pela Cloé", { error: rebootError.message });
+        }
+
+        // Reboot falhou ou cliente ainda offline - buscar TX/RX para Luan
+        logger.info("Reboot falhou - buscando sinal ONU para diagnóstico", { ixc_client_id: clientStatus.id });
+        
+        try {
+          const { data: signalData } = await supabase.functions.invoke("ixc-onu-signal", {
+            body: { ixc_client_id: clientStatus.id }
+          });
+
+          if (signalData?.success && signalData.data) {
+            onuSignal = signalData.data;
+            logger.info("Sinal ONU obtido", { tx: onuSignal.tx_power, rx: onuSignal.rx_power });
+          }
+        } catch (signalError: any) {
+          logger.error("Erro ao buscar sinal ONU", { error: signalError.message });
+        }
+
+        // Mensagem informando que o reboot não resolveu
+        await supabase.from("conversation_messages").insert({
+          conversation_id: conversationId,
+          sender_type: "agent",
+          sender_name: "Cloé Martins",
+          content: "⚠️ Tentei reiniciar remotamente, mas seu equipamento ainda está offline.\n\nVou te transferir para o Luan, nosso técnico especializado. Ele vai fazer um diagnóstico completo! ⏳",
+        });
+      }
+
+      // Transferir para Luan com resultado do reboot e sinal ONU
+      logger.info("Invocando Luan após tentativa de reboot", {
+        reboot_attempted: !!rebootResult,
+        reboot_success: rebootResult?.is_online,
+        has_onu_signal: !!onuSignal
       });
       
       const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
@@ -246,14 +334,16 @@ Lembre-se que o sistema aceita os formatos 128.930.562-53 e 12893056253.`;
           conversation_id: conversationId,
           customer_cpf: clientStatus.cpf ?? null,
           ixc_client_id: clientStatus.id ?? null,
-          message: "", // Handoff inicial: força saudação e lógica de offline/reboot
-          suggested_action: clientStatus.suggestAutoReboot ? "auto_reboot" : null,
+          message: "",
+          reboot_attempted: true, // Indica que Cloé já tentou reboot
+          reboot_result: rebootResult,
+          onu_signal: onuSignal, // TX/RX para análise
           client_is_offline: clientStatus.isOffline === true,
-          cpf_not_found: !clientStatus.found, // 🆕 Indica que CPF não foi encontrado
+          cpf_not_found: !clientStatus.found,
         },
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
-      else logger.info("Luan invocado com sucesso");
+      else logger.info("✅ Luan invocado com sucesso");
     }
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
