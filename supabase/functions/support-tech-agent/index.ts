@@ -232,7 +232,8 @@ serve(async (req) => {
         const cantPowerOn = /((n[ãa]o|nao)\s*(liga|acende|d[aá]\s*sinal|funciona)(\s*de jeito nenhum|\s*nada)?|nao\s*liga|nao\s*acende|morto|queimad[oa]|pifad[oa]|sem\s*sinal\s*de\s*vida)/i.test(currentMessage);
         
         // Detecta quando nada funcionou após tentativas (escalação necessária)
-        const nothingWorked = /((n[ãa]o|nao)\s*(ligou|deu\s*cert[oa]|funcionou|resolveu|adiantou)|sem\s*sucess[oa]|nada\s*(deu\s*cert[oa]|funcionou|resolveu)|continua\s*(sem|offline|fora)|ainda\s*(n[ãa]o|sem)|persist(e|iu))/i.test(currentMessage);
+        // Mais específico: requer contexto de tentativas anteriores
+        const nothingWorked = /(nada\s*(deu\s*cert[oa]|funcionou|resolveu)|sem\s*sucess[oa]|n[ãa]o\s*(resolveu|funcionou|adiantou)|continua\s*(sem|offline|fora\s*do\s*ar)|persist(e|iu)\s*(o\s*)?problema)/i.test(currentMessage) && conversationContext.includes("teste");
         
         // Detecta "apagado/desligado/sem luz/tudo apagado" + variações de "não acesas"
         const saysOff =
