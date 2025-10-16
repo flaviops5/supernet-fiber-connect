@@ -226,7 +226,7 @@ serve(async (req) => {
         // Cliente está sem internet
         // Normalizar variações comuns de escrita (com erros de digitação e coloquialismo)
         const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
-        const mentionsLight = /(luz(es)?|led(s)?|pon|los|power|lampada|pisca)/i.test(currentMessage);
+        const mentionsLight = /(luz(es)?|led(s)?|pon|los|power|lampada|pisca|apag)/i.test(currentMessage);
         
         // Detecta "apagado/desligado/sem luz/tudo apagado" + variações de "não acesas"
         const saysOff =
