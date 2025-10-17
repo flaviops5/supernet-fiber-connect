@@ -220,14 +220,13 @@ export default function AdminFluxoAgentes() {
                       <label className="text-sm font-medium">Mídia da Biblioteca:</label>
                       <div className="flex gap-2 items-center mt-1">
                         <Select 
-                          value={editedData.media_id || ''} 
+                          value={editedData.media_id || undefined} 
                           onValueChange={(value) => setEditedData({ ...editedData, media_id: value || null })}
                         >
                           <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Selecione uma mídia (opcional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Nenhuma mídia</SelectItem>
                             {mediaItems?.map(media => (
                               <SelectItem key={media.id} value={media.id}>
                                 {media.title} ({media.file_type})
