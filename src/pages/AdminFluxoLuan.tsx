@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowRight, Save, Eye } from "lucide-react";
+import { ArrowRight, Save, Eye, Image as ImageIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface FlowStep {
   id: string;
@@ -24,6 +25,15 @@ interface FlowStep {
   next_step_map: Record<string, string>;
   metadata: any;
   is_active: boolean;
+  media_id: string | null;
+}
+
+interface MediaItem {
+  id: string;
+  title: string;
+  file_url: string;
+  file_type: string;
+  thumbnail_url: string | null;
 }
 
 export default function AdminFluxoLuan() {
@@ -42,6 +52,20 @@ export default function AdminFluxoLuan() {
       
       if (error) throw error;
       return data as FlowStep[];
+    },
+  });
+
+  const { data: mediaItems } = useQuery({
+    queryKey: ["media-repository"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media_repository")
+        .select("id, title, file_url, file_type, thumbnail_url")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data as MediaItem[];
     },
   });
 
@@ -71,6 +95,7 @@ export default function AdminFluxoLuan() {
       question: step.question,
       instruction: step.instruction,
       response_variations: step.response_variations,
+      media_id: step.media_id,
     });
   };
 
@@ -155,6 +180,53 @@ export default function AdminFluxoLuan() {
                       />
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label>Mídia Anexada (Imagem/Vídeo/GIF)</Label>
+                    {editedData.media_id && mediaItems?.find(m => m.id === editedData.media_id) && (
+                      <div className="relative border rounded-lg p-3 bg-muted/30">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => setEditedData({ ...editedData, media_id: null })}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        {(() => {
+                          const media = mediaItems.find(m => m.id === editedData.media_id);
+                          return media ? (
+                            <div className="flex items-center gap-3">
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium text-sm">{media.title}</p>
+                                <Badge variant="secondary" className="text-xs mt-1">{media.file_type}</Badge>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+                    <Select
+                      value={editedData.media_id || "none"}
+                      onValueChange={(value) => setEditedData({ ...editedData, media_id: value === "none" ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma mídia (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma mídia</SelectItem>
+                        {mediaItems?.map((media) => (
+                          <SelectItem key={media.id} value={media.id}>
+                            {media.title} ({media.file_type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      A mídia será exibida junto com a pergunta do fluxo
+                    </p>
+                  </div>
                   
                   <div className="space-y-3">
                     <Label>Variações de Resposta (uma por linha)</Label>

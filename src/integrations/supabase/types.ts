@@ -3625,6 +3625,7 @@ export type Database = {
           id: string
           instruction: string | null
           is_active: boolean | null
+          media_id: string | null
           metadata: Json | null
           next_step_map: Json | null
           question: string
@@ -3641,6 +3642,7 @@ export type Database = {
           id?: string
           instruction?: string | null
           is_active?: boolean | null
+          media_id?: string | null
           metadata?: Json | null
           next_step_map?: Json | null
           question: string
@@ -3657,6 +3659,7 @@ export type Database = {
           id?: string
           instruction?: string | null
           is_active?: boolean | null
+          media_id?: string | null
           metadata?: Json | null
           next_step_map?: Json | null
           question?: string
@@ -3667,7 +3670,15 @@ export type Database = {
           tool_calls?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tech_flow_steps_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_repository"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_dataset: {
         Row: {

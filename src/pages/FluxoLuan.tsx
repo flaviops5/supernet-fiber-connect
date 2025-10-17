@@ -20,6 +20,12 @@ interface FlowStep {
   next_step_map: Record<string, string>;
   metadata: any;
   is_active: boolean;
+  media_id: string | null;
+  media?: {
+    file_url: string;
+    file_type: string;
+    title: string;
+  };
 }
 
 export default function FluxoLuan() {
@@ -32,7 +38,10 @@ export default function FluxoLuan() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tech_flow_steps")
-        .select("*")
+        .select(`
+          *,
+          media:media_repository(file_url, file_type, title)
+        `)
         .eq("is_active", true)
         .order("step_order");
       
@@ -99,6 +108,29 @@ export default function FluxoLuan() {
                             <p className="text-sm whitespace-pre-wrap text-muted-foreground">
                               {step.instruction}
                             </p>
+                          </div>
+                        )}
+
+                        {step.media && (
+                          <div className="mt-3 rounded-lg overflow-hidden border">
+                            {step.media.file_type === 'image' || step.media.file_type === 'gif' ? (
+                              <img
+                                src={step.media.file_url}
+                                alt={step.media.title}
+                                className="w-full max-h-96 object-contain bg-muted"
+                              />
+                            ) : step.media.file_type === 'video' ? (
+                              <video
+                                src={step.media.file_url}
+                                controls
+                                className="w-full max-h-96"
+                              >
+                                Seu navegador não suporta vídeo.
+                              </video>
+                            ) : null}
+                            <div className="p-2 bg-muted/50 text-xs text-muted-foreground">
+                              📎 {step.media.title}
+                            </div>
                           </div>
                         )}
                       </div>
