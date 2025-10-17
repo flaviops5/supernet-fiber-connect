@@ -2053,6 +2053,54 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_simulations: {
+        Row: {
+          agent_type: string
+          conversation_path: Json
+          conversation_transcript: Json
+          created_at: string | null
+          estimated_duration_seconds: number | null
+          id: string
+          issues_detected: Json | null
+          metadata: Json | null
+          quality_score: number | null
+          responses_chosen: Json
+          simulation_name: string
+          suggestions: Json | null
+          total_steps: number
+        }
+        Insert: {
+          agent_type: string
+          conversation_path?: Json
+          conversation_transcript?: Json
+          created_at?: string | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          issues_detected?: Json | null
+          metadata?: Json | null
+          quality_score?: number | null
+          responses_chosen?: Json
+          simulation_name: string
+          suggestions?: Json | null
+          total_steps?: number
+        }
+        Update: {
+          agent_type?: string
+          conversation_path?: Json
+          conversation_transcript?: Json
+          created_at?: string | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          issues_detected?: Json | null
+          metadata?: Json | null
+          quality_score?: number | null
+          responses_chosen?: Json
+          simulation_name?: string
+          suggestions?: Json | null
+          total_steps?: number
+        }
+        Relationships: []
+      }
       hero_settings: {
         Row: {
           badge_text: string

@@ -180,3 +180,6 @@ verify_jwt = false
 [functions.ixc-onu-signal]
 verify_jwt = false
 
+[functions.generate-flow-simulations]
+verify_jwt = true
+
