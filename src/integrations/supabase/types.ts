@@ -3618,6 +3618,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tech_flow_steps: {
+        Row: {
+          awaits_response: boolean | null
+          created_at: string | null
+          id: string
+          instruction: string | null
+          is_active: boolean | null
+          metadata: Json | null
+          next_step_map: Json | null
+          question: string
+          response_options: Json | null
+          step_key: string
+          step_order: number
+          tool_calls: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          awaits_response?: boolean | null
+          created_at?: string | null
+          id?: string
+          instruction?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          next_step_map?: Json | null
+          question: string
+          response_options?: Json | null
+          step_key: string
+          step_order: number
+          tool_calls?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          awaits_response?: boolean | null
+          created_at?: string | null
+          id?: string
+          instruction?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          next_step_map?: Json | null
+          question?: string
+          response_options?: Json | null
+          step_key?: string
+          step_order?: number
+          tool_calls?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       training_dataset: {
         Row: {
           actual_output: string | null
