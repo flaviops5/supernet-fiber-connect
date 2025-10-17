@@ -242,19 +242,43 @@ serve(async (req) => {
           /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
           /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage);
         
+        // 🆕 Detecta confirmação de luz vermelha LOS/PON piscando
+        const hasRedLightBlinking =
+          /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec)/i.test(currentMessage) &&
+          /(vermelh[oa]|los|pon|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
+        
+        // 🆕 Detecta negação de luz vermelha
+        const noRedLight =
+          isNegation &&
+          /(vermelh[oa]|los|pon|pisca)/i.test(currentMessage);
+        
         // Detecta conclusão do reboot: "terminei/já liguei/pronto/ok feito"
         const rebootCompleted =
           /(termin(ei|ado|ou)|re(liguei|ligado|conect)|pronto|feito|ok|fiz|j[aá]\s*(liguei|conectei|re(liguei|conect)))/i.test(currentMessage);
+        
+        // 🆕 Detecta conclusão da manipulação do conector de fibra
+        const fiberReconnected =
+          /(reconect(ei|ado)|tirei\s*e\s*(re)?coloquei|manipul(ei|ado)|fiz|terminei)/i.test(currentMessage) &&
+          /(conector|fibra|verde|cabo)/i.test(currentMessage);
 
         if (cantPowerOn) {
           // Equipamento não liga de jeito nenhum -> foco total em energia/fonte
           responseMessage = `Entendi! O equipamento não liga de jeito nenhum. Vamos focar na alimentação. 🔌\n\nPor favor, teste:\n\n1️⃣ Conecte em **outra tomada** (de preferência sem filtro/benjamim)\n2️⃣ Verifique se a **fonte original** está bem conectada no roteador e na tomada\n3️⃣ Confira o **botão Power** (se houver) e o **cabo de energia**\n\nSe mesmo assim **não ligar**, me avise aqui que eu **abro um atendimento prioritário** para troca/visita técnica.`;
         } else if (saysOff) {
-          // 🔌 FLUXO: Luzes apagadas = Verificação de energia
+          // 🔌 FLUXO: Luzes apagadas = Verificação de energia (CENÁRIO A - PARTE 1)
           responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌  \n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
+        } else if (hasRedLightBlinking) {
+          // 🔴 FLUXO ENERGIA: Cliente confirmou luz vermelha LOS/PON (CENÁRIO A - PARTE 3)
+          responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o conector **VERDE** (cabo de fibra)\n2️⃣ Retire e reconecte firmemente\n3️⃣ Aguarde **1 minuto** para sincronização\n4️⃣ Veja se a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
+        } else if (noRedLight) {
+          // Cliente confirmou que NÃO tem luz vermelha piscando - abrir atendimento
+          responseMessage = `Ok! Se não há luz vermelha mas o equipamento continua sem conexão, vou abrir um atendimento técnico prioritário. 🔧\n\nNossa equipe vai entrar em contato para agendar uma visita e resolver isso o mais rápido possível.\n\nPreciso de mais alguma coisa agora?`;
+        } else if (fiberReconnected) {
+          // Cliente concluiu manipulação do conector - verificar resultado
+          responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nMe diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?\n\nE você consegue navegar agora?`;
         } else if (saysPowerAvailable) {
-          // Cliente confirmou que equipamento tem energia mas ainda está offline
-          responseMessage = `Ok! O equipamento está com energia. Vamos fazer um teste manual de reinicialização: 🔄\n\n1️⃣ **DESLIGUE** o equipamento da tomada\n2️⃣ **AGUARDE** 30 segundos completos ⏱️\n3️⃣ **LIGUE** novamente\n4️⃣ **AGUARDE** 1-2 minutos para sincronização 🔄\n\nAs luzes vão piscar e depois estabilizar. Me avise quando terminar!`;
+          // 🔌 FLUXO ENERGIA: Cliente confirmou energia OK (CENÁRIO A - PARTE 2)
+          responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nTem essa luz vermelha piscando? 🔴`;
         } else if (rebootCompleted) {
           // Cliente terminou o reboot manual
           responseMessage = `Perfeito! Aguarde mais 1 minuto para sincronização completa. ⏳\n\nEnquanto isso, me diga: **as luzes estabilizaram?** \n\n💡 **PON/LOS** - está verde fixo?  \n⚡ **POWER** - está verde fixo?`;
