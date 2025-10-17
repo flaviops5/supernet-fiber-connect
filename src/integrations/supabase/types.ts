@@ -3629,6 +3629,7 @@ export type Database = {
           next_step_map: Json | null
           question: string
           response_options: Json | null
+          response_variations: Json | null
           step_key: string
           step_order: number
           tool_calls: Json | null
@@ -3644,6 +3645,7 @@ export type Database = {
           next_step_map?: Json | null
           question: string
           response_options?: Json | null
+          response_variations?: Json | null
           step_key: string
           step_order: number
           tool_calls?: Json | null
@@ -3659,6 +3661,7 @@ export type Database = {
           next_step_map?: Json | null
           question?: string
           response_options?: Json | null
+          response_variations?: Json | null
           step_key?: string
           step_order?: number
           tool_calls?: Json | null

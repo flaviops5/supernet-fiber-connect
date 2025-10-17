@@ -19,6 +19,7 @@ interface FlowStep {
   instruction: string | null;
   awaits_response: boolean;
   response_options: string[];
+  response_variations: Record<string, string[]>;
   tool_calls: any[];
   next_step_map: Record<string, string>;
   metadata: any;
@@ -69,6 +70,7 @@ export default function AdminFluxoLuan() {
     setEditedData({
       question: step.question,
       instruction: step.instruction,
+      response_variations: step.response_variations,
     });
   };
 
@@ -153,6 +155,30 @@ export default function AdminFluxoLuan() {
                       />
                     </div>
                   )}
+                  
+                  <div className="space-y-3">
+                    <Label>Variações de Resposta (uma por linha)</Label>
+                    {step.response_options.map((option) => (
+                      <div key={option} className="space-y-1">
+                        <Label className="text-sm text-muted-foreground">{option}</Label>
+                        <Textarea
+                          value={(editedData.response_variations?.[option] || []).join('\n')}
+                          onChange={(e) => {
+                            const lines = e.target.value.split('\n').filter(l => l.trim());
+                            setEditedData({
+                              ...editedData,
+                              response_variations: {
+                                ...editedData.response_variations,
+                                [option]: lines
+                              }
+                            });
+                          }}
+                          placeholder={`Digite as variações para "${option}", uma por linha`}
+                          rows={3}
+                        />
+                      </div>
+                    ))}
+                  </div>
                   <div className="flex gap-2">
                     <Button onClick={() => handleSave(step.id)} size="sm">
                       <Save className="mr-2 h-4 w-4" />
@@ -185,6 +211,24 @@ export default function AdminFluxoLuan() {
                       </Badge>
                     ))}
                   </div>
+
+                  {step.response_variations && Object.keys(step.response_variations).length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground">Variações de Resposta</Label>
+                      {Object.entries(step.response_variations).map(([key, variations]) => (
+                        <div key={key} className="space-y-1">
+                          <p className="text-sm font-medium">{key}:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {variations.map((variation, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {variation}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {step.tool_calls.length > 0 && (
                     <div>

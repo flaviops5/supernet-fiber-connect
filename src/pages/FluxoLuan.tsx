@@ -15,6 +15,7 @@ interface FlowStep {
   instruction: string | null;
   awaits_response: boolean;
   response_options: string[];
+  response_variations: Record<string, string[]>;
   tool_calls: any[];
   next_step_map: Record<string, string>;
   metadata: any;
@@ -126,6 +127,17 @@ export default function FluxoLuan() {
                               </>
                             )}
                           </div>
+
+                          {step.response_variations?.[option] && step.response_variations[option].length > 0 && (
+                            <div className="ml-6 flex flex-wrap gap-1">
+                              <span className="text-xs text-muted-foreground">Variações:</span>
+                              {step.response_variations[option].map((variation, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {variation}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
 
                           {step.tool_calls
                             .filter((tool: any) => tool.condition === option)
