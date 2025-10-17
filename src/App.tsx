@@ -75,6 +75,7 @@ const App = () => {
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
             <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
           <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
+          <Route path="/admin/fluxo-luan" element={<Navigate to="/admin/fluxo-agentes" replace />} />
           <Route path="/fluxo-agente" element={<FluxoAgente />} />
             
             {/* Public routes with header/footer */}
