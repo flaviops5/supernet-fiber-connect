@@ -108,7 +108,16 @@ export default function AdminFluxoAgentes() {
 
   const handleEdit = (step: FlowStep) => {
     setEditingStep(step.id);
-    setEditedData(step);
+    setEditedData({
+      question: step.question,
+      instruction: step.instruction,
+      response_options: step.response_options,
+      response_variations: step.response_variations,
+      media_id: step.media_id,
+      tool_calls: step.tool_calls,
+      next_step_map: step.next_step_map,
+      awaits_response: step.awaits_response
+    });
   };
 
   const handleSave = (id: string) => {
