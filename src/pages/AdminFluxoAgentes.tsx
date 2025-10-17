@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, Save, X, Trash2 } from 'lucide-react';
+import { Loader2, Edit, Save, X, Trash2, Plus, Copy } from 'lucide-react';
 import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -52,6 +54,8 @@ export default function AdminFluxoAgentes() {
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editedData, setEditedData] = useState<Partial<FlowStep>>({});
   const [selectedAgent, setSelectedAgent] = useState<string>('support-tech-agent');
+  const [customCategory, setCustomCategory] = useState('');
+  const [customVariations, setCustomVariations] = useState<string[]>(['', '', '']);
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['agent_flow_steps', selectedAgent],
@@ -127,6 +131,79 @@ export default function AdminFluxoAgentes() {
   const handleCancel = () => {
     setEditingStep(null);
     setEditedData({});
+    setCustomCategory('');
+    setCustomVariations(['', '', '']);
+  };
+
+  const EXAMPLE_VARIATIONS = {
+    greeting: [
+      "Olá! 👋 Como posso ajudar?",
+      "Oi! 😊 Em que posso ser útil?",
+      "Boa tarde! Como posso auxiliar?"
+    ],
+    confirmation: [
+      "Perfeito! ✅",
+      "Entendido! 👍",
+      "Ok, vamos lá! 🚀"
+    ],
+    error: [
+      "Desculpe, tive um problema 😕",
+      "Ops! Algo deu errado 🔧",
+      "Aguarde, vou verificar isso ⏳"
+    ],
+    waiting: [
+      "Um momento, por favor... ⏳",
+      "Já estou verificando isso para você 🔍",
+      "Aguarde enquanto busco essas informações 📋"
+    ],
+    thanks: [
+      "Obrigado por aguardar! 🙏",
+      "Agradeço pela paciência! ✨",
+      "Muito obrigado! 💙"
+    ],
+    success: [
+      "Tudo certo! ✅ Consegui realizar a operação",
+      "Pronto! 🎉 Tarefa concluída com sucesso",
+      "Feito! ✨ Operação realizada"
+    ]
+  };
+
+  const applyExampleVariation = (key: string) => {
+    const currentVariations = editedData.response_variations || {};
+    setEditedData({
+      ...editedData,
+      response_variations: {
+        ...currentVariations,
+        [key]: EXAMPLE_VARIATIONS[key as keyof typeof EXAMPLE_VARIATIONS]
+      }
+    });
+    toast({ title: `Exemplo "${key}" aplicado!` });
+  };
+
+  const addCustomVariation = () => {
+    if (!customCategory.trim()) {
+      toast({ title: 'Digite uma categoria', variant: 'destructive' });
+      return;
+    }
+
+    const filteredVariations = customVariations.filter(v => v.trim() !== '');
+    if (filteredVariations.length === 0) {
+      toast({ title: 'Adicione pelo menos uma variação', variant: 'destructive' });
+      return;
+    }
+
+    const currentVariations = editedData.response_variations || {};
+    setEditedData({
+      ...editedData,
+      response_variations: {
+        ...currentVariations,
+        [customCategory]: filteredVariations
+      }
+    });
+
+    toast({ title: `Categoria "${customCategory}" adicionada!` });
+    setCustomCategory('');
+    setCustomVariations(['', '', '']);
   };
 
   if (isLoading) {
@@ -285,7 +362,97 @@ export default function AdminFluxoAgentes() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium">Response Variations (JSON):</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Response Variations (JSON):</label>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Plus className="h-4 w-4 mr-1" />
+                              Adicionar Sugestão
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Gerenciar Response Variations</DialogTitle>
+                            </DialogHeader>
+                            
+                            <div className="space-y-6">
+                              {/* Exemplos Pré-definidos */}
+                              <div>
+                                <h4 className="font-medium mb-3">📚 Exemplos Pré-definidos:</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {Object.keys(EXAMPLE_VARIATIONS).map((key) => (
+                                    <Button
+                                      key={key}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => applyExampleVariation(key)}
+                                      className="justify-start"
+                                    >
+                                      <Copy className="h-3 w-3 mr-2" />
+                                      {key}
+                                    </Button>
+                                  ))}
+                                </div>
+                                <div className="mt-3 p-3 bg-muted rounded-md text-xs">
+                                  <p className="font-medium mb-2">Preview dos exemplos:</p>
+                                  <pre className="whitespace-pre-wrap">
+                                    {JSON.stringify(EXAMPLE_VARIATIONS, null, 2)}
+                                  </pre>
+                                </div>
+                              </div>
+
+                              {/* Criar Sugestão Customizada */}
+                              <div className="border-t pt-4">
+                                <h4 className="font-medium mb-3">✍️ Criar Sugestão Customizada:</h4>
+                                <div className="space-y-3">
+                                  <div>
+                                    <Label htmlFor="custom-category">Nome da Categoria</Label>
+                                    <Input
+                                      id="custom-category"
+                                      placeholder="Ex: despedida, negociacoes, etc"
+                                      value={customCategory}
+                                      onChange={(e) => setCustomCategory(e.target.value)}
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <Label>Variações (mínimo 1)</Label>
+                                    {customVariations.map((variation, index) => (
+                                      <Input
+                                        key={index}
+                                        placeholder={`Variação ${index + 1}`}
+                                        value={variation}
+                                        onChange={(e) => {
+                                          const newVariations = [...customVariations];
+                                          newVariations[index] = e.target.value;
+                                          setCustomVariations(newVariations);
+                                        }}
+                                        className="mt-2"
+                                      />
+                                    ))}
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setCustomVariations([...customVariations, ''])}
+                                      className="mt-2"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Adicionar mais uma variação
+                                    </Button>
+                                  </div>
+
+                                  <Button onClick={addCustomVariation} className="w-full">
+                                    Adicionar Categoria Customizada
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      
                       <Textarea
                         value={JSON.stringify(editedData.response_variations, null, 2)}
                         onChange={(e) => {
