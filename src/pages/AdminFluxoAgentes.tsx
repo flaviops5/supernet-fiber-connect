@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
-import { useScrollToHash } from '@/hooks/useScrollToHash';
 
 interface FlowStep {
   id: string;
@@ -53,8 +52,6 @@ export default function AdminFluxoAgentes() {
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editedData, setEditedData] = useState<Partial<FlowStep>>({});
   const [selectedAgent, setSelectedAgent] = useState<string>('support-tech-agent');
-  
-  useScrollToHash();
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['agent_flow_steps', selectedAgent],
@@ -172,35 +169,10 @@ export default function AdminFluxoAgentes() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-3">Fluxo: {selectedAgentLabel}</h2>
-            <p className="text-muted-foreground mb-4">
+            <h2 className="text-2xl font-bold">Fluxo: {selectedAgentLabel}</h2>
+            <p className="text-muted-foreground">
               {steps?.length || 0} steps configurados
             </p>
-            
-            <div className="flex flex-wrap gap-2">
-              {steps?.map((step) => (
-                <Button
-                  key={step.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const element = document.getElementById(`step-${step.id}`);
-                    if (element) {
-                      const headerOffset = 80;
-                      const elementPosition = element.getBoundingClientRect().top;
-                      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                      
-                      window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                      });
-                    }
-                  }}
-                >
-                  {step.step_order}. {step.step_key}
-                </Button>
-              ))}
-            </div>
           </div>
 
           <div className="space-y-4">
