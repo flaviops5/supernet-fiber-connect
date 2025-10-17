@@ -80,8 +80,8 @@ export default function FluxoLuan() {
 
       <div className="space-y-8">
         {steps?.map((step, index) => (
-          <div key={step.id} className="space-y-4">
-            <Card className="p-6 border-l-4 border-l-primary">
+          <div key={step.id} className="space-y-4" id={step.step_key}>
+            <Card className="p-6 border-l-4 border-l-primary scroll-mt-20">
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <Badge variant="outline" className="text-lg px-3 py-1 shrink-0">
@@ -121,9 +121,19 @@ export default function FluxoLuan() {
                             {step.next_step_map[option] && (
                               <>
                                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-mono text-muted-foreground">
+                                <a
+                                  href={`#${step.next_step_map[option]}`}
+                                  className="text-sm font-mono text-primary hover:underline cursor-pointer"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById(step.next_step_map[option])?.scrollIntoView({
+                                      behavior: 'smooth',
+                                      block: 'center'
+                                    });
+                                  }}
+                                >
                                   {step.next_step_map[option]}
-                                </span>
+                                </a>
                               </>
                             )}
                           </div>

@@ -108,7 +108,7 @@ export default function AdminFluxoLuan() {
 
       <div className="space-y-4">
         {steps?.map((step, index) => (
-          <Card key={step.id} className="p-6">
+          <Card key={step.id} className="p-6 scroll-mt-20" id={step.step_key}>
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -251,7 +251,19 @@ export default function AdminFluxoLuan() {
                           <div key={response} className="flex items-center gap-2 text-sm">
                             <Badge variant="secondary">{response}</Badge>
                             <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-mono text-xs">{nextKey}</span>
+                            <a
+                              href={`#${nextKey}`}
+                              className="font-mono text-xs text-primary hover:underline cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                document.getElementById(nextKey as string)?.scrollIntoView({
+                                  behavior: 'smooth',
+                                  block: 'center'
+                                });
+                              }}
+                            >
+                              {nextKey}
+                            </a>
                           </div>
                         ))}
                       </div>
