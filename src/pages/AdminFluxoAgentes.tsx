@@ -379,9 +379,39 @@ export default function AdminFluxoAgentes() {
                       {step.next_step_map && Object.keys(step.next_step_map).length > 0 && (
                         <div>
                           <span className="font-medium text-sm">Next Step Map:</span>
-                          <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
-                            {JSON.stringify(step.next_step_map, null, 2)}
-                          </pre>
+                          <div className="bg-muted p-3 rounded mt-1">
+                            {Object.entries(step.next_step_map).map(([key, value]) => {
+                              const stepKey = String(value);
+                              const targetStep = steps?.find(s => s.step_key === stepKey);
+                              return (
+                                <div key={key} className="flex items-center gap-2 py-1">
+                                  <span className="text-xs font-medium">{key}:</span>
+                                  {targetStep ? (
+                                    <button
+                                      onClick={() => {
+                                        const element = document.getElementById(`step-${targetStep.id}`);
+                                        if (element) {
+                                          const headerOffset = 80;
+                                          const elementPosition = element.getBoundingClientRect().top;
+                                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                                          
+                                          window.scrollTo({
+                                            top: offsetPosition,
+                                            behavior: 'smooth'
+                                          });
+                                        }
+                                      }}
+                                      className="text-xs text-primary hover:underline cursor-pointer"
+                                    >
+                                      "{stepKey}"
+                                    </button>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">"{stepKey}"</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 
