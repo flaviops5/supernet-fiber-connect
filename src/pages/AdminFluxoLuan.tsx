@@ -158,6 +158,9 @@ export default function AdminFluxoLuan() {
                   
                   <div className="space-y-3">
                     <Label>Variações de Resposta (uma por linha)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Emojis são permitidos! Ex: 👍, 😊, ✅
+                    </p>
                     {step.response_options.map((option) => (
                       <div key={option} className="space-y-1">
                         <Label className="text-sm text-muted-foreground">{option}</Label>
@@ -173,7 +176,7 @@ export default function AdminFluxoLuan() {
                               }
                             });
                           }}
-                          placeholder={`Digite as variações para "${option}", uma por linha`}
+                          placeholder={`Digite as variações para "${option}", uma por linha (pode usar emojis: 👍 😊)`}
                           rows={3}
                         />
                       </div>
