@@ -154,7 +154,7 @@ serve(async (req) => {
             .eq("id", conversation_id);
         }
 
-        // Mensagem inicial seguindo o prompt do sistema
+      // Mensagem inicial seguindo o prompt do sistema
         if (outageActive && outageRegion) {
           // Caso especial: Pane massiva
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
@@ -170,9 +170,22 @@ serve(async (req) => {
           let scenarioMessage = "";
 
           if (tx === 0 && rx === 0) {
-            // CENÁRIO A: Sem sinal
+            // CENÁRIO A: Sem sinal - iniciar fluxo de energia
             scenario = "A";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, verifique:\n1️⃣ Equipamento está **ligado na tomada**?\n2️⃣ Fonte de energia está **conectada**?\n3️⃣ Botão **Power** está ligado?\n\nMe avise após verificar!`;
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, me diga: **as luzes do seu equipamento estão acesas?**`;
+            
+            // Registrar estado inicial do Cenário A
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(conversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_luzes",
+                  scenario: "A"
+                }
+              })
+              .eq("id", conversation_id);
+              
           } else if (rx >= -23 && rx <= -18 && tx >= -1 && tx <= 2) {
             // CENÁRIO B: Sinal normal mas offline (equipamento travado)
             scenario = "B";
@@ -192,7 +205,19 @@ serve(async (req) => {
         } else if (client_is_offline) {
           // Cliente offline sem tentativa de reboot (fallback)
           logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
-          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**\n\n💡 Especialmente a luz PON/LOS - está **verde** ou **vermelha**?`;
+          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**`;
+          
+          // Registrar estado inicial
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(conversation?.metadata as any || {}),
+                flow_state: "cenario_a_verificar_luzes"
+              }
+            })
+            .eq("id", conversation_id);
+            
         } else {
           // Mensagem genérica para outros casos
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
@@ -217,12 +242,354 @@ serve(async (req) => {
         // Continuar atendimento com análise contextual
         logger.info("Luan continuando atendimento", { message, historyLength: messageHistory?.length });
 
+      // Buscar estado atual do fluxo
+      const { data: currentConversation } = await supabase
+        .from("conversations")
+        .select("metadata")
+        .eq("id", conversation_id)
+        .single();
+
+      const flowState = (currentConversation?.metadata as any)?.flow_state;
+      const scenario = (currentConversation?.metadata as any)?.scenario;
+
+      logger.info("Estado do fluxo", { flowState, scenario });
+
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
       const currentMessage = message.toLowerCase();
 
-      // Lógica de troubleshooting baseada em contexto
-      if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
+      // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
+      if (scenario === "A" && flowState) {
+        logger.info("Processando Cenário A", { flowState });
+
+        // Detectores de resposta
+        const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
+        const saysOff = /(apag(ad[oa]s?|ou)|sem luz|desligad[oa]s?|tud[oa] (apagad|desligad|escur)|escur[oa])/i.test(currentMessage) ||
+          (isNegation && /(aces[ao]s?|acesas|acessas|piscando)/i.test(currentMessage));
+        const saysPowerAvailable = /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
+          /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage);
+        const hasRedLightBlinking = /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec)/i.test(currentMessage) &&
+          /(vermelh[oa]|los|pon|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
+        const noRedLight = isNegation && /(vermelh[oa]|los|pon|pisca)/i.test(currentMessage);
+        const fiberReconnected = /(reconect(ei|ado)|tirei\s*e\s*(re)?coloquei|manipul(ei|ado)|fiz|terminei)/i.test(currentMessage) &&
+          /(conector|fibra|verde|cabo)/i.test(currentMessage);
+        const lightTurnedGreen = /(sim|s[ií]|verde|parou|fixa|ok)/i.test(currentMessage) &&
+          /(verde|parou|luz|fixa)/i.test(currentMessage);
+        const lightStillRed = (isNegation || /continua|ainda/i.test(currentMessage)) &&
+          /(vermelh[oa]|pisca)/i.test(currentMessage);
+
+        // ETAPA 1: Verificar se luzes estão acesas
+        if (flowState === "cenario_a_verificar_luzes") {
+          if (saysOff) {
+            // Luzes apagadas → Verificar energia
+            responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌\n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_energia"
+                }
+              })
+              .eq("id", conversation_id);
+              
+          } else if (/(sim|s[ií]|aces[ao]s?|acesas|ligad)/i.test(currentMessage)) {
+            // Luzes acesas → Pular para verificação de luz vermelha
+            responseMessage = `Ok! As luzes estão acesas. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_luz_vermelha"
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            // Resposta ambígua
+            responseMessage = `Desculpe, não entendi. 🤔\n\nAs luzes do equipamento estão **acesas** ou **apagadas**?`;
+          }
+        }
+        
+        // ETAPA 2: Verificar energia (após confirmar luzes apagadas)
+        else if (flowState === "cenario_a_verificar_energia") {
+          if (saysPowerAvailable) {
+            // Energia OK → Verificar luz vermelha
+            responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_luz_vermelha"
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            // Sem energia → Orientar cliente a resolver energia primeiro
+            responseMessage = `Entendi! Parece que o problema é na energia elétrica. ⚡\n\nAntes de continuar, você precisa:\n1️⃣ Verificar o disjuntor\n2️⃣ Testar outra tomada\n3️⃣ Garantir que há energia no local\n\nAssim que tiver energia, me avise que continuo o diagnóstico!`;
+          }
+        }
+        
+        // ETAPA 3: Verificar luz vermelha LOS/PON
+        else if (flowState === "cenario_a_verificar_luz_vermelha") {
+          if (hasRedLightBlinking) {
+            // Tem luz vermelha → Instruir manipulação do conector
+            responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o cabo fino (fibra óptica) - é um cabo bem fininho que entra no equipamento\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_aguardando_manipulacao"
+                }
+              })
+              .eq("id", conversation_id);
+          } else if (noRedLight) {
+            // Não tem luz vermelha → Abrir ticket
+            logger.info("Cenário A: Cliente sem luz vermelha - abrindo ticket");
+            
+            try {
+              // Tentar criar ticket no IXC
+              if (ixc_client_id) {
+                const ticketResponse = await supabase.functions.invoke("criar_atendimento_ixc", {
+                  body: {
+                    client_id: ixc_client_id,
+                    subject: "Equipamento offline sem sinal óptico",
+                    description: `Cliente ${customerName} reportou equipamento offline. Diagnóstico: luzes acesas mas sem luz vermelha LOS/PON. Possível problema no equipamento ou fibra.`,
+                    priority: "high"
+                  }
+                });
+                
+                if (ticketResponse.data?.ticket_id) {
+                  logger.info("Ticket IXC criado", { ticket_id: ticketResponse.data.ticket_id });
+                }
+              }
+            } catch (ticketError) {
+              logger.error("Erro ao criar ticket IXC", { error: ticketError });
+            }
+            
+            responseMessage = `Ok! Se não há luz vermelha mas o equipamento continua sem conexão, vou abrir um atendimento técnico prioritário. 🔧\n\nNossa equipe vai entrar em contato para agendar uma visita e resolver isso o mais rápido possível.\n\nPreciso de mais alguma coisa agora?`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                status: "active",
+                department: "tecnico",
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  needs_human_transfer: true,
+                  transfer_reason: "sem_luz_vermelha_equipamento_offline"
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            responseMessage = `Desculpe, não entendi. 🤔\n\nVocê está vendo uma **luz vermelha piscando** no equipamento?\n\nMe responda **sim** ou **não**.`;
+          }
+        }
+        
+        // ETAPA 4: Aguardando manipulação do conector
+        else if (flowState === "cenario_a_aguardando_manipulacao") {
+          if (fiberReconnected) {
+            // Cliente manipulou o conector → Verificar resultado
+            responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_resultado_manipulacao"
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            responseMessage = `Você já manipulou o conector da fibra conforme as instruções?\n\nMe avise quando terminar para continuar o diagnóstico! 🔧`;
+          }
+        }
+        
+        // ETAPA 5: Verificar resultado após manipulação
+        else if (flowState === "cenario_a_verificar_resultado_manipulacao") {
+          if (lightTurnedGreen) {
+            // Luz ficou verde → Consultar IXC para verificar se voltou online
+            logger.info("Cenário A: Luz ficou verde - consultando IXC");
+            
+            let isOnlineNow = false;
+            try {
+              const connectivityTest = await supabase.functions.invoke("test-equipment-connectivity", {
+                body: { ixc_client_id }
+              });
+              
+              isOnlineNow = connectivityTest.data?.is_online || false;
+              logger.info("Resultado consulta IXC", { isOnlineNow });
+            } catch (error) {
+              logger.error("Erro ao consultar IXC", { error });
+            }
+            
+            if (isOnlineNow) {
+              // Cliente voltou online → Perguntar se consegue navegar
+              responseMessage = `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
+              
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: "cenario_a_verificar_navegacao"
+                  }
+                })
+                .eq("id", conversation_id);
+            } else {
+              // Continua offline → Abrir ticket
+              logger.info("Cenário A: Luz verde mas continua offline - abrindo ticket");
+              
+              try {
+                if (ixc_client_id) {
+                  await supabase.functions.invoke("criar_atendimento_ixc", {
+                    body: {
+                      client_id: ixc_client_id,
+                      subject: "Equipamento com sinal mas offline",
+                      description: `Cliente ${customerName} manipulou conector de fibra, luz ficou verde mas equipamento continua offline. Necessário verificação técnica.`,
+                      priority: "high"
+                    }
+                  });
+                }
+              } catch (ticketError) {
+                logger.error("Erro ao criar ticket IXC", { error: ticketError });
+              }
+              
+              responseMessage = `Entendi. A luz ficou verde mas você ainda está sem conexão. 🔧\n\nVou abrir uma chamada técnica prioritária. Nossa equipe vai verificar o problema na rede e entrar em contato com você.\n\nEnquanto isso, preciso de mais alguma coisa?`;
+              
+              await supabase
+                .from("conversations")
+                .update({
+                  status: "active",
+                  department: "tecnico",
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    needs_human_transfer: true,
+                    transfer_reason: "luz_verde_mas_offline"
+                  }
+                })
+                .eq("id", conversation_id);
+            }
+          } else if (lightStillRed) {
+            // Luz continua vermelha → Pedir foto + ticket + humano
+            logger.info("Cenário A: Luz continua vermelha - solicitando foto");
+            
+            try {
+              if (ixc_client_id) {
+                await supabase.functions.invoke("criar_atendimento_ixc", {
+                  body: {
+                    client_id: ixc_client_id,
+                    subject: "Luz vermelha persistente após manipulação",
+                    description: `Cliente ${customerName} manipulou conector de fibra mas luz LOS continua vermelha. Possível problema na fibra ou equipamento. Necessário visita técnica.`,
+                    priority: "urgent"
+                  }
+                });
+              }
+            } catch (ticketError) {
+              logger.error("Erro ao criar ticket IXC", { error: ticketError });
+            }
+            
+            responseMessage = `Tudo bem. Se a luz continua vermelha, pode ser um problema mais complexo. 🔴\n\nVocê consegue tirar uma **foto da parte de trás do equipamento** mostrando onde o cabo fino (fibra) está conectado e me enviar?\n\nEnquanto isso, já vou abrir um chamado técnico prioritário. Pode ser necessário o deslocamento de um técnico.`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                status: "active",
+                department: "tecnico",
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  needs_human_transfer: true,
+                  transfer_reason: "luz_vermelha_persistente",
+                  awaiting_photo: true
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            responseMessage = `Desculpe, não entendi. 🤔\n\nA luz **parou de piscar** e ficou **VERDE FIXA**?\n\nOu continua **VERMELHA**?`;
+          }
+        }
+        
+        // ETAPA 6: Verificar navegação (após confirmar que está online)
+        else if (flowState === "cenario_a_verificar_navegacao") {
+          if (/(sim|s[ií]|consigo|funciona|ok)/i.test(currentMessage)) {
+            // Consegue navegar → Encerrar com sucesso
+            responseMessage = `Perfeito! Problema resolvido! 🎉\n\nPreciso de mais alguma coisa?`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_resolvido"
+                }
+              })
+              .eq("id", conversation_id);
+          } else if (isNegation || /(não|nao|continua|ainda)/i.test(currentMessage)) {
+            // Não consegue navegar → Ticket + humano
+            logger.info("Cenário A: Online mas não navega - abrindo ticket");
+            
+            try {
+              if (ixc_client_id) {
+                await supabase.functions.invoke("criar_atendimento_ixc", {
+                  body: {
+                    client_id: ixc_client_id,
+                    subject: "Cliente online mas sem navegação",
+                    description: `Cliente ${customerName} está online no sistema mas não consegue navegar. Possível problema de configuração ou DNS.`,
+                    priority: "high"
+                  }
+                });
+              }
+            } catch (ticketError) {
+              logger.error("Erro ao criar ticket IXC", { error: ticketError });
+            }
+            
+            responseMessage = `Entendi. Você está online mas não consegue acessar sites. 🔧\n\nVou abrir um chamado técnico para verificar isso. Nossa equipe vai entrar em contato.\n\nEnquanto isso, tente:\n1️⃣ Fechar e abrir o navegador\n2️⃣ Desligar e ligar o Wi-Fi do celular/computador\n\nMe avise se resolver!`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                status: "active",
+                department: "tecnico",
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  needs_human_transfer: true,
+                  transfer_reason: "online_mas_nao_navega"
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            responseMessage = `Você consegue abrir sites no navegador? Me responda **sim** ou **não**.`;
+          }
+        }
+        
+        // Inserir mensagem do Cenário A
+        if (responseMessage) {
+          const { error: insertErr } = await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          if (insertErr) {
+            logger.error("Erro ao inserir mensagem do Cenário A", { error: insertErr.message });
+            throw insertErr;
+          }
+          
+          logger.info("Luan respondeu ao cliente no Cenário A", { flowState });
+        }
+      }
+      
+      // 🟡 FLUXOS GENÉRICOS (quando não está em um cenário específico)
+      else if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {
         // Cliente está sem internet
         // Normalizar variações comuns de escrita (com erros de digitação e coloquialismo)
         const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
@@ -299,21 +666,24 @@ serve(async (req) => {
         // Resposta genérica contextualizada
         responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
       }
-
-      const { error: insertErr } = await supabase.from("conversation_messages").insert({
-        conversation_id,
-        sender_type: "agent",
-        sender_name: "Luan Silva",
-        content: responseMessage,
-        ai_suggestion: false
-      });
       
-      if (insertErr) {
-        logger.error("Erro ao inserir mensagem de continuação", { error: insertErr.message });
-        throw insertErr;
-      }
+      // Inserir mensagem apenas se não foi inserida no Cenário A
+      if (scenario !== "A" && responseMessage) {
+        const { error: insertErr } = await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        if (insertErr) {
+          logger.error("Erro ao inserir mensagem de continuação", { error: insertErr.message });
+          throw insertErr;
+        }
 
-      logger.info("Luan respondeu ao cliente");
+        logger.info("Luan respondeu ao cliente no fluxo genérico");
+      }
     }
 
     return new Response(
