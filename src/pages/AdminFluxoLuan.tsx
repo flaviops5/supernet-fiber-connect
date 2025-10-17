@@ -158,12 +158,49 @@ export default function AdminFluxoLuan() {
                   
                   <div className="space-y-3">
                     <Label>Variações de Resposta (uma por linha)</Label>
-                    <p className="text-xs text-muted-foreground">
-                      💡 Emojis são permitidos! Ex: 👍, 😊, ✅
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 p-3 bg-muted/30 rounded-md border">
+                      <span className="text-xs font-medium text-muted-foreground">Clique para inserir:</span>
+                      {['👍', '👎', '✅', '❌', '😊', '😢', '🔴', '🟢', '⚡', '💡', '🎯', '✨', '🚀', '💯'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={(e) => {
+                            // Encontra o último textarea focado ou o primeiro disponível
+                            const textareas = Array.from(document.querySelectorAll('textarea'));
+                            const activeTextarea = textareas.find(ta => ta === document.activeElement) || textareas[textareas.length - 1];
+                            
+                            if (activeTextarea) {
+                              const textarea = activeTextarea as HTMLTextAreaElement;
+                              const start = textarea.selectionStart;
+                              const text = textarea.value;
+                              const newText = text.substring(0, start) + emoji + text.substring(start);
+                              
+                              // Simula input
+                              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                                window.HTMLTextAreaElement.prototype,
+                                'value'
+                              )?.set;
+                              nativeInputValueSetter?.call(textarea, newText);
+                              
+                              const event = new Event('input', { bubbles: true });
+                              textarea.dispatchEvent(event);
+                              
+                              setTimeout(() => {
+                                textarea.focus();
+                                textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+                              }, 0);
+                            }
+                          }}
+                          className="hover:scale-125 transition-transform text-xl p-1 hover:bg-background rounded"
+                          title={`Inserir ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                     {step.response_options.map((option) => (
                       <div key={option} className="space-y-1">
-                        <Label className="text-sm text-muted-foreground">{option}</Label>
+                        <Label className="text-sm font-medium">{option}</Label>
                         <Textarea
                           value={(editedData.response_variations?.[option] || []).join('\n')}
                           onChange={(e) => {
@@ -176,8 +213,9 @@ export default function AdminFluxoLuan() {
                               }
                             });
                           }}
-                          placeholder={`Digite as variações para "${option}", uma por linha (pode usar emojis: 👍 😊)`}
-                          rows={3}
+                          placeholder={`Digite as variações, uma por linha. Ex: ${option === 'sim' ? 'sim\ns\n👍\n✅' : 'não\nn\n👎\n❌'}`}
+                          rows={4}
+                          className="font-mono"
                         />
                       </div>
                     ))}
