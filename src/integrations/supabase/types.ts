@@ -125,6 +125,71 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_flow_steps: {
+        Row: {
+          agent_type: Database["public"]["Enums"]["agent_type"]
+          awaits_response: boolean | null
+          created_at: string | null
+          id: string
+          instruction: string | null
+          is_active: boolean | null
+          media_id: string | null
+          metadata: Json | null
+          next_step_map: Json | null
+          question: string
+          response_options: Json | null
+          response_variations: Json | null
+          step_key: string
+          step_order: number
+          tool_calls: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_type?: Database["public"]["Enums"]["agent_type"]
+          awaits_response?: boolean | null
+          created_at?: string | null
+          id?: string
+          instruction?: string | null
+          is_active?: boolean | null
+          media_id?: string | null
+          metadata?: Json | null
+          next_step_map?: Json | null
+          question: string
+          response_options?: Json | null
+          response_variations?: Json | null
+          step_key: string
+          step_order: number
+          tool_calls?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_type?: Database["public"]["Enums"]["agent_type"]
+          awaits_response?: boolean | null
+          created_at?: string | null
+          id?: string
+          instruction?: string | null
+          is_active?: boolean | null
+          media_id?: string | null
+          metadata?: Json | null
+          next_step_map?: Json | null
+          question?: string
+          response_options?: Json | null
+          response_variations?: Json | null
+          step_key?: string
+          step_order?: number
+          tool_calls?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tech_flow_steps_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_repository"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_metrics: {
         Row: {
           action_type: string
@@ -3618,68 +3683,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tech_flow_steps: {
-        Row: {
-          awaits_response: boolean | null
-          created_at: string | null
-          id: string
-          instruction: string | null
-          is_active: boolean | null
-          media_id: string | null
-          metadata: Json | null
-          next_step_map: Json | null
-          question: string
-          response_options: Json | null
-          response_variations: Json | null
-          step_key: string
-          step_order: number
-          tool_calls: Json | null
-          updated_at: string | null
-        }
-        Insert: {
-          awaits_response?: boolean | null
-          created_at?: string | null
-          id?: string
-          instruction?: string | null
-          is_active?: boolean | null
-          media_id?: string | null
-          metadata?: Json | null
-          next_step_map?: Json | null
-          question: string
-          response_options?: Json | null
-          response_variations?: Json | null
-          step_key: string
-          step_order: number
-          tool_calls?: Json | null
-          updated_at?: string | null
-        }
-        Update: {
-          awaits_response?: boolean | null
-          created_at?: string | null
-          id?: string
-          instruction?: string | null
-          is_active?: boolean | null
-          media_id?: string | null
-          metadata?: Json | null
-          next_step_map?: Json | null
-          question?: string
-          response_options?: Json | null
-          response_variations?: Json | null
-          step_key?: string
-          step_order?: number
-          tool_calls?: Json | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tech_flow_steps_media_id_fkey"
-            columns: ["media_id"]
-            isOneToOne: false
-            referencedRelation: "media_repository"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       training_dataset: {
         Row: {
           actual_output: string | null
@@ -4123,6 +4126,14 @@ export type Database = {
         | "routing"
         | "cloe"
       agent_status: "online" | "busy" | "away" | "offline"
+      agent_type:
+        | "routing-agent"
+        | "support-tech-agent"
+        | "support-financial-agent"
+        | "sales-agent"
+        | "telemedicina-agent"
+        | "automacao-agent"
+        | "logistics-agent"
       campaign_channel: "whatsapp" | "sms" | "email" | "call"
       campaign_cta_type:
         | "none"
@@ -4304,6 +4315,15 @@ export const Constants = {
         "cloe",
       ],
       agent_status: ["online", "busy", "away", "offline"],
+      agent_type: [
+        "routing-agent",
+        "support-tech-agent",
+        "support-financial-agent",
+        "sales-agent",
+        "telemedicina-agent",
+        "automacao-agent",
+        "logistics-agent",
+      ],
       campaign_channel: ["whatsapp", "sms", "email", "call"],
       campaign_cta_type: [
         "none",

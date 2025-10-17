@@ -28,8 +28,8 @@ import MonitoringLogs from "./pages/MonitoringLogs";
 import AtlasInsights from "./pages/AtlasInsights";
 import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
-import AdminFluxoLuan from "./pages/AdminFluxoLuan";
-import FluxoLuan from "./pages/FluxoLuan";
+import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
+import FluxoAgente from "./pages/FluxoAgente";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
@@ -74,7 +74,8 @@ const App = () => {
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
             <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
-            <Route path="/admin/fluxo-luan" element={<AdminFluxoLuan />} />
+          <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
+          <Route path="/fluxo-agente" element={<FluxoAgente />} />
             
             {/* Public routes with header/footer */}
             <Route path="/*" element={
@@ -94,7 +95,7 @@ const App = () => {
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />
-          <Route path="/fluxo-luan" element={<FluxoLuan />} />
+          <Route path="/fluxo-luan" element={<Navigate to="/fluxo-agente?agent=support-tech-agent" replace />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="*" element={<NotFound />} />

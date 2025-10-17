@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { 
+  Bot, 
+  Settings, 
+  MessageSquare, 
+  CheckCircle2,
+  Users,
+  DollarSign,
+  ShoppingCart,
+  Stethoscope,
+  Home,
+  Truck,
+  ExternalLink
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, ShoppingCart, Wrench, DollarSign, Settings, Heart } from 'lucide-react';
 import AgentConfigEditor from './AgentConfigEditor';
+import { useNavigate } from 'react-router-dom';
 
 interface AgentStats {
   totalConversations: number;
@@ -19,312 +31,298 @@ interface AgentConfig {
   id: string;
   agent_type: string;
   name: string;
-  description: string;
+  description?: string;
   system_prompt: string;
   model: string;
   temperature: number;
   max_tokens: number;
-  capabilities: string[];
+  capabilities: any;
   is_active: boolean;
 }
 
-const AgentManagement = () => {
-  const [stats, setStats] = useState<Record<string, AgentStats>>({
-    routing: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-    automacao: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-  });
-  const [configs, setConfigs] = useState<Record<string, AgentConfig>>({});
-  const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
+export function AgentManagement() {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<Record<string, AgentStats>>({});
+  const [configs, setConfigs] = useState<AgentConfig[]>([]);
+  const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
 
   useEffect(() => {
-    loadAgentStats();
     loadAgentConfigs();
+    loadAgentStats();
   }, []);
 
   const loadAgentConfigs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('agent_configurations')
-        .select('*');
-
-      if (error) throw error;
-
-      if (data) {
-        const configsMap: Record<string, AgentConfig> = {};
-        data.forEach((config: any) => {
-          configsMap[config.agent_type] = config;
-        });
-        setConfigs(configsMap);
-      }
-    } catch (error) {
-      console.error('Error loading agent configs:', error);
+    const { data, error } = await supabase
+      .from('agent_configurations')
+      .select('*')
+      .order('agent_type');
+    
+    if (error) {
+      toast({
+        title: 'Erro ao carregar configurações',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
     }
+
+    setConfigs(data || []);
   };
 
   const loadAgentStats = async () => {
-    try {
-      // Get conversation counts by department
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('department, status');
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('department, status, created_at');
 
-      if (conversations) {
-        const statsByDept: Record<string, AgentStats> = {
-          routing: { totalConversations: conversations.length, activeConversations: 0, resolvedToday: 0 },
-          sales: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-          support_tech: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-          support_financial: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-          logistics: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-          telemedicina: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-          automacao: { totalConversations: 0, activeConversations: 0, resolvedToday: 0 },
-        };
-
-        conversations.forEach(conv => {
-          const dept = conv.department || 'sales';
-          if (statsByDept[dept]) {
-            statsByDept[dept].totalConversations++;
-            if (conv.status === 'active' || conv.status === 'waiting') {
-              statsByDept[dept].activeConversations++;
-            }
-          }
-        });
-
-        setStats(statsByDept);
-      }
-    } catch (error) {
+    if (error) {
       console.error('Error loading stats:', error);
+      return;
     }
-  };
 
+    const statsByDept: Record<string, AgentStats> = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    data?.forEach(conv => {
+      const dept = conv.department || 'routing';
+      if (!statsByDept[dept]) {
+        statsByDept[dept] = {
+          totalConversations: 0,
+          activeConversations: 0,
+          resolvedToday: 0,
+        };
+      }
+
+      statsByDept[dept].totalConversations++;
+      
+      if (conv.status === 'active' || conv.status === 'waiting') {
+        statsByDept[dept].activeConversations++;
+      }
+
+      if (conv.status === 'resolved' && new Date(conv.created_at) >= today) {
+        statsByDept[dept].resolvedToday++;
+      }
+    });
+
+    setStats(statsByDept);
+  };
 
   const agents = [
     {
-      id: 'routing',
-      name: 'Agente de Roteamento',
+      id: 'routing-agent',
+      name: 'Cloé',
+      icon: Users,
+      color: 'text-purple-500',
+      description: 'Agente de roteamento inteligente que direciona clientes para os departamentos corretos',
+      capabilities: [
+        'Validação de CPF',
+        'Consulta IXC',
+        'Verificação de quedas em massa',
+        'Direcionamento inteligente'
+      ]
+    },
+    {
+      id: 'support-tech-agent',
+      name: 'Luan',
       icon: Bot,
-      color: 'bg-orange-500',
-      description: 'Primeiro contato e direcionamento inteligente',
+      color: 'text-blue-500',
+      description: 'Especialista em suporte técnico e diagnósticos de conectividade',
       capabilities: [
-        'Identificação de intenção do cliente',
-        'Roteamento automático para agente especializado',
-        'Coleta de dados do cliente (nome, CPF, telefone)',
-        'Verificação de cobertura por CEP',
-        'Encaminhamento baseado na necessidade',
+        'Diagnóstico de sinal ONU',
+        'Reinicialização de equipamentos',
+        'Análise de status de conexão',
+        'Abertura de tickets IXC'
       ]
     },
     {
-      id: 'sales',
-      name: 'Agente de Vendas',
-      icon: ShoppingCart,
-      color: 'bg-green-500',
-      description: 'Especialista em contratação e planos',
-      capabilities: [
-        'Consulta de disponibilidade por CEP',
-        'Apresentação de planos disponíveis',
-        'Explicação detalhada de cada plano',
-        'Criação de proposta comercial',
-        'Agendamento de instalação',
-        'Criação de contratos no IXC',
-      ]
-    },
-    {
-      id: 'support_tech',
-      name: 'Suporte Técnico',
-      icon: Wrench,
-      color: 'bg-blue-500',
-      description: 'Resolução de problemas técnicos',
-      capabilities: [
-        'Diagnóstico de problemas de conexão',
-        'Verificação de status do cliente no IXC',
-        'Análise de velocidade e qualidade',
-        'Orientações para troubleshooting',
-        'Abertura de ordem de serviço',
-        'Escalação para técnico presencial',
-      ]
-    },
-    {
-      id: 'support_financial',
-      name: 'Suporte Financeiro',
+      id: 'support-financial-agent',
+      name: 'Financeiro',
       icon: DollarSign,
-      color: 'bg-yellow-500',
-      description: 'Gestão de pagamentos e inadimplência',
+      color: 'text-green-500',
+      description: 'Assistente financeiro para consultas de faturas e negociações',
       capabilities: [
-        'Consulta de faturas em aberto',
-        'Geração de segunda via de boleto',
-        'Criação de código PIX para pagamento',
+        'Consulta de faturas',
+        'Envio de boletos/PIX',
         'Negociação de débitos',
-        'Desbloqueio automático após pagamento',
-        'Orientações sobre formas de pagamento',
+        'Histórico de pagamentos'
       ]
     },
     {
-      id: 'logistics',
-      name: 'Logística',
-      icon: Wrench,
-      color: 'bg-purple-500',
-      description: 'Coordenação de instalações e agendamentos',
+      id: 'sales-agent',
+      name: 'Vendas',
+      icon: ShoppingCart,
+      color: 'text-orange-500',
+      description: 'Agente de vendas para novos clientes e upgrades de planos',
       capabilities: [
-        'Agendamento de novas instalações',
-        'Coordenação com equipe técnica',
-        'Gestão de ordens de serviço',
-        'Alocação de técnicos para atendimento',
-        'Controle de estoque de equipamentos',
-        'Reagendamento de visitas técnicas',
+        'Consulta de planos',
+        'Verificação de cobertura',
+        'Agendamento de instalação',
+        'Upgrade de planos'
       ]
     },
     {
-      id: 'telemedicina',
+      id: 'telemedicina-agent',
       name: 'Telemedicina',
-      icon: Heart,
-      color: 'bg-pink-500',
-      description: 'Atendimento médico online 24h',
+      icon: Stethoscope,
+      color: 'text-red-500',
+      description: 'Assistente para serviços de telemedicina',
       capabilities: [
-        'Apresentação de planos de telemedicina',
-        'Agendamento de consultas online',
-        'Informações sobre especialidades',
-        'Orientações sobre consultas 24h',
-        'Suporte sobre receitas digitais',
-        'Esclarecimentos sobre atendimento',
+        'Consulta de planos',
+        'Informações sobre serviços',
+        'Agendamento',
+        'Suporte aos usuários'
       ]
     },
     {
-      id: 'automacao',
-      name: 'Automação Residencial',
-      icon: Settings,
-      color: 'bg-cyan-500',
-      description: 'Consultoria em casa inteligente',
+      id: 'automacao-agent',
+      name: 'Automação',
+      icon: Home,
+      color: 'text-cyan-500',
+      description: 'Especialista em automação residencial',
       capabilities: [
-        'Apresentação de pacotes de automação',
-        'Análise de economia de energia',
-        'Demonstração de funcionalidades',
-        'Cálculo de ROI e retorno',
-        'Agendamento de visita técnica',
-        'Orientações sobre smart home',
+        'Informações sobre dispositivos',
+        'Suporte técnico',
+        'Integração de sistemas',
+        'Vendas de produtos'
+      ]
+    },
+    {
+      id: 'logistics-agent',
+      name: 'Logística',
+      icon: Truck,
+      color: 'text-amber-500',
+      description: 'Gerenciamento de instalações e logística',
+      capabilities: [
+        'Agendamento de instalações',
+        'Rastreamento de técnicos',
+        'Gestão de materiais',
+        'Otimização de rotas'
       ]
     }
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Gerenciamento de Agentes IA</h1>
-        <p className="text-muted-foreground">
-          Sistema inteligente de roteamento e atendimento automatizado. A base de conhecimento é sincronizada automaticamente quando você altera planos, FAQs ou configurações.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Agentes de IA</h2>
+          <p className="text-muted-foreground">
+            Configure e monitore os agentes especializados do sistema
+          </p>
+        </div>
+        <Button 
+          variant="outline"
+          onClick={() => navigate('/admin/fluxo-agentes')}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Gerenciar Fluxos
+        </Button>
       </div>
 
-      {/* Agent Stats Grid */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-        {agents.map(agent => (
-          <Card key={agent.id} className="relative overflow-hidden">
-            <div className={`absolute top-0 left-0 right-0 h-1 ${agent.color}`} />
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <agent.icon className={`w-8 h-8 ${agent.color.replace('bg-', 'text-')}`} />
-                <Badge variant="outline">{stats[agent.id]?.activeConversations || 0} ativos</Badge>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {agents.map((agent) => {
+          const Icon = agent.icon;
+          const agentStats = stats[agent.id] || { totalConversations: 0, activeConversations: 0, resolvedToday: 0 };
+          const config = configs.find(c => c.agent_type === agent.id);
+
+          return (
+            <Card key={agent.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg bg-muted ${agent.color}`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{agent.name}</h3>
+                    <Badge variant={config?.is_active ? 'default' : 'secondary'}>
+                      {config?.is_active ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => config && setEditingConfig(config)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
               </div>
-              <CardTitle className="text-lg mt-2">{agent.name}</CardTitle>
-              <CardDescription>{agent.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Stats */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total de conversas</span>
-                    <span className="font-medium">{stats[agent.id]?.totalConversations || 0}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Resolvidas hoje</span>
-                    <span className="font-medium">{stats[agent.id]?.resolvedToday || 0}</span>
-                  </div>
+
+              <p className="text-sm text-muted-foreground mb-4">
+                {agent.description}
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="text-center p-2 bg-muted rounded">
+                  <MessageSquare className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <div className="text-lg font-semibold">{agentStats.totalConversations}</div>
+                  <div className="text-xs text-muted-foreground">Total</div>
                 </div>
-
-                {/* Capabilities */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Capacidades:</h4>
-                  <ul className="space-y-1">
-                    {agent.capabilities.map((capability, index) => (
-                      <li key={index} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <span className="text-primary mt-0.5">•</span>
-                        <span>{capability}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="text-center p-2 bg-muted rounded">
+                  <Users className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <div className="text-lg font-semibold">{agentStats.activeConversations}</div>
+                  <div className="text-xs text-muted-foreground">Ativos</div>
                 </div>
+                <div className="text-center p-2 bg-muted rounded">
+                  <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                  <div className="text-lg font-semibold">{agentStats.resolvedToday}</div>
+                  <div className="text-xs text-muted-foreground">Hoje</div>
+                </div>
+              </div>
 
-                {/* Config Info */}
-                {configs[agent.id] && (
-                  <div className="pt-3 border-t space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Modelo:</span>
-                      <span className="font-mono text-xs">{configs[agent.id].model}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Temperatura:</span>
-                      <span>{configs[agent.id].temperature}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-muted-foreground">Status:</span>
-                      <Badge variant={configs[agent.id].is_active ? 'default' : 'secondary'} className="text-xs">
-                        {configs[agent.id].is_active ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase">
+                  Capacidades
+                </h4>
+                <div className="flex flex-wrap gap-1">
+                  {agent.capabilities.map((capability) => (
+                    <Badge key={capability} variant="outline" className="text-xs">
+                      {capability}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
 
+              {config && (
+                <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
+                  <div>Modelo: <span className="font-mono">{config.model}</span></div>
+                  <div>Temperatura: {config.temperature}</div>
+                  <div>Max Tokens: {config.max_tokens}</div>
+                </div>
+              )}
+
+              <div className="mt-4">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full mt-2"
-                  onClick={() => {
-                    const config = configs[agent.id];
-                    if (config) {
-                      setEditingConfig(config);
-                    } else {
-                      toast({
-                        title: 'Configuração não encontrada',
-                        description: `A configuração do ${agent.name} não foi encontrada. Recarregue a página.`,
-                        variant: 'destructive',
-                      });
-                    }
-                  }}
-                  disabled={!configs[agent.id]}
+                  className="w-full"
+                  onClick={() => navigate(`/fluxo-agente?agent=${agent.id}`)}
                 >
-                  <Settings className="w-3 h-3 mr-2" />
-                  {configs[agent.id] ? 'Configurar' : 'Sem configuração'}
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ver Fluxo
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Config Editor Dialog */}
       <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Configuração do Agente</DialogTitle>
-            <DialogDescription>
-              Configure o comportamento, modelo e parâmetros do agente de IA
-            </DialogDescription>
+            <DialogTitle>Configurar Agente: {editingConfig?.name}</DialogTitle>
           </DialogHeader>
           {editingConfig && (
             <AgentConfigEditor
-              config={editingConfig}
+              config={{...editingConfig, description: editingConfig.description || ''}}
               onClose={() => setEditingConfig(null)}
               onSave={() => {
-                setEditingConfig(null);
                 loadAgentConfigs();
+                setEditingConfig(null);
                 toast({
                   title: 'Configuração salva',
-                  description: 'As configurações do agente foram atualizadas.',
+                  description: 'As alterações foram aplicadas com sucesso',
                 });
               }}
             />
@@ -333,6 +331,6 @@ const AgentManagement = () => {
       </Dialog>
     </div>
   );
-};
+}
 
 export default AgentManagement;
