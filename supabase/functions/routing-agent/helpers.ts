@@ -346,6 +346,15 @@ export function determineTargetDepartment(
 
   // Análise de intenção por palavras-chave (mesmo para clientes não encontrados)
   
+  // 🆕 Pedido explícito de suporte técnico
+  if (
+    /\b(t[eé]cnico|suporte t[eé]cnico|técnico|falar com t[eé]cnico|chamar t[eé]cnico|técnico luan|luan)\b/i.test(
+      msgLower
+    )
+  ) {
+    return "tecnico";
+  }
+  
   // Keywords técnicas (problema de conexão/internet)
   if (
     /\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar|não funciona|problema técnico)\b/i.test(
