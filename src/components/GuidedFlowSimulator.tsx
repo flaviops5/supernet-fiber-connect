@@ -63,6 +63,7 @@ export default function GuidedFlowSimulator() {
   const [isSimulationActive, setIsSimulationActive] = useState(false);
   const [simulationComplete, setSimulationComplete] = useState(false);
   const [currentApprovalStatus, setCurrentApprovalStatus] = useState<'approved' | 'pending' | 'rejected'>('pending');
+  const [variationStatuses, setVariationStatuses] = useState<Record<string, 'approved' | 'pending' | 'rejected'>>({});
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['guided_flow_steps', selectedAgent],
@@ -230,7 +231,13 @@ export default function GuidedFlowSimulator() {
   const handleApproval = async (status: 'approved' | 'rejected') => {
     setCurrentApprovalStatus(status);
     
-    // TODO: Salvar no banco de dados
+    if (selectedVariation) {
+      setVariationStatuses(prev => ({
+        ...prev,
+        [selectedVariation]: status
+      }));
+    }
+    
     toast({ 
       title: status === 'approved' ? '✅ Cenário aprovado!' : '❌ Cenário não aprovado',
       description: 'Status salvo com sucesso'
@@ -339,14 +346,23 @@ export default function GuidedFlowSimulator() {
                   } />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50 max-h-[300px]">
-                  {variations.map(variation => (
-                    <SelectItem key={variation.id} value={variation.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{variation.name}</span>
-                        <span className="text-xs text-muted-foreground">{variation.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {variations.map(variation => {
+                    const status = variationStatuses[variation.id] || 'pending';
+                    const statusColor = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600';
+                    const statusIcon = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
+                    
+                    return (
+                      <SelectItem key={variation.id} value={variation.id}>
+                        <div className="flex items-start gap-2">
+                          <span className={statusColor}>{statusIcon}</span>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{variation.name}</span>
+                            <span className="text-xs text-muted-foreground">{variation.description}</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -403,7 +419,8 @@ export default function GuidedFlowSimulator() {
                 <div key={idx} className="space-y-2">
                   {/* Mensagem do agente */}
                   <div className="bg-primary/10 p-3 rounded-lg mr-12">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">{idx + 1}</span>
                       🤖 {selectedAgentLabel}
                     </div>
                     <div className="text-sm">{msg.question}</div>
