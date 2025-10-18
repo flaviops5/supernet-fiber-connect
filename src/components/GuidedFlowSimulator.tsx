@@ -85,6 +85,27 @@ export default function GuidedFlowSimulator() {
   // Identificar cenários (steps que começam com "cenario_")
   const scenarios = steps?.filter(step => step.step_key.startsWith('cenario_')) || [];
 
+  // Função auxiliar para extrair opções de resposta
+  const getResponseOptions = (step: FlowStep) => {
+    if (!step.response_options) return [];
+    
+    if (Array.isArray(step.response_options)) {
+      return step.response_options.map((opt: any) => ({
+        key: String(opt.key || opt.value || opt),
+        label: String(opt.label || opt.text || opt),
+      }));
+    }
+    
+    if (typeof step.response_options === 'object') {
+      return Object.entries(step.response_options).map(([key, value]) => ({
+        key: String(key),
+        label: String(value),
+      }));
+    }
+    
+    return [];
+  };
+
   // Gerar variações automáticas baseadas nas opções
   const getVariations = (): PathVariation[] => {
     if (!selectedScenario || !steps) return [];
@@ -226,26 +247,6 @@ export default function GuidedFlowSimulator() {
   };
 
   const selectedAgentLabel = AGENT_TYPES.find(a => a.value === selectedAgent)?.label || selectedAgent;
-
-  const getResponseOptions = (step: FlowStep) => {
-    if (!step.response_options) return [];
-    
-    if (Array.isArray(step.response_options)) {
-      return step.response_options.map((opt: any) => ({
-        key: String(opt.key || opt.value || opt),
-        label: String(opt.label || opt.text || opt),
-      }));
-    }
-    
-    if (typeof step.response_options === 'object') {
-      return Object.entries(step.response_options).map(([key, value]) => ({
-        key: String(key),
-        label: String(value),
-      }));
-    }
-    
-    return [];
-  };
 
   return (
     <Card className="p-6">
