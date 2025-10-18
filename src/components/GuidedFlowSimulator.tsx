@@ -143,10 +143,17 @@ export default function GuidedFlowSimulator() {
   const getResponseOptions = (step: FlowStep) => {
     if (!step.response_options) return [];
     
-    // response_options pode ser {"0": "sim", "1": "nao"} ou array
+    // response_options pode ser {"0": "sim", "1": "nao"} ou array [{"key": "0", "label": "sim"}]
+    if (Array.isArray(step.response_options)) {
+      return step.response_options.map((opt: any) => ({
+        key: String(opt.key || opt.value || opt),
+        label: String(opt.label || opt.text || opt),
+      }));
+    }
+    
     if (typeof step.response_options === 'object') {
       return Object.entries(step.response_options).map(([key, value]) => ({
-        key,
+        key: String(key),
         label: String(value),
       }));
     }
@@ -298,69 +305,56 @@ export default function GuidedFlowSimulator() {
                   <div className="text-xs text-muted-foreground mt-1">
                     Step: {currentStep.step_key}
                   </div>
-                  
-                  {/* Instrução (apenas para debug) */}
-                  {currentStep.instruction && (
-                    <details className="mt-2">
-                      <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-                        Ver instrução interna
-                      </summary>
-                      <div className="text-xs text-muted-foreground mt-1 p-2 bg-background/50 rounded">
-                        {currentStep.instruction}
-                      </div>
-                    </details>
-                  )}
-
-                  {/* Tool calls (se existir) */}
-                  {currentStep.tool_calls && currentStep.tool_calls.length > 0 && (
-                    <div className="mt-2 text-xs">
-                      <Badge variant="outline" className="gap-1">
-                        🔧 {currentStep.tool_calls.length} {currentStep.tool_calls.length === 1 ? 'ferramenta' : 'ferramentas'}
-                      </Badge>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
 
             {/* Opções de resposta */}
             {currentStep && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium block">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
-                  Escolha a resposta do cliente:
-                </label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">3</span>
+                  <label className="text-sm font-medium">
+                    Escolha a resposta do cliente:
+                  </label>
+                </div>
                 <div className="grid gap-2">
-                  {getResponseOptions(currentStep).map(option => {
-                    const nextStepKey = currentStep.next_step_map?.[option.key];
-                    const hasNextStep = !!nextStepKey;
-                    const nextStepExists = hasNextStep && steps?.some(s => s.step_key === nextStepKey);
-                    
-                    return (
-                      <Button
-                        key={option.key}
-                        onClick={() => handleSelectOption(option.key, option.label)}
-                        variant="outline"
-                        className="justify-between h-auto py-3 px-4"
-                      >
-                        <span className="text-left flex-1">{option.label}</span>
-                        <div className="flex items-center gap-2 ml-2">
-                          <span className="text-xs text-muted-foreground">
-                            {nextStepKey || 'Sem próximo'}
-                          </span>
-                          {hasNextStep ? (
-                            nextStepExists ? (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
+                  {getResponseOptions(currentStep).length > 0 ? (
+                    getResponseOptions(currentStep).map(option => {
+                      const nextStepKey = currentStep.next_step_map?.[option.key];
+                      const hasNextStep = !!nextStepKey;
+                      const nextStepExists = hasNextStep && steps?.some(s => s.step_key === nextStepKey);
+                      
+                      return (
+                        <Button
+                          key={option.key}
+                          onClick={() => handleSelectOption(option.key, option.label)}
+                          variant="outline"
+                          className="justify-between h-auto py-3 px-4"
+                        >
+                          <span className="text-left flex-1">{option.label}</span>
+                          <div className="flex items-center gap-2 ml-2">
+                            <span className="text-xs text-muted-foreground">
+                              {nextStepKey || 'Sem próximo'}
+                            </span>
+                            {hasNextStep ? (
+                              nextStepExists ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-destructive" />
+                              )
                             ) : (
-                              <AlertCircle className="h-4 w-4 text-destructive" />
-                            )
-                          ) : (
-                            <AlertCircle className="h-4 w-4 text-yellow-500" />
-                          )}
-                        </div>
-                      </Button>
-                    );
-                  })}
+                              <AlertCircle className="h-4 w-4 text-yellow-500" />
+                            )}
+                          </div>
+                        </Button>
+                      );
+                    })
+                  ) : (
+                    <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
+                      ⚠️ Nenhuma opção de resposta configurada para este step
+                    </div>
+                  )}
                 </div>
               </div>
             )}
