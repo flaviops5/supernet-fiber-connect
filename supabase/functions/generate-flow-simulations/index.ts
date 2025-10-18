@@ -137,7 +137,14 @@ Deno.serve(async (req) => {
 // Gerar todos os caminhos possíveis no fluxo
 function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
   const paths: ConversationPath[] = [];
-  const firstStep = steps.find(s => s.step_order === 0) || steps[0];
+  
+  // Encontrar o primeiro step (menor step_order)
+  const firstStep = steps.reduce((min, step) => 
+    step.step_order < min.step_order ? step : min, 
+    steps[0]
+  );
+  
+  console.log(`🎯 Primeiro step: ${firstStep.step_key} (order: ${firstStep.step_order})`);
 
   function explorePath(
     currentStepKey: string,
@@ -145,12 +152,22 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
     responses: Array<{ step: string; response: string }>
   ) {
     const currentStep = steps.find(s => s.step_key === currentStepKey);
-    if (!currentStep) return;
+    
+    // Se o step não existe, é um fim de caminho (transferência, resolução, etc)
+    if (!currentStep) {
+      console.log(`✅ Caminho completo encontrado: ${visitedSteps.length} steps -> ${currentStepKey}`);
+      paths.push({
+        steps: visitedSteps,
+        responses: responses
+      });
+      return;
+    }
 
     const newVisitedSteps = [...visitedSteps, currentStepKey];
 
     // Se não tem next_step_map ou está vazio, é fim do caminho
     if (!currentStep.next_step_map || Object.keys(currentStep.next_step_map).length === 0) {
+      console.log(`✅ Caminho completo (sem próximos): ${newVisitedSteps.length} steps`);
       paths.push({
         steps: newVisitedSteps,
         responses: responses
@@ -160,6 +177,8 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
 
     // Explorar cada opção de resposta
     const nextStepMap = currentStep.next_step_map;
+    console.log(`🔍 Explorando ${currentStepKey}: ${Object.keys(nextStepMap).length} opções`);
+    
     for (const [response, nextStep] of Object.entries(nextStepMap)) {
       // Evitar loops infinitos
       if (!visitedSteps.includes(nextStep as string)) {
@@ -168,11 +187,14 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
           newVisitedSteps,
           [...responses, { step: currentStepKey, response }]
         );
+      } else {
+        console.log(`⚠️ Loop detectado: ${nextStep} já foi visitado`);
       }
     }
   }
 
   explorePath(firstStep.step_key, [], []);
+  console.log(`🎉 Total de caminhos gerados: ${paths.length}`);
   return paths;
 }
 
