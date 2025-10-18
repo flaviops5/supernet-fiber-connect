@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Badge } from '@/components/ui/badge';
+import GuidedFlowSimulator from '@/components/GuidedFlowSimulator';
 
 interface FlowStep {
   id: string;
@@ -306,13 +307,18 @@ export default function AdminFluxoAgentes() {
             </p>
           </div>
 
-          {/* Botão de Gerar Simulações */}
+          {/* Simulador Guiado */}
+          <div className="mb-6">
+            <GuidedFlowSimulator />
+          </div>
+
+          {/* Botão de Gerar Simulações Automáticas */}
           <Card className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-primary/5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  Simulador de Conversas
+                  Simulador Automático de Conversas
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Gere automaticamente todas as conversas possíveis deste fluxo para análise
