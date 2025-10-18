@@ -678,49 +678,56 @@ export default function AdminFluxoAgentes() {
 
                       {step.response_options && Object.keys(step.response_options).length > 0 && (
                         <div>
-                          <span className="font-medium text-sm">Opções de Resposta:</span>
-                          <ul className="list-disc list-inside text-sm text-muted-foreground">
-                            {Object.entries(step.response_options).map(([key, value]) => (
-                              <li key={key}>
-                                <strong>{key}:</strong> {String(value)}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {step.next_step_map && Object.keys(step.next_step_map).length > 0 && (
-                        <div>
-                          <span className="font-medium text-sm">Next Step Map:</span>
-                          <div className="bg-muted p-3 rounded mt-1">
-                            {Object.entries(step.next_step_map).map(([key, value]) => {
-                              const stepKey = String(value);
-                              const targetStep = steps?.find(s => s.step_key === stepKey);
+                          <span className="font-medium text-sm">Opções de Resposta e Fluxo:</span>
+                          <div className="space-y-2 mt-2">
+                            {Object.entries(step.response_options).map(([key, value]) => {
+                              const responseValue = String(value);
+                              const nextStep = step.next_step_map?.[responseValue];
+                              const stepKey = nextStep ? String(nextStep) : null;
+                              const targetStep = stepKey ? steps?.find(s => s.step_key === stepKey) : null;
+                              
                               return (
-                                <div key={key} className="flex items-center gap-2 py-1">
-                                  <span className="text-xs font-medium">{key}:</span>
-                                  {targetStep ? (
-                                    <button
-                                      onClick={() => {
-                                        const element = document.getElementById(`step-${targetStep.id}`);
-                                        if (element) {
-                                          const headerOffset = 80;
-                                          const elementPosition = element.getBoundingClientRect().top;
-                                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                                          
-                                          window.scrollTo({
-                                            top: offsetPosition,
-                                            behavior: 'smooth'
-                                          });
-                                        }
-                                      }}
-                                      className="text-xs text-primary hover:underline cursor-pointer"
-                                    >
-                                      "{stepKey}"
-                                    </button>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">"{stepKey}"</span>
-                                  )}
+                                <div key={key} className="bg-muted/50 border border-border p-3 rounded-lg hover:bg-muted transition-colors">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 flex-1">
+                                      <Badge variant="outline" className="font-mono text-xs">
+                                        {key}
+                                      </Badge>
+                                      <span className="text-sm font-medium">
+                                        {responseValue}
+                                      </span>
+                                    </div>
+                                    
+                                    {stepKey && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">→</span>
+                                        {targetStep ? (
+                                          <button
+                                            onClick={() => {
+                                              const element = document.getElementById(`step-${targetStep.id}`);
+                                              if (element) {
+                                                const headerOffset = 80;
+                                                const elementPosition = element.getBoundingClientRect().top;
+                                                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                                                
+                                                window.scrollTo({
+                                                  top: offsetPosition,
+                                                  behavior: 'smooth'
+                                                });
+                                              }
+                                            }}
+                                            className="text-xs font-mono text-primary hover:underline hover:bg-primary/10 px-2 py-1 rounded transition-colors"
+                                          >
+                                            {stepKey}
+                                          </button>
+                                        ) : (
+                                          <span className="text-xs font-mono text-muted-foreground px-2 py-1 rounded bg-muted">
+                                            {stepKey}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
