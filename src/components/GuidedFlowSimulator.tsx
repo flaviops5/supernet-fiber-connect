@@ -82,8 +82,8 @@ export default function GuidedFlowSimulator() {
     enabled: !!selectedAgent,
   });
 
-  // Identificar cenários (steps iniciais)
-  const scenarios = steps?.filter(step => step.step_order === 1) || [];
+  // Identificar cenários (steps que começam com "cenario_")
+  const scenarios = steps?.filter(step => step.step_key.startsWith('cenario_')) || [];
 
   // Gerar variações automáticas baseadas nas opções
   const getVariations = (): PathVariation[] => {
