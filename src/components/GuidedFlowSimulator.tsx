@@ -171,7 +171,10 @@ export default function GuidedFlowSimulator() {
         {!isSimulationActive && (
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium block mb-2">1. Selecione o Agente</label>
+              <label className="text-sm font-medium block mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">1</span>
+                Selecione o Agente
+              </label>
               <Select value={selectedAgent} onValueChange={(value) => {
                 setSelectedAgent(value);
                 setSelectedStartStep('');
@@ -190,7 +193,10 @@ export default function GuidedFlowSimulator() {
             </div>
 
             <div>
-              <label className="text-sm font-medium block mb-2">2. Selecione o Step Inicial</label>
+              <label className="text-sm font-medium block mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">2</span>
+                Selecione o Step Inicial
+              </label>
               <Select 
                 value={selectedStartStep} 
                 onValueChange={setSelectedStartStep}
@@ -321,6 +327,7 @@ export default function GuidedFlowSimulator() {
             {currentStep && (
               <div className="space-y-2">
                 <label className="text-sm font-medium block">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
                   Escolha a resposta do cliente:
                 </label>
                 <div className="grid gap-2">
