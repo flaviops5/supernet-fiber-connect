@@ -353,48 +353,6 @@ export default function GuidedFlowSimulator() {
           </div>
         )}
 
-        {/* Preview da Variação Selecionada */}
-        {selectedVariation && !isSimulationActive && (
-          <Card className="p-4 bg-muted/50">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              📋 Caminho da Variação (copie para conversar)
-            </h3>
-            <div className="bg-background p-3 rounded border font-mono text-sm space-y-2">
-              {(() => {
-                const variation = variations.find(v => v.id === selectedVariation);
-                if (!variation) return null;
-                
-                const preview: string[] = [];
-                let currentStepKey = selectedScenario;
-                let pathIndex = 0;
-
-                while (currentStepKey && pathIndex < variation.path.length) {
-                  const step = steps?.find(s => s.step_key === currentStepKey);
-                  if (!step) break;
-
-                  const optionKey = variation.path[pathIndex];
-                  const options = getResponseOptions(step);
-                  const option = options.find(o => o.key === optionKey);
-                  
-                  if (!option) break;
-
-                  preview.push(`${step.question} - ${option.label}`);
-
-                  const nextStepKey = step.next_step_map?.[optionKey];
-                  if (!nextStepKey) break;
-
-                  currentStepKey = nextStepKey;
-                  pathIndex++;
-                }
-
-                return preview.map((line, idx) => (
-                  <div key={idx}>{line}</div>
-                ));
-              })()}
-            </div>
-          </Card>
-        )}
-
         {/* Botões de Controle */}
         <div className="flex gap-2">
           {!isSimulationActive ? (
@@ -431,7 +389,9 @@ export default function GuidedFlowSimulator() {
         {isSimulationActive && conversation.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Conversa Simulada: {selectedAgentLabel}</h3>
+              <h3 className="text-lg font-semibold">
+                Conversa Simulada: {selectedAgentLabel}/{variations.find(v => v.id === selectedVariation)?.name}
+              </h3>
               <Badge variant="secondary">
                 {conversation.length} {conversation.length === 1 ? 'interação' : 'interações'}
               </Badge>
