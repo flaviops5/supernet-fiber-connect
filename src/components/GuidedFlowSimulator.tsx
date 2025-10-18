@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FlowStep {
@@ -28,6 +28,21 @@ interface ConversationMessage {
   selected_option_label: string;
 }
 
+interface PathVariation {
+  id: string;
+  name: string;
+  description: string;
+  path: string[]; // Array de option keys: ["sim", "nao", "sim"]
+}
+
+interface ScenarioApproval {
+  agent_type: string;
+  scenario_key: string;
+  variation_id: string;
+  status: 'approved' | 'pending' | 'rejected';
+  notes?: string;
+}
+
 const AGENT_TYPES = [
   { value: 'routing-agent', label: 'Cloé (Roteamento)' },
   { value: 'support-tech-agent', label: 'Luan (Suporte Técnico)' },
@@ -40,11 +55,14 @@ const AGENT_TYPES = [
 
 export default function GuidedFlowSimulator() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedAgent, setSelectedAgent] = useState<string>('');
-  const [selectedStartStep, setSelectedStartStep] = useState<string>('');
-  const [currentStep, setCurrentStep] = useState<FlowStep | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState<string>('');
+  const [selectedVariation, setSelectedVariation] = useState<string>('');
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [isSimulationActive, setIsSimulationActive] = useState(false);
+  const [simulationComplete, setSimulationComplete] = useState(false);
+  const [currentApprovalStatus, setCurrentApprovalStatus] = useState<'approved' | 'pending' | 'rejected'>('pending');
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['guided_flow_steps', selectedAgent],
@@ -64,86 +82,154 @@ export default function GuidedFlowSimulator() {
     enabled: !!selectedAgent,
   });
 
-  const handleStartSimulation = () => {
-    if (!selectedStartStep || !steps) {
+  // Identificar cenários (steps iniciais)
+  const scenarios = steps?.filter(step => step.step_order === 1) || [];
+
+  // Gerar variações automáticas baseadas nas opções
+  const getVariations = (): PathVariation[] => {
+    if (!selectedScenario || !steps) return [];
+    
+    const startStep = steps.find(s => s.step_key === selectedScenario);
+    if (!startStep) return [];
+
+    // Gerar todas as variações possíveis explorando os caminhos
+    const variations: PathVariation[] = [];
+    const visited = new Set<string>();
+
+    const explorePath = (currentStepKey: string, path: string[], pathLabels: string[], depth: number = 0) => {
+      if (depth > 10) return; // Limite de profundidade para evitar loops infinitos
+      
+      const step = steps.find(s => s.step_key === currentStepKey);
+      if (!step) return;
+
+      const options = getResponseOptions(step);
+      if (options.length === 0) {
+        // Fim do caminho
+        const pathKey = path.join('→');
+        if (!visited.has(pathKey)) {
+          visited.add(pathKey);
+          variations.push({
+            id: `var-${variations.length + 1}`,
+            name: `Variação ${variations.length + 1}`,
+            description: pathLabels.join(' → '),
+            path: path
+          });
+        }
+        return;
+      }
+
+      // Explorar cada opção
+      options.forEach(option => {
+        const nextStepKey = step.next_step_map?.[option.key];
+        if (nextStepKey) {
+          explorePath(
+            nextStepKey,
+            [...path, option.key],
+            [...pathLabels, option.label],
+            depth + 1
+          );
+        } else {
+          // Fim do caminho
+          const newPath = [...path, option.key];
+          const newPathLabels = [...pathLabels, option.label];
+          const pathKey = newPath.join('→');
+          if (!visited.has(pathKey)) {
+            visited.add(pathKey);
+            variations.push({
+              id: `var-${variations.length + 1}`,
+              name: `Variação ${variations.length + 1}`,
+              description: newPathLabels.join(' → '),
+              path: newPath
+            });
+          }
+        }
+      });
+    };
+
+    explorePath(selectedScenario, [], [], 0);
+    return variations;
+  };
+
+  const variations = getVariations();
+
+  const handleStartSimulation = async () => {
+    if (!selectedAgent || !selectedScenario || !selectedVariation) {
       toast({ 
-        title: 'Selecione um step inicial',
+        title: 'Selecione todas as opções',
+        description: 'Escolha o agente, cenário e variação antes de iniciar',
         variant: 'destructive'
       });
       return;
     }
 
-    const startStep = steps.find(s => s.step_key === selectedStartStep);
-    if (!startStep) {
-      toast({ 
-        title: 'Step não encontrado',
-        variant: 'destructive'
-      });
+    const variation = variations.find(v => v.id === selectedVariation);
+    if (!variation) {
+      toast({ title: 'Variação não encontrada', variant: 'destructive' });
       return;
     }
 
-    setCurrentStep(startStep);
     setConversation([]);
     setIsSimulationActive(true);
-    toast({ title: '🎬 Simulação iniciada!' });
+    setSimulationComplete(false);
+
+    // Executar simulação automaticamente
+    const messages: ConversationMessage[] = [];
+    let currentStepKey = selectedScenario;
+    let pathIndex = 0;
+
+    while (currentStepKey && pathIndex < variation.path.length) {
+      const step = steps?.find(s => s.step_key === currentStepKey);
+      if (!step) break;
+
+      const optionKey = variation.path[pathIndex];
+      const options = getResponseOptions(step);
+      const option = options.find(o => o.key === optionKey);
+      
+      if (!option) break;
+
+      messages.push({
+        step_key: step.step_key,
+        question: step.question,
+        selected_option: optionKey,
+        selected_option_label: option.label
+      });
+
+      const nextStepKey = step.next_step_map?.[optionKey];
+      if (!nextStepKey) break;
+
+      currentStepKey = nextStepKey;
+      pathIndex++;
+    }
+
+    setConversation(messages);
+    setSimulationComplete(true);
+    toast({ title: '✅ Simulação concluída!' });
+  };
+
+  const handleApproval = async (status: 'approved' | 'rejected') => {
+    setCurrentApprovalStatus(status);
+    
+    // TODO: Salvar no banco de dados
+    toast({ 
+      title: status === 'approved' ? '✅ Cenário aprovado!' : '❌ Cenário não aprovado',
+      description: 'Status salvo com sucesso'
+    });
   };
 
   const handleResetSimulation = () => {
-    setCurrentStep(null);
     setConversation([]);
     setIsSimulationActive(false);
-    setSelectedStartStep('');
+    setSimulationComplete(false);
+    setSelectedVariation('');
+    setCurrentApprovalStatus('pending');
     toast({ title: '🔄 Simulação reiniciada' });
-  };
-
-  const handleSelectOption = (optionKey: string, optionLabel: string) => {
-    if (!currentStep) return;
-
-    // Adicionar mensagem do agente
-    const newMessage: ConversationMessage = {
-      step_key: currentStep.step_key,
-      question: currentStep.question,
-      selected_option: optionKey,
-      selected_option_label: optionLabel,
-    };
-
-    setConversation(prev => [...prev, newMessage]);
-
-    // Buscar próximo step baseado no next_step_map
-    const nextStepKey = currentStep.next_step_map?.[optionKey];
-    
-    if (!nextStepKey) {
-      toast({ 
-        title: '⚠️ Fim do fluxo',
-        description: `Não há próximo step configurado para a opção "${optionLabel}"`,
-        variant: 'destructive'
-      });
-      setIsSimulationActive(false);
-      return;
-    }
-
-    const nextStep = steps?.find(s => s.step_key === nextStepKey);
-    
-    if (!nextStep) {
-      toast({ 
-        title: '❌ Erro no fluxo',
-        description: `Step "${nextStepKey}" não encontrado. Verifique o next_step_map.`,
-        variant: 'destructive'
-      });
-      setIsSimulationActive(false);
-      return;
-    }
-
-    setCurrentStep(nextStep);
   };
 
   const selectedAgentLabel = AGENT_TYPES.find(a => a.value === selectedAgent)?.label || selectedAgent;
 
-  // Extrair opções do response_options
   const getResponseOptions = (step: FlowStep) => {
     if (!step.response_options) return [];
     
-    // response_options pode ser {"0": "sim", "1": "nao"} ou array [{"key": "0", "label": "sim"}]
     if (Array.isArray(step.response_options)) {
       return step.response_options.map((opt: any) => ({
         key: String(opt.key || opt.value || opt),
@@ -167,24 +253,26 @@ export default function GuidedFlowSimulator() {
         {/* Header */}
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            🎮 Simulador Guiado de Fluxo
+            🎮 Simulador Automático de Fluxo
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Navegue manualmente pelos steps escolhendo cada resposta
+            Escolha o agente, cenário e variação para simular automaticamente a conversa completa
           </p>
         </div>
 
-        {/* Seleção de Agente e Step Inicial */}
+        {/* Três Caixas de Seleção */}
         {!isSimulationActive && (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Caixa 1: Agente */}
             <div>
               <label className="text-sm font-medium block mb-2">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">1</span>
-                Selecione o Agente
+                Escolher o Agente
               </label>
               <Select value={selectedAgent} onValueChange={(value) => {
                 setSelectedAgent(value);
-                setSelectedStartStep('');
+                setSelectedScenario('');
+                setSelectedVariation('');
               }}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Escolha um agente..." />
@@ -199,27 +287,63 @@ export default function GuidedFlowSimulator() {
               </Select>
             </div>
 
+            {/* Caixa 2: Cenário */}
             <div>
               <label className="text-sm font-medium block mb-2">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">2</span>
-                Selecione o Step Inicial
+                Escolher o Cenário
               </label>
               <Select 
-                value={selectedStartStep} 
-                onValueChange={setSelectedStartStep}
+                value={selectedScenario} 
+                onValueChange={(value) => {
+                  setSelectedScenario(value);
+                  setSelectedVariation('');
+                }}
                 disabled={!selectedAgent || isLoading}
               >
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder={
                     isLoading ? 'Carregando...' : 
                     !selectedAgent ? 'Selecione um agente primeiro' :
-                    'Escolha o step inicial...'
+                    scenarios.length === 0 ? 'Nenhum cenário encontrado' :
+                    'Escolha o cenário...'
                   } />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  {steps?.map(step => (
-                    <SelectItem key={step.id} value={step.step_key}>
-                      {step.step_order}. {step.step_key}
+                  {scenarios.map(scenario => (
+                    <SelectItem key={scenario.id} value={scenario.step_key}>
+                      {scenario.step_key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Caixa 3: Variação */}
+            <div>
+              <label className="text-sm font-medium block mb-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
+                Escolher as Opções
+              </label>
+              <Select 
+                value={selectedVariation} 
+                onValueChange={setSelectedVariation}
+                disabled={!selectedScenario || variations.length === 0}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder={
+                    !selectedScenario ? 'Selecione um cenário primeiro' :
+                    variations.length === 0 ? 'Nenhuma variação disponível' :
+                    'Escolha a variação...'
+                  } />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50 max-h-[300px]">
+                  {variations.map(variation => (
+                    <SelectItem key={variation.id} value={variation.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{variation.name}</span>
+                        <span className="text-xs text-muted-foreground">{variation.description}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -233,7 +357,7 @@ export default function GuidedFlowSimulator() {
           {!isSimulationActive ? (
             <Button
               onClick={handleStartSimulation}
-              disabled={!selectedAgent || !selectedStartStep || isLoading}
+              disabled={!selectedAgent || !selectedScenario || !selectedVariation || isLoading}
               className="gap-2"
             >
               {isLoading ? (
@@ -255,23 +379,23 @@ export default function GuidedFlowSimulator() {
               className="gap-2"
             >
               <RotateCcw className="h-4 w-4" />
-              Reiniciar
+              Nova Simulação
             </Button>
           )}
         </div>
 
-        {/* Conversa */}
-        {isSimulationActive && (
+        {/* Conversa Completa */}
+        {isSimulationActive && conversation.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Conversa: {selectedAgentLabel}</h3>
+              <h3 className="text-lg font-semibold">Conversa Simulada: {selectedAgentLabel}</h3>
               <Badge variant="secondary">
-                {conversation.length} {conversation.length === 1 ? 'mensagem' : 'mensagens'}
+                {conversation.length} {conversation.length === 1 ? 'interação' : 'interações'}
               </Badge>
             </div>
 
             {/* Histórico da conversa */}
-            <div className="space-y-3 max-h-[400px] overflow-y-auto p-4 bg-muted/30 rounded-lg">
+            <div className="space-y-3 max-h-[500px] overflow-y-auto p-4 bg-muted/30 rounded-lg">
               {conversation.map((msg, idx) => (
                 <div key={idx} className="space-y-2">
                   {/* Mensagem do agente */}
@@ -294,67 +418,39 @@ export default function GuidedFlowSimulator() {
                   </div>
                 </div>
               ))}
-
-              {/* Step atual - mensagem do agente */}
-              {currentStep && (
-                <div className="bg-primary/10 p-3 rounded-lg mr-12 animate-in fade-in slide-in-from-bottom-4">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">
-                    🤖 {selectedAgentLabel}
-                  </div>
-                  <div className="text-sm">{currentStep.question}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Step: {currentStep.step_key}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Opções de resposta */}
-            {currentStep && (
+            {/* Botões de Validação */}
+            {simulationComplete && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">3</span>
-                  <label className="text-sm font-medium">
-                    Escolha a resposta do cliente:
-                  </label>
+                <div className="text-sm font-medium text-center">
+                  Valide este cenário:
                 </div>
-                <div className="grid gap-2">
-                  {getResponseOptions(currentStep).length > 0 ? (
-                    getResponseOptions(currentStep).map(option => {
-                      const nextStepKey = currentStep.next_step_map?.[option.key];
-                      const hasNextStep = !!nextStepKey;
-                      const nextStepExists = hasNextStep && steps?.some(s => s.step_key === nextStepKey);
-                      
-                      return (
-                        <Button
-                          key={option.key}
-                          onClick={() => handleSelectOption(option.key, option.label)}
-                          variant="outline"
-                          className="justify-between h-auto py-3 px-4"
-                        >
-                          <span className="text-left flex-1">{option.label}</span>
-                          <div className="flex items-center gap-2 ml-2">
-                            <span className="text-xs text-muted-foreground">
-                              {nextStepKey || 'Sem próximo'}
-                            </span>
-                            {hasNextStep ? (
-                              nextStepExists ? (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              ) : (
-                                <AlertCircle className="h-4 w-4 text-destructive" />
-                              )
-                            ) : (
-                              <AlertCircle className="h-4 w-4 text-yellow-500" />
-                            )}
-                          </div>
-                        </Button>
-                      );
-                    })
-                  ) : (
-                    <div className="text-sm text-muted-foreground p-4 bg-muted/50 rounded-lg">
-                      ⚠️ Nenhuma opção de resposta configurada para este step
-                    </div>
-                  )}
+                <div className="grid grid-cols-3 gap-3">
+                  <Button
+                    onClick={() => handleApproval('approved')}
+                    variant={currentApprovalStatus === 'approved' ? 'default' : 'outline'}
+                    className="gap-2"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                    Aprovado
+                  </Button>
+                  <Button
+                    onClick={handleResetSimulation}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Conversar mais
+                  </Button>
+                  <Button
+                    onClick={() => handleApproval('rejected')}
+                    variant={currentApprovalStatus === 'rejected' ? 'destructive' : 'outline'}
+                    className="gap-2"
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                    Não aprovado
+                  </Button>
                 </div>
               </div>
             )}
