@@ -5,7 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FlowStep {
@@ -64,6 +65,8 @@ export default function GuidedFlowSimulator() {
   const [simulationComplete, setSimulationComplete] = useState(false);
   const [currentApprovalStatus, setCurrentApprovalStatus] = useState<'approved' | 'pending' | 'rejected'>('pending');
   const [variationStatuses, setVariationStatuses] = useState<Record<string, 'approved' | 'pending' | 'rejected'>>({});
+  const [editingStepKey, setEditingStepKey] = useState<string | null>(null);
+  const [editedQuestion, setEditedQuestion] = useState<string>('');
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['guided_flow_steps', selectedAgent],
@@ -173,6 +176,61 @@ export default function GuidedFlowSimulator() {
   };
 
   const variations = getVariations();
+
+  const updateStepMutation = useMutation({
+    mutationFn: async ({ stepKey, question }: { stepKey: string; question: string }) => {
+      const step = steps?.find(s => s.step_key === stepKey);
+      if (!step) throw new Error('Step não encontrado');
+
+      const { error } = await supabase
+        .from('agent_flow_steps')
+        .update({ question, updated_at: new Date().toISOString() })
+        .eq('id', step.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['guided_flow_steps'] });
+      
+      // Atualizar a conversa local
+      setConversation(prev => 
+        prev.map(msg => 
+          msg.step_key === variables.stepKey 
+            ? { ...msg, question: variables.question }
+            : msg
+        )
+      );
+      
+      toast({ title: '✅ Texto atualizado com sucesso!' });
+      setEditingStepKey(null);
+      setEditedQuestion('');
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Erro ao atualizar', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    },
+  });
+
+  const handleStartEdit = (stepKey: string, currentQuestion: string) => {
+    setEditingStepKey(stepKey);
+    setEditedQuestion(currentQuestion);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingStepKey || !editedQuestion.trim()) {
+      toast({ title: 'Digite um texto válido', variant: 'destructive' });
+      return;
+    }
+    updateStepMutation.mutate({ stepKey: editingStepKey, question: editedQuestion });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStepKey(null);
+    setEditedQuestion('');
+  };
 
   const handleStartSimulation = async () => {
     if (!selectedAgent || !selectedScenario || !selectedVariation) {
@@ -418,12 +476,61 @@ export default function GuidedFlowSimulator() {
               {conversation.map((msg, idx) => (
                 <div key={idx} className="space-y-2">
                   {/* Mensagem do agente */}
-                  <div className="bg-primary/10 p-3 rounded-lg mr-12">
-                    <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">{idx + 1}</span>
-                      🤖 {selectedAgentLabel}
+                  <div className="bg-primary/10 p-3 rounded-lg mr-12 group relative">
+                    <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">{idx + 1}</span>
+                        🤖 {selectedAgentLabel}
+                      </div>
+                      {editingStepKey !== msg.step_key && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleStartEdit(msg.step_key, msg.question)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="text-sm">{msg.question}</div>
+                    
+                    {editingStepKey === msg.step_key ? (
+                      <div className="space-y-2 mt-2">
+                        <Textarea
+                          value={editedQuestion}
+                          onChange={(e) => setEditedQuestion(e.target.value)}
+                          className="min-h-[60px] text-sm"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleSaveEdit}
+                            disabled={updateStepMutation.isPending}
+                            className="h-7"
+                          >
+                            {updateStepMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Save className="h-3 w-3 mr-1" />
+                            )}
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleCancelEdit}
+                            className="h-7"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm">{msg.question}</div>
+                    )}
+                    
                     <div className="text-xs text-muted-foreground mt-1">
                       Step: {msg.step_key}
                     </div>
