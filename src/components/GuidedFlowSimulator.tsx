@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X, CheckCheck, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FlowStep {
   id: string;
@@ -59,13 +61,12 @@ export default function GuidedFlowSimulator() {
   const queryClient = useQueryClient();
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const [selectedScenario, setSelectedScenario] = useState<string>('');
-  const [selectedVariation, setSelectedVariation] = useState<string>('');
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+  const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
+  const [conversations, setConversations] = useState<Record<string, ConversationMessage[]>>({});
   const [isSimulationActive, setIsSimulationActive] = useState(false);
-  const [simulationComplete, setSimulationComplete] = useState(false);
-  const [currentApprovalStatus, setCurrentApprovalStatus] = useState<'approved' | 'pending' | 'rejected'>('pending');
+  const [simulationComplete, setSimulationComplete] = useState<Record<string, boolean>>({});
   const [variationStatuses, setVariationStatuses] = useState<Record<string, 'approved' | 'pending' | 'rejected'>>({});
-  const [editingStepKey, setEditingStepKey] = useState<string | null>(null);
+  const [editingStep, setEditingStep] = useState<{variationId: string, stepKey: string} | null>(null);
   const [editedQuestion, setEditedQuestion] = useState<string>('');
 
   const { data: steps, isLoading } = useQuery({
@@ -210,17 +211,21 @@ export default function GuidedFlowSimulator() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['guided_flow_steps'] });
       
-      // Atualizar a conversa local
-      setConversation(prev => 
-        prev.map(msg => 
-          msg.step_key === variables.stepKey 
-            ? { ...msg, question: variables.question }
-            : msg
-        )
-      );
+      // Atualizar todas as conversas locais
+      setConversations(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(varId => {
+          updated[varId] = updated[varId].map(msg => 
+            msg.step_key === variables.stepKey 
+              ? { ...msg, question: variables.question }
+              : msg
+          );
+        });
+        return updated;
+      });
       
       toast({ title: '✅ Texto atualizado com sucesso!' });
-      setEditingStepKey(null);
+      setEditingStep(null);
       setEditedQuestion('');
     },
     onError: (error: any) => {
@@ -270,83 +275,106 @@ export default function GuidedFlowSimulator() {
     },
   });
 
-  const handleStartEdit = (stepKey: string, currentQuestion: string) => {
-    setEditingStepKey(stepKey);
+  const handleStartEdit = (variationId: string, stepKey: string, currentQuestion: string) => {
+    setEditingStep({ variationId, stepKey });
     setEditedQuestion(currentQuestion);
   };
 
   const handleSaveEdit = () => {
-    if (!editingStepKey || !editedQuestion.trim()) {
+    if (!editingStep || !editedQuestion.trim()) {
       toast({ title: 'Digite um texto válido', variant: 'destructive' });
       return;
     }
-    updateStepMutation.mutate({ stepKey: editingStepKey, question: editedQuestion });
+    updateStepMutation.mutate({ stepKey: editingStep.stepKey, question: editedQuestion });
   };
 
   const handleCancelEdit = () => {
-    setEditingStepKey(null);
+    setEditingStep(null);
     setEditedQuestion('');
   };
 
+  const toggleVariationSelection = (variationId: string) => {
+    setSelectedVariations(prev => {
+      if (prev.includes(variationId)) {
+        return prev.filter(id => id !== variationId);
+      } else if (prev.length < 3) {
+        return [...prev, variationId];
+      } else {
+        toast({ 
+          title: 'Máximo atingido', 
+          description: 'Você pode selecionar até 3 variações por vez',
+          variant: 'destructive'
+        });
+        return prev;
+      }
+    });
+  };
+
   const handleStartSimulation = async () => {
-    if (!selectedAgent || !selectedScenario || !selectedVariation) {
+    if (!selectedAgent || !selectedScenario || selectedVariations.length === 0) {
       toast({ 
         title: 'Selecione todas as opções',
-        description: 'Escolha o agente, cenário e variação antes de iniciar',
+        description: 'Escolha o agente, cenário e pelo menos uma variação antes de iniciar',
         variant: 'destructive'
       });
       return;
     }
 
-    const variation = variations.find(v => v.id === selectedVariation);
-    if (!variation) {
-      toast({ title: 'Variação não encontrada', variant: 'destructive' });
-      return;
-    }
-
-    setConversation([]);
+    setConversations({});
     setIsSimulationActive(true);
-    setSimulationComplete(false);
+    setSimulationComplete({});
 
-    // Executar simulação automaticamente
-    const messages: ConversationMessage[] = [];
-    let currentStepKey = selectedScenario;
-    let pathIndex = 0;
+    const newConversations: Record<string, ConversationMessage[]> = {};
+    const newCompletions: Record<string, boolean> = {};
 
-    while (currentStepKey && pathIndex < variation.path.length) {
-      const step = steps?.find(s => s.step_key === currentStepKey);
-      if (!step) break;
+    // Executar simulação para cada variação selecionada
+    for (const variationId of selectedVariations) {
+      const variation = variations.find(v => v.id === variationId);
+      if (!variation) continue;
 
-      const optionKey = variation.path[pathIndex];
-      const options = getResponseOptions(step);
-      const option = options.find(o => o.key === optionKey);
-      
-      if (!option) break;
+      const messages: ConversationMessage[] = [];
+      let currentStepKey = selectedScenario;
+      let pathIndex = 0;
 
-      messages.push({
-        step_key: step.step_key,
-        question: step.question,
-        selected_option: optionKey,
-        selected_option_label: option.label
-      });
+      while (currentStepKey && pathIndex < variation.path.length) {
+        const step = steps?.find(s => s.step_key === currentStepKey);
+        if (!step) break;
 
-      const nextStepKey = step.next_step_map?.[optionKey];
-      if (!nextStepKey) break;
+        const optionKey = variation.path[pathIndex];
+        const options = getResponseOptions(step);
+        const option = options.find(o => o.key === optionKey);
+        
+        if (!option) break;
 
-      currentStepKey = nextStepKey;
-      pathIndex++;
+        messages.push({
+          step_key: step.step_key,
+          question: step.question,
+          selected_option: optionKey,
+          selected_option_label: option.label
+        });
+
+        const nextStepKey = step.next_step_map?.[optionKey];
+        if (!nextStepKey) break;
+
+        currentStepKey = nextStepKey;
+        pathIndex++;
+      }
+
+      newConversations[variationId] = messages;
+      newCompletions[variationId] = true;
     }
 
-    setConversation(messages);
-    setSimulationComplete(true);
-    toast({ title: '✅ Simulação concluída!' });
+    setConversations(newConversations);
+    setSimulationComplete(newCompletions);
+    toast({ 
+      title: '✅ Simulações concluídas!',
+      description: `${selectedVariations.length} variação(ões) simulada(s)`
+    });
   };
 
-  const handleApproval = async (status: 'approved' | 'rejected') => {
-    setCurrentApprovalStatus(status);
-    
-    if (selectedVariation && selectedAgent && selectedScenario) {
-      const variation = variations.find(v => v.id === selectedVariation);
+  const handleApproval = async (variationId: string, status: 'approved' | 'rejected') => {
+    if (selectedAgent && selectedScenario) {
+      const variation = variations.find(v => v.id === variationId);
       if (variation) {
         const variationPath = variation.path.join('→');
         
@@ -361,23 +389,32 @@ export default function GuidedFlowSimulator() {
         // Atualizar estado local
         setVariationStatuses(prev => ({
           ...prev,
-          [selectedVariation]: status
+          [variationId]: status
         }));
       }
     }
     
     toast({ 
-      title: status === 'approved' ? '✅ Cenário aprovado!' : '❌ Cenário não aprovado',
+      title: status === 'approved' ? '✅ Variação aprovada!' : '❌ Variação não aprovada',
       description: 'Status salvo com sucesso'
     });
   };
 
+  const handleBulkApproval = async (status: 'approved' | 'rejected') => {
+    for (const variationId of selectedVariations) {
+      await handleApproval(variationId, status);
+    }
+    toast({ 
+      title: status === 'approved' ? '✅ Todas aprovadas!' : '❌ Todas não aprovadas',
+      description: `${selectedVariations.length} variação(ões) ${status === 'approved' ? 'aprovadas' : 'reprovadas'}`
+    });
+  };
+
   const handleResetSimulation = () => {
-    setConversation([]);
+    setConversations({});
     setIsSimulationActive(false);
-    setSimulationComplete(false);
-    setSelectedVariation('');
-    setCurrentApprovalStatus('pending');
+    setSimulationComplete({});
+    setSelectedVariations([]);
     toast({ title: '🔄 Simulação reiniciada' });
   };
 
@@ -392,113 +429,122 @@ export default function GuidedFlowSimulator() {
             🎮 Simulador Automático de Fluxo
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Escolha o agente, cenário e variação para simular automaticamente a conversa completa
+            Escolha o agente, cenário e até 3 variações para simular simultaneamente
           </p>
         </div>
 
-        {/* Três Caixas de Seleção */}
+        {/* Duas Caixas de Seleção */}
         {!isSimulationActive && (
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Caixa 1: Agente */}
-            <div>
-              <label className="text-sm font-medium block mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">1</span>
-                Escolher o Agente
-              </label>
-              <Select value={selectedAgent} onValueChange={(value) => {
-                setSelectedAgent(value);
-                setSelectedScenario('');
-                setSelectedVariation('');
-              }}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Escolha um agente..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {AGENT_TYPES.map(agent => (
-                    <SelectItem key={agent.value} value={agent.value}>
-                      {agent.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Caixa 1: Agente */}
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">1</span>
+                  Escolher o Agente
+                </label>
+                <Select value={selectedAgent} onValueChange={(value) => {
+                  setSelectedAgent(value);
+                  setSelectedScenario('');
+                  setSelectedVariations([]);
+                }}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Escolha um agente..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {AGENT_TYPES.map(agent => (
+                      <SelectItem key={agent.value} value={agent.value}>
+                        {agent.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Caixa 2: Cenário */}
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">2</span>
+                  Escolher o Cenário
+                </label>
+                <Select 
+                  value={selectedScenario} 
+                  onValueChange={(value) => {
+                    setSelectedScenario(value);
+                    setSelectedVariations([]);
+                  }}
+                  disabled={!selectedAgent || isLoading}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={
+                      isLoading ? 'Carregando...' : 
+                      !selectedAgent ? 'Selecione um agente primeiro' :
+                      scenarios.length === 0 ? 'Nenhum cenário encontrado' :
+                      'Escolha o cenário...'
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {scenarios.map(scenario => (
+                      <SelectItem key={scenario.id} value={scenario.step_key}>
+                        {scenario.step_key}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Caixa 2: Cenário */}
-            <div>
-              <label className="text-sm font-medium block mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">2</span>
-                Escolher o Cenário
-              </label>
-              <Select 
-                value={selectedScenario} 
-                onValueChange={(value) => {
-                  setSelectedScenario(value);
-                  setSelectedVariation('');
-                }}
-                disabled={!selectedAgent || isLoading}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={
-                    isLoading ? 'Carregando...' : 
-                    !selectedAgent ? 'Selecione um agente primeiro' :
-                    scenarios.length === 0 ? 'Nenhum cenário encontrado' :
-                    'Escolha o cenário...'
-                  } />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {scenarios.map(scenario => (
-                    <SelectItem key={scenario.id} value={scenario.step_key}>
-                      {scenario.step_key}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Caixa 3: Variação */}
-            <div>
-              <label className="text-sm font-medium block mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
-                Escolher as Opções
-              </label>
-              <Select 
-                value={selectedVariation} 
-                onValueChange={setSelectedVariation}
-                disabled={!selectedScenario || variations.length === 0}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder={
-                    !selectedScenario ? 'Selecione um cenário primeiro' :
-                    variations.length === 0 ? 'Nenhuma variação disponível' :
-                    'Escolha a variação...'
-                  } />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50 max-h-[300px]">
-                  {variations.map(variation => {
-                    // Buscar status salvo no banco
-                    const variationPath = variation.path.join('→');
-                    const savedStatus = savedApprovals?.find(
-                      (approval: any) => approval.variation_path === variationPath
-                    );
-                    const status = savedStatus?.status || variationStatuses[variation.id] || 'pending';
-                    const statusColor = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600';
-                    const statusIcon = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
-                    
-                    return (
-                      <SelectItem key={variation.id} value={variation.id}>
-                        <div className="flex items-start gap-2">
-                          <span className={statusColor}>{statusIcon}</span>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{variation.name}</span>
-                            <span className="text-xs text-muted-foreground">{variation.description}</span>
+            {/* Caixa 3: Variações com checkboxes */}
+            {selectedScenario && variations.length > 0 && (
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
+                  Escolher Variações (até 3)
+                  <Badge variant="secondary" className="ml-2">
+                    {selectedVariations.length}/3 selecionadas
+                  </Badge>
+                </label>
+                <ScrollArea className="h-[300px] border rounded-lg p-4">
+                  <div className="space-y-2">
+                    {variations.map(variation => {
+                      const variationPath = variation.path.join('→');
+                      const savedStatus = savedApprovals?.find(
+                        (approval: any) => approval.variation_path === variationPath
+                      );
+                      const status = savedStatus?.status || variationStatuses[variation.id] || 'pending';
+                      const statusColor = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600';
+                      const statusIcon = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
+                      const isSelected = selectedVariations.includes(variation.id);
+                      
+                      return (
+                        <div 
+                          key={variation.id}
+                          className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => toggleVariationSelection(variation.id)}
+                        >
+                          <Checkbox 
+                            checked={isSelected}
+                            onCheckedChange={() => toggleVariationSelection(variation.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`${statusColor} text-lg`}>{statusIcon}</span>
+                              <span className="font-medium">{variation.name}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 break-words">
+                              {variation.description}
+                            </p>
                           </div>
                         </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
           </div>
         )}
 
@@ -507,7 +553,7 @@ export default function GuidedFlowSimulator() {
           {!isSimulationActive ? (
             <Button
               onClick={handleStartSimulation}
-              disabled={!selectedAgent || !selectedScenario || !selectedVariation || isLoading}
+              disabled={!selectedAgent || !selectedScenario || selectedVariations.length === 0 || isLoading}
               className="gap-2"
             >
               {isLoading ? (
@@ -518,144 +564,165 @@ export default function GuidedFlowSimulator() {
               ) : (
                 <>
                   <Play className="h-4 w-4" />
-                  Iniciar Simulação
+                  Simular {selectedVariations.length > 0 && `(${selectedVariations.length})`}
                 </>
               )}
             </Button>
           ) : (
-            <Button
-              onClick={handleResetSimulation}
-              variant="outline"
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Nova Simulação
-            </Button>
+            <>
+              <Button
+                onClick={handleResetSimulation}
+                variant="outline"
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Nova Simulação
+              </Button>
+              {Object.values(simulationComplete).some(v => v) && (
+                <>
+                  <Button
+                    onClick={() => handleBulkApproval('approved')}
+                    variant="default"
+                    className="gap-2"
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                    Aprovar Todas
+                  </Button>
+                  <Button
+                    onClick={() => handleBulkApproval('rejected')}
+                    variant="destructive"
+                    className="gap-2"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Reprovar Todas
+                  </Button>
+                </>
+              )}
+            </>
           )}
         </div>
 
-        {/* Conversa Completa */}
-        {isSimulationActive && conversation.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                Conversa Simulada: {selectedAgentLabel}/{variations.find(v => v.id === selectedVariation)?.name}
-              </h3>
-              <Badge variant="secondary">
-                {conversation.length} {conversation.length === 1 ? 'interação' : 'interações'}
-              </Badge>
-            </div>
+        {/* Simulações em Paralelo */}
+        {isSimulationActive && Object.keys(conversations).length > 0 && (
+          <div className={`grid gap-4 ${selectedVariations.length === 1 ? 'grid-cols-1' : selectedVariations.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {selectedVariations.map(variationId => {
+              const variation = variations.find(v => v.id === variationId);
+              const conversation = conversations[variationId] || [];
+              const isComplete = simulationComplete[variationId];
+              const variationPath = variation?.path.join('→') || '';
+              const savedStatus = savedApprovals?.find(
+                (approval: any) => approval.variation_path === variationPath
+              );
+              const currentStatus = savedStatus?.status || variationStatuses[variationId] || 'pending';
 
-            {/* Histórico da conversa */}
-            <div className="space-y-3 max-h-[500px] overflow-y-auto p-4 bg-muted/30 rounded-lg">
-              {conversation.map((msg, idx) => (
-                <div key={idx} className="space-y-2">
-                  {/* Mensagem do agente */}
-                  <div className="bg-primary/10 p-3 rounded-lg mr-12 group relative">
-                    <div className="text-xs font-medium text-muted-foreground mb-1 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs">{idx + 1}</span>
-                        🤖 {selectedAgentLabel}
-                      </div>
-                      {editingStepKey !== msg.step_key && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleStartEdit(msg.step_key, msg.question)}
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                      )}
+              return (
+                <Card key={variationId} className="p-4 space-y-3">
+                  {/* Header do Card */}
+                  <div className="flex items-center justify-between pb-2 border-b">
+                    <div>
+                      <h3 className="font-semibold text-sm">{variation?.name}</h3>
+                      <p className="text-xs text-muted-foreground">{variation?.description}</p>
                     </div>
-                    
-                    {editingStepKey === msg.step_key ? (
-                      <div className="space-y-2 mt-2">
-                        <Textarea
-                          value={editedQuestion}
-                          onChange={(e) => setEditedQuestion(e.target.value)}
-                          className="min-h-[60px] text-sm"
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleSaveEdit}
-                            disabled={updateStepMutation.isPending}
-                            className="h-7"
-                          >
-                            {updateStepMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                    <Badge variant={currentStatus === 'approved' ? 'default' : currentStatus === 'rejected' ? 'destructive' : 'secondary'}>
+                      {currentStatus === 'approved' ? '✅' : currentStatus === 'rejected' ? '❌' : '⏳'}
+                    </Badge>
+                  </div>
+
+                  {/* Conversa */}
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-2 pr-3">
+                      {conversation.map((msg, idx) => (
+                        <div key={idx} className="space-y-1">
+                          {/* Mensagem do agente */}
+                          <div className="bg-primary/10 p-2 rounded-lg text-xs group relative">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-medium text-muted-foreground">
+                                #{idx + 1} 🤖
+                              </span>
+                              {editingStep?.variationId !== variationId || editingStep?.stepKey !== msg.step_key ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                                  onClick={() => handleStartEdit(variationId, msg.step_key, msg.question)}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              ) : null}
+                            </div>
+                            
+                            {editingStep?.variationId === variationId && editingStep?.stepKey === msg.step_key ? (
+                              <div className="space-y-1">
+                                <Textarea
+                                  value={editedQuestion}
+                                  onChange={(e) => setEditedQuestion(e.target.value)}
+                                  className="min-h-[40px] text-xs"
+                                  autoFocus
+                                />
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    disabled={updateStepMutation.isPending}
+                                    className="h-6 text-xs"
+                                  >
+                                    {updateStepMutation.isPending ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Save className="h-3 w-3" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleCancelEdit}
+                                    className="h-6 text-xs"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
                             ) : (
-                              <Save className="h-3 w-3 mr-1" />
+                              <p className="text-xs">{msg.question}</p>
                             )}
-                            Salvar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleCancelEdit}
-                            className="h-7"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancelar
-                          </Button>
+                          </div>
+
+                          {/* Resposta do usuário */}
+                          <div className="bg-muted p-2 rounded-lg text-xs ml-4">
+                            <span className="font-medium text-muted-foreground">👤 </span>
+                            <span>{msg.selected_option_label}</span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm">{msg.question}</div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Step: {msg.step_key}
+                      ))}
                     </div>
-                  </div>
+                  </ScrollArea>
 
-                  {/* Resposta do usuário */}
-                  <div className="bg-muted p-3 rounded-lg ml-12">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">
-                      👤 Cliente
+                  {/* Botões de aprovação individual */}
+                  {isComplete && (
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproval(variationId, 'approved')}
+                        variant={currentStatus === 'approved' ? 'default' : 'outline'}
+                        className="gap-1 text-xs"
+                      >
+                        <ThumbsUp className="h-3 w-3" />
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproval(variationId, 'rejected')}
+                        variant={currentStatus === 'rejected' ? 'destructive' : 'outline'}
+                        className="gap-1 text-xs"
+                      >
+                        <ThumbsDown className="h-3 w-3" />
+                        Reprovar
+                      </Button>
                     </div>
-                    <div className="text-sm">{msg.selected_option_label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Botões de Validação */}
-            {simulationComplete && (
-              <div className="space-y-3">
-                <div className="text-sm font-medium text-center">
-                  Valide este cenário:
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Button
-                    onClick={() => handleApproval('approved')}
-                    variant={currentApprovalStatus === 'approved' ? 'default' : 'outline'}
-                    className="gap-2"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    Aprovado
-                  </Button>
-                  <Button
-                    onClick={handleResetSimulation}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Conversar mais
-                  </Button>
-                  <Button
-                    onClick={() => handleApproval('rejected')}
-                    variant={currentApprovalStatus === 'rejected' ? 'destructive' : 'outline'}
-                    className="gap-2"
-                  >
-                    <ThumbsDown className="h-4 w-4" />
-                    Não aprovado
-                  </Button>
-                </div>
-              </div>
-            )}
+                  )}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
