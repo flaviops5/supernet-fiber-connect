@@ -297,15 +297,8 @@ export default function GuidedFlowSimulator() {
     setSelectedVariations(prev => {
       if (prev.includes(variationId)) {
         return prev.filter(id => id !== variationId);
-      } else if (prev.length < 3) {
-        return [...prev, variationId];
       } else {
-        toast({ 
-          title: 'Máximo atingido', 
-          description: 'Você pode selecionar até 3 variações por vez',
-          variant: 'destructive'
-        });
-        return prev;
+        return [...prev, variationId];
       }
     });
   };
@@ -499,9 +492,9 @@ export default function GuidedFlowSimulator() {
               <div>
                 <label className="text-sm font-medium block mb-2">
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
-                  Escolher Variações (até 3)
+                  Escolher Variações
                   <Badge variant="secondary" className="ml-2">
-                    {selectedVariations.length}/3 selecionadas
+                    {selectedVariations.length} selecionadas
                   </Badge>
                 </label>
                 <ScrollArea className="h-[300px] border rounded-lg p-4">
