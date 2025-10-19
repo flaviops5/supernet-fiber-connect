@@ -86,6 +86,24 @@ export default function GuidedFlowSimulator() {
     enabled: !!selectedAgent,
   });
 
+  // Carregar aprovações salvas do banco
+  const { data: savedApprovals } = useQuery({
+    queryKey: ['scenario_approvals', selectedAgent, selectedScenario],
+    queryFn: async () => {
+      if (!selectedAgent || !selectedScenario) return [];
+      
+      const { data, error } = await supabase
+        .from('agent_flow_scenario_approvals')
+        .select('*')
+        .eq('agent_type', selectedAgent as any)
+        .eq('scenario_key', selectedScenario);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedAgent && !!selectedScenario,
+  });
+
   // Identificar cenários (steps que começam com "cenario_")
   const scenarios = steps?.filter(step => step.step_key.startsWith('cenario_')) || [];
 
@@ -214,6 +232,44 @@ export default function GuidedFlowSimulator() {
     },
   });
 
+  const saveApprovalMutation = useMutation({
+    mutationFn: async ({ 
+      agentType, 
+      scenarioKey, 
+      variationPath, 
+      status 
+    }: { 
+      agentType: string; 
+      scenarioKey: string; 
+      variationPath: string; 
+      status: 'approved' | 'rejected' 
+    }) => {
+      const { error } = await supabase
+        .from('agent_flow_scenario_approvals')
+        .upsert({
+          agent_type: agentType as any,
+          scenario_key: scenarioKey,
+          variation_path: variationPath,
+          status,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'agent_type,scenario_key,variation_path'
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scenario_approvals'] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Erro ao salvar aprovação', 
+        description: error.message,
+        variant: 'destructive'
+      });
+    },
+  });
+
   const handleStartEdit = (stepKey: string, currentQuestion: string) => {
     setEditingStepKey(stepKey);
     setEditedQuestion(currentQuestion);
@@ -289,11 +345,25 @@ export default function GuidedFlowSimulator() {
   const handleApproval = async (status: 'approved' | 'rejected') => {
     setCurrentApprovalStatus(status);
     
-    if (selectedVariation) {
-      setVariationStatuses(prev => ({
-        ...prev,
-        [selectedVariation]: status
-      }));
+    if (selectedVariation && selectedAgent && selectedScenario) {
+      const variation = variations.find(v => v.id === selectedVariation);
+      if (variation) {
+        const variationPath = variation.path.join('→');
+        
+        // Salvar no banco
+        saveApprovalMutation.mutate({
+          agentType: selectedAgent,
+          scenarioKey: selectedScenario,
+          variationPath,
+          status
+        });
+        
+        // Atualizar estado local
+        setVariationStatuses(prev => ({
+          ...prev,
+          [selectedVariation]: status
+        }));
+      }
     }
     
     toast({ 
@@ -405,7 +475,12 @@ export default function GuidedFlowSimulator() {
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50 max-h-[300px]">
                   {variations.map(variation => {
-                    const status = variationStatuses[variation.id] || 'pending';
+                    // Buscar status salvo no banco
+                    const variationPath = variation.path.join('→');
+                    const savedStatus = savedApprovals?.find(
+                      (approval: any) => approval.variation_path === variationPath
+                    );
+                    const status = savedStatus?.status || variationStatuses[variation.id] || 'pending';
                     const statusColor = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600';
                     const statusIcon = status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳';
                     

@@ -125,6 +125,42 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_flow_scenario_approvals: {
+        Row: {
+          agent_type: Database["public"]["Enums"]["agent_type"]
+          approved_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          scenario_key: string
+          status: string
+          updated_at: string | null
+          variation_path: string
+        }
+        Insert: {
+          agent_type: Database["public"]["Enums"]["agent_type"]
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          scenario_key: string
+          status: string
+          updated_at?: string | null
+          variation_path: string
+        }
+        Update: {
+          agent_type?: Database["public"]["Enums"]["agent_type"]
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          scenario_key?: string
+          status?: string
+          updated_at?: string | null
+          variation_path?: string
+        }
+        Relationships: []
+      }
       agent_flow_steps: {
         Row: {
           agent_type: Database["public"]["Enums"]["agent_type"]
