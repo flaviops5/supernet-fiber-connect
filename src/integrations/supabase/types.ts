@@ -2137,6 +2137,84 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_config: {
+        Row: {
+          courtesy_cooldown_months: number
+          courtesy_max_debt: number
+          courtesy_payment_deadline_hours: number
+          created_at: string
+          id: string
+          is_active: boolean
+          late_fee_daily: number
+          late_fee_fixed: number
+          min_days_for_negotiation: number
+          min_down_payment_percentage: number
+          min_installment_value: number
+          negotiation_step1_installments: number
+          negotiation_step1_remove_fee: boolean
+          negotiation_step1_remove_interest: boolean
+          negotiation_step2_installments: number
+          negotiation_step2_interest_discount_percent: number
+          negotiation_step2_remove_fee: boolean
+          negotiation_step3_installments: number
+          negotiation_step3_interest_discount_percent: number
+          negotiation_step3_remove_fee: boolean
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          courtesy_cooldown_months?: number
+          courtesy_max_debt?: number
+          courtesy_payment_deadline_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          late_fee_daily?: number
+          late_fee_fixed?: number
+          min_days_for_negotiation?: number
+          min_down_payment_percentage?: number
+          min_installment_value?: number
+          negotiation_step1_installments?: number
+          negotiation_step1_remove_fee?: boolean
+          negotiation_step1_remove_interest?: boolean
+          negotiation_step2_installments?: number
+          negotiation_step2_interest_discount_percent?: number
+          negotiation_step2_remove_fee?: boolean
+          negotiation_step3_installments?: number
+          negotiation_step3_interest_discount_percent?: number
+          negotiation_step3_remove_fee?: boolean
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          courtesy_cooldown_months?: number
+          courtesy_max_debt?: number
+          courtesy_payment_deadline_hours?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          late_fee_daily?: number
+          late_fee_fixed?: number
+          min_days_for_negotiation?: number
+          min_down_payment_percentage?: number
+          min_installment_value?: number
+          negotiation_step1_installments?: number
+          negotiation_step1_remove_fee?: boolean
+          negotiation_step1_remove_interest?: boolean
+          negotiation_step2_installments?: number
+          negotiation_step2_interest_discount_percent?: number
+          negotiation_step2_remove_fee?: boolean
+          negotiation_step3_installments?: number
+          negotiation_step3_interest_discount_percent?: number
+          negotiation_step3_remove_fee?: boolean
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       flow_simulations: {
         Row: {
           agent_type: string
