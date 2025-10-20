@@ -179,7 +179,9 @@ export type Database = {
           response_options: Json | null
           response_variations: Json | null
           step_key: string
+          step_media: Json | null
           step_order: number
+          step_tools: Json | null
           subject_key: string | null
           tool_calls: Json | null
           updated_at: string | null
@@ -198,7 +200,9 @@ export type Database = {
           response_options?: Json | null
           response_variations?: Json | null
           step_key: string
+          step_media?: Json | null
           step_order: number
+          step_tools?: Json | null
           subject_key?: string | null
           tool_calls?: Json | null
           updated_at?: string | null
@@ -217,7 +221,9 @@ export type Database = {
           response_options?: Json | null
           response_variations?: Json | null
           step_key?: string
+          step_media?: Json | null
           step_order?: number
+          step_tools?: Json | null
           subject_key?: string | null
           tool_calls?: Json | null
           updated_at?: string | null
@@ -237,6 +243,8 @@ export type Database = {
           agent_type: Database["public"]["Enums"]["agent_type"]
           created_at: string | null
           created_by: string | null
+          default_media: Json | null
+          default_tools: Json | null
           description: string | null
           display_order: number | null
           icon: string | null
@@ -250,6 +258,8 @@ export type Database = {
           agent_type: Database["public"]["Enums"]["agent_type"]
           created_at?: string | null
           created_by?: string | null
+          default_media?: Json | null
+          default_tools?: Json | null
           description?: string | null
           display_order?: number | null
           icon?: string | null
@@ -263,6 +273,8 @@ export type Database = {
           agent_type?: Database["public"]["Enums"]["agent_type"]
           created_at?: string | null
           created_by?: string | null
+          default_media?: Json | null
+          default_tools?: Json | null
           description?: string | null
           display_order?: number | null
           icon?: string | null
