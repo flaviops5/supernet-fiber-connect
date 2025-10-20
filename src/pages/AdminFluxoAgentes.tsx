@@ -795,11 +795,14 @@ export default function AdminFluxoAgentes() {
                         <div>
                           <span className="font-medium text-sm">🔧 Step Tools:</span>
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {step.tool_calls.map((tool: string, idx: number) => (
-                              <Badge key={idx} variant="outline" className="font-mono text-xs">
-                                {tool}
-                              </Badge>
-                            ))}
+                            {step.tool_calls.map((tool: any, idx: number) => {
+                              const toolName = typeof tool === 'string' ? tool : tool?.tool || tool?.name || JSON.stringify(tool);
+                              return (
+                                <Badge key={idx} variant="outline" className="font-mono text-xs">
+                                  {toolName}
+                                </Badge>
+                              );
+                            })}
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
                             ℹ️ Estas tools sobrescrevem as configurações padrão do assunto
