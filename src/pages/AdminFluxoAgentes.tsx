@@ -312,10 +312,11 @@ export default function AdminFluxoAgentes() {
 
           {/* Tabs para Simulador e Gerenciar Assuntos */}
           <Tabs defaultValue="simulator" className="mb-6">
-            <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsList className="grid w-full max-w-3xl grid-cols-4">
               <TabsTrigger value="simulator">🎮 Simulador</TabsTrigger>
               <TabsTrigger value="subjects">📚 Assuntos</TabsTrigger>
               <TabsTrigger value="ai-generator">✨ IA Gerador</TabsTrigger>
+              <TabsTrigger value="auto-simulator">🤖 Simulador Auto</TabsTrigger>
             </TabsList>
             
             <TabsContent value="simulator" className="mt-6">
@@ -329,127 +330,128 @@ export default function AdminFluxoAgentes() {
             <TabsContent value="ai-generator" className="mt-6">
               <AIFlowGenerator agentType={selectedAgent} />
             </TabsContent>
-          </Tabs>
+            
+            <TabsContent value="auto-simulator" className="mt-6">
+              <Card className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-primary/5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Simulador Automático de Conversas
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Gere automaticamente todas as conversas possíveis deste fluxo para análise
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {showSimulations && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowSimulations(false)}
+                      >
+                        Ocultar Simulações
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleGenerateSimulations}
+                      disabled={isGeneratingSimulations || !steps || steps.length === 0}
+                      className="gap-2"
+                    >
+                      {isGeneratingSimulations ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Gerando...
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="h-4 w-4" />
+                          Gerar Todas as Simulações
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
 
-          {/* Botão de Gerar Simulações Automáticas */}
-          <Card className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-primary/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Simulador Automático de Conversas
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Gere automaticamente todas as conversas possíveis deste fluxo para análise
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {showSimulations && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSimulations(false)}
-                  >
-                    Ocultar Simulações
-                  </Button>
-                )}
-                <Button
-                  onClick={handleGenerateSimulations}
-                  disabled={isGeneratingSimulations || !steps || steps.length === 0}
-                  className="gap-2"
-                >
-                  {isGeneratingSimulations ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4" />
-                      Gerar Todas as Simulações
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Lista de Simulações */}
-          {showSimulations && simulations && simulations.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-4">
-                📊 Simulações Geradas ({simulations.length})
-              </h2>
-              
-              <div className="grid gap-4">
-                {simulations.map((sim: any) => (
-                  <Card key={sim.id} className="p-5">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-base">{sim.simulation_name}</h3>
-                        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                          <span>⏱️ {sim.total_steps} steps</span>
-                          <span>🕐 ~{sim.estimated_duration_seconds}s</span>
-                          <Badge 
-                            variant={sim.quality_score >= 80 ? 'default' : sim.quality_score >= 60 ? 'secondary' : 'destructive'}
-                          >
-                            Score: {sim.quality_score?.toFixed(0) || 0}/100
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                      <details className="group">
-                        <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                          Ver Conversa Completa ({sim.conversation_transcript?.length || 0} mensagens)
-                        </summary>
-                        <div className="mt-3 space-y-2 pl-4 border-l-2 border-primary/20">
-                          {sim.conversation_transcript?.map((msg: any, idx: number) => (
-                            <div key={idx} className={`p-3 rounded-lg ${
-                              msg.role === 'user' 
-                                ? 'bg-muted ml-4' 
-                                : 'bg-primary/10 mr-4'
-                            }`}>
-                              <div className="text-xs font-medium text-muted-foreground mb-1">
-                                {msg.role === 'user' ? '👤 Cliente' : '🤖 Luan'}
-                              </div>
-                              <div className="text-sm">{msg.message}</div>
+              {/* Lista de Simulações */}
+              {showSimulations && simulations && simulations.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold mb-4">
+                    📊 Simulações Geradas ({simulations.length})
+                  </h2>
+                  
+                  <div className="grid gap-4">
+                    {simulations.map((sim: any) => (
+                      <Card key={sim.id} className="p-5">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-base">{sim.simulation_name}</h3>
+                            <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                              <span>⏱️ {sim.total_steps} steps</span>
+                              <span>🕐 ~{sim.estimated_duration_seconds}s</span>
+                              <Badge 
+                                variant={sim.quality_score >= 80 ? 'default' : sim.quality_score >= 60 ? 'secondary' : 'destructive'}
+                              >
+                                Score: {sim.quality_score?.toFixed(0) || 0}/100
+                              </Badge>
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </details>
 
-                      {sim.issues_detected && sim.issues_detected.length > 0 && (
-                        <details className="group">
-                          <summary className="cursor-pointer text-sm font-medium text-destructive hover:underline">
-                            ⚠️ Problemas Detectados ({sim.issues_detected.length})
-                          </summary>
-                          <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
-                            {sim.issues_detected.map((issue: string, idx: number) => (
-                              <li key={idx}>• {issue}</li>
-                            ))}
-                          </ul>
-                        </details>
-                      )}
+                        <div className="space-y-2 mt-4">
+                          <details className="group">
+                            <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                              Ver Conversa Completa ({sim.conversation_transcript?.length || 0} mensagens)
+                            </summary>
+                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-primary/20">
+                              {sim.conversation_transcript?.map((msg: any, idx: number) => (
+                                <div key={idx} className={`p-3 rounded-lg ${
+                                  msg.role === 'user' 
+                                    ? 'bg-muted ml-4' 
+                                    : 'bg-primary/10 mr-4'
+                                }`}>
+                                  <div className="text-xs font-medium text-muted-foreground mb-1">
+                                    {msg.role === 'user' ? '👤 Cliente' : '🤖 Luan'}
+                                  </div>
+                                  <div className="text-sm">{msg.message}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </details>
 
-                      {sim.suggestions && sim.suggestions.length > 0 && (
-                        <details className="group">
-                          <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                            💡 Sugestões de Melhoria ({sim.suggestions.length})
-                          </summary>
-                          <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
-                            {sim.suggestions.map((suggestion: string, idx: number) => (
-                              <li key={idx}>• {suggestion}</li>
-                            ))}
-                          </ul>
-                        </details>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
+                          {sim.issues_detected && sim.issues_detected.length > 0 && (
+                            <details className="group">
+                              <summary className="cursor-pointer text-sm font-medium text-destructive hover:underline">
+                                ⚠️ Problemas Detectados ({sim.issues_detected.length})
+                              </summary>
+                              <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
+                                {sim.issues_detected.map((issue: string, idx: number) => (
+                                  <li key={idx}>• {issue}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+
+                          {sim.suggestions && sim.suggestions.length > 0 && (
+                            <details className="group">
+                              <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
+                                💡 Sugestões de Melhoria ({sim.suggestions.length})
+                              </summary>
+                              <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
+                                {sim.suggestions.map((suggestion: string, idx: number) => (
+                                  <li key={idx}>• {suggestion}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           <div className="space-y-4">
             {steps?.map((step) => (
