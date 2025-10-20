@@ -150,29 +150,156 @@ Se diagnóstico indicar problema no modem:
 
 ---
 
-## 📶 Problemas de Wi-Fi
+## 📶 Problemas de Wi-Fi - Cenários Detalhados
 
-### Wi-Fi Lento
+### 🐌 Cenário 1: Wi-Fi Lento
 
-**Causas comuns:**
-1. Roteador longe dos dispositivos
-2. Obstáculos (paredes, móveis)
-3. Interferência de outros roteadores
-4. Muitos dispositivos conectados
+**Fluxo de Atendimento:**
 
-**Soluções:**
-- Aproximar roteador ou dispositivo
-- Usar cabo de rede se possível
-- Trocar canal do Wi-Fi
-- Considerar amplificador de sinal (R$ 29,90/mês)
+1. **Identificar rede atual:**
+   - Perguntar: "Você está conectado na rede 2.4 ou 5.8 GHz?"
+   - Explicar diferença: 2.4 = mais lenta (max 80 Mbps), 5.8 = mais rápida
 
-### Não Conecta no Wi-Fi
+2. **Se cliente está na 2.4:**
+   - Orientar mudança para 5.8 GHz
+   - Solicitar teste de velocidade: https://www.speedtest.net/pt/server/60362
+   - Pedir print do resultado
 
-**Checklist:**
-1. Senha correta?
-2. Wi-Fi do modem está ligado? (LED aceso)
-3. Dispositivo suporta a frequência (2.4GHz/5GHz)?
-4. Esquecer rede e reconectar
+3. **Análise do teste:**
+   - **Abaixo de 100 Mbps:** Problema na rede → Transferir para colaborador
+   - **100-200 Mbps:** Sobrecarga/interferência → Transferir para ajustes
+   - **300-500 Mbps:** Dentro do esperado, está OK
+
+4. **Cliente sem equipamento 5.8:**
+   - Explicar limitação técnica
+   - Velocidade limitada a 80 Mbps pela rede 2.4
+
+---
+
+### 📡 Cenário 2: Sinal Não Pega em Algum Lugar
+
+**Diagnóstico:**
+- Diferenças entre 2.4 e 5.8:
+  - 2.4 GHz: maior alcance, atravessa paredes melhor
+  - 5.8 GHz: maior velocidade, menor alcance
+
+**Ação:**
+- Explicar sobre interferência de canais
+- Transferir para colaborador experiente
+- Pode demorar ~2h para configurações específicas
+
+---
+
+### 📱 Cenário 3: Aplicativo Específico Não Abre
+
+**Fluxo de Diagnóstico:**
+
+1. **Isolar problema:**
+   - "Outros aplicativos funcionam normalmente?"
+
+2. **Se outros funcionam:**
+   - Problema no app específico, não na internet
+   - Orientar: atualizar celular, atualizar app, verificar espaço
+   - Explicar: funcionamento depende de vários fatores
+
+3. **Se nenhum funciona:**
+   - Reiniciar celular
+   - Testar navegação web (sites)
+   - Se sites funcionam → problema nos apps
+   - Se sites não funcionam → problema na internet
+
+---
+
+### 📺 Cenário 4: TV Box / IPTV Travando
+
+**Contextualização:**
+- Serviços não homologados pela ANATEL
+- Operam sem autorização
+- Servidores na Ásia/África sem infraestrutura adequada
+- Causa instabilidade independente da internet
+
+**Procedimento:**
+1. Explicar sobre serviços não homologados (sem julgar)
+2. Solicitar teste de velocidade
+3. Se velocidade > 100 Mbps → confirmar que internet está OK
+4. Se cliente insiste → transferir para análise
+
+---
+
+### 💻 Cenário 5: Apenas Um Equipamento Não Navega
+
+**Fluxo:**
+
+1. **Confirmar isolamento:**
+   - "Pelo menos 2 outros equipamentos navegam normalmente?"
+
+2. **Se outros navegam:**
+   - Problema no equipamento específico
+   - Orientar: verificar senha, reiniciar, esquecer rede
+   - Explicar: pode ser antena interna do equipamento
+
+3. **Se nenhum navega:**
+   - Problema na rede Wi-Fi
+   - Seguir fluxo de troubleshooting de rede
+
+---
+
+### 🔍 Cenário 6: Redes 2.4 e 5.8 Não Aparecem
+
+**Diagnóstico por Abrangência:**
+
+1. **Apenas no celular:**
+   - Modo avião por 45s
+   - OU reiniciar smartphone
+
+2. **Apenas na TV:**
+   - Reiniciar TV (desligar da tomada 30s)
+
+3. **Em todos os equipamentos:**
+   - Reiniciar roteador (60s desligado)
+   - Aguardar 1 minuto após ligar
+
+**Se persistir:**
+- Verificar se aparece rede "Mercusys", "TP Link" ou "Huawei"
+- Se SIM → roteador perdeu configuração
+  - Oferecer reconfiguração remota (se tiver PC/notebook)
+  - OU abrir OS para visita técnica
+
+---
+
+### 🔐 Cenário 7: Alterar/Recuperar Senha Wi-Fi
+
+**Procedimento de Segurança:**
+
+1. **Validação de identidade:**
+   - Solicitar: nome completo, CPF, data de nascimento
+   
+2. **Processo:**
+   - Avisar: precisa de ~10 minutos
+   - Transferir para colaborador
+   - Não guardamos senhas no banco de dados
+
+⚠️ **Importante:** Não realizar outros procedimentos técnicos quando assunto é senha
+
+---
+
+### 🔄 Cenário 8: Wi-Fi Cai e Volta
+
+**Checklist de Verificação:**
+
+1. **Alimentação elétrica:**
+   - Apertar TODOS os cabos de energia
+   - Conferir tomadas e réguas
+   - Balançar cabos procurando mal contato
+   - Verificar se tomada está frouxa
+   - Observar se equipamento desliga
+
+2. **Se encontrou mal contato:**
+   - Corrigir
+   - Observar se problema continua
+
+3. **Se não encontrou problema:**
+   - Transferir para análise técnica especializada
 
 ---
 
