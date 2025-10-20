@@ -22,6 +22,18 @@ interface FlowStep {
   tool_calls: any;
   next_step_map: any;
   is_active: boolean;
+  subject_key?: string;
+}
+
+interface FlowSubject {
+  id: string;
+  agent_type: string;
+  subject_key: string;
+  subject_name: string;
+  description?: string;
+  icon: string;
+  display_order: number;
+  is_active: boolean;
 }
 
 interface ConversationMessage {
@@ -60,6 +72,7 @@ export default function GuidedFlowSimulator() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedScenario, setSelectedScenario] = useState<string>('');
   const [selectedVariations, setSelectedVariations] = useState<string[]>([]);
   const [conversations, setConversations] = useState<Record<string, ConversationMessage[]>>({});
@@ -69,17 +82,42 @@ export default function GuidedFlowSimulator() {
   const [editingStep, setEditingStep] = useState<{variationId: string, stepKey: string} | null>(null);
   const [editedQuestion, setEditedQuestion] = useState<string>('');
 
-  const { data: steps, isLoading } = useQuery({
-    queryKey: ['guided_flow_steps', selectedAgent],
+  // Buscar assuntos do agente
+  const { data: subjects, isLoading: isLoadingSubjects } = useQuery({
+    queryKey: ['flow_subjects', selectedAgent],
     queryFn: async () => {
       if (!selectedAgent) return [];
       
       const { data, error } = await supabase
-        .from('agent_flow_steps')
+        .from('agent_flow_subjects')
         .select('*')
         .eq('agent_type', selectedAgent as any)
         .eq('is_active', true)
-        .order('step_order');
+        .order('display_order');
+      
+      if (error) throw error;
+      return data as FlowSubject[];
+    },
+    enabled: !!selectedAgent,
+  });
+
+  const { data: steps, isLoading } = useQuery({
+    queryKey: ['guided_flow_steps', selectedAgent, selectedSubject],
+    queryFn: async () => {
+      if (!selectedAgent) return [];
+      
+      let query = supabase
+        .from('agent_flow_steps')
+        .select('*')
+        .eq('agent_type', selectedAgent as any)
+        .eq('is_active', true);
+      
+      // Filtrar por assunto se selecionado
+      if (selectedSubject) {
+        query = query.eq('subject_key', selectedSubject);
+      }
+      
+      const { data, error } = await query.order('step_order');
       
       if (error) throw error;
       return data as FlowStep[];
@@ -422,14 +460,14 @@ export default function GuidedFlowSimulator() {
             🎮 Simulador Automático de Fluxo
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Escolha o agente, cenário e até 3 variações para simular simultaneamente
+            Escolha o agente, assunto, cenário e variações para simular
           </p>
         </div>
 
         {/* Duas Caixas de Seleção */}
         {!isSimulationActive && (
           <div className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               {/* Caixa 1: Agente */}
               <div>
                 <label className="text-sm font-medium block mb-2">
@@ -438,6 +476,7 @@ export default function GuidedFlowSimulator() {
                 </label>
                 <Select value={selectedAgent} onValueChange={(value) => {
                   setSelectedAgent(value);
+                  setSelectedSubject('');
                   setSelectedScenario('');
                   setSelectedVariations([]);
                 }}>
@@ -454,10 +493,43 @@ export default function GuidedFlowSimulator() {
                 </Select>
               </div>
 
-              {/* Caixa 2: Cenário */}
+              {/* Caixa 2: Assunto */}
               <div>
                 <label className="text-sm font-medium block mb-2">
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">2</span>
+                  Escolher o Assunto
+                </label>
+                <Select 
+                  value={selectedSubject} 
+                  onValueChange={(value) => {
+                    setSelectedSubject(value);
+                    setSelectedScenario('');
+                    setSelectedVariations([]);
+                  }}
+                  disabled={!selectedAgent || isLoadingSubjects}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={
+                      isLoadingSubjects ? 'Carregando...' : 
+                      !selectedAgent ? 'Selecione um agente primeiro' :
+                      subjects && subjects.length === 0 ? 'Nenhum assunto cadastrado' :
+                      'Escolha o assunto...'
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {subjects?.map(subject => (
+                      <SelectItem key={subject.id} value={subject.subject_key}>
+                        {subject.icon} {subject.subject_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Caixa 3: Cenário */}
+              <div>
+                <label className="text-sm font-medium block mb-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
                   Escolher o Cenário
                 </label>
                 <Select 
@@ -466,12 +538,12 @@ export default function GuidedFlowSimulator() {
                     setSelectedScenario(value);
                     setSelectedVariations([]);
                   }}
-                  disabled={!selectedAgent || isLoading}
+                  disabled={!selectedSubject || isLoading}
                 >
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder={
                       isLoading ? 'Carregando...' : 
-                      !selectedAgent ? 'Selecione um agente primeiro' :
+                      !selectedSubject ? 'Selecione um assunto primeiro' :
                       scenarios.length === 0 ? 'Nenhum cenário encontrado' :
                       'Escolha o cenário...'
                     } />
@@ -487,11 +559,11 @@ export default function GuidedFlowSimulator() {
               </div>
             </div>
 
-            {/* Caixa 3: Variações com checkboxes */}
+            {/* Caixa 4: Variações com checkboxes */}
             {selectedScenario && variations.length > 0 && (
               <div>
                 <label className="text-sm font-medium block mb-2">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">3</span>
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">4</span>
                   Escolher Variações
                   <Badge variant="secondary" className="ml-2">
                     {selectedVariations.length} selecionadas

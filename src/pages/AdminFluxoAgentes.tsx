@@ -14,7 +14,9 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuidedFlowSimulator from '@/components/GuidedFlowSimulator';
+import FlowSubjectManager from '@/components/FlowSubjectManager';
 
 interface FlowStep {
   id: string;
@@ -307,10 +309,21 @@ export default function AdminFluxoAgentes() {
             </p>
           </div>
 
-          {/* Simulador Guiado */}
-          <div className="mb-6">
-            <GuidedFlowSimulator />
-          </div>
+          {/* Tabs para Simulador e Gerenciar Assuntos */}
+          <Tabs defaultValue="simulator" className="mb-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="simulator">🎮 Simulador</TabsTrigger>
+              <TabsTrigger value="subjects">📚 Assuntos</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="simulator" className="mt-6">
+              <GuidedFlowSimulator />
+            </TabsContent>
+            
+            <TabsContent value="subjects" className="mt-6">
+              <FlowSubjectManager agentType={selectedAgent} />
+            </TabsContent>
+          </Tabs>
 
           {/* Botão de Gerar Simulações Automáticas */}
           <Card className="p-6 mb-6 bg-gradient-to-r from-primary/10 to-primary/5">

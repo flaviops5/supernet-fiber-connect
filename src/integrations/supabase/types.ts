@@ -177,6 +177,7 @@ export type Database = {
           response_variations: Json | null
           step_key: string
           step_order: number
+          subject_key: string | null
           tool_calls: Json | null
           updated_at: string | null
         }
@@ -195,6 +196,7 @@ export type Database = {
           response_variations?: Json | null
           step_key: string
           step_order: number
+          subject_key?: string | null
           tool_calls?: Json | null
           updated_at?: string | null
         }
@@ -213,6 +215,7 @@ export type Database = {
           response_variations?: Json | null
           step_key?: string
           step_order?: number
+          subject_key?: string | null
           tool_calls?: Json | null
           updated_at?: string | null
         }
@@ -225,6 +228,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_flow_subjects: {
+        Row: {
+          agent_type: Database["public"]["Enums"]["agent_type"]
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          subject_key: string
+          subject_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_type: Database["public"]["Enums"]["agent_type"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject_key: string
+          subject_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_type?: Database["public"]["Enums"]["agent_type"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject_key?: string
+          subject_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       agent_metrics: {
         Row: {
