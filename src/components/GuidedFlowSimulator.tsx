@@ -7,9 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X, CheckCheck, XCircle } from 'lucide-react';
+import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X, CheckCheck, XCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface FlowStep {
   id: string;
@@ -521,6 +532,9 @@ export default function GuidedFlowSimulator() {
       return;
     }
 
+    // Buscar nome do assunto para mostrar na confirmação
+    const subjectName = subjects?.find(s => s.subject_key === selectedSubject)?.subject_name || selectedSubject;
+
     const { error } = await supabase
       .from('agent_flow_scenario_approvals')
       .delete()
@@ -538,10 +552,12 @@ export default function GuidedFlowSimulator() {
       setVariationStatuses({});
       toast({
         title: '✅ Aprovações limpas!',
-        description: `Todas as aprovações de ${selectedSubject} foram removidas`
+        description: `Todas as aprovações de "${subjectName}" foram removidas`
       });
     }
   };
+
+  const selectedSubjectName = subjects?.find(s => s.subject_key === selectedSubject)?.subject_name || selectedSubject;
 
   const selectedAgentLabel = AGENT_TYPES.find(a => a.value === selectedAgent)?.label || selectedAgent;
 
@@ -735,14 +751,39 @@ export default function GuidedFlowSimulator() {
                 )}
               </Button>
               {selectedAgent && selectedSubject && savedApprovals && savedApprovals.length > 0 && (
-                <Button
-                  onClick={handleClearApprovals}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <AlertCircle className="h-4 w-4" />
-                  Limpar Aprovações ({savedApprovals.length})
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Limpar Aprovações ({savedApprovals.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>⚠️ Confirmar Limpeza de Aprovações</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>Você está prestes a remover:</p>
+                        <div className="bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+                          <p className="font-semibold text-destructive">
+                            {savedApprovals.length} aprovação(ões) do assunto "{selectedSubjectName}"
+                          </p>
+                        </div>
+                        <p className="text-muted-foreground text-xs mt-2">
+                          ✅ Aprovações de outros assuntos NÃO serão afetadas
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearApprovals} className="bg-destructive hover:bg-destructive/90">
+                        Confirmar Limpeza
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </>
           ) : (
