@@ -20,11 +20,15 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversationId, customerData, routeReason } = await req.json();
+    const { messages, conversationId, customerData, routeReason, attachments } = await req.json();
     
     const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     console.log(`💰 [${correlationId}] support-financial-agent: Processing request`);
     console.log(`📋 [${correlationId}] Route reason:`, routeReason);
+    
+    if (attachments && attachments.length > 0) {
+      console.log(`📎 [${correlationId}] ${attachments.length} attachment(s) received`);
+    }
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -472,6 +476,8 @@ ${customerData?.ixc_client_id ? `ID IXC: ${customerData.ixc_client_id}` : ''}
 
 ${statusMessage}
 
+${imageAnalysis}
+
 ${desbloqueioInfo ? `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔓 AÇÃO AUTOMÁTICA REALIZADA:
@@ -485,6 +491,66 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    // 🖼️ Análise de imagens se houver attachments
+    let imageAnalysis = '';
+    
+    if (attachments && attachments.length > 0) {
+      console.log(`🔍 [${correlationId}] Analyzing ${attachments.length} image(s) with AI...`);
+      
+      try {
+        const imageMessages = attachments.map((att: any) => ({
+          type: "image_url",
+          image_url: { url: att.url }
+        }));
+        
+        const analysisResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [{
+              role: 'user',
+              content: [
+                {
+                  type: "text",
+                  text: "Analise esta imagem enviada por um cliente que está com problemas financeiros/pagamento. Extraia informações relevantes como: comprovantes de pagamento, prints de contas bancárias, boletos, faturas, etc. Descreva de forma clara e objetiva o que você vê."
+                },
+                ...imageMessages
+              ]
+            }],
+            max_completion_tokens: 500
+          }),
+        });
+        
+        if (analysisResponse.ok) {
+          const analysisData = await analysisResponse.json();
+          imageAnalysis = analysisData.choices[0]?.message?.content || '';
+          console.log(`✅ [${correlationId}] Image analysis completed`);
+          
+          // Adicionar análise ao contexto
+          if (imageAnalysis) {
+            imageAnalysis = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖼️ ANÁLISE DE IMAGEM ENVIADA PELO CLIENTE:
+
+${imageAnalysis}
+
+IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovante de pagamento, verifique se o pagamento foi identificado no sistema. Se for print de boleto/fatura, confirme os valores e datas.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+          }
+        } else {
+          console.error(`❌ [${correlationId}] Error analyzing image:`, await analysisResponse.text());
+        }
+      } catch (error) {
+        console.error(`❌ [${correlationId}] Exception analyzing image:`, error);
+      }
     }
 
     // 🛠️ Tool for creating administrative escalation ticket
