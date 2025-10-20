@@ -8,6 +8,74 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
+// Cache de simulações aprovadas (30 minutos)
+let approvedSimulationsCache: { data: any[], timestamp: number } | null = null;
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+
+async function getApprovedSimulations(supabase: any, subject: string): Promise<string> {
+  // Verificar cache
+  if (approvedSimulationsCache && 
+      Date.now() - approvedSimulationsCache.timestamp < CACHE_TTL &&
+      approvedSimulationsCache.data.length > 0) {
+    return formatSimulationsForPrompt(approvedSimulationsCache.data, subject);
+  }
+
+  // Buscar simulações aprovadas de energia
+  const { data, error } = await supabase
+    .from("agent_flow_scenario_approvals")
+    .select(`
+      variation_path,
+      notes,
+      agent_type,
+      subject_key,
+      scenario_key
+    `)
+    .eq("agent_type", "support-tech-agent")
+    .eq("subject_key", "energia")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar simulações aprovadas:", error);
+    return "";
+  }
+
+  if (!data || data.length === 0) {
+    return "";
+  }
+
+  // Atualizar cache
+  approvedSimulationsCache = {
+    data,
+    timestamp: Date.now()
+  };
+
+  return formatSimulationsForPrompt(data, subject);
+}
+
+function formatSimulationsForPrompt(simulations: any[], subject: string): string {
+  if (!simulations || simulations.length === 0) {
+    return "";
+  }
+
+  let prompt = `\n\n## 📚 EXEMPLOS APROVADOS DE CONVERSAS SOBRE ${subject.toUpperCase()}\n\n`;
+  prompt += `Você tem acesso a ${simulations.length} variações aprovadas de conversas reais sobre ${subject}.\n`;
+  prompt += `Use estes exemplos como referência para tom, abordagem e sequência de perguntas:\n\n`;
+
+  simulations.forEach((sim, idx) => {
+    prompt += `### Variação ${idx + 1}: ${sim.scenario_key}\n`;
+    prompt += `**Caminho:** ${sim.variation_path}\n`;
+    if (sim.notes) {
+      prompt += `**Observações:** ${sim.notes}\n`;
+    }
+    prompt += `---\n\n`;
+  });
+
+  prompt += `⚠️ **IMPORTANTE:** Use estes exemplos como guia, mas adapte naturalmente à situação específica do cliente.\n`;
+
+  return prompt;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -252,6 +320,26 @@ serve(async (req) => {
       const flowState = (currentConversation?.metadata as any)?.flow_state;
       const scenario = (currentConversation?.metadata as any)?.scenario;
 
+      // Carregar exemplos aprovados de energia se estiver no cenário A
+      let approvedExamples = "";
+      if (scenario === "A" || flowState?.includes("energia")) {
+        approvedExamples = await getApprovedSimulations(supabase, "energia");
+        logger.info("Exemplos de energia carregados", { 
+          hasExamples: approvedExamples.length > 0,
+          examplesLength: approvedExamples.length,
+          message: approvedExamples ? "Variações aprovadas disponíveis para referência" : "Nenhuma variação aprovada encontrada"
+        });
+        
+        // Log das variações aprovadas para documentação
+        if (approvedExamples.length > 0 && approvedSimulationsCache) {
+          logger.info("Variações aprovadas em uso", {
+            total: approvedSimulationsCache.data.length,
+            scenarios: [...new Set(approvedSimulationsCache.data.map(s => s.scenario_key))],
+            context: "Fluxo de energia seguindo protocolos aprovados"
+          });
+        }
+      }
+
       logger.info("Estado do fluxo", { flowState, scenario });
 
       // Analisar contexto baseado no histórico
@@ -260,7 +348,11 @@ serve(async (req) => {
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
       if (scenario === "A" && flowState) {
-        logger.info("Processando Cenário A", { flowState });
+        logger.info("Processando Cenário A - Fluxo de Energia", { 
+          flowState,
+          approvedVariations: approvedSimulationsCache?.data.length || 0,
+          context: "Seguindo protocolo de energia com variações aprovadas como referência"
+        });
 
         // Detectores de resposta
         const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
