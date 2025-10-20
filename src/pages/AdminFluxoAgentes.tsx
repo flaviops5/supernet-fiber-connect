@@ -648,6 +648,43 @@ export default function AdminFluxoAgentes() {
                         rows={6}
                       />
                     </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">🔧 Step Tools (Array de strings):</label>
+                        <Badge variant="secondary" className="text-xs">
+                          Sobrescreve tools padrão do assunto
+                        </Badge>
+                      </div>
+                      <div className="mb-2 p-3 bg-muted/50 rounded text-xs space-y-1">
+                        <p className="font-medium">Tools disponíveis:</p>
+                        <div className="grid grid-cols-2 gap-1 mt-2">
+                          <code className="bg-background px-2 py-1 rounded">test_equipment_connectivity</code>
+                          <code className="bg-background px-2 py-1 rounded">criar_atendimento_ixc</code>
+                          <code className="bg-background px-2 py-1 rounded">reboot_client_equipment</code>
+                          <code className="bg-background px-2 py-1 rounded">get_onu_signal_status</code>
+                          <code className="bg-background px-2 py-1 rounded">ixc_client_lookup</code>
+                          <code className="bg-background px-2 py-1 rounded">send_payment_to_customer</code>
+                        </div>
+                        <p className="text-muted-foreground mt-2">
+                          💡 Deixe vazio [] para usar as tools padrão do assunto
+                        </p>
+                      </div>
+                      <Textarea
+                        value={JSON.stringify(editedData.tool_calls || [], null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const parsed = JSON.parse(e.target.value);
+                            if (Array.isArray(parsed)) {
+                              setEditedData({ ...editedData, tool_calls: parsed });
+                            }
+                          } catch {}
+                        }}
+                        className="mt-1 font-mono text-xs"
+                        placeholder='["test_equipment_connectivity", "criar_atendimento_ixc"]'
+                        rows={4}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -756,10 +793,17 @@ export default function AdminFluxoAgentes() {
 
                       {step.tool_calls && step.tool_calls.length > 0 && (
                         <div>
-                          <span className="font-medium text-sm">Tool Calls:</span>
-                          <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
-                            {JSON.stringify(step.tool_calls, null, 2)}
-                          </pre>
+                          <span className="font-medium text-sm">🔧 Step Tools:</span>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {step.tool_calls.map((tool: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="font-mono text-xs">
+                                {tool}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            ℹ️ Estas tools sobrescrevem as configurações padrão do assunto
+                          </p>
                         </div>
                       )}
                     </div>
