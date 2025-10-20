@@ -11,17 +11,71 @@ const iconMap: { [key: string]: any } = {
 
 // Normalize plan.features into an array safely
  type FeatureItem = { text: string; icon?: string; isLink?: boolean; href?: string; order?: number };
+ 
+ // Auto-detect icon based on feature text
+ const detectIconFromText = (text: string): string => {
+   const lowerText = text.toLowerCase();
+   if (lowerText.includes('download') || lowerText.includes('velocidade')) return 'Download';
+   if (lowerText.includes('upload')) return 'Download';
+   if (lowerText.includes('fibra') || lowerText.includes('óptica')) return 'Wifi';
+   if (lowerText.includes('suporte') || lowerText.includes('atendimento')) return 'Shield';
+   if (lowerText.includes('instalação') || lowerText.includes('grátis')) return 'Gift';
+   if (lowerText.includes('roteador') || lowerText.includes('wi-fi')) return 'Router';
+   if (lowerText.includes('ip') || lowerText.includes('fixo')) return 'Globe';
+   if (lowerText.includes('tv') || lowerText.includes('canais')) return 'Tv';
+   return 'Download'; // Default icon
+ };
+ 
  const toFeaturesArray = (raw: any): FeatureItem[] => {
-   if (Array.isArray(raw)) return raw;
+   if (Array.isArray(raw)) {
+     // Se já é array, verificar se são objetos ou strings
+     return raw.map(item => {
+       if (typeof item === 'string') {
+         // Converter string simples para formato de objeto com auto-detecção de ícone
+         return { 
+           text: item, 
+           icon: detectIconFromText(item), 
+           isLink: false 
+         };
+       }
+       return item;
+     });
+   }
    if (typeof raw === 'string') {
      try {
        const parsed = JSON.parse(raw);
-       return Array.isArray(parsed) ? parsed : [];
+       if (Array.isArray(parsed)) {
+         return parsed.map(item => {
+           if (typeof item === 'string') {
+             return { 
+               text: item, 
+               icon: detectIconFromText(item), 
+               isLink: false 
+             };
+           }
+           return item;
+         });
+       }
+       return [];
      } catch {
        return [];
      }
    }
    return [];
+ };
+
+ // Parse speed format to extract main value
+ const parseSpeed = (speedStr: string) => {
+   // Extrair número principal (ex: "270M/270M Mbps" -> "270")
+   const match = speedStr.match(/^(\d+)/);
+   return match ? match[1] : speedStr.split(' ')[0];
+ };
+
+ // Get speed unit
+ const getSpeedUnit = (speedStr: string) => {
+   if (speedStr.includes('Mbps') || speedStr.includes('Mb')) return 'Mbps';
+   if (speedStr.includes('Mega')) return 'Mega';
+   return 'Mbps';
  };
  
  const ResidentialPlans = () => {
@@ -169,10 +223,10 @@ const iconMap: { [key: string]: any } = {
                         <Wifi className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                         <div className="flex items-baseline">
                           <span className="text-5xl md:text-6xl font-black font-varela text-primary">
-                            {plan.speed.split(' ')[0]}
+                            {parseSpeed(plan.speed)}
                           </span>
                           <span className="text-2xl md:text-3xl font-black font-varela ml-2 text-orange">
-                            {plan.speed.split(' ')[1] || ''}
+                            {getSpeedUnit(plan.speed)}
                           </span>
                         </div>
                       </div>
