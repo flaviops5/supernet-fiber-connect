@@ -26,6 +26,7 @@ interface FlowStep {
   response_options: any;
   response_variations: any;
   tool_calls: any;
+  step_tools: string[] | null;
   next_step_map: any;
   awaits_response: boolean;
   is_active: boolean;
@@ -113,14 +114,16 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
         response_options: step.response_options,
         response_variations: step.response_variations,
         tool_calls: step.tool_calls,
+        step_tools: step.step_tools,
         next_step_map: step.next_step_map,
         awaits_response: step.awaits_response,
         media_id: step.media_id,
       });
       
-      // Inicializar tools selecionadas
-      if (Array.isArray(step.tool_calls)) {
-        const tools = step.tool_calls.map((t: any) => 
+      // Inicializar tools selecionadas - priorizar step_tools
+      const toolsToUse = step.step_tools || step.tool_calls;
+      if (Array.isArray(toolsToUse)) {
+        const tools = toolsToUse.map((t: any) => 
           typeof t === 'string' ? t : t?.tool || t?.name
         ).filter(Boolean);
         setSelectedTools(tools);
@@ -136,7 +139,7 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
         .from('agent_flow_steps')
         .update({
           ...data,
-          tool_calls: selectedTools,
+          step_tools: selectedTools.length > 0 ? selectedTools : null,
           updated_at: new Date().toISOString()
         } as any)
         .eq('id', step.id);
@@ -296,7 +299,12 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
           {/* Tools */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label>🔧 Step Tools</Label>
+              <div>
+                <Label className="text-base">🔧 Step Tools (Override)</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tools específicas deste step (sobrescreve as padrão do assunto)
+                </p>
+              </div>
               <Badge variant="secondary" className="text-xs">
                 {selectedTools.length} selecionada(s)
               </Badge>
@@ -307,10 +315,10 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
                   key={tool.value}
                   onClick={() => toggleTool(tool.value)}
                   className={`
-                    p-2 rounded cursor-pointer transition-all text-xs
+                    p-2 rounded cursor-pointer transition-all text-xs font-medium
                     ${selectedTools.includes(tool.value) 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-background hover:bg-accent'
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'bg-background hover:bg-accent border border-border'
                     }
                   `}
                 >
@@ -318,9 +326,15 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              💡 Estas tools executam em background ao enviar a mensagem deste step
-            </p>
+            <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-xs text-blue-600 dark:text-blue-400 flex items-start gap-2">
+                <span className="text-sm">💡</span>
+                <span>
+                  <strong>Como funciona:</strong> Se nenhuma tool for selecionada, o step usa as tools padrão do assunto.
+                  Se você selecionar pelo menos uma, ela substitui completamente as padrão.
+                </span>
+              </p>
+            </div>
           </div>
 
           {/* Response Options */}

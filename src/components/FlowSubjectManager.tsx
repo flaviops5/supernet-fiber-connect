@@ -21,6 +21,8 @@ interface FlowSubject {
   description?: string;
   icon: string;
   display_order: number;
+  default_tools?: string[] | null;
+  default_media?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -42,12 +44,22 @@ const AGENT_TYPES = [
 
 const DEFAULT_ICONS = ['📁', '⚡', '📶', '🌐', '🔧', '💰', '📞', '🏥', '🚚', '📦', '🎯', '⚙️'];
 
+const AVAILABLE_TOOLS = [
+  { value: 'test_equipment_connectivity', label: '🔌 Test Equipment Connectivity' },
+  { value: 'criar_atendimento_ixc', label: '📋 Criar Atendimento IXC' },
+  { value: 'reboot_client_equipment', label: '🔄 Reboot Equipment' },
+  { value: 'get_onu_signal_status', label: '📡 Get ONU Signal' },
+  { value: 'ixc_client_lookup', label: '🔍 IXC Client Lookup' },
+  { value: 'send_payment_to_customer', label: '💳 Send Payment' },
+];
+
 export default function FlowSubjectManager({ agentType: propAgentType }: FlowSubjectManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedAgent, setSelectedAgent] = useState<string>(propAgentType || 'support-tech-agent');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<FlowSubject | null>(null);
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
   
   // Sincronizar selectedAgent com propAgentType
   useEffect(() => {
@@ -63,6 +75,7 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
     description: '',
     icon: '📁',
     display_order: 0,
+    default_tools: [] as string[],
   });
 
   const { data: subjects, isLoading } = useQuery({
@@ -91,6 +104,7 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
         .insert({
           agent_type: agentToUse as any,
           ...data,
+          default_tools: selectedTools.length > 0 ? selectedTools : null,
         });
       
       if (error) throw error;
@@ -113,7 +127,10 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const { error } = await supabase
         .from('agent_flow_subjects')
-        .update(data)
+        .update({
+          ...data,
+          default_tools: selectedTools.length > 0 ? selectedTools : null,
+        })
         .eq('id', id);
       
       if (error) throw error;
@@ -179,7 +196,9 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       description: subject.description || '',
       icon: subject.icon,
       display_order: subject.display_order,
+      default_tools: subject.default_tools || [],
     });
+    setSelectedTools(subject.default_tools || []);
     setIsDialogOpen(true);
   };
 
@@ -192,7 +211,17 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       description: '',
       icon: '📁',
       display_order: subjects?.length || 0,
+      default_tools: [],
     });
+    setSelectedTools([]);
+  };
+
+  const toggleTool = (toolName: string) => {
+    setSelectedTools(prev => 
+      prev.includes(toolName) 
+        ? prev.filter(t => t !== toolName)
+        : [...prev, toolName]
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -287,6 +316,41 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
                     onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
                   />
                 </div>
+
+                {/* Default Tools */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <Label className="text-base">🔧 Default Tools</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tools padrão para todos os steps deste assunto
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {selectedTools.length} selecionada(s)
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-lg max-h-64 overflow-y-auto">
+                    {AVAILABLE_TOOLS.map(tool => (
+                      <div
+                        key={tool.value}
+                        onClick={() => toggleTool(tool.value)}
+                        className={`
+                          p-2 rounded cursor-pointer transition-all text-xs font-medium
+                          ${selectedTools.includes(tool.value) 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-background hover:bg-accent border border-border'
+                          }
+                        `}
+                      >
+                        {tool.label}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💡 Steps individuais podem sobrescrever estas tools padrão
+                  </p>
+                </div>
               </div>
 
               <DialogFooter>
@@ -353,6 +417,15 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
                           <p className="text-sm text-muted-foreground">
                             {subject.description}
                           </p>
+                        )}
+                        {subject.default_tools && subject.default_tools.length > 0 && (
+                          <div className="mt-2 flex gap-1 flex-wrap">
+                            {subject.default_tools.map((tool: string) => (
+                              <Badge key={tool} variant="outline" className="text-xs">
+                                🔧 {tool}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
