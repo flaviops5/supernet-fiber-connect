@@ -127,15 +127,22 @@ export default function GuidedFlowSimulator() {
 
   // Carregar aprovações salvas do banco
   const { data: savedApprovals } = useQuery({
-    queryKey: ['scenario_approvals', selectedAgent, selectedScenario],
+    queryKey: ['scenario_approvals', selectedAgent, selectedSubject, selectedScenario],
     queryFn: async () => {
       if (!selectedAgent || !selectedScenario) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('agent_flow_scenario_approvals')
         .select('*')
         .eq('agent_type', selectedAgent as any)
         .eq('scenario_key', selectedScenario);
+      
+      // Filtrar por assunto se selecionado
+      if (selectedSubject) {
+        query = query.eq('subject_key', selectedSubject);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data;
@@ -278,11 +285,13 @@ export default function GuidedFlowSimulator() {
   const saveApprovalMutation = useMutation({
     mutationFn: async ({ 
       agentType, 
+      subjectKey,
       scenarioKey, 
       variationPath, 
       status 
     }: { 
-      agentType: string; 
+      agentType: string;
+      subjectKey?: string;
       scenarioKey: string; 
       variationPath: string; 
       status: 'approved' | 'rejected' 
@@ -291,12 +300,13 @@ export default function GuidedFlowSimulator() {
         .from('agent_flow_scenario_approvals')
         .upsert({
           agent_type: agentType as any,
+          subject_key: subjectKey,
           scenario_key: scenarioKey,
           variation_path: variationPath,
           status,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'agent_type,scenario_key,variation_path'
+          onConflict: 'agent_type,subject_key,scenario_key,variation_path'
         });
       
       if (error) throw error;
@@ -412,6 +422,7 @@ export default function GuidedFlowSimulator() {
         // Salvar no banco
         saveApprovalMutation.mutate({
           agentType: selectedAgent,
+          subjectKey: selectedSubject,
           scenarioKey: selectedScenario,
           variationPath,
           status

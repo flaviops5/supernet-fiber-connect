@@ -134,6 +134,7 @@ export type Database = {
           notes: string | null
           scenario_key: string
           status: string
+          subject_key: string | null
           updated_at: string | null
           variation_path: string
         }
@@ -145,6 +146,7 @@ export type Database = {
           notes?: string | null
           scenario_key: string
           status: string
+          subject_key?: string | null
           updated_at?: string | null
           variation_path: string
         }
@@ -156,6 +158,7 @@ export type Database = {
           notes?: string | null
           scenario_key?: string
           status?: string
+          subject_key?: string | null
           updated_at?: string | null
           variation_path?: string
         }
