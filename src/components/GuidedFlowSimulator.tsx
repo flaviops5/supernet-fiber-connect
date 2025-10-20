@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X, CheckCheck, XCircle, Trash2 } from 'lucide-react';
+import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSquare, ThumbsDown, Edit2, Save, X, CheckCheck, XCircle, Trash2, Settings } from 'lucide-react';
+import StepConfigDialog from './StepConfigDialog';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -92,6 +93,8 @@ export default function GuidedFlowSimulator() {
   const [variationStatuses, setVariationStatuses] = useState<Record<string, 'approved' | 'pending' | 'rejected'>>({});
   const [editingStep, setEditingStep] = useState<{variationId: string, stepKey: string} | null>(null);
   const [editedQuestion, setEditedQuestion] = useState<string>('');
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [configStepKey, setConfigStepKey] = useState<string>('');
 
   // Buscar assuntos do agente
   const { data: subjects, isLoading: isLoadingSubjects } = useQuery({
@@ -830,13 +833,29 @@ export default function GuidedFlowSimulator() {
                 <Card key={variationId} className="p-4 space-y-3">
                   {/* Header do Card */}
                   <div className="flex items-center justify-between pb-2 border-b">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-sm">{variation?.name}</h3>
                       <p className="text-xs text-muted-foreground">{variation?.description}</p>
                     </div>
-                    <Badge variant={currentStatus === 'approved' ? 'default' : currentStatus === 'rejected' ? 'destructive' : 'secondary'}>
-                      {currentStatus === 'approved' ? '✅' : currentStatus === 'rejected' ? '❌' : '⏳'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {conversation.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setConfigStepKey(conversation[0].step_key);
+                            setConfigDialogOpen(true);
+                          }}
+                          className="h-7 gap-1 text-xs"
+                        >
+                          <Settings className="h-3 w-3" />
+                          Configurar
+                        </Button>
+                      )}
+                      <Badge variant={currentStatus === 'approved' ? 'default' : currentStatus === 'rejected' ? 'destructive' : 'secondary'}>
+                        {currentStatus === 'approved' ? '✅' : currentStatus === 'rejected' ? '❌' : '⏳'}
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Conversa */}
@@ -937,6 +956,17 @@ export default function GuidedFlowSimulator() {
           </div>
         )}
       </div>
+
+      {/* Dialog de Configuração do Step */}
+      <StepConfigDialog
+        stepKey={configStepKey}
+        agentType={selectedAgent}
+        isOpen={configDialogOpen}
+        onClose={() => {
+          setConfigDialogOpen(false);
+          setConfigStepKey('');
+        }}
+      />
     </Card>
   );
 }
