@@ -158,10 +158,20 @@ export default function GuidedFlowSimulator() {
     if (!step.response_options) return [];
     
     if (Array.isArray(step.response_options)) {
-      return step.response_options.map((opt: any) => ({
-        key: String(opt.key || opt.value || opt),
-        label: String(opt.label || opt.text || opt),
-      }));
+      return step.response_options.map((opt: any) => {
+        // Formato complexo: { label: "...", value: "...", next_step: "..." }
+        if (typeof opt === 'object' && opt !== null && (opt.value || opt.key)) {
+          return {
+            key: String(opt.value || opt.key),
+            label: String(opt.label || opt.text || opt.value || opt.key),
+          };
+        }
+        // Formato simples: string direta
+        return {
+          key: String(opt),
+          label: String(opt),
+        };
+      });
     }
     
     if (typeof step.response_options === 'object') {
