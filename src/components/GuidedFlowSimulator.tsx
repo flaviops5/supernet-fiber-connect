@@ -570,16 +570,21 @@ export default function GuidedFlowSimulator() {
               </div>
             </div>
 
-            {/* Caixa 4: Variações com checkboxes */}
-            {selectedScenario && variations.length > 0 && (
-              <div>
-                <label className="text-sm font-medium block mb-2">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">4</span>
-                  Escolher Variações
-                  <Badge variant="secondary" className="ml-2">
-                    {selectedVariations.length} selecionadas
-                  </Badge>
-                </label>
+        {/* Caixa 4: Variações com checkboxes */}
+        {selectedScenario && (
+          <div>
+            <label className="text-sm font-medium block mb-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs mr-2">4</span>
+              Escolher Variações
+              <Badge variant="secondary" className="ml-2">
+                {selectedVariations.length} selecionadas
+              </Badge>
+            </label>
+            {variations.length === 0 ? (
+              <div className="border rounded-lg p-4 text-center text-sm text-muted-foreground">
+                ⚠️ Nenhuma variação encontrada para este cenário. Verifique se o cenário tem opções de resposta e próximos passos configurados.
+              </div>
+            ) : (
                 <ScrollArea className="h-[300px] border rounded-lg p-4">
                   <div className="space-y-2">
                     {variations.map(variation => {
@@ -619,9 +624,10 @@ export default function GuidedFlowSimulator() {
                     })}
                   </div>
                 </ScrollArea>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
+        </div>
         )}
 
         {/* Botões de Controle */}
