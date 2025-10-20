@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, X, Trash2 } from 'lucide-react';
+import { Loader2, Save, X, Trash2, Smile } from 'lucide-react';
 
 interface FlowStep {
   id: string;
@@ -60,6 +60,20 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<FlowStep>>({});
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const EMOJIS = [
+    '😊', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
+    '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙',
+    '👋', '🤚', '🖐', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟',
+    '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎',
+    '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏',
+    '⏱️', '⏰', '⏳', '📱', '💻', '🖥️', '📡', '🔌', '🔋', '💡',
+    '🔦', '🔧', '🔨', '⚙️', '🛠️', '⚡', '🔥', '💧', '🌊', '🌐',
+    '📞', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬',
+    '✅', '❌', '⭕', '🔴', '🟢', '🟡', '🔵', '⚪', '⚫', '🟣',
+    '📊', '📈', '📉', '💰', '💳', '💸', '🏠', '🏢', '🏪', '🏬',
+  ];
 
   const { data: step, isLoading } = useQuery({
     queryKey: ['flow_step', agentType, stepKey],
@@ -157,6 +171,12 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
     );
   };
 
+  const insertEmoji = (emoji: string) => {
+    const currentQuestion = formData.question || '';
+    setFormData({ ...formData, question: currentQuestion + emoji });
+    setShowEmojiPicker(false);
+  };
+
   if (isLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -179,7 +199,50 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
         <div className="space-y-4 py-4">
           {/* Questão */}
           <div>
-            <Label>Questão</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Questão</Label>
+              <div className="relative">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="h-7 gap-1"
+                >
+                  <Smile className="h-3 w-3" />
+                  Emojis
+                </Button>
+                
+                {showEmojiPicker && (
+                  <div className="absolute right-0 top-9 z-50 bg-background border rounded-lg shadow-lg p-3 w-64">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium">Selecione um emoji</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowEmojiPicker(false)}
+                        className="h-5 w-5 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-10 gap-1 max-h-48 overflow-y-auto">
+                      {EMOJIS.map((emoji, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => insertEmoji(emoji)}
+                          className="text-lg hover:bg-accent rounded p-1 transition-colors"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             <Textarea
               value={formData.question || ''}
               onChange={(e) => setFormData({ ...formData, question: e.target.value })}
