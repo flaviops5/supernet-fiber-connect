@@ -635,7 +635,7 @@ export default function GuidedFlowSimulator() {
           {!isSimulationActive ? (
             <Button
               onClick={handleStartSimulation}
-              disabled={!selectedAgent || !selectedScenario || selectedVariations.length === 0 || isLoading}
+              disabled={!selectedAgent || !selectedScenario || (variations.length > 0 && selectedVariations.length === 0) || isLoading}
               className="gap-2"
             >
               {isLoading ? (
