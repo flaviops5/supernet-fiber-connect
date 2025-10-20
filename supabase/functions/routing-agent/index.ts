@@ -33,6 +33,7 @@ serve(async (req) => {
     const message = body.message ?? body.message_content ?? "";
     const conversationId = body.conversationId ?? body.conversation_id ?? null;
     const customerData = body.customerData ?? {};
+    const attachments = body.attachments ?? [];
 
     if (!conversationId || !message) {
       logger.error("conversationId ou message ausente", { body });
@@ -263,6 +264,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           onu_signal: onuSignal, // TX/RX para análise
           client_is_offline: clientStatus.isOffline === true,
           cpf_not_found: !clientStatus.found,
+          attachments: attachments, // 🖼️ Passar imagens para o Luan
         },
       });
       if (techError) logger.error("Erro ao chamar Luan", { error: techError });
