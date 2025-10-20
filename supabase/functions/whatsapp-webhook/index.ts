@@ -125,9 +125,55 @@ serve(async (req) => {
 
       const customerPhone = messageData.key?.remoteJid?.replace('@s.whatsapp.net', '') || '';
       const customerName = messageData.pushName || 'Cliente WhatsApp';
-      const messageContent = messageData.message?.conversation || 
-                           messageData.message?.extendedTextMessage?.text || 
-                           'Mensagem de mídia';
+      
+      // Capturar mensagem de texto ou mídia
+      let messageContent = messageData.message?.conversation || 
+                           messageData.message?.extendedTextMessage?.text || '';
+      
+      // Capturar imagens anexadas
+      const attachments: any[] = [];
+      
+      // Verificar se há imagem
+      if (messageData.message?.imageMessage) {
+        const imageMsg = messageData.message.imageMessage;
+        
+        // Obter URL da imagem do Evolution API
+        const imageUrl = imageMsg.url;
+        const caption = imageMsg.caption || '';
+        
+        if (imageUrl) {
+          attachments.push({
+            type: 'image',
+            url: imageUrl,
+            mimeType: imageMsg.mimetype || 'image/jpeg',
+            caption: caption
+          });
+          
+          // Se não há texto mas há caption, usar caption como conteúdo
+          if (!messageContent && caption) {
+            messageContent = caption;
+          } else if (!messageContent) {
+            messageContent = '📷 [Imagem enviada]';
+          }
+        }
+      }
+      
+      // Verificar se há documento/PDF (pode ser útil no futuro)
+      if (messageData.message?.documentMessage) {
+        const docMsg = messageData.message.documentMessage;
+        if (docMsg.url) {
+          attachments.push({
+            type: 'document',
+            url: docMsg.url,
+            mimeType: docMsg.mimetype || 'application/octet-stream',
+            filename: docMsg.fileName || 'documento'
+          });
+        }
+      }
+      
+      if (!messageContent) {
+        messageContent = 'Mensagem de mídia';
+      }
 
       // Sprint 1: Log com PII redaction
       console.log(`📞 [${correlationId}] Message from ${redactPII(customerName, 'logs')} (${redactPII(customerPhone, 'logs')}): ${redactPII(messageContent, 'ai')}`);
@@ -366,7 +412,7 @@ serve(async (req) => {
           .eq('id', conversationId);
       }
 
-      // Salvar mensagem do cliente
+      // Salvar mensagem do cliente com attachments
       const { error: messageError } = await supabase
         .from('conversation_messages')
         .insert({
@@ -374,9 +420,11 @@ serve(async (req) => {
           sender_type: 'customer',
           sender_name: customerName,
           content: messageContent,
+          attachments: attachments.length > 0 ? attachments : null,
           metadata: {
             whatsapp_message_id: messageData.key?.id,
-            timestamp: messageData.messageTimestamp
+            timestamp: messageData.messageTimestamp,
+            has_attachments: attachments.length > 0
           }
         });
 
@@ -401,6 +449,7 @@ serve(async (req) => {
         body: {
           message: messageContent,
           conversationId: conversationId,
+          attachments: attachments.length > 0 ? attachments : undefined,
           context: {
             name: customerName,
             phone: customerPhone,

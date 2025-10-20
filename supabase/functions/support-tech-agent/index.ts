@@ -88,6 +88,7 @@ serve(async (req) => {
       conversation_id, 
       customer_cpf, 
       message, 
+      attachments,
       ixc_client_id, 
       reboot_attempted, 
       reboot_result, 
@@ -105,12 +106,103 @@ serve(async (req) => {
       conversation_id, 
       customer_cpf, 
       message,
+      has_attachments: !!attachments && attachments.length > 0,
       ixc_client_id,
       reboot_attempted,
       has_onu_signal: !!onu_signal,
       client_is_offline,
       cpf_not_found
     });
+
+    // 📷 PROCESSAR IMAGENS COM VISÃO AI
+    let imageAnalysis = "";
+    if (attachments && attachments.length > 0) {
+      const imageAttachments = attachments.filter((a: any) => a.type === 'image');
+      
+      if (imageAttachments.length > 0) {
+        logger.info("Processando imagens com visão AI", { 
+          imageCount: imageAttachments.length 
+        });
+        
+        try {
+          const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+          if (!LOVABLE_API_KEY) {
+            throw new Error('LOVABLE_API_KEY not configured');
+          }
+
+          // Montar o prompt para análise de imagem
+          const imagePrompt = `Você é o Luan Silva, técnico de suporte da SUPERNET FIBRA.
+          
+O cliente enviou uma imagem relacionada a um problema de internet.
+
+Analise a imagem e identifique:
+- Se é um teste de velocidade (fast.com, speedtest, etc), identifique os valores de download/upload
+- Se é uma foto do equipamento/luzes, identifique quais luzes estão acesas/apagadas/piscando
+- Se é um erro/mensagem, identifique o erro
+- Qualquer outra informação técnica relevante
+
+Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
+
+          // Preparar conteúdo com imagem
+          const imageContent: any[] = [
+            {
+              type: "text",
+              text: imagePrompt
+            }
+          ];
+
+          // Adicionar todas as imagens
+          for (const img of imageAttachments) {
+            imageContent.push({
+              type: "image_url",
+              image_url: {
+                url: img.url
+              }
+            });
+          }
+
+          // Chamar Lovable AI com visão
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: imageContent
+                }
+              ],
+              max_tokens: 500
+            })
+          });
+
+          if (!aiResponse.ok) {
+            const errorText = await aiResponse.text();
+            logger.error("Erro na API de visão", { 
+              status: aiResponse.status,
+              error: errorText
+            });
+          } else {
+            const aiData = await aiResponse.json();
+            imageAnalysis = aiData.choices?.[0]?.message?.content || "";
+            
+            logger.info("Análise de imagem concluída", {
+              analysisLength: imageAnalysis.length,
+              preview: imageAnalysis.substring(0, 100)
+            });
+          }
+        } catch (error) {
+          logger.error("Erro ao processar imagem com AI", { 
+            error: error instanceof Error ? error.message : String(error)
+          });
+          // Continua sem análise se houver erro
+        }
+      }
+    }
 
     // Buscar histórico de mensagens da conversa
     const { data: messageHistory } = await supabase
@@ -753,7 +845,20 @@ serve(async (req) => {
 
       } else if (conversationContext.includes("lento") || conversationContext.includes("devagar")) {
         // Cliente com internet lenta
-        responseMessage = "Certo, sobre a lentidão... Vamos fazer alguns testes!\n\n📊 Pode fazer um teste de velocidade em www.fast.com e me passar o resultado?\n\nEnquanto isso, me diga:\n1. Está conectado por cabo ou Wi-Fi?\n2. Quantos dispositivos estão conectados agora?";
+        
+        // Se enviou imagem de teste de velocidade, usar análise
+        if (imageAnalysis) {
+          responseMessage = `Vi o seu teste de velocidade! 📊\n\n${imageAnalysis}\n\nBaseado nesses valores, ${
+            imageAnalysis.toLowerCase().includes('mbps') && parseInt(imageAnalysis.match(/\d+/)?.[0] || '0') < 100 
+              ? "está abaixo do esperado. Vamos investigar!\n\n🔍 Você está conectado por cabo ou Wi-Fi?\n\nSe for Wi-Fi, tente se conectar por cabo para compararmos."
+              : "vamos verificar se há algo consumindo banda.\n\n💡 Quantos dispositivos estão conectados agora?\nAlgum fazendo download/streaming?"
+          }`;
+        } else {
+          responseMessage = "Certo, sobre a lentidão... Vamos fazer alguns testes!\n\n📊 Pode fazer um teste de velocidade em www.fast.com e me passar o resultado?\n\nEnquanto isso, me diga:\n1. Está conectado por cabo ou Wi-Fi?\n2. Quantos dispositivos estão conectados agora?";
+        }
+      } else if (imageAnalysis) {
+        // Cliente enviou imagem mas contexto não é claro - usar análise da imagem
+        responseMessage = `Vi a imagem que você enviou! 📷\n\n${imageAnalysis}\n\nBaseado nisso, como posso te ajudar?`;
       } else {
         // Resposta genérica contextualizada
         responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
