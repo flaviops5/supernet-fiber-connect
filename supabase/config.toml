@@ -183,3 +183,8 @@ verify_jwt = false
 [functions.generate-flow-simulations]
 verify_jwt = true
 
+[functions.generate-ai-flow-simulations]
+verify_jwt = true
+
+[functions.generate-ai-faq]
+verify_jwt = true
