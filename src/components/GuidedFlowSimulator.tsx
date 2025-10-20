@@ -512,6 +512,37 @@ export default function GuidedFlowSimulator() {
     toast({ title: '🔄 Simulação reiniciada' });
   };
 
+  const handleClearApprovals = async () => {
+    if (!selectedAgent || !selectedSubject) {
+      toast({
+        title: 'Selecione agente e assunto',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('agent_flow_scenario_approvals')
+      .delete()
+      .eq('agent_type', selectedAgent as any)
+      .eq('subject_key', selectedSubject);
+
+    if (error) {
+      toast({
+        title: 'Erro ao limpar aprovações',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['scenario_approvals'] });
+      setVariationStatuses({});
+      toast({
+        title: '✅ Aprovações limpas!',
+        description: `Todas as aprovações de ${selectedSubject} foram removidas`
+      });
+    }
+  };
+
   const selectedAgentLabel = AGENT_TYPES.find(a => a.value === selectedAgent)?.label || selectedAgent;
 
   return (
@@ -685,23 +716,35 @@ export default function GuidedFlowSimulator() {
         {/* Botões de Controle */}
         <div className="flex gap-2">
           {!isSimulationActive ? (
-            <Button
-              onClick={handleStartSimulation}
-              disabled={!selectedAgent || !selectedScenario || (variations.length > 0 && selectedVariations.length === 0) || variations.length === 0 || isLoading}
-              className="gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Simular {selectedVariations.length > 0 && `(${selectedVariations.length})`}
-                </>
+            <>
+              <Button
+                onClick={handleStartSimulation}
+                disabled={!selectedAgent || !selectedScenario || (variations.length > 0 && selectedVariations.length === 0) || variations.length === 0 || isLoading}
+                className="gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Simular {selectedVariations.length > 0 && `(${selectedVariations.length})`}
+                  </>
+                )}
+              </Button>
+              {selectedAgent && selectedSubject && savedApprovals && savedApprovals.length > 0 && (
+                <Button
+                  onClick={handleClearApprovals}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  Limpar Aprovações ({savedApprovals.length})
+                </Button>
               )}
-            </Button>
+            </>
           ) : (
             <>
               <Button
