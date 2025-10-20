@@ -279,13 +279,6 @@ export default function GuidedFlowSimulator() {
 
   const variations = getVariations();
 
-  // Auto-selecionar todas as variações ao escolher um cenário
-  useEffect(() => {
-    if (selectedScenario && variations.length > 0 && selectedVariations.length === 0) {
-      setSelectedVariations(variations.map(v => v.id));
-    }
-  }, [selectedScenario, variations]);
-
   const updateStepMutation = useMutation({
     mutationFn: async ({ stepKey, question }: { stepKey: string; question: string }) => {
       const step = steps?.find(s => s.step_key === stepKey);
