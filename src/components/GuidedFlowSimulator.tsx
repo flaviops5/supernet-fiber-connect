@@ -221,12 +221,29 @@ export default function GuidedFlowSimulator() {
       options.forEach(option => {
         const nextStepKey = step.next_step_map?.[option.key];
         if (nextStepKey) {
-          explorePath(
-            nextStepKey,
-            [...path, option.key],
-            [...pathLabels, option.label],
-            depth + 1
-          );
+          const nextStep = steps.find(s => s.step_key === nextStepKey);
+          if (nextStep) {
+            explorePath(
+              nextStepKey,
+              [...path, option.key],
+              [...pathLabels, option.label],
+              depth + 1
+            );
+          } else {
+            // Next step não está nos steps carregados: tratar como término do caminho
+            const newPath = [...path, option.key];
+            const newPathLabels = [...pathLabels, option.label];
+            const pathKey = newPath.join('→');
+            if (!visited.has(pathKey)) {
+              visited.add(pathKey);
+              variations.push({
+                id: `var-${variations.length + 1}`,
+                name: `Variação ${variations.length + 1}`,
+                description: newPathLabels.join(' → '),
+                path: newPath
+              });
+            }
+          }
         } else {
           // Fim do caminho
           const newPath = [...path, option.key];
