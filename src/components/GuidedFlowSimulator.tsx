@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -241,6 +241,13 @@ export default function GuidedFlowSimulator() {
 
   const variations = getVariations();
 
+  // Auto-selecionar todas as variações ao escolher um cenário
+  useEffect(() => {
+    if (selectedScenario && variations.length > 0 && selectedVariations.length === 0) {
+      setSelectedVariations(variations.map(v => v.id));
+    }
+  }, [selectedScenario, variations]);
+
   const updateStepMutation = useMutation({
     mutationFn: async ({ stepKey, question }: { stepKey: string; question: string }) => {
       const step = steps?.find(s => s.step_key === stepKey);
@@ -365,6 +372,15 @@ export default function GuidedFlowSimulator() {
       toast({ 
         title: 'Selecione variações',
         description: 'Selecione pelo menos uma variação para simular',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (variations.length === 0) {
+      toast({
+        title: 'Nenhuma variação encontrada',
+        description: 'Este cenário não possui caminhos configurados para simulação',
         variant: 'destructive'
       });
       return;
@@ -644,7 +660,7 @@ export default function GuidedFlowSimulator() {
           {!isSimulationActive ? (
             <Button
               onClick={handleStartSimulation}
-              disabled={!selectedAgent || !selectedScenario || (variations.length > 0 && selectedVariations.length === 0) || isLoading}
+              disabled={!selectedAgent || !selectedScenario || (variations.length > 0 && selectedVariations.length === 0) || variations.length === 0 || isLoading}
               className="gap-2"
             >
               {isLoading ? (
