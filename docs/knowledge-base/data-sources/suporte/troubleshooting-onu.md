@@ -303,6 +303,57 @@ Se diagnóstico indicar problema no modem:
 
 ---
 
+## 🌐 Problemas de DNS
+
+### Cenário: Alguns Sites Abrem, Outros Não
+
+**Sintomas:**
+- Navegação inconsistente
+- Alguns sites carregam normalmente
+- Outros sites não abrem ou demoram muito
+
+**Fluxo de Atendimento:**
+
+1. **Explicar DNS:**
+   - DNS é como uma "lista telefônica da internet"
+   - Converte nomes de sites (como google.com) em endereços numéricos
+   - Quando o DNS não funciona bem, alguns sites podem não abrir
+
+2. **Verificar estrutura da rede:**
+   - Perguntar: "Você tem mais de um roteador ou repetidor em casa/empresa?"
+
+3. **Se houver múltiplos equipamentos:**
+   
+   **Procedimento de Reinicialização Completa:**
+   - Desligar TODA a rede por 1 minuto:
+     - Todos os roteadores
+     - Todos os repetidores
+     - Celulares com problema
+   
+   - Religar na ordem:
+     1. Primeiro: roteador principal
+     2. Aguardar 1 minuto
+     3. Depois: demais equipamentos
+
+4. **Verificação após 1 minuto:**
+   - Perguntar: "A navegação voltou ao normal?"
+
+5. **Se voltou ao normal:**
+   - Perguntar se pode ajudar em algo mais
+   - Despedir-se educadamente
+
+6. **Se ainda não funciona:**
+   - Avisar: "Vou transferir você para um especialista"
+   - Informar: "Pode demorar até 2 minutos para iniciar o novo atendimento"
+   - Transferir para colaborador
+
+**Observações Importantes:**
+- Sempre começar pelo roteador principal ao religar
+- Respeitar o tempo de 1 minuto entre as etapas
+- Explicar de forma simples e clara
+
+---
+
 ## 🔧 Comandos Úteis (Cliente)
 
 ### Teste de Velocidade
