@@ -352,10 +352,19 @@ export default function GuidedFlowSimulator() {
   };
 
   const handleStartSimulation = async () => {
-    if (!selectedAgent || !selectedScenario || selectedVariations.length === 0) {
+    if (!selectedAgent || !selectedScenario) {
       toast({ 
         title: 'Selecione todas as opções',
-        description: 'Escolha o agente, cenário e pelo menos uma variação antes de iniciar',
+        description: 'Escolha o agente e cenário antes de iniciar',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (variations.length > 0 && selectedVariations.length === 0) {
+      toast({ 
+        title: 'Selecione variações',
+        description: 'Selecione pelo menos uma variação para simular',
         variant: 'destructive'
       });
       return;
