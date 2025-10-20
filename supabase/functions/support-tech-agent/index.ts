@@ -76,6 +76,158 @@ function formatSimulationsForPrompt(simulations: any[], subject: string): string
   return prompt;
 }
 
+/**
+ * Busca e executa tools configuradas para um step/subject específico
+ * @param supabase - Cliente Supabase
+ * @param logger - Logger estruturado
+ * @param stepKey - Chave do step atual (opcional)
+ * @param subjectKey - Chave do subject (fallback se stepKey não fornecido)
+ * @param context - Contexto com dados para executar tools (ixc_client_id, etc)
+ * @returns Resultados das tools executadas
+ */
+async function executeConfiguredTools(
+  supabase: any,
+  logger: any,
+  stepKey: string | null,
+  subjectKey: string,
+  context: {
+    ixc_client_id?: string;
+    customer_name?: string;
+    ticket_subject?: string;
+    ticket_description?: string;
+    ticket_priority?: string;
+  }
+): Promise<{
+  test_connectivity_result?: { is_online: boolean; tx_power?: number; rx_power?: number };
+  ticket_created?: boolean;
+  ticket_id?: string;
+  errors?: string[];
+}> {
+  const results: any = {};
+  const errors: string[] = [];
+
+  try {
+    // Buscar configuração do step (se fornecido)
+    let toolsList: string[] = [];
+    
+    if (stepKey) {
+      const { data: stepConfig } = await supabase
+        .from('agent_flow_steps')
+        .select('step_tools, subject_key')
+        .eq('step_key', stepKey)
+        .eq('agent_type', 'support-tech-agent')
+        .maybeSingle();
+
+      if (stepConfig?.step_tools && Array.isArray(stepConfig.step_tools)) {
+        toolsList = stepConfig.step_tools;
+        logger.info("Tools do step carregadas", { stepKey, tools: toolsList });
+      } else if (stepConfig?.subject_key) {
+        // Buscar default_tools do subject
+        const { data: subjectConfig } = await supabase
+          .from('agent_flow_subjects')
+          .select('default_tools')
+          .eq('subject_key', stepConfig.subject_key)
+          .eq('agent_type', 'support-tech-agent')
+          .maybeSingle();
+
+        if (subjectConfig?.default_tools && Array.isArray(subjectConfig.default_tools)) {
+          toolsList = subjectConfig.default_tools;
+          logger.info("Tools do subject carregadas", { subjectKey: stepConfig.subject_key, tools: toolsList });
+        }
+      }
+    }
+
+    // Fallback: buscar por subjectKey direto se não tiver step ou tools
+    if (toolsList.length === 0 && subjectKey) {
+      const { data: subjectConfig } = await supabase
+        .from('agent_flow_subjects')
+        .select('default_tools')
+        .eq('subject_key', subjectKey)
+        .eq('agent_type', 'support-tech-agent')
+        .maybeSingle();
+
+      if (subjectConfig?.default_tools && Array.isArray(subjectConfig.default_tools)) {
+        toolsList = subjectConfig.default_tools;
+        logger.info("Tools do subject (fallback) carregadas", { subjectKey, tools: toolsList });
+      }
+    }
+
+    // Se não há tools configuradas, retornar vazio (não é erro)
+    if (toolsList.length === 0) {
+      logger.info("Nenhuma tool configurada para este step/subject", { stepKey, subjectKey });
+      return results;
+    }
+
+    // Executar tools configuradas
+    for (const toolName of toolsList) {
+      try {
+        if (toolName === 'test-equipment-connectivity' && context.ixc_client_id) {
+          logger.info("Executando tool: test-equipment-connectivity", { ixc_client_id: context.ixc_client_id });
+          
+          const response = await supabase.functions.invoke("test-equipment-connectivity", {
+            body: { ixc_client_id: context.ixc_client_id }
+          });
+
+          if (response.data) {
+            results.test_connectivity_result = response.data;
+            logger.info("Tool test-equipment-connectivity executada", { result: response.data });
+          } else if (response.error) {
+            errors.push(`test-equipment-connectivity: ${response.error.message}`);
+            logger.error("Erro ao executar test-equipment-connectivity", { error: response.error });
+          }
+        } 
+        else if (toolName === 'criar_atendimento_ixc' && context.ixc_client_id) {
+          logger.info("Executando tool: criar_atendimento_ixc", { 
+            ixc_client_id: context.ixc_client_id,
+            subject: context.ticket_subject 
+          });
+
+          const response = await supabase.functions.invoke("criar_atendimento_ixc", {
+            body: {
+              client_id: context.ixc_client_id,
+              subject: context.ticket_subject || "Atendimento técnico",
+              description: context.ticket_description || "Atendimento aberto automaticamente pelo sistema",
+              priority: context.ticket_priority || "normal"
+            }
+          });
+
+          if (response.data?.ticket_id) {
+            results.ticket_created = true;
+            results.ticket_id = response.data.ticket_id;
+            logger.info("Tool criar_atendimento_ixc executada", { ticket_id: response.data.ticket_id });
+          } else if (response.error) {
+            errors.push(`criar_atendimento_ixc: ${response.error.message}`);
+            logger.error("Erro ao executar criar_atendimento_ixc", { error: response.error });
+          }
+        }
+        else {
+          logger.warn("Tool não implementada ou contexto insuficiente", { 
+            toolName, 
+            hasIxcClientId: !!context.ixc_client_id 
+          });
+        }
+      } catch (toolError) {
+        const errorMsg = toolError instanceof Error ? toolError.message : String(toolError);
+        errors.push(`${toolName}: ${errorMsg}`);
+        logger.error(`Erro ao executar tool ${toolName}`, { error: errorMsg });
+      }
+    }
+
+    if (errors.length > 0) {
+      results.errors = errors;
+    }
+
+    return results;
+  } catch (error) {
+    logger.error("Erro ao buscar/executar tools configuradas", { 
+      error: error instanceof Error ? error.message : String(error),
+      stepKey,
+      subjectKey
+    });
+    return { errors: [error instanceof Error ? error.message : String(error)] };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -537,24 +689,25 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             // Não tem luz vermelha → Abrir ticket
             logger.info("Cenário A: Cliente sem luz vermelha - abrindo ticket");
             
-            try {
-              // Tentar criar ticket no IXC
-              if (ixc_client_id) {
-                const ticketResponse = await supabase.functions.invoke("criar_atendimento_ixc", {
-                  body: {
-                    client_id: ixc_client_id,
-                    subject: "Equipamento offline sem sinal óptico",
-                    description: `Cliente ${customerName} reportou equipamento offline. Diagnóstico: luzes acesas mas sem luz vermelha LOS/PON. Possível problema no equipamento ou fibra.`,
-                    priority: "high"
-                  }
-                });
-                
-                if (ticketResponse.data?.ticket_id) {
-                  logger.info("Ticket IXC criado", { ticket_id: ticketResponse.data.ticket_id });
+            // Executar tools configuradas (criar_atendimento_ixc)
+            if (ixc_client_id) {
+              const toolResults = await executeConfiguredTools(
+                supabase,
+                logger,
+                "cenario_a_sem_luz_vermelha", // step específico
+                "energia", // subject fallback
+                {
+                  ixc_client_id,
+                  customer_name: customerName,
+                  ticket_subject: "Equipamento offline sem sinal óptico",
+                  ticket_description: `Cliente ${customerName} reportou equipamento offline. Diagnóstico: luzes acesas mas sem luz vermelha LOS/PON. Possível problema no equipamento ou fibra.`,
+                  ticket_priority: "high"
                 }
+              );
+              
+              if (toolResults.ticket_created) {
+                logger.info("Ticket criado via tools configuradas", { ticket_id: toolResults.ticket_id });
               }
-            } catch (ticketError) {
-              logger.error("Erro ao criar ticket IXC", { error: ticketError });
             }
             
             responseMessage = `Ok! Se não há luz vermelha mas o equipamento continua sem conexão, vou abrir um atendimento técnico prioritário. 🔧\n\nNossa equipe vai entrar em contato para agendar uma visita e resolver isso o mais rápido possível.\n\nPreciso de mais alguma coisa agora?`;
@@ -603,15 +756,22 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             logger.info("Cenário A: Luz ficou verde - consultando IXC");
             
             let isOnlineNow = false;
-            try {
-              const connectivityTest = await supabase.functions.invoke("test-equipment-connectivity", {
-                body: { ixc_client_id }
-              });
-              
-              isOnlineNow = connectivityTest.data?.is_online || false;
-              logger.info("Resultado consulta IXC", { isOnlineNow });
-            } catch (error) {
-              logger.error("Erro ao consultar IXC", { error });
+            
+            // Executar tools configuradas (test-equipment-connectivity)
+            const toolResults = await executeConfiguredTools(
+              supabase,
+              logger,
+              "cenario_a_verificar_resultado", // step específico
+              "energia", // subject fallback
+              {
+                ixc_client_id,
+                customer_name: customerName
+              }
+            );
+            
+            if (toolResults.test_connectivity_result) {
+              isOnlineNow = toolResults.test_connectivity_result.is_online || false;
+              logger.info("Resultado consulta via tools configuradas", { isOnlineNow });
             }
             
             if (isOnlineNow) {
@@ -631,19 +791,21 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               // Continua offline → Abrir ticket
               logger.info("Cenário A: Luz verde mas continua offline - abrindo ticket");
               
-              try {
-                if (ixc_client_id) {
-                  await supabase.functions.invoke("criar_atendimento_ixc", {
-                    body: {
-                      client_id: ixc_client_id,
-                      subject: "Equipamento com sinal mas offline",
-                      description: `Cliente ${customerName} manipulou conector de fibra, luz ficou verde mas equipamento continua offline. Necessário verificação técnica.`,
-                      priority: "high"
-                    }
-                  });
-                }
-              } catch (ticketError) {
-                logger.error("Erro ao criar ticket IXC", { error: ticketError });
+              // Executar tools configuradas (criar_atendimento_ixc)
+              if (ixc_client_id) {
+                await executeConfiguredTools(
+                  supabase,
+                  logger,
+                  "cenario_a_luz_verde_offline", // step específico
+                  "energia", // subject fallback
+                  {
+                    ixc_client_id,
+                    customer_name: customerName,
+                    ticket_subject: "Equipamento com sinal mas offline",
+                    ticket_description: `Cliente ${customerName} manipulou conector de fibra, luz ficou verde mas equipamento continua offline. Necessário verificação técnica.`,
+                    ticket_priority: "high"
+                  }
+                );
               }
               
               responseMessage = `Entendi. A luz ficou verde mas você ainda está sem conexão. 🔧\n\nVou abrir uma chamada técnica prioritária. Nossa equipe vai verificar o problema na rede e entrar em contato com você.\n\nEnquanto isso, preciso de mais alguma coisa?`;
@@ -665,19 +827,21 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             // Luz continua vermelha → Pedir foto + ticket + humano
             logger.info("Cenário A: Luz continua vermelha - solicitando foto");
             
-            try {
-              if (ixc_client_id) {
-                await supabase.functions.invoke("criar_atendimento_ixc", {
-                  body: {
-                    client_id: ixc_client_id,
-                    subject: "Luz vermelha persistente após manipulação",
-                    description: `Cliente ${customerName} manipulou conector de fibra mas luz LOS continua vermelha. Possível problema na fibra ou equipamento. Necessário visita técnica.`,
-                    priority: "urgent"
-                  }
-                });
-              }
-            } catch (ticketError) {
-              logger.error("Erro ao criar ticket IXC", { error: ticketError });
+            // Executar tools configuradas (criar_atendimento_ixc)
+            if (ixc_client_id) {
+              await executeConfiguredTools(
+                supabase,
+                logger,
+                "cenario_a_luz_vermelha_persistente", // step específico
+                "energia", // subject fallback
+                {
+                  ixc_client_id,
+                  customer_name: customerName,
+                  ticket_subject: "Luz vermelha persistente após manipulação",
+                  ticket_description: `Cliente ${customerName} manipulou conector de fibra mas luz LOS continua vermelha. Possível problema na fibra ou equipamento. Necessário visita técnica.`,
+                  ticket_priority: "urgent"
+                }
+              );
             }
             
             responseMessage = `Tudo bem. Se a luz continua vermelha, pode ser um problema mais complexo. 🔴\n\nVocê consegue tirar uma **foto da parte de trás do equipamento** mostrando onde o cabo fino (fibra) está conectado e me enviar?\n\nEnquanto isso, já vou abrir um chamado técnico prioritário. Pode ser necessário o deslocamento de um técnico.`;
@@ -719,19 +883,21 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             // Não consegue navegar → Ticket + humano
             logger.info("Cenário A: Online mas não navega - abrindo ticket");
             
-            try {
-              if (ixc_client_id) {
-                await supabase.functions.invoke("criar_atendimento_ixc", {
-                  body: {
-                    client_id: ixc_client_id,
-                    subject: "Cliente online mas sem navegação",
-                    description: `Cliente ${customerName} está online no sistema mas não consegue navegar. Possível problema de configuração ou DNS.`,
-                    priority: "high"
-                  }
-                });
-              }
-            } catch (ticketError) {
-              logger.error("Erro ao criar ticket IXC", { error: ticketError });
+            // Executar tools configuradas (criar_atendimento_ixc)
+            if (ixc_client_id) {
+              await executeConfiguredTools(
+                supabase,
+                logger,
+                "cenario_a_online_sem_navegacao", // step específico
+                "energia", // subject fallback
+                {
+                  ixc_client_id,
+                  customer_name: customerName,
+                  ticket_subject: "Cliente online mas sem navegação",
+                  ticket_description: `Cliente ${customerName} está online no sistema mas não consegue navegar. Possível problema de configuração ou DNS.`,
+                  ticket_priority: "high"
+                }
+              );
             }
             
             responseMessage = `Entendi. Você está online mas não consegue acessar sites. 🔧\n\nVou abrir um chamado técnico para verificar isso. Nossa equipe vai entrar em contato.\n\nEnquanto isso, tente:\n1️⃣ Fechar e abrir o navegador\n2️⃣ Desligar e ligar o Wi-Fi do celular/computador\n\nMe avise se resolver!`;
