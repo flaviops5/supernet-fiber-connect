@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,18 +32,52 @@ interface FAQFormProps {
 
 export const FAQForm = ({ isOpen, onClose, faq, onSave }: FAQFormProps) => {
   const [formData, setFormData] = useState({
-    question: faq?.question || "",
-    answer: faq?.answer || "",
-    icon: faq?.icon || "Network",
-    videoUrl: faq?.video_url || "",
-    displayOrder: faq?.display_order || 0,
-    active: faq?.active ?? true
+    question: "",
+    answer: "",
+    icon: "Network",
+    videoUrl: "",
+    displayOrder: 0,
+    active: true
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Atualizar formData quando faq mudar (edição) ou quando abrir modal novo
+  useEffect(() => {
+    if (isOpen) {
+      if (faq) {
+        // Modo de edição - carregar dados da FAQ
+        setFormData({
+          question: faq.question || "",
+          answer: faq.answer || "",
+          icon: faq.icon || "Network",
+          videoUrl: faq.video_url || "",
+          displayOrder: faq.display_order || 0,
+          active: faq.active ?? true
+        });
+      } else {
+        // Modo de criação - resetar para valores padrão
+        setFormData({
+          question: "",
+          answer: "",
+          icon: "Network",
+          videoUrl: "",
+          displayOrder: 0,
+          active: true
+        });
+      }
+      setErrors({});
+      setIsSaving(false);
+    }
+  }, [isOpen, faq]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSaving) return; // Prevenir múltiplos cliques
+    
+    setIsSaving(true);
     
     try {
       const validatedData = faqSchema.parse({
@@ -89,10 +123,13 @@ export const FAQForm = ({ isOpen, onClose, faq, onSave }: FAQFormProps) => {
           }
         });
         setErrors(newErrors);
+        toast.error('Por favor, corrija os erros no formulário');
       } else {
         console.error('Error saving FAQ:', error);
         toast.error('Erro ao salvar FAQ');
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -184,11 +221,16 @@ export const FAQForm = ({ isOpen, onClose, faq, onSave }: FAQFormProps) => {
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              disabled={isSaving}
+            >
               Cancelar
             </Button>
-            <Button type="submit">
-              {faq?.id ? 'Atualizar' : 'Criar'} FAQ
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Salvando...' : faq?.id ? 'Atualizar' : 'Criar'} FAQ
             </Button>
           </div>
         </form>
