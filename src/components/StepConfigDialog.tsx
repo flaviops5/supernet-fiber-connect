@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, X, Trash2, Smile } from 'lucide-react';
+import { Loader2, Save, X, Trash2, Smile, Settings } from 'lucide-react';
 
 interface FlowStep {
   id: string;
@@ -63,6 +63,7 @@ export default function StepConfigDialog({ stepKey, stepId, agentType, isOpen, o
   const [formData, setFormData] = useState<Partial<FlowStep>>({});
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   const EMOJIS = [
     '😊', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃',
@@ -308,7 +309,7 @@ const { data: step, isLoading } = useQuery({
           </div>
 
           {/* Tools */}
-          <div>
+          <div ref={toolsRef}>
             <div className="flex items-center justify-between mb-2">
               <div>
                 <Label className="text-base">🔧 Step Tools (Override)</Label>
@@ -383,6 +384,13 @@ const { data: step, isLoading } = useQuery({
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Cancelar
+          </Button>
+          <Button
+            variant="outline"
+            title="Configurar tools deste step"
+            onClick={() => toolsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            <Settings className="h-4 w-4" />
           </Button>
           <Button onClick={handleSave} disabled={updateStepMutation.isPending}>
             {updateStepMutation.isPending ? (
