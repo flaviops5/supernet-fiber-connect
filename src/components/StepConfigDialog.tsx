@@ -42,6 +42,7 @@ interface MediaItem {
 
 interface StepConfigDialogProps {
   stepKey: string;
+  stepId?: string;
   agentType: string;
   isOpen: boolean;
   onClose: () => void;
@@ -56,7 +57,7 @@ const AVAILABLE_TOOLS = [
   { value: 'send_payment_to_customer', label: '💳 Send Payment' },
 ];
 
-export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }: StepConfigDialogProps) {
+export default function StepConfigDialog({ stepKey, stepId, agentType, isOpen, onClose }: StepConfigDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<FlowStep>>({});
@@ -76,21 +77,31 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
     '📊', '📈', '📉', '💰', '💳', '💸', '🏠', '🏢', '🏪', '🏬',
   ];
 
-  const { data: step, isLoading } = useQuery({
-    queryKey: ['flow_step', agentType, stepKey],
-    queryFn: async () => {
+const { data: step, isLoading } = useQuery({
+  queryKey: ['flow_step', agentType, stepKey, stepId],
+  queryFn: async () => {
+    if (stepId) {
       const { data, error } = await supabase
         .from('agent_flow_steps')
         .select('*')
-        .eq('agent_type', agentType as any)
-        .eq('step_key', stepKey)
+        .eq('id', stepId)
         .single();
-      
       if (error) throw error;
       return data as FlowStep;
-    },
-    enabled: isOpen && !!stepKey && !!agentType,
-  });
+    }
+
+    const { data, error } = await supabase
+      .from('agent_flow_steps')
+      .select('*')
+      .eq('agent_type', agentType as any)
+      .eq('step_key', stepKey)
+      .single();
+    
+    if (error) throw error;
+    return data as FlowStep;
+  },
+  enabled: isOpen && (!!stepId || (!!stepKey && !!agentType)),
+});
 
   const { data: mediaItems } = useQuery({
     queryKey: ['media_repository'],
@@ -196,7 +207,7 @@ export default function StepConfigDialog({ stepKey, agentType, isOpen, onClose }
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>⚙️ Configurar Step: {stepKey}</DialogTitle>
+          <DialogTitle>⚙️ Configurar Step: {step?.step_key || stepKey}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

@@ -62,6 +62,7 @@ export default function AdminFluxoAgentes() {
   const [showSimulations, setShowSimulations] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [configStepKey, setConfigStepKey] = useState('');
+  const [configStepId, setConfigStepId] = useState('');
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['agent_flow_steps', selectedAgent],
@@ -364,17 +365,18 @@ export default function AdminFluxoAgentes() {
                         {step.step_order}. {step.step_key}
                       </h3>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => {
-                        setConfigStepKey(step.step_key);
-                        setConfigDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      setConfigStepKey(step.step_key);
+                      setConfigStepId(step.id);
+                      setConfigDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
                   </div>
 
                     <div className="space-y-3">
@@ -496,11 +498,13 @@ export default function AdminFluxoAgentes() {
         {/* Dialog de Configuração do Step */}
         <StepConfigDialog
           stepKey={configStepKey}
+          stepId={configStepId}
           agentType={selectedAgent}
           isOpen={configDialogOpen}
           onClose={() => {
             setConfigDialogOpen(false);
             setConfigStepKey('');
+            setConfigStepId('');
           }}
         />
       </div>
