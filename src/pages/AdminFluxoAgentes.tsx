@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GuidedFlowSimulator from '@/components/GuidedFlowSimulator';
 import FlowSubjectManager from '@/components/FlowSubjectManager';
 import AIFlowGenerator from '@/components/AIFlowGenerator';
+import StepConfigDialog from '@/components/StepConfigDialog';
 
 interface FlowStep {
   id: string;
@@ -56,13 +57,11 @@ export default function AdminFluxoAgentes() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [editingStep, setEditingStep] = useState<string | null>(null);
-  const [editedData, setEditedData] = useState<Partial<FlowStep>>({});
   const [selectedAgent, setSelectedAgent] = useState<string>('support-tech-agent');
-  const [customCategory, setCustomCategory] = useState('');
-  const [customVariations, setCustomVariations] = useState<string[]>(['', '', '']);
   const [isGeneratingSimulations, setIsGeneratingSimulations] = useState(false);
   const [showSimulations, setShowSimulations] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [configStepKey, setConfigStepKey] = useState('');
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['agent_flow_steps', selectedAgent],
@@ -120,8 +119,6 @@ export default function AdminFluxoAgentes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agent_flow_steps'] });
       toast({ title: 'Step atualizado com sucesso!' });
-      setEditingStep(null);
-      setEditedData({});
     },
     onError: (error) => {
       toast({ 
@@ -131,102 +128,6 @@ export default function AdminFluxoAgentes() {
       });
     },
   });
-
-  const handleEdit = (step: FlowStep) => {
-    setEditingStep(step.id);
-    setEditedData({
-      question: step.question,
-      instruction: step.instruction,
-      response_options: step.response_options,
-      response_variations: step.response_variations,
-      media_id: step.media_id,
-      tool_calls: step.tool_calls,
-      next_step_map: step.next_step_map,
-      awaits_response: step.awaits_response
-    });
-  };
-
-  const handleSave = (id: string) => {
-    updateStepMutation.mutate({ id, data: editedData });
-  };
-
-  const handleCancel = () => {
-    setEditingStep(null);
-    setEditedData({});
-    setCustomCategory('');
-    setCustomVariations(['', '', '']);
-  };
-
-  const EXAMPLE_VARIATIONS = {
-    greeting: [
-      "Olá! 👋 Como posso ajudar?",
-      "Oi! 😊 Em que posso ser útil?",
-      "Boa tarde! Como posso auxiliar?"
-    ],
-    confirmation: [
-      "Perfeito! ✅",
-      "Entendido! 👍",
-      "Ok, vamos lá! 🚀"
-    ],
-    error: [
-      "Desculpe, tive um problema 😕",
-      "Ops! Algo deu errado 🔧",
-      "Aguarde, vou verificar isso ⏳"
-    ],
-    waiting: [
-      "Um momento, por favor... ⏳",
-      "Já estou verificando isso para você 🔍",
-      "Aguarde enquanto busco essas informações 📋"
-    ],
-    thanks: [
-      "Obrigado por aguardar! 🙏",
-      "Agradeço pela paciência! ✨",
-      "Muito obrigado! 💙"
-    ],
-    success: [
-      "Tudo certo! ✅ Consegui realizar a operação",
-      "Pronto! 🎉 Tarefa concluída com sucesso",
-      "Feito! ✨ Operação realizada"
-    ]
-  };
-
-  const applyExampleVariation = (key: string) => {
-    const currentVariations = editedData.response_variations || {};
-    setEditedData({
-      ...editedData,
-      response_variations: {
-        ...currentVariations,
-        [key]: EXAMPLE_VARIATIONS[key as keyof typeof EXAMPLE_VARIATIONS]
-      }
-    });
-    toast({ title: `Exemplo "${key}" aplicado!` });
-  };
-
-  const addCustomVariation = () => {
-    if (!customCategory.trim()) {
-      toast({ title: 'Digite uma categoria', variant: 'destructive' });
-      return;
-    }
-
-    const filteredVariations = customVariations.filter(v => v.trim() !== '');
-    if (filteredVariations.length === 0) {
-      toast({ title: 'Adicione pelo menos uma variação', variant: 'destructive' });
-      return;
-    }
-
-    const currentVariations = editedData.response_variations || {};
-    setEditedData({
-      ...editedData,
-      response_variations: {
-        ...currentVariations,
-        [customCategory]: filteredVariations
-      }
-    });
-
-    toast({ title: `Categoria "${customCategory}" adicionada!` });
-    setCustomCategory('');
-    setCustomVariations(['', '', '']);
-  };
 
   const handleGenerateSimulations = async () => {
     setIsGeneratingSimulations(true);
@@ -456,257 +357,25 @@ export default function AdminFluxoAgentes() {
           <div className="space-y-4">
             {steps?.map((step) => (
               <Card key={step.id} id={`step-${step.id}`} className="p-6 scroll-mt-20">
-                {editingStep === step.id ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
                       <h3 className="text-lg font-semibold">
-                        Editando Step: {step.step_key}
+                        {step.step_order}. {step.step_key}
                       </h3>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleSave(step.id)}>
-                          <Save className="h-4 w-4 mr-1" />
-                          Salvar
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={handleCancel}>
-                          <X className="h-4 w-4 mr-1" />
-                          Cancelar
-                        </Button>
-                      </div>
                     </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Questão:</label>
-                      <Textarea
-                        value={editedData.question || ''}
-                        onChange={(e) => setEditedData({ ...editedData, question: e.target.value })}
-                        className="mt-1"
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Instrução:</label>
-                      <Textarea
-                        value={editedData.instruction || ''}
-                        onChange={(e) => setEditedData({ ...editedData, instruction: e.target.value })}
-                        className="mt-1"
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Mídia da Biblioteca:</label>
-                      <div className="flex gap-2 items-center mt-1">
-                        <Select 
-                          value={editedData.media_id || undefined} 
-                          onValueChange={(value) => setEditedData({ ...editedData, media_id: value || null })}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Selecione uma mídia (opcional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {mediaItems?.map(media => (
-                              <SelectItem key={media.id} value={media.id}>
-                                {media.title} ({media.file_type})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {editedData.media_id && (
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => setEditedData({ ...editedData, media_id: null })}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {editedData.media_id && mediaItems && (
-                        <div className="mt-2 p-2 border rounded">
-                          {(() => {
-                            const media = mediaItems.find(m => m.id === editedData.media_id);
-                            if (!media) return null;
-                            
-                            if (media.file_type.startsWith('image/')) {
-                              return <img src={media.file_url} alt={media.title} className="max-h-32 rounded" />;
-                            } else if (media.file_type.startsWith('video/')) {
-                              return <video src={media.file_url} controls className="max-h-32 rounded" />;
-                            }
-                            return <p className="text-sm text-muted-foreground">Preview: {media.title}</p>;
-                          })()}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">Response Options (JSON):</label>
-                      <Textarea
-                        value={JSON.stringify(editedData.response_options, null, 2)}
-                        onChange={(e) => {
-                          try {
-                            setEditedData({ ...editedData, response_options: JSON.parse(e.target.value) });
-                          } catch {}
-                        }}
-                        className="mt-1 font-mono text-xs"
-                        rows={6}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">Response Variations (JSON):</label>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline">
-                              <Plus className="h-4 w-4 mr-1" />
-                              Adicionar Sugestão
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Gerenciar Response Variations</DialogTitle>
-                            </DialogHeader>
-                            
-                            <div className="space-y-6">
-                              {/* Exemplos Pré-definidos */}
-                              <div>
-                                <h4 className="font-medium mb-3">📚 Exemplos Pré-definidos:</h4>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {Object.keys(EXAMPLE_VARIATIONS).map((key) => (
-                                    <Button
-                                      key={key}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => applyExampleVariation(key)}
-                                      className="justify-start"
-                                    >
-                                      <Copy className="h-3 w-3 mr-2" />
-                                      {key}
-                                    </Button>
-                                  ))}
-                                </div>
-                                <div className="mt-3 p-3 bg-muted rounded-md text-xs">
-                                  <p className="font-medium mb-2">Preview dos exemplos:</p>
-                                  <pre className="whitespace-pre-wrap">
-                                    {JSON.stringify(EXAMPLE_VARIATIONS, null, 2)}
-                                  </pre>
-                                </div>
-                              </div>
-
-                              {/* Criar Sugestão Customizada */}
-                              <div className="border-t pt-4">
-                                <h4 className="font-medium mb-3">✍️ Criar Sugestão Customizada:</h4>
-                                <div className="space-y-3">
-                                  <div>
-                                    <Label htmlFor="custom-category">Nome da Categoria</Label>
-                                    <Input
-                                      id="custom-category"
-                                      placeholder="Ex: despedida, negociacoes, etc"
-                                      value={customCategory}
-                                      onChange={(e) => setCustomCategory(e.target.value)}
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                  
-                                  <div>
-                                    <Label>Variações (mínimo 1)</Label>
-                                    {customVariations.map((variation, index) => (
-                                      <Input
-                                        key={index}
-                                        placeholder={`Variação ${index + 1}`}
-                                        value={variation}
-                                        onChange={(e) => {
-                                          const newVariations = [...customVariations];
-                                          newVariations[index] = e.target.value;
-                                          setCustomVariations(newVariations);
-                                        }}
-                                        className="mt-2"
-                                      />
-                                    ))}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setCustomVariations([...customVariations, ''])}
-                                      className="mt-2"
-                                    >
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      Adicionar mais uma variação
-                                    </Button>
-                                  </div>
-
-                                  <Button onClick={addCustomVariation} className="w-full">
-                                    Adicionar Categoria Customizada
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      
-                      <Textarea
-                        value={JSON.stringify(editedData.response_variations, null, 2)}
-                        onChange={(e) => {
-                          try {
-                            setEditedData({ ...editedData, response_variations: JSON.parse(e.target.value) });
-                          } catch {}
-                        }}
-                        className="mt-1 font-mono text-xs"
-                        rows={6}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium">🔧 Step Tools (Array de strings):</label>
-                        <Badge variant="secondary" className="text-xs">
-                          Sobrescreve tools padrão do assunto
-                        </Badge>
-                      </div>
-                      <div className="mb-2 p-3 bg-muted/50 rounded text-xs space-y-1">
-                        <p className="font-medium">Tools disponíveis:</p>
-                        <div className="grid grid-cols-2 gap-1 mt-2">
-                          <code className="bg-background px-2 py-1 rounded">test_equipment_connectivity</code>
-                          <code className="bg-background px-2 py-1 rounded">criar_atendimento_ixc</code>
-                          <code className="bg-background px-2 py-1 rounded">reboot_client_equipment</code>
-                          <code className="bg-background px-2 py-1 rounded">get_onu_signal_status</code>
-                          <code className="bg-background px-2 py-1 rounded">ixc_client_lookup</code>
-                          <code className="bg-background px-2 py-1 rounded">send_payment_to_customer</code>
-                        </div>
-                        <p className="text-muted-foreground mt-2">
-                          💡 Deixe vazio [] para usar as tools padrão do assunto
-                        </p>
-                      </div>
-                      <Textarea
-                        value={JSON.stringify(editedData.tool_calls || [], null, 2)}
-                        onChange={(e) => {
-                          try {
-                            const parsed = JSON.parse(e.target.value);
-                            if (Array.isArray(parsed)) {
-                              setEditedData({ ...editedData, tool_calls: parsed });
-                            }
-                          } catch {}
-                        }}
-                        className="mt-1 font-mono text-xs"
-                        placeholder='["test_equipment_connectivity", "criar_atendimento_ixc"]'
-                        rows={4}
-                      />
-                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        setConfigStepKey(step.step_key);
+                        setConfigDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
                   </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {step.step_order}. {step.step_key}
-                        </h3>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(step)}>
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                    </div>
 
                     <div className="space-y-3">
                       <div>
@@ -819,11 +488,21 @@ export default function AdminFluxoAgentes() {
                       )}
                     </div>
                   </div>
-                )}
-              </Card>
-            ))}
+                </Card>
+              ))}
           </div>
         </main>
+
+        {/* Dialog de Configuração do Step */}
+        <StepConfigDialog
+          stepKey={configStepKey}
+          agentType={selectedAgent}
+          isOpen={configDialogOpen}
+          onClose={() => {
+            setConfigDialogOpen(false);
+            setConfigStepKey('');
+          }}
+        />
       </div>
     </AuthGuard>
   );
