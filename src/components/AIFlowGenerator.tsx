@@ -25,9 +25,10 @@ interface GeneratedConversation {
 
 interface AIFlowGeneratorProps {
   agentType: string;
+  subjectKey?: string;
 }
 
-export default function AIFlowGenerator({ agentType }: AIFlowGeneratorProps) {
+export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGeneratorProps) {
   const { toast } = useToast();
   const [theme, setTheme] = useState('');
   const [conversations, setConversations] = useState<GeneratedConversation[]>([]);
@@ -74,16 +75,61 @@ export default function AIFlowGenerator({ agentType }: AIFlowGeneratorProps) {
     generateMutation.mutate(theme);
   };
 
-  const handleApprove = (conversationId: string) => {
-    setApprovedConversations(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(conversationId)) {
-        newSet.delete(conversationId);
-      } else {
-        newSet.add(conversationId);
+  const approveMutation = useMutation({
+    mutationFn: async ({ conversationId, conversation }: { conversationId: string; conversation: GeneratedConversation }) => {
+      if (!subjectKey) {
+        throw new Error('Subject não definido. Selecione um assunto antes de aprovar.');
       }
-      return newSet;
-    });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('agent_flow_scenario_approvals')
+        .insert([{
+          agent_type: agentType as any,
+          subject_key: subjectKey,
+          scenario_key: conversationId,
+          variation_path: conversation.scenario_description,
+          status: 'approved',
+          notes: `Score: ${conversation.quality_score}/100. ${conversation.suggestions.join('; ')}`,
+          approved_by: user?.id || null
+        }]);
+
+      if (error) throw error;
+      return conversationId;
+    },
+    onSuccess: (conversationId) => {
+      setApprovedConversations(prev => new Set([...prev, conversationId]));
+      toast({
+        title: '✅ Conversa aprovada!',
+        description: 'A conversa foi salva e atrelada ao assunto selecionado.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro ao aprovar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const handleApprove = (conversationId: string) => {
+    const conversation = conversations.find(c => c.id === conversationId);
+    if (!conversation) return;
+
+    if (approvedConversations.has(conversationId)) {
+      // Se já aprovada, apenas remove do estado local
+      setApprovedConversations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(conversationId);
+        return newSet;
+      });
+      return;
+    }
+
+    // Aprovar e salvar no banco
+    approveMutation.mutate({ conversationId, conversation });
   };
 
   const handleCopyToClipboard = (conversation: GeneratedConversation) => {
@@ -107,6 +153,14 @@ export default function AIFlowGenerator({ agentType }: AIFlowGeneratorProps) {
           Descreva um tema e a IA criará variações completas de conversas para você analisar
         </p>
       </div>
+
+      {!subjectKey && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            ⚠️ <strong>Atenção:</strong> Selecione um assunto acima para que as conversas aprovadas sejam corretamente atreladas.
+          </p>
+        </div>
+      )}
 
       {/* Input do Tema */}
       <div className="space-y-2">
@@ -229,8 +283,13 @@ export default function AIFlowGenerator({ agentType }: AIFlowGeneratorProps) {
                         onClick={() => handleApprove(conv.id)}
                         variant={isApproved ? 'default' : 'outline'}
                         className="flex-1 gap-1"
+                        disabled={approveMutation.isPending || !subjectKey}
                       >
-                        <ThumbsUp className="h-3 w-3" />
+                        {approveMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <ThumbsUp className="h-3 w-3" />
+                        )}
                         {isApproved ? 'Aprovada' : 'Aprovar'}
                       </Button>
                       <Button

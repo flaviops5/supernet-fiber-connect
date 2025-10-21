@@ -58,6 +58,7 @@ export default function AdminFluxoAgentes() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [selectedAgent, setSelectedAgent] = useState<string>('support-tech-agent');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [isGeneratingSimulations, setIsGeneratingSimulations] = useState(false);
   const [showSimulations, setShowSimulations] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -77,6 +78,21 @@ export default function AdminFluxoAgentes() {
       
       if (error) throw error;
       return data as FlowStep[];
+    },
+  });
+
+  const { data: subjects } = useQuery({
+    queryKey: ['agent_flow_subjects', selectedAgent],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agent_flow_subjects')
+        .select('*')
+        .eq('agent_type', selectedAgent as any)
+        .eq('is_active', true)
+        .order('display_order');
+      
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -231,7 +247,27 @@ export default function AdminFluxoAgentes() {
             </TabsContent>
             
             <TabsContent value="ai-generator" className="mt-6">
-              <AIFlowGenerator agentType={selectedAgent} />
+              <div className="mb-4">
+                <Label>Selecione o Assunto</Label>
+                <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                  <SelectTrigger className="w-full max-w-md">
+                    <SelectValue placeholder="Escolha um assunto para gerar conversas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects?.map((subject: any) => (
+                      <SelectItem key={subject.id} value={subject.subject_key}>
+                        {subject.icon} {subject.subject_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!selectedSubject && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ⚠️ Selecione um assunto para atrelar as conversas aprovadas
+                  </p>
+                )}
+              </div>
+              <AIFlowGenerator agentType={selectedAgent} subjectKey={selectedSubject} />
             </TabsContent>
             
             <TabsContent value="auto-simulator" className="mt-6">
