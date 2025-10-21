@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, Save, X, Trash2, Plus, Copy, Sparkles, MessageSquare } from 'lucide-react';
+import { Loader2, Edit, Save, X, Trash2, Plus, Copy, Sparkles, MessageSquare, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -63,6 +63,7 @@ export default function AdminFluxoAgentes() {
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [configStepKey, setConfigStepKey] = useState('');
   const [configStepId, setConfigStepId] = useState('');
+  const [configFocusTools, setConfigFocusTools] = useState(false);
 
   const { data: steps, isLoading } = useQuery({
     queryKey: ['agent_flow_steps', selectedAgent],
@@ -365,18 +366,35 @@ export default function AdminFluxoAgentes() {
                         {step.step_order}. {step.step_key}
                       </h3>
                     </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => {
-                      setConfigStepKey(step.step_key);
-                      setConfigStepId(step.id);
-                      setConfigDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        setConfigStepKey(step.step_key);
+                        setConfigStepId(step.id);
+                        setConfigFocusTools(false);
+                        setConfigDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Configurar tools deste step"
+                      onClick={() => {
+                        setConfigStepKey(step.step_key);
+                        setConfigStepId(step.id);
+                        setConfigFocusTools(true);
+                        setConfigDialogOpen(true);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-1" />
+                      Tools
+                    </Button>
+                  </div>
                   </div>
 
                     <div className="space-y-3">
@@ -501,10 +519,12 @@ export default function AdminFluxoAgentes() {
           stepId={configStepId}
           agentType={selectedAgent}
           isOpen={configDialogOpen}
+          focusToolsOnOpen={configFocusTools}
           onClose={() => {
             setConfigDialogOpen(false);
             setConfigStepKey('');
             setConfigStepId('');
+            setConfigFocusTools(false);
           }}
         />
       </div>

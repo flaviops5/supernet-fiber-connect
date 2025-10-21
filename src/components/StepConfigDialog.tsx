@@ -45,6 +45,7 @@ interface StepConfigDialogProps {
   stepId?: string;
   agentType: string;
   isOpen: boolean;
+  focusToolsOnOpen?: boolean;
   onClose: () => void;
 }
 
@@ -57,7 +58,7 @@ const AVAILABLE_TOOLS = [
   { value: 'send_payment_to_customer', label: '💳 Send Payment' },
 ];
 
-export default function StepConfigDialog({ stepKey, stepId, agentType, isOpen, onClose }: StepConfigDialogProps) {
+export default function StepConfigDialog({ stepKey, stepId, agentType, isOpen, focusToolsOnOpen, onClose }: StepConfigDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<Partial<FlowStep>>({});
@@ -143,7 +144,16 @@ const { data: step, isLoading } = useQuery({
     }
   }, [step]);
 
-  const updateStepMutation = useMutation({
+  useEffect(() => {
+    if (isOpen && focusToolsOnOpen) {
+      const t = setTimeout(() => {
+        toolsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen, focusToolsOnOpen, step]);
+ 
+   const updateStepMutation = useMutation({
     mutationFn: async (data: Partial<FlowStep>) => {
       if (!step) throw new Error('Step não encontrado');
       
