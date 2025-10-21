@@ -19,7 +19,6 @@ import GuidedFlowSimulator from '@/components/GuidedFlowSimulator';
 import FlowSubjectManager from '@/components/FlowSubjectManager';
 import AIFlowGenerator from '@/components/AIFlowGenerator';
 import StepConfigDialog from '@/components/StepConfigDialog';
-import { SegundaViaScenarios } from '@/components/SegundaViaScenarios';
 
 interface FlowStep {
   id: string;
@@ -232,15 +231,11 @@ export default function AdminFluxoAgentes() {
 
           {/* Tabs para Simulador e Gerenciar Assuntos */}
           <Tabs defaultValue="simulator" className="mb-6">
-            <TabsList className="grid w-full max-w-4xl grid-cols-5">
+            <TabsList className="grid w-full max-w-4xl grid-cols-4">
               <TabsTrigger value="simulator">🎮 Simulador</TabsTrigger>
               <TabsTrigger value="subjects">📚 Assuntos</TabsTrigger>
               <TabsTrigger value="ai-generator">✨ IA Gerador</TabsTrigger>
               <TabsTrigger value="auto-simulator">🤖 Simulador Auto</TabsTrigger>
-              <TabsTrigger value="segunda-via">
-                <FileText className="h-4 w-4 mr-1" />
-                2ª Via
-              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="simulator" className="mt-6">
@@ -394,10 +389,6 @@ export default function AdminFluxoAgentes() {
                   </div>
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="segunda-via" className="mt-6">
-              <SegundaViaScenarios />
             </TabsContent>
           </Tabs>
 

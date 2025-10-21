@@ -188,6 +188,3 @@ verify_jwt = true
 
 [functions.generate-ai-faq]
 verify_jwt = true
-
-[functions.generate-segunda-via-scenarios]
-verify_jwt = true
