@@ -27,7 +27,7 @@ serve(async (req) => {
     // Lista de endpoints potenciais relacionados a GPON
     const potentialEndpoints = [
       // Equipamentos
-      'cliente_equipamento',
+      // 'cliente_equipamento', // Removido: endpoint não existe no IXC
       'equipamento_fibra',
       'pon_onu',
       'equipamento',

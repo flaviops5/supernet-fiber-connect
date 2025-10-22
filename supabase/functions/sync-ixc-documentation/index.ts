@@ -105,14 +105,13 @@ function parseIXCDocumentation(html: string): KnowledgeEntry[] {
 
 ## 📊 RESUMO TOTAL: 29 Endpoints Únicos
 
-### 👥 CLIENTES (7 endpoints)
+### 👥 CLIENTES (6 endpoints)
 1. \`GET/POST/PUT/DELETE /webservice/v1/cliente\` - Gerenciar clientes
 2. \`POST /webservice/v1/cliente_arquivo\` - Upload de arquivo do cliente
 3. \`GET/POST/DELETE /webservice/v1/cliente_arquivos\` - Gerenciar arquivos do cliente
-4. \`GET/POST /webservice/v1/cliente_equipamento\` - Equipamentos de clientes
-5. \`POST /webservice/v1/consulta_spc_serasa\` - Consultar SPC/Serasa
-6. \`POST /webservice/v1/bloquear_desbloquear_sip\` - Bloquear/Desbloquear SIP
-7. \`POST /webservice/v1/reenviar_link_assinatura_digital\` - Reenviar link de assinatura digital
+4. \`POST /webservice/v1/consulta_spc_serasa\` - Consultar SPC/Serasa
+5. \`POST /webservice/v1/bloquear_desbloquear_sip\` - Bloquear/Desbloquear SIP
+6. \`POST /webservice/v1/reenviar_link_assinatura_digital\` - Reenviar link de assinatura digital
 
 ### 📄 CONTRATOS (10 endpoints)
 8. \`GET/POST/PUT/DELETE /webservice/v1/cliente_contrato\` - Gerenciar contratos
@@ -355,36 +354,6 @@ Métodos: GET, POST, DELETE
 Endpoint: \`/webservice/v1/cliente_arquivos/{id}\``,
       tags: ['cliente', 'arquivos', 'documentos'],
       display_order: 12
-    },
-    {
-      name: 'Cliente Equipamento',
-      category: 'ixc-cadastros',
-      content: `# Cliente Equipamento
-
-Endpoint: \`/webservice/v1/cliente_equipamento\`
-Métodos: GET, POST
-
-Gerencia equipamentos vinculados ao cliente (ONU, roteadores, etc).
-
-## GET - Listar equipamentos
-\`\`\`json
-{
-  "qtype": "cliente_equipamento.id_cliente",
-  "query": "1234",
-  "oper": "="
-}
-\`\`\`
-
-## POST - Adicionar equipamento
-\`\`\`json
-{
-  "id_cliente": "1234",
-  "id_equipamento": "567",
-  "mac_address": "AA:BB:CC:DD:EE:FF"
-}
-\`\`\``,
-      tags: ['cliente', 'equipamento', 'onu', 'roteador'],
-      display_order: 13
     },
     {
       name: 'Consulta SPC/Serasa',
