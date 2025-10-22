@@ -2,6 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +11,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = Date.now();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -103,19 +107,30 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
     }
 
     console.log(`✅ [${correlationId}] Streaming iniciado`);
+    
+    // Registrar métrica de sucesso (streaming iniciado)
+    recordMetric({
+      agent_name: 'telemedicina-agent',
+      action_type: 'chat_stream',
+      success: true,
+      duration_ms: Date.now() - startTime
+    }).catch(console.error);
+    
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Correlation-ID": correlationId },
     });
   } catch (error) {
     console.error("Chat error:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Erro desconhecido" 
-      }), 
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    
+    // Registrar métrica de erro
+    recordMetric({
+      agent_name: 'telemedicina-agent',
+      action_type: 'chat_stream',
+      success: false,
+      duration_ms: Date.now() - startTime,
+      error_message: error instanceof Error ? error.message : 'Unknown error'
+    }).catch(console.error);
+    
+    return handleEdgeFunctionError(error, 'telemedicina-agent');
   }
 });

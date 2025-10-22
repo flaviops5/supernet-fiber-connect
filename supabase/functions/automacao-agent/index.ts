@@ -2,6 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +11,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = Date.now();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -147,6 +151,14 @@ Seja sempre profissional, prestativo e técnico. Use emojis moderadamente para t
 
     console.log("✅ Resposta gerada com sucesso");
 
+    // Registrar métrica de sucesso
+    recordMetric({
+      agent_name: 'automacao-agent',
+      action_type: 'chat_completion',
+      success: true,
+      duration_ms: Date.now() - startTime
+    }).catch(console.error);
+
     return new Response(
       JSON.stringify({ 
         message: assistantMessage,
@@ -161,15 +173,16 @@ Seja sempre profissional, prestativo e técnico. Use emojis moderadamente para t
     );
   } catch (error) {
     console.error("Chat error:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-        message: 'Desculpe, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente ou entre em contato pelo WhatsApp: (61) 99947-5886'
-      }), 
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    
+    // Registrar métrica de erro
+    recordMetric({
+      agent_name: 'automacao-agent',
+      action_type: 'chat_completion',
+      success: false,
+      duration_ms: Date.now() - startTime,
+      error_message: error instanceof Error ? error.message : 'Unknown error'
+    }).catch(console.error);
+    
+    return handleEdgeFunctionError(error, 'automacao-agent');
   }
 });
