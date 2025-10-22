@@ -13,3 +13,4 @@ export { default as AgentDepartmentManagement } from './AgentDepartmentManagemen
 export { default as EscalationSettings } from './EscalationSettings';
 export { default as Dashboard } from './Dashboard';
 export { default as ReviewsManagement } from './ReviewsManagement';
+export { default as HeroManagement } from './HeroManagement';
