@@ -493,7 +493,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                 metadata: {
                   ...(conversation?.metadata as any || {}),
                   flow_state: "cenario_a_verificar_luzes",
-                  scenario: "A"
+                  scenario: "A" // 🔧 Sempre definir o scenario
                 }
               })
               .eq("id", conversation_id);
@@ -525,7 +525,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             .update({
               metadata: {
                 ...(conversation?.metadata as any || {}),
-                flow_state: "cenario_a_verificar_luzes"
+                flow_state: "cenario_a_verificar_luzes",
+                scenario: "A" // 🔧 Sempre definir o scenario
               }
             })
             .eq("id", conversation_id);
@@ -591,9 +592,13 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       const currentMessage = message.toLowerCase();
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
-      if (scenario === "A" && flowState) {
+      // Detectar Cenário A pelo flowState (mais confiável que scenario)
+      const isCenarioA = flowState?.startsWith("cenario_a") || scenario === "A";
+      
+      if (isCenarioA && flowState) {
         logger.info("Processando Cenário A - Fluxo de Energia", { 
           flowState,
+          scenario,
           approvedVariations: approvedSimulationsCache?.data.length || 0,
           context: "Seguindo protocolo de energia com variações aprovadas como referência"
         });
@@ -672,6 +677,12 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         
         // ETAPA 3: Verificar luz vermelha LOS/PON
         else if (flowState === "cenario_a_verificar_luz_vermelha") {
+          logger.info("Etapa 3: Verificando resposta sobre luz vermelha", { 
+            hasRedLightBlinking, 
+            noRedLight, 
+            currentMessage 
+          });
+          
           if (hasRedLightBlinking) {
             // Tem luz vermelha → Instruir manipulação do conector
             responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o cabo fino (fibra óptica) - é um cabo bem fininho que entra no equipamento\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
