@@ -1,25 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
+Deno.serve(createPublicHandler('migrate-knowledge-full', async (req, { supabase }) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
       throw new Error('OPENAI_API_KEY not configured');
@@ -36,15 +20,12 @@ serve(async (req) => {
     if (fetchError) throw fetchError;
 
     if (!allDocs || allDocs.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Todos os documentos já foram migrados!',
-          migrated: 0,
-          remaining: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return { 
+        success: true, 
+        message: 'Todos os documentos já foram migrados!',
+        migrated: 0,
+        remaining: 0
+      };
     }
 
     console.log(`Iniciando migração completa de ${allDocs.length} documentos...`);
@@ -150,30 +131,13 @@ serve(async (req) => {
     // Estatísticas finais
     const { data: stats } = await supabase.rpc('get_migration_stats');
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        migrated: migratedIds.length,
-        failed: errors.length,
-        total_processed: allDocs.length,
-        errors: errors,
-        stats: stats?.[0] || null,
-        message: `Migração completa! ${migratedIds.length} documentos migrados com sucesso${errors.length > 0 ? `, ${errors.length} com erro` : ''}.`
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Erro na migração completa:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+    return {
+      success: true,
+      migrated: migratedIds.length,
+      failed: errors.length,
+      total_processed: allDocs.length,
+      errors: errors,
+      stats: stats?.[0] || null,
+      message: `Migração completa! ${migratedIds.length} documentos migrados com sucesso${errors.length > 0 ? `, ${errors.length} com erro` : ''}.`
+    };
+}));

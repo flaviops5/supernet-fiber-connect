@@ -1,10 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 // Função para extrair front matter YAML dos arquivos markdown
 function extractFrontMatter(content: string) {
@@ -47,16 +41,7 @@ function extractFrontMatter(content: string) {
   return { metadata, content: markdownContent.trim() };
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+Deno.serve(createPublicHandler('sync-knowledge-docs', async (req, { supabase }) => {
     console.log('Iniciando sincronização dos documentos markdown...');
 
     // Lista de arquivos markdown para sincronizar
@@ -181,30 +166,10 @@ serve(async (req) => {
     console.log('📌 Para sincronizar o conteúdo COMPLETO dos arquivos, execute:');
     console.log('   deno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts');
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: `${itemsToInsert.length} documentos registrados. Execute o script Deno para sincronizar conteúdo completo.`,
-        synced_items: itemsToInsert.length,
-        info: 'Para conteúdo completo: deno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
-
-  } catch (error) {
-    console.error('Erro na sincronização:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
-  }
-});
+    return { 
+      success: true,
+      message: `${itemsToInsert.length} documentos registrados. Execute o script Deno para sincronizar conteúdo completo.`,
+      synced_items: itemsToInsert.length,
+      info: 'Para conteúdo completo: deno run --allow-net --allow-read --allow-env docs/knowledge-base/scripts/sync-kb-to-supabase.ts'
+    };
+}));

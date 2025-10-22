@@ -1,21 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+Deno.serve(createPublicHandler('sync-chatbot-knowledge', async (req, { supabase }) => {
 
     // 1. Buscar planos ativos
     const { data: plans, error: plansError } = await supabase
@@ -359,30 +344,16 @@ Acesse: /telemedicina
 
     console.log(`Sincronizados ${allContent.length} itens na knowledge base`);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `${allContent.length} itens sincronizados com sucesso`,
-        stats: {
-          planos: plansContent.length,
-          faqs: faqsContent.length,
-          vendas: 1,
-          empresa: 1,
-          ixc_api: 1,
-          servicos_adicionais: 2
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error syncing chatbot knowledge:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return { 
+      success: true, 
+      message: `${allContent.length} itens sincronizados com sucesso`,
+      stats: {
+        planos: plansContent.length,
+        faqs: faqsContent.length,
+        vendas: 1,
+        empresa: 1,
+        ixc_api: 1,
+        servicos_adicionais: 2
       }
-    );
-  }
-});
+    };
+}));

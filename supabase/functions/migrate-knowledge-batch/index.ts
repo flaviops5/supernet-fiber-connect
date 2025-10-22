@@ -1,24 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler('migrate-knowledge-batch', async (req, { supabase }) => {
     const { batchSize = 25, offset = 0 } = await req.json();
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
@@ -37,15 +21,12 @@ serve(async (req) => {
     if (fetchError) throw fetchError;
 
     if (!docs || docs.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Migração completa! Todos os documentos foram processados.',
-          migrated: 0,
-          remaining: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return { 
+        success: true, 
+        message: 'Migração completa! Todos os documentos foram processados.',
+        migrated: 0,
+        remaining: 0
+      };
     }
 
     console.log(`Processando batch de ${docs.length} documentos...`);
@@ -140,29 +121,12 @@ serve(async (req) => {
     // Obter estatísticas atualizadas
     const { data: stats } = await supabase.rpc('get_migration_stats');
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        migrated: migratedIds.length,
-        errors: errors.length,
-        errorDetails: errors,
-        stats: stats?.[0] || null,
-        message: `Processados ${migratedIds.length} de ${docs.length} documentos`
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Erro na migração:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+    return {
+      success: true,
+      migrated: migratedIds.length,
+      errors: errors.length,
+      errorDetails: errors,
+      stats: stats?.[0] || null,
+      message: `Processados ${migratedIds.length} de ${docs.length} documentos`
+    };
+}));

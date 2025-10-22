@@ -95,20 +95,24 @@
 58. ✅ **telemedicina-auth** - Autenticação telemedicina
 59. ✅ **telemedicina-forgot-password** - Recuperação senha telemedicina
 
-### Prioridade Baixa (Utilitários)
-- [ ] **system-health** - Health check do sistema
-- [ ] **metrics-collector** - Coletor de métricas
-- [ ] **chatbot-cep-lookup** - Consulta CEP
-- [ ] **generate-contract-pdf** - Gera PDF contratos
-- [ ] **generate-system-documentation-pdf** - Gera docs
-- [ ] Demais funções auxiliares...
+### Prioridade Baixa (Utilitários - CONCLUÍDO 10/10)
+60. ✅ **generate-omnichannel-zip** - Gera arquivo com códigos principais
+61. ✅ **generate-system-documentation-pdf** - Gera documentação HTML do sistema
+62. ✅ **get-function-code** - Retorna código fonte de uma função
+63. ✅ **migrate-knowledge-batch** - Migração de knowledge base em lote
+64. ✅ **migrate-knowledge-full** - Migração completa de knowledge base
+65. ✅ **sync-chatbot-knowledge** - Sincroniza base de conhecimento do chatbot
+66. ✅ **sync-github-docs** - Sincroniza documentação do GitHub
+67. ✅ **sync-ixc-documentation** - Sincroniza documentação IXC (Postman)
+68. ✅ **sync-knowledge-docs** - Sincroniza documentos markdown locais
+69. ✅ **test-hmac** - Testa assinatura HMAC
 
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 67 (81%)
+- **Com proteção completa:** 77 (93%)
 - **Com proteção parcial:** 6 (7%)
-- **Pendentes:** 10 (12%)
+- **Pendentes:** 0 (0%)
 
 ## 🎯 Próximos Passos
 

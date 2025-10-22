@@ -1,11 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 interface GitHubFile {
   name: string;
@@ -157,12 +151,7 @@ async function fetchFileContent(downloadUrl: string, githubToken?: string): Prom
   return await response.text();
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler('sync-github-docs', async (req, { supabase }) => {
     const requestBody = await req.json().catch(() => ({}));
     
     // Parâmetros configuráveis (com valores padrão)
@@ -176,11 +165,6 @@ serve(async (req) => {
     
     console.log(`🚀 Iniciando sincronização do GitHub`);
     console.log(`📦 Repositório: ${owner}/${repo} (branch: ${branch})`);
-
-    // Inicializar Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Buscar todos os arquivos .md
     const markdownFiles = await fetchMarkdownFiles(owner, repo, docsPath, branch, githubToken);
@@ -265,34 +249,11 @@ serve(async (req) => {
     console.log(`❌ Erros: ${errors.length}`);
     console.log('='.repeat(50));
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Sincronizados ${syncedItems.length} de ${markdownFiles.length} documentos`,
-        synced_items: syncedItems.length,
-        total_files: markdownFiles.length,
-        errors: errors.length > 0 ? errors : undefined
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Erro fatal na sincronização:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        hint: error.message.includes('GitHub API') 
-          ? 'Verifique as credenciais do GitHub e se o repositório está correto'
-          : 'Erro ao processar os arquivos'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
-  }
-});
+    return {
+      success: true,
+      message: `Sincronizados ${syncedItems.length} de ${markdownFiles.length} documentos`,
+      synced_items: syncedItems.length,
+      total_files: markdownFiles.length,
+      errors: errors.length > 0 ? errors : undefined
+    };
+}));

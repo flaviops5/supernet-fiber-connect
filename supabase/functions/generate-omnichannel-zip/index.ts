@@ -1,16 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler('generate-omnichannel-zip', async (req) => {
     console.log('📦 Generating 3 main backend files...');
 
     // Apenas os 3 arquivos principais solicitados
@@ -78,20 +68,8 @@ ${'='.repeat(80)}
 
     return new Response(textBundle, {
       headers: {
-        ...corsHeaders,
         'Content-Type': 'text/plain; charset=utf-8',
         'Content-Disposition': 'attachment; filename="omnichannel-3-arquivos.txt"',
       },
     });
-
-  } catch (error) {
-    console.error('Error generating ZIP:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    );
-  }
-});
+}));

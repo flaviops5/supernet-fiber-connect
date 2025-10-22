@@ -1,39 +1,24 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('generate-system-documentation-pdf', async (req, { supabase }) => {
+  // Buscar documentação completa
+  const { data: knowledgeDocs } = await supabase
+    .from('knowledge_base')
+    .select('*')
+    .order('category', { ascending: true });
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const { data: agentConfigs } = await supabase
+    .from('agent_configurations')
+    .select('*')
+    .eq('is_active', true);
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const { data: plans } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('is_active', true);
 
-    // Buscar documentação completa
-    const { data: knowledgeDocs } = await supabase
-      .from('knowledge_base')
-      .select('*')
-      .order('category', { ascending: true });
-
-    const { data: agentConfigs } = await supabase
-      .from('agent_configurations')
-      .select('*')
-      .eq('is_active', true);
-
-    const { data: plans } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('is_active', true);
-
-    // Montar HTML com toda documentação
-    const html = `
+  // Montar HTML com toda documentação
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -302,15 +287,5 @@ Se confirmado: executa reboot via IXC</pre>
 </body>
 </html>`;
 
-    return new Response(JSON.stringify({ html, success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Error generating documentation:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
+  return { html, success: true };
+}));
