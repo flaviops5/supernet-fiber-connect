@@ -3,6 +3,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +20,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
+  let success = false;
 
   try {
     const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -685,6 +690,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
     // Retorna resposta sem tool calls
     const responseContent = extractContent(aiResponse);
+    success = true;
     return new Response(JSON.stringify({ 
       message: responseContent
     }), {
@@ -693,11 +699,14 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
   } catch (error) {
     console.error('Erro no agente de vendas:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Erro desconhecido' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return handleEdgeFunctionError(error, 'sales-agent', true);
+  } finally {
+    const duration = Date.now() - startTime;
+    recordMetric({
+      agent_name: 'sales-agent',
+      action_type: 'process_request',
+      success,
+      duration_ms: duration
+    }).catch(console.error);
   }
 });

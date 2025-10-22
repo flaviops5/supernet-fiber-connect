@@ -4,13 +4,8 @@
 // Melhorias: Timeout, Backoff, Validação, Logs Seguros
 // ========================================================
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey",
-};
 
 // ====================================================
 // 🛡️ WHITELIST DE ENDPOINTS PERMITIDOS
@@ -40,13 +35,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-serve(async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  try {
-    const start = performance.now();
+Deno.serve(createPublicHandler('ixc-evolution-proxy', async (req) => {
+  const start = performance.now();
 
     // ====================================================
     // 🔐 CONFIGURAÇÕES DO IXC
@@ -67,25 +57,11 @@ serve(async (req: Request): Promise<Response> => {
     // ✅ VALIDAÇÃO DE SECRETS
     // ====================================================
     if (!IXC_API_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      console.error("❌ Configuração do IXC ausente");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Configuração do IXC ausente. Verifique variáveis de ambiente.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+      throw new Error("Configuração do IXC ausente. Verifique variáveis de ambiente.");
     }
 
     if (!EVO_APIKEY) {
-      console.error("❌ Configuração da Evolution ausente");
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Configuração da Evolution ausente. Verifique EVOLUTION_API_KEY.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+      throw new Error("Configuração da Evolution ausente. Verifique EVOLUTION_API_KEY.");
     }
 
     // ====================================================
@@ -250,28 +226,11 @@ serve(async (req: Request): Promise<Response> => {
       evo_state: result.data.evolution.state,
     }));
 
-    return new Response(JSON.stringify({
+    return {
       ...result,
       data: {
-        ixc: ixcResponse.data, // Retorna dados completos apenas na resposta HTTP
+        ixc: ixcResponse.data,
         evolution: evoResponse,
       }
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200, // ✅ Sempre 200, usar success: false para erros
-    });
-
-  } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error("❌ Erro geral:", errorMsg);
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Erro ao executar proxy IXC + Evolution",
-        details: errorMsg,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
-  }
-});
+    };
+}));

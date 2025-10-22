@@ -68,15 +68,18 @@
 1. ✅ **send-payment-to-customer** - Error handler + metrics (mantém circuit breaker)
 2. ✅ **whatsapp-webhook** - Error handler + metrics (mantém HMAC validation)
 
-## ⏳ Funções Pendentes (68 funções)
+## 🔄 Agentes com Streaming (Proteção Parcial - Error Handler + Metrics)
+1. ✅ **sales-agent** - Agente de vendas (error handler + metrics)
+2. ✅ **logistics-agent** - Agente de logística (error handler + metrics)
 
-### Prioridade Alta (Acesso a dados sensíveis)
-- [ ] **ixc-integration** - Busca clientes no IXC
-- [ ] **ixc-list-contracts** - Lista contratos
-- [ ] **send-payment-to-customer** - Envia pagamentos
-- [ ] **send-whatsapp-message** - Envia mensagens WhatsApp
-- [ ] **whatsapp-webhook** - Recebe webhooks WhatsApp
-- [ ] **process-contract** - Processa contratos
+## ⏳ Funções Pendentes (26 funções)
+
+### Prioridade Alta (CONCLUÍDO - 7/7)
+43. ✅ **ixc-evolution-proxy** - Proxy Evolution API (WhatsApp)
+44. ✅ **ixc-list-subjects** - Lista assuntos de atendimento
+45. ✅ **corporate-ai-chat** - Chat corporativo
+46. ✅ **send-locaweb-email** - Envio de emails
+47. ✅ **auto-send-overdue-invoices** - Cobranças automáticas
 
 ### Prioridade Média (Operações críticas)
 - [ ] **test-ixc-connection** - Testa conexão IXC
@@ -98,9 +101,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 50 (60%)
-- **Com proteção parcial:** 4 (5%)
-- **Pendentes:** 29 (35%)
+- **Com proteção completa:** 55 (66%)
+- **Com proteção parcial:** 6 (7%)
+- **Pendentes:** 22 (27%)
 
 ## 🎯 Próximos Passos
 

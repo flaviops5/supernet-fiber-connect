@@ -1,30 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) => {
+  const { message, conversationId } = await req.json();
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (!message) {
+    throw new Error('Message is required');
   }
-
-  try {
-    const { message, conversationId } = await req.json();
-
-    if (!message) {
-      throw new Error('Message is required');
-    }
-
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Generate embedding for user query using OpenAI API
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -195,25 +177,7 @@ Responda sempre em português brasileiro de forma clara e objetiva.`;
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
 
-    console.log(`AI Chat - User: "${message.substring(0, 50)}..." -> Response: "${aiResponse.substring(0, 50)}..."`);
+  console.log(`AI Chat - User: "${message.substring(0, 50)}..." -> Response: "${aiResponse.substring(0, 50)}..."`);
 
-    return new Response(
-      JSON.stringify({ response: aiResponse }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error in corporate AI chat:', error);
-    
-    // Return a friendly error message
-    const fallbackResponse = "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes ou entre em contato com o suporte técnico.";
-    
-    return new Response(
-      JSON.stringify({ response: fallbackResponse }),
-      {
-        status: 200, // Return 200 to avoid breaking the UI
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return { response: aiResponse };
+}));

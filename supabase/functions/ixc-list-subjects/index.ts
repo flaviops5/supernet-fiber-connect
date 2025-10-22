@@ -1,11 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface IXCSubject {
   id: string;
@@ -13,13 +8,8 @@ interface IXCSubject {
   ativo: string;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    console.log('📋 Listando assuntos do IXC via proxy...');
+Deno.serve(createPublicHandler('ixc-list-subjects', async (req) => {
+  console.log('📋 Listando assuntos do IXC via proxy...');
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     if (!SUPABASE_URL) {
@@ -75,27 +65,9 @@ serve(async (req) => {
 
     console.log(`✅ ${activeSubjects.length} assuntos ativos encontrados`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: activeSubjects,
-        total: activeSubjects.length,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      },
-    );
-
-  } catch (error) {
-    console.error('❌ Erro ao listar assuntos:', error);
-    const msg = (error as Error)?.message || 'Erro desconhecido';
-    return new Response(
-      JSON.stringify({ success: false, error: msg }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      },
-    );
-  }
-});
+    return {
+      success: true,
+      data: activeSubjects,
+      total: activeSubjects.length,
+    };
+}));

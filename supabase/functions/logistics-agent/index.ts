@@ -4,6 +4,8 @@ import { LOGISTICS_AGENT_CONFIG } from "./config.ts";
 import { LOGISTICS_AGENT_SYSTEM_PROMPT, LOGISTICS_AGENT_ERROR_MESSAGE } from "./prompts.ts";
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +21,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
+  let success = false;
 
   try {
     const correlationId = `logistics-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -257,6 +262,8 @@ Alguma dúvida sobre o agendamento?`;
         }
       });
 
+    success = true;
+
     return new Response(
       JSON.stringify({ 
         message: assistantMessage,
@@ -270,16 +277,14 @@ Alguma dúvida sobre o agendamento?`;
 
   } catch (error: any) {
     console.error('Logistics Agent error:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        message: LOGISTICS_AGENT_ERROR_MESSAGE,
-        error: error.message 
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return handleEdgeFunctionError(error, 'logistics-agent', true);
+  } finally {
+    const duration = Date.now() - startTime;
+    recordMetric({
+      agent_name: 'logistics-agent',
+      action_type: 'process_request',
+      success,
+      duration_ms: duration
+    }).catch(console.error);
   }
 });

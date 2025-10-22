@@ -1,34 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supabase }) => {
+  const { testClientName } = await req.json().catch(() => ({}));
+  
+  if (testClientName) {
+    console.log(`🎯 Modo TESTE: Processando apenas cliente "${testClientName}"`);
+  } else {
+    console.log('🤖 Iniciando envio automático de boletos para clientes em FA...');
   }
-
-  try {
-    const { testClientName } = await req.json().catch(() => ({}));
-    
-    if (testClientName) {
-      console.log(`🎯 Modo TESTE: Processando apenas cliente "${testClientName}"`);
-    } else {
-      console.log('🤖 Iniciando envio automático de boletos para clientes em FA...');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const invokeHeaders = {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': 'application/json',
-    };
 
     // 1. Buscar títulos vencidos no IXC (como check-due-invoices)
     console.log('📡 Buscando títulos vencidos no IXC...');
@@ -323,32 +302,18 @@ serve(async (req) => {
       }
     }
 
-    console.log('\n✅ Processamento concluído!');
-    console.log(`📊 Resumo: ${results.sent} enviados, ${results.errors} erros`);
+  console.log('\n✅ Processamento concluído!');
+  console.log(`📊 Resumo: ${results.sent} enviados, ${results.errors} erros`);
 
-    return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Processamento concluído: ${results.sent} boletos enviados`,
-          stats: {
-            totalTitles: titles.length,
-            clientsFA: finalClientsToProcess.length,
-            sent: results.sent,
-            errors: results.errors
-          },
-          details: results.details
-        }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro geral:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Erro interno do servidor'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
-  }
-});
+  return {
+    success: true,
+    message: `Processamento concluído: ${results.sent} boletos enviados`,
+    stats: {
+      totalTitles: titles.length,
+      clientsFA: finalClientsToProcess.length,
+      sent: results.sent,
+      errors: results.errors
+    },
+    details: results.details
+  };
+}));
