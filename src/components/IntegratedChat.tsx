@@ -16,7 +16,7 @@ const IntegratedChat = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: IntegratedChatP
     // Listen for messages from iframe
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'chatbase-response') {
-        console.log('Received message from chatbot:', event.data);
+        // Chatbot response received
       }
     };
 

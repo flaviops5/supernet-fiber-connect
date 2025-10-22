@@ -32,7 +32,6 @@ import { SMTPSettings } from '@/components/SMTPSettings';
 import MediaRepositoryManager from '@/components/admin/MediaRepositoryManager';
 import MessageShortcutsManager from '@/components/admin/MessageShortcutsManager';
 import ClosureMessagesManager from '@/components/admin/ClosureMessagesManager';
-
 import { IXCPlanSelector } from '@/components/IXCPlanSelector';
 import { TestContractFlow } from '@/components/TestContractFlow';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
@@ -48,6 +47,7 @@ import { TestClientFinancialStatus } from '@/components/TestClientFinancialStatu
 import { DiagnosticoClienteCompleto } from '@/components/DiagnosticoClienteCompleto';
 import { AutoSendOverdueInvoices } from '@/components/AutoSendOverdueInvoices';
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 // Dashboard component
 const Dashboard = () => {
@@ -80,7 +80,7 @@ const Dashboard = () => {
           testimonials: testimonialsCount || 0
         });
       } catch (error) {
-        console.error('Error loading stats:', error);
+        logger.error('Error loading admin stats', error as Error);
       }
     };
 
@@ -667,7 +667,7 @@ const PlansManagement = () => {
       if (error) throw error;
       setPlans(data || []);
     } catch (error) {
-      console.error('Error loading plans:', error);
+      logger.error('Error loading plans', error as Error);
       toast.error('Erro ao carregar planos');
     } finally {
       setLoading(false);
@@ -695,7 +695,7 @@ const PlansManagement = () => {
       
       toast.success(`Plano ${!currentActive ? 'ativado' : 'desativado'} com sucesso!`);
     } catch (error) {
-      console.error('Error updating plan:', error);
+      logger.error('Error updating plan', error as Error);
       toast.error('Erro ao atualizar plano');
     }
   };
@@ -714,7 +714,7 @@ const PlansManagement = () => {
       setPlans(plans.filter(plan => plan.id !== planId));
       toast.success('Plano excluído com sucesso!');
     } catch (error) {
-      console.error('Error deleting plan:', error);
+      logger.error('Error deleting plan', error as Error);
       toast.error('Erro ao excluir plano');
     }
   };
@@ -1015,7 +1015,7 @@ const ProfileManagement = () => {
       toast.success('Foto de perfil atualizada com sucesso!');
 
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      logger.error('Error uploading avatar', error as Error);
       toast.error('Erro ao fazer upload da imagem');
     } finally {
       setUploadingAvatar(false);
@@ -1049,7 +1049,7 @@ const ProfileManagement = () => {
       toast.success('Foto de perfil removida com sucesso!');
 
     } catch (error) {
-      console.error('Error removing avatar:', error);
+      logger.error('Error removing avatar', error as Error);
       toast.error('Erro ao remover foto de perfil');
     } finally {
       setUploadingAvatar(false);
@@ -1090,7 +1090,7 @@ const ProfileManagement = () => {
         setUserRole(roleData?.role || 'viewer');
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      logger.error('Error loading profile', error as Error);
       toast.error('Erro ao carregar perfil');
     } finally {
       setLoading(false);
@@ -1125,7 +1125,7 @@ const ProfileManagement = () => {
 
       toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
-      console.error('Error saving profile:', error);
+      logger.error('Error saving profile', error as Error);
       toast.error('Erro ao salvar perfil');
     } finally {
       setSaving(false);
@@ -1134,7 +1134,7 @@ const ProfileManagement = () => {
 
   const changePassword = async () => {
     try {
-      console.log('Attempting to change password...');
+      logger.info('Attempting to change password');
       
       if (!passwords.newPassword || !passwords.confirmPassword) {
         toast.error('Por favor, preencha todos os campos');
@@ -1152,16 +1152,13 @@ const ProfileManagement = () => {
       }
 
       setChangingPassword(true);
-      console.log('Calling supabase.auth.updateUser...');
 
       const { data, error } = await supabase.auth.updateUser({
         password: passwords.newPassword
       });
 
-      console.log('Supabase response:', { data, error });
-
       if (error) {
-        console.error('Supabase error:', error);
+        logger.error('Failed to update password', error);
         throw error;
       }
 
@@ -1172,9 +1169,9 @@ const ProfileManagement = () => {
       });
 
       toast.success('Senha alterada com sucesso!');
-      console.log('Password changed successfully');
+      logger.info('Password changed successfully');
     } catch (error: any) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password', error);
       toast.error('Erro ao alterar senha: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setChangingPassword(false);
@@ -1498,7 +1495,7 @@ const HeroManagement = () => {
       setHeroSettings(settings);
       setHeroSlides(slides || []);
     } catch (error) {
-      console.error('Error loading hero data:', error);
+      logger.error('Error loading hero data', error as Error);
       toast.error('Erro ao carregar dados da Hero Section');
     } finally {
       setLoading(false);
@@ -1536,7 +1533,7 @@ const HeroManagement = () => {
       
       toast.success(`Slide ${!currentActive ? 'ativado' : 'desativado'} com sucesso!`);
     } catch (error) {
-      console.error('Error updating slide:', error);
+      logger.error('Error updating slide', error as Error);
       toast.error('Erro ao atualizar slide');
     }
   };
@@ -1555,7 +1552,7 @@ const HeroManagement = () => {
       setHeroSlides(heroSlides.filter(slide => slide.id !== slideId));
       toast.success('Slide excluído com sucesso!');
     } catch (error) {
-      console.error('Error deleting slide:', error);
+      logger.error('Error deleting slide', error as Error);
       toast.error('Erro ao excluir slide');
     }
   };
@@ -1738,7 +1735,7 @@ const FAQManagement = () => {
       if (error) throw error;
       setFaqs(data || []);
     } catch (error) {
-      console.error('Error loading FAQs:', error);
+      logger.error('Error loading FAQs', error as Error);
       toast.error('Erro ao carregar FAQs');
     } finally {
       setLoading(false);
@@ -1776,7 +1773,7 @@ const FAQManagement = () => {
       
       toast.success(`FAQ ${!currentActive ? 'ativada' : 'desativada'} com sucesso!`);
     } catch (error) {
-      console.error('Error updating FAQ:', error);
+      logger.error('Error updating FAQ', error as Error);
       toast.error('Erro ao atualizar FAQ');
     }
   };
@@ -1795,7 +1792,7 @@ const FAQManagement = () => {
       setFaqs(faqs.filter(faq => faq.id !== faqId));
       toast.success('FAQ excluída com sucesso!');
     } catch (error) {
-      console.error('Error deleting FAQ:', error);
+      logger.error('Error deleting FAQ', error as Error);
       toast.error('Erro ao excluir FAQ');
     }
   };
@@ -1938,13 +1935,12 @@ const Admin = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('Admin: Starting authentication check...');
+      logger.info('Starting admin authentication check');
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('Admin: Session check result:', session ? 'authenticated' : 'not authenticated');
         
         if (!session) {
-          console.log('Admin: No session found, redirecting to /auth');
+          logger.info('No session found, redirecting to auth');
           navigate('/auth');
           return;
         }
@@ -1963,7 +1959,7 @@ const Admin = () => {
 
         setIsLoading(false);
       } catch (error) {
-        console.error('Error checking auth:', error);
+        logger.error('Error checking auth', error as Error);
         navigate('/auth');
       }
     };
