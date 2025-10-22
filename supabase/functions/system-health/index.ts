@@ -1,22 +1,7 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log('🏥 Running comprehensive health check...');
+Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
+  console.log('🏥 Running comprehensive health check...');
 
     // 1. Database Connection
     const { data: dbCheck, error: dbError } = await supabase
@@ -138,28 +123,7 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     };
 
-    console.log('✅ Health check completed:', responseData.summary);
+  console.log('✅ Health check completed:', responseData.summary);
 
-    return new Response(
-      JSON.stringify(responseData),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: hasError ? 503 : 200
-      }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Health check error:', error);
-    return new Response(
-      JSON.stringify({ 
-        status: 'error',
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return responseData;
+}));

@@ -1,20 +1,9 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('test-whatsapp-webhook', async (req, { supabase }) => {
+  console.log('🧪 Iniciando teste do webhook WhatsApp');
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    console.log('🧪 Iniciando teste do webhook WhatsApp');
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 
     // Criar payload simulado do Evolution API
     const mockPayload = {
@@ -38,58 +27,26 @@ Deno.serve(async (req) => {
 
     console.log('📤 Enviando payload de teste:', JSON.stringify(mockPayload, null, 2));
 
-    // Chamar o webhook
-    const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`;
-    const webhookResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify(mockPayload),
-    });
+  // Chamar o webhook
+  const webhookResponse = await supabase.functions.invoke('whatsapp-webhook', {
+    body: mockPayload
+  });
 
-    const webhookResult = await webhookResponse.text();
-    console.log('📥 Resposta do webhook:', webhookResult);
-
-    // Verificar se a conversa foi criada
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    const { data: conversations, error: convError } = await supabase
+  console.log('📥 Resposta do webhook:', webhookResponse);
+  
+  const { data: conversations, error: convError } = await supabase
       .from('conversations')
       .select('*')
       .eq('channel', 'whatsapp')
       .order('created_at', { ascending: false })
       .limit(5);
 
-    console.log('💬 Conversas recentes:', conversations);
+  console.log('💬 Conversas recentes:', conversations);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        webhook_status: webhookResponse.status,
-        webhook_response: webhookResult,
-        recent_conversations: conversations,
-        test_payload: mockPayload,
-      }, null, 2),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Erro no teste:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-        stack: error.stack,
-      }, null, 2),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-});
+  return {
+    success: true,
+    webhook_response: webhookResponse,
+    recent_conversations: conversations,
+    test_payload: mockPayload,
+  };
+}));

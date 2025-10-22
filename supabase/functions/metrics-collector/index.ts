@@ -1,25 +1,10 @@
 // ============================================
 // METRICS COLLECTOR - Processa e agrega métricas
 // ============================================
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { timeWindow = '1h' } = await req.json().catch(() => ({}));
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+Deno.serve(createPublicHandler('metrics-collector', async (req, { supabase }) => {
+  const { timeWindow = '1h' } = await req.json().catch(() => ({}));
 
     // Calcular janela de tempo
     const windowMinutes = timeWindow === '1h' ? 60 : timeWindow === '6h' ? 360 : timeWindow === '24h' ? 1440 : 60;
@@ -135,26 +120,5 @@ serve(async (req) => {
       // TODO: Enviar notificação
     }
 
-    return new Response(
-      JSON.stringify(report),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Metrics collector error:', error);
-    
-    return new Response(
-      JSON.stringify({
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return report;
+}));

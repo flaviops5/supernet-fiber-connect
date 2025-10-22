@@ -1,10 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 interface AlertConfig {
   id: string;
@@ -15,17 +9,8 @@ interface AlertConfig {
   is_active: boolean;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    console.log('🔍 Processing alerts...');
+Deno.serve(createPublicHandler('process-alerts', async (req, { supabase }) => {
+  console.log('🔍 Processing alerts...');
 
     // Buscar configurações ativas
     const { data: configs, error: configError } = await supabase
@@ -147,20 +132,9 @@ serve(async (req) => {
       console.log('✅ Nenhum alerta detectado');
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        alerts_generated: alerts.length,
-        timestamp: new Date().toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Error processing alerts:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
+  return {
+    success: true,
+    alerts_generated: alerts.length,
+    timestamp: new Date().toISOString()
+  };
+}));

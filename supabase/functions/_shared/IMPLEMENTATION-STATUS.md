@@ -32,12 +32,21 @@
 4. ✅ **support-financial-agent** - Suporte financeiro (já tinha error handler)
 
 ### Utilitários e Automação (Grupo 1.3)
-28. ✅ **generate-ai-faq** - Gera FAQs com IA
-29. ✅ **chatbot-cep-lookup** - Consulta CEP no chatbot
-30. ✅ **check-due-invoices** - Verifica faturas vencendo
-31. ✅ **check-escalation** - Sistema de escalonamento
-32. ✅ **generate-contract-pdf** - Gera PDF de contrato
-33. ✅ **voice-to-text** - Transcrição de áudio
+22. ✅ **generate-ai-faq** - Gera FAQs com IA
+23. ✅ **chatbot-cep-lookup** - Consulta CEP no chatbot
+24. ✅ **check-due-invoices** - Verifica faturas vencendo
+25. ✅ **check-escalation** - Sistema de escalonamento
+26. ✅ **generate-contract-pdf** - Gera PDF de contrato
+27. ✅ **voice-to-text** - Transcrição de áudio
+
+### Sistema e Testes (Grupo 1.4)
+28. ✅ **test-whatsapp-webhook** - Testa webhook WhatsApp
+29. ✅ **test-evolution-api** - Testa Evolution API
+30. ✅ **system-health** - Health check do sistema
+31. ✅ **metrics-collector** - Coletor de métricas
+32. ✅ **process-alerts** - Processa alertas
+33. ✅ **graylog-logs-export** - Exporta logs para Graylog
+34. ✅ **test-equipment-connectivity** - Testa conectividade de equipamentos
 
 ## 🔄 Funções com Proteção Parcial (Error Handler + Metrics)
 
@@ -79,9 +88,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 35 (42%)
+- **Com proteção completa:** 42 (51%)
 - **Com proteção parcial:** 4 (5%)
-- **Pendentes:** 44 (53%)
+- **Pendentes:** 37 (44%)
 
 ## 🎯 Próximos Passos
 
