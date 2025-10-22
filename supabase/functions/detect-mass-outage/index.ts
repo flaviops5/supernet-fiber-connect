@@ -195,48 +195,25 @@ serve(async (req) => {
             let clientData, equipData;
             
             try {
-              // Buscar dados do cliente e equipamento em paralelo
-              [clientData, equipData] = await retryWithBackoff(() =>
-                Promise.all([
-                  // Buscar dados do cliente (incluindo bairro)
-                  callIxcWithRetry(
-                    IXC_PROXY_URL,
-                    'POST',
-                    '/webservice/v1/cliente',
-                    {
-                      qtype: 'cliente.id',
-                      query: clientId,
-                      oper: '=',
-                      page: '1',
-                      rp: '1',
-                      sortname: 'cliente.id',
-                      sortorder: 'desc',
-                    }
-                  ),
-                  // FALLBACK: Se cliente_equipamento falhar (502), retornar vazio
-                  callIxcWithRetry(
-                    IXC_PROXY_URL,
-                    'POST',
-                    '/webservice/v1/cliente_equipamento',
-                    {
-                      qtype: 'cliente_equipamento.id_cliente',
-                      query: clientId,
-                      oper: '=',
-                      page: '1',
-                      rp: '50',
-                      sortname: 'cliente_equipamento.id',
-                      sortorder: 'desc',
-                    }
-                  ).catch(error => {
-                    // FALLBACK ESPECÍFICO: Se endpoint indisponível (502), retornar vazio
-                    if (error.message.includes('502') || error.message.includes('cliente_equipamento')) {
-                      console.warn(`⚠️ Cliente ${clientId}: endpoint cliente_equipamento indisponível, continuando sem dados PON`);
-                      return { data: { registros: [] } };
-                    }
-                    throw error; // Re-throw outros erros
-                  })
-                ])
+              // Buscar apenas dados do cliente (inclui bairro). Removido uso de cliente_equipamento (inexistente)
+              clientData = await retryWithBackoff(() =>
+                callIxcWithRetry(
+                  IXC_PROXY_URL,
+                  'POST',
+                  '/webservice/v1/cliente',
+                  {
+                    qtype: 'cliente.id',
+                    query: clientId,
+                    oper: '=',
+                    page: '1',
+                    rp: '1',
+                    sortname: 'cliente.id',
+                    sortorder: 'desc',
+                  }
+                )
               );
+              // Sem equipamentos disponíveis
+              equipData = { data: { registros: [] } };
             } catch (error) {
               // Se falhou completamente, tentar pelo menos buscar o cliente
               console.warn(`⚠️ Erro ao buscar dados completos do cliente ${clientId}, tentando apenas dados básicos`);

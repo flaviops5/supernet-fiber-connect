@@ -69,51 +69,7 @@ serve(async (req) => {
         
         // Se o endpoint não existe, tentar endpoint alternativo
         if (onuResponse.status === 404 || onuResponse.status === 500) {
-          console.log('⚠️ Endpoint pon_onu não disponível. Tentando endpoint cliente_equipamento...');
-          
-          // Buscar equipamentos dos clientes (inclui ONUs)
-          const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
-          const equipBody = JSON.stringify({
-            qtype: 'cliente_equipamento.id',
-            query: '1',
-            oper: '>=',
-            page: '1',
-            rp: '1000',
-            sortname: 'cliente_equipamento.id',
-            sortorder: 'desc',
-          });
-
-          const equipResponse = await fetch(equipUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${credentials}`,
-              'Content-Type': 'application/json',
-              'ixcsoft': 'listar',
-            },
-            body: equipBody,
-          });
-
-          if (equipResponse.ok) {
-            const equipData = await equipResponse.json();
-            const equipRegistros = Array.isArray(equipData?.registros)
-              ? equipData.registros
-              : (equipData?.registros ? Object.values(equipData.registros) : []);
-            
-            console.log(`📦 ${equipRegistros.length} equipamentos encontrados`);
-            
-            // Filtrar apenas ONUs (que têm informação de porta PON)
-            const onusFromEquip = equipRegistros.filter((equip: any) => 
-              equip.pon_porta || equip.pon_slot || equip.pon_olt
-            );
-            
-            console.log(`🔌 ${onusFromEquip.length} ONUs encontradas nos equipamentos`);
-            
-            if (onusFromEquip.length > 0) {
-              console.log('✅ Usando dados de cliente_equipamento');
-              allOnus.push(...onusFromEquip);
-              break;
-            }
-          }
+          console.log('⚠️ Endpoint pon_onu não disponível. Fallback via cliente_equipamento desativado (endpoint inexistente).');
         }
         
         break;
@@ -206,123 +162,9 @@ serve(async (req) => {
       });
     }
     
-    // Fallback quando o endpoint pon_onu não retorna dados
+    // Fallback desativado: cliente_equipamento inexistente. Não há dados PON quando pon_onu não retorna.
     if (allOnus.length === 0) {
-      console.log('⚠️ Nenhuma ONU via pon_onu. Ativando fallback radusuarios + cliente_equipamento...');
-
-      // 1) Buscar radusuarios para obter status online/offline
-      const radUrl = `https://${IXC_BASE_HOST}/webservice/v1/radusuarios`;
-      const radBody = JSON.stringify({
-        qtype: 'radusuarios.id',
-        query: '1',
-        oper: '>=',
-        page: '1',
-        rp: '1000',
-        sortname: 'radusuarios.id',
-        sortorder: 'desc',
-      });
-
-      const radResponse = await fetch(radUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-          'ixcsoft': 'listar',
-        },
-        body: radBody,
-      });
-
-      const statusByClient = new Map<string, string>();
-      if (radResponse.ok) {
-        const radData = await radResponse.json();
-        const radRegistros = Array.isArray(radData?.registros)
-          ? radData.registros
-          : (radData?.registros ? Object.values(radData.registros) : []);
-        console.log(`📡 radusuarios retornou ${radRegistros.length} registros`);
-        for (const ru of radRegistros) {
-          const clientId = String(ru.id_cliente || '').trim();
-          if (clientId) statusByClient.set(clientId, String(ru.online || '').toUpperCase());
-        }
-      } else {
-        console.log(`⚠️ Falha ao buscar radusuarios: ${radResponse.status}`);
-      }
-
-      // 2) Buscar equipamentos para mapear portas PON
-      const equipUrl = `https://${IXC_BASE_HOST}/webservice/v1/cliente_equipamento`;
-      let equipPage = 1;
-      const equipItemsPerPage = 1000;
-      const allEquip: any[] = [];
-
-      while (equipPage <= 3) {
-        const equipBody = JSON.stringify({
-          qtype: 'cliente_equipamento.id',
-          query: '1',
-          oper: '>=',
-          page: String(equipPage),
-          rp: String(equipItemsPerPage),
-          sortname: 'cliente_equipamento.id',
-          sortorder: 'desc',
-        });
-
-        const equipResponse = await fetch(equipUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/json',
-            'ixcsoft': 'listar',
-          },
-          body: equipBody,
-        });
-
-        if (!equipResponse.ok) {
-          console.log(`⚠️ Falha ao buscar cliente_equipamento (página ${equipPage}): ${equipResponse.status}`);
-          break;
-        }
-
-        const equipData = await equipResponse.json();
-        const equipRegistros = Array.isArray(equipData?.registros)
-          ? equipData.registros
-          : (equipData?.registros ? Object.values(equipData.registros) : []);
-
-        console.log(`🧩 Página ${equipPage}: ${equipRegistros.length} equipamentos`);
-        if (!equipRegistros || equipRegistros.length === 0) break;
-        allEquip.push(...equipRegistros);
-        if (equipRegistros.length < equipItemsPerPage) break;
-        equipPage++;
-      }
-
-      // Mapear portas PON a partir de equipamentos
-      for (const equip of allEquip) {
-        const clientId = String(equip.id_cliente || equip.cliente_id || '').trim();
-        let ponPort = '';
-        if (equip.pon_porta) ponPort = String(equip.pon_porta);
-        if (equip.pon_slot) ponPort = `${equip.pon_slot}/${ponPort || ''}`.replace(/\/$/, '');
-        if (equip.pon_olt) ponPort = `${equip.pon_olt}/${ponPort || ''}`.replace(/\/$/, '');
-        if (!ponPort) continue;
-
-        if (!ponPorts.has(ponPort)) {
-          ponPorts.set(ponPort, { online: 0, offline: 0, total: 0, onus: [] });
-        }
-        const portData = ponPorts.get(ponPort)!;
-
-        const onlineFlag = (() => {
-          const st = statusByClient.get(clientId) || '';
-          // Heurística: 'S' = online; 'N' ou 'SS' = offline
-          if (st === 'S') return true;
-          if (st === 'N' || st === 'SS') return false;
-          return false; // desconhecido conta como offline para indicar atenção
-        })();
-
-        if (onlineFlag) portData.online++; else portData.offline++;
-        portData.total++;
-        portData.onus.push({
-          serial: String(equip.serial || equip.onu_serial || equip.mac || 'N/A'),
-          status: onlineFlag ? 'online' : 'offline',
-          cliente: String(equip.cliente_razao || clientId || 'N/A'),
-        });
-      }
-
-      console.log(`🔁 Fallback montou ${ponPorts.size} portas PON`);
+      console.log('⚠️ Nenhuma ONU via pon_onu e fallback desativado.');
     }
 
     // Converter para array e ordenar

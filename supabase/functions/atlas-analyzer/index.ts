@@ -144,19 +144,19 @@ serve(async (req) => {
       const offline = await callIxcWithRetry(
         IXC_PROXY_URL,
         "POST",
-        "/cliente_equipamento",
+        "/webservice/v1/radusuarios",
         {
-          qtype: "cliente_equipamento.status",
-          query: "offline",
+          qtype: "radusuarios.online",
+          query: "N",
           oper: "=",
           page: "1",
           rp: "500",
-          sortname: "cliente_equipamento.id",
+          sortname: "radusuarios.id",
           sortorder: "desc",
         }
       );
-      const regs = offline?.registros || [];
-      offlineCount = Array.isArray(regs) ? regs.length : Object.keys(regs).length;
+      const regs = offline?.data?.registros || [];
+      offlineCount = Array.isArray(regs) ? regs.length : (regs ? Object.keys(regs).length : 0);
     } catch (ixcErr) {
       logger.warn("IXC offline lookup failed", { error: (ixcErr as Error).message });
     }

@@ -69,7 +69,7 @@ const IXC_ENDPOINTS: EndpointTest[] = [
   { endpoint: 'botao_rel_22991', method: 'POST', description: 'Relatório customizado', category: 'Relatórios' },
   
   // EQUIPAMENTOS
-  { endpoint: 'cliente_equipamento', method: 'POST', description: 'Equipamentos do cliente', category: 'Equipamentos' },
+  // { endpoint: 'cliente_equipamento', method: 'POST', description: 'Equipamentos do cliente', category: 'Equipamentos' }, // Removido: endpoint inexistente
   { endpoint: 'equipamento_fibra', method: 'POST', description: 'Equipamentos de fibra', category: 'Equipamentos' },
   { endpoint: 'pon_onu', method: 'POST', description: 'ONUs na rede PON', category: 'Equipamentos' },
   
