@@ -1,3 +1,9 @@
+// ============================================
+// SEND PAYMENT TO CUSTOMER - Proteção completa com circuit breaker
+// ============================================
+// Esta função mantém circuit breaker + cache + error handler + metrics
+// Não usa base-handler completo devido à lógica customizada de circuit breaker
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
@@ -19,14 +25,15 @@ serve(async (req) => {
 
   try {
     const { phone, cpf } = await req.json();
-    console.log('📞 Enviando pagamento para:', { phone, cpf });
-
+    
+    // Validação de entrada
     if (!phone && !cpf) {
       return new Response(
         JSON.stringify({ success: false, error: 'Telefone ou CPF é obrigatório' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+    console.log('📞 Enviando pagamento para:', { phone, cpf });
 
     // 🔍 Verificar circuit breaker antes de iniciar
     const circuitStatus = getCircuitBreakerStatus();
@@ -42,8 +49,14 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Inicialização do Supabase com validação
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Cabeçalhos para chamadas internas

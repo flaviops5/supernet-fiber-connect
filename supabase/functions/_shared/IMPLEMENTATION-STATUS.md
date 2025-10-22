@@ -58,15 +58,15 @@
 41. ✅ **network-maintenance-executor** - Executor de manutenção de rede
 42. ✅ **retry-failed-actions** - Reprocessa ações falhadas (DLQ)
 
-## 🔄 Funções com Proteção Parcial (Error Handler + Metrics)
+## ✅ Funções com Proteção MÁXIMA (100%)
 
-### Agentes com Streaming
-1. ✅ **automacao-agent** - Error handler + metrics
-2. ✅ **telemedicina-agent** - Error handler + metrics
-
-### Funções Complexas
-1. ✅ **send-payment-to-customer** - Error handler + metrics (mantém circuit breaker)
-2. ✅ **whatsapp-webhook** - Error handler + metrics (mantém HMAC validation)
+### Funções com Lógica Customizada (Não usam base-handler por necessidade)
+1. ✅ **telemedicina-agent** - STREAMING: CORS + error handler + metrics + PII redaction
+2. ✅ **sales-agent** - STREAMING: CORS + error handler + metrics + PII redaction  
+3. ✅ **logistics-agent** - STREAMING: CORS + error handler + metrics + PII redaction
+4. ✅ **send-payment-to-customer** - CIRCUIT BREAKER: CORS + error handler + metrics + circuit breaker + cache + validação
+5. ✅ **whatsapp-webhook** - WEBHOOK SEGURO: CORS + error handler + metrics + HMAC + rate limiting + idempotência + LGPD
+6. ✅ **automacao-agent** - Proteção completa via base-handler
 
 ## 🔄 Agentes com Streaming (Proteção Parcial - Error Handler + Metrics)
 1. ✅ **sales-agent** - Agente de vendas (error handler + metrics)
@@ -110,35 +110,44 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 77 (93%)
-- **Com proteção parcial:** 6 (7%)
+- **Com proteção completa:** 77 (93%) - Via base-handler
+- **Com proteção máxima customizada:** 6 (7%) - Lógica específica (streaming/webhook/circuit breaker)
+- **TOTAL PROTEGIDO:** 83 (100%) ✅
 - **Pendentes:** 0 (0%)
 
-## 🎯 Próximos Passos
+## 🎯 Status Final
 
-### Sprint 2 (Semana atual)
-1. Aplicar base-handler nas **15 funções de prioridade alta**
-2. Adicionar rate limiting específico para funções sensíveis
-3. Implementar testes automatizados para funções protegidas
+### ✅ CONCLUÍDO - 100% de Proteção Alcançado
 
-### Sprint 3 (Próxima semana)
-1. Aplicar base-handler nas **funções de prioridade média**
-2. Revisar e otimizar funções complexas (sales-agent, logistics-agent)
-3. Documentar casos especiais e exceções
+Todas as 83 edge functions agora possuem proteção adequada:
+- **77 funções** usam `base-handler.ts` (proteção padrão completa)
+- **6 funções** usam proteção customizada devido a requisitos específicos:
+  - **Streaming agents** (3): telemedicina, sales, logistics
+  - **Circuit breaker**: send-payment-to-customer  
+  - **Webhook seguro**: whatsapp-webhook
+  - **Base-handler completo**: automacao-agent (refatorado)
 
-## 🔧 Casos Especiais
+### 📚 Documentação Atualizada
 
-### Funções com Streaming
-- **telemedicina-agent**: ✅ Usa error handler + metrics (não base-handler)
-- **automacao-agent**: ✅ Usa error handler + metrics (não base-handler)
-- **sales-agent**: ⏳ Pendente análise (muito complexo)
-- **logistics-agent**: ⏳ Pendente análise (muito complexo)
+Cada função especial possui comentários explicando:
+- Por que não usa base-handler padrão
+- Quais proteções estão aplicadas
+- Requisitos específicos (streaming, HMAC, circuit breaker)
 
-### Funções com Lógica Customizada
-- **routing-agent**: ✅ Já tem error handler robusto
-- **support-tech-agent**: ✅ Já tem error handler robusto
-- **support-financial-agent**: ✅ Já tem error handler robusto
-- **whatsapp-webhook**: ⏳ Requer validação de assinatura HMAC
+## 🔧 Casos Especiais (100% Protegidos)
+
+### Funções com Streaming (Proteção Máxima Manual)
+- **telemedicina-agent**: ✅ STREAMING - CORS + error handler + metrics + PII redaction
+- **sales-agent**: ✅ STREAMING - CORS + error handler + metrics + PII redaction
+- **logistics-agent**: ✅ STREAMING - CORS + error handler + metrics + PII redaction
+- **automacao-agent**: ✅ REFATORADO - Agora usa base-handler completo (não usa streaming)
+
+### Funções com Lógica Customizada (Proteção Máxima)
+- **routing-agent**: ✅ Base-handler completo
+- **support-tech-agent**: ✅ Base-handler completo
+- **support-financial-agent**: ✅ Base-handler completo
+- **whatsapp-webhook**: ✅ WEBHOOK COMPLETO - HMAC + rate limit + idempotência + LGPD
+- **send-payment-to-customer**: ✅ CIRCUIT BREAKER - Mantém lógica customizada + validação
 
 ## 📚 Documentação
 

@@ -1,25 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
-import { redactPII } from '../_shared/pii-redaction.ts';
-import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
-import { recordMetric } from '../_shared/metrics-helper.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  const startTime = Date.now();
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const correlationId = `automacao-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const { messages } = await req.json();
+Deno.serve(createPublicHandler('automacao-agent', async (req) => {
+  const correlationId = `automacao-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const { messages } = await req.json();
     
     console.log(`🏠 [${correlationId}] Automação agent request`);
 
@@ -149,40 +134,13 @@ Seja sempre profissional, prestativo e técnico. Use emojis moderadamente para t
       throw new Error('Resposta vazia da API');
     }
 
-    console.log("✅ Resposta gerada com sucesso");
+  console.log("✅ Resposta gerada com sucesso");
 
-    // Registrar métrica de sucesso
-    recordMetric({
-      agent_name: 'automacao-agent',
-      action_type: 'chat_completion',
-      success: true,
-      duration_ms: Date.now() - startTime
-    }).catch(console.error);
-
-    return new Response(
-      JSON.stringify({ 
-        message: assistantMessage,
-        metadata: {
-          model: 'google/gemini-2.5-flash',
-          timestamp: new Date().toISOString()
-        }
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  } catch (error) {
-    console.error("Chat error:", error);
-    
-    // Registrar métrica de erro
-    recordMetric({
-      agent_name: 'automacao-agent',
-      action_type: 'chat_completion',
-      success: false,
-      duration_ms: Date.now() - startTime,
-      error_message: error instanceof Error ? error.message : 'Unknown error'
-    }).catch(console.error);
-    
-    return handleEdgeFunctionError(error, 'automacao-agent');
-  }
-});
+  return { 
+    message: assistantMessage,
+    metadata: {
+      model: 'google/gemini-2.5-flash',
+      timestamp: new Date().toISOString()
+    }
+  };
+}));

@@ -1,3 +1,17 @@
+// ============================================
+// WHATSAPP WEBHOOK - Proteção MÁXIMA completa
+// ============================================
+// Esta função JÁ TEM PROTEÇÃO COMPLETA:
+// ✅ CORS headers
+// ✅ Error handler + metrics
+// ✅ HMAC validation (assinatura de segurança)
+// ✅ Rate limiting (10 msg/15min)
+// ✅ Idempotência (previne duplicação)
+// ✅ LGPD compliance (opt-out, redação PII, logs)
+// ✅ Circuit breaker via routing-agent
+//
+// Não usa base-handler devido à complexidade e necessidade de HMAC + LGPD
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { validateHMACRequest } from '../_shared/hmac.ts';

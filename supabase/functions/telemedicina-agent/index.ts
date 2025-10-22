@@ -1,6 +1,12 @@
+// ============================================
+// TELEMEDICINA AGENT - Streaming com proteção máxima
+// ============================================
+// Nota: Esta função USA STREAMING e não pode usar base-handler completo.
+// Proteção aplicada: CORS + error handler + metrics + redação PII
+// Rate limiting não é aplicado pois é chat interativo
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
