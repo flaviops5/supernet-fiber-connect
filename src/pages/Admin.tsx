@@ -831,6 +831,33 @@ const FAQManagement = () => {
     }
   };
 
+  const handleEdit = (faq: any) => {
+    setEditingFaq(faq);
+    setShowForm(true);
+  };
+
+  const toggleFaqActive = async (faqId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('faqs')
+        .update({ active: !currentActive })
+        .eq('id', faqId);
+
+      if (error) throw error;
+      
+      setFaqs(faqs.map(faq => 
+        faq.id === faqId 
+          ? { ...faq, active: !currentActive }
+          : faq
+      ));
+      
+      toast.success(`FAQ ${!currentActive ? 'ativada' : 'desativada'} com sucesso!`);
+    } catch (error) {
+      logger.error('Error updating FAQ', error as Error);
+      toast.error('Erro ao atualizar FAQ');
+    }
+  };
+
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingFaq(null);
@@ -1055,9 +1082,6 @@ const Admin = () => {
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/whatsapp" element={<WhatsAppSetup />} />
-                <Route path="/profile" element={<ProfileManagement />} />
-                <Route path="/atendimento-config" element={<AtendimentoManagement />} />
-                <Route path="/settings" element={<SettingsManagement />} />
               </Routes>
             </main>
           </div>
