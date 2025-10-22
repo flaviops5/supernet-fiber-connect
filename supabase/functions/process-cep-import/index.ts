@@ -1,10 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 interface CepRow {
   cep_start: string;
@@ -27,27 +21,10 @@ interface ImportResult {
   }>;
 }
 
-serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  try {
-    console.log('Starting CEP import process...')
-    
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    const { file, filename } = await req.json()
+Deno.serve(createPublicHandler('process-cep-import', async (req, { supabase }) => {
+  console.log('Starting CEP import process...')
+  
+  const { file, filename } = await req.json()
     
     if (!file) {
       throw new Error('Nenhum arquivo fornecido')
@@ -239,25 +216,7 @@ serve(async (req) => {
       }
     }
 
-    console.log('Import completed:', result)
+  console.log('Import completed:', result)
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
-
-  } catch (error) {
-    console.error('Error in CEP import:', error)
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Erro interno do servidor',
-        success: 0,
-        errors: 1,
-        details: [{ line: 0, error: error instanceof Error ? error.message : String(error) }]
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
-  }
-})
+  return result;
+}));

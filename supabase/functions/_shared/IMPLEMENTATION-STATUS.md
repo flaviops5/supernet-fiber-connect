@@ -81,14 +81,19 @@
 46. ✅ **send-locaweb-email** - Envio de emails
 47. ✅ **auto-send-overdue-invoices** - Cobranças automáticas
 
-### Prioridade Média (Operações críticas)
-- [ ] **test-ixc-connection** - Testa conexão IXC
-- [ ] **reboot-client-equipment** - Reinicia equipamentos
-- [ ] **ixc-onu-signal** - Consulta sinal ONU
-- [ ] **ixc-radio-status** - Status rádios
-- [ ] **detect-mass-outage** - Detecta quedas em massa
-- [ ] **auto-reboot-frozen-equipment** - Auto-reinicialização
-- [ ] **check-reboot-candidates** - Candidatos a reboot
+### Prioridade Média (IA e Automação - CONCLUÍDO 12/12)
+48. ✅ **ai-auto-tag** - Auto-tagging de conversas
+49. ✅ **ai-suggest-reply** - Sugestões de resposta
+50. ✅ **ai-text-review** - Revisão de texto
+51. ✅ **atlas-analyzer** - Análise de sistema
+52. ✅ **calculate-projections** - Cálculo de projeções
+53. ✅ **generate-flow-simulations** - Simulações de fluxo
+54. ✅ **process-cep-import** - Importação de CEP
+55. ✅ **process-dlq** - Processamento de DLQ
+56. ✅ **summarize-conversation** - Resumo de conversas
+57. ✅ **site-analyzer-agent** - Análise de site
+58. ✅ **telemedicina-auth** - Autenticação telemedicina
+59. ✅ **telemedicina-forgot-password** - Recuperação senha telemedicina
 
 ### Prioridade Baixa (Utilitários)
 - [ ] **system-health** - Health check do sistema
@@ -101,9 +106,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 55 (66%)
+- **Com proteção completa:** 67 (81%)
 - **Com proteção parcial:** 6 (7%)
-- **Pendentes:** 22 (27%)
+- **Pendentes:** 10 (12%)
 
 ## 🎯 Próximos Passos
 

@@ -8,16 +8,9 @@
 // - Notificação WhatsApp em HIGH
 // - Structured logging (não bloqueante)
 // =====================================================================
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 // --------------------------- Utils ------------------------------------
 type Severity = "LOW" | "MEDIUM" | "HIGH";
@@ -83,24 +76,14 @@ function inferCause(
   return "unknown";
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('atlas-analyzer', async (req, { supabase }) => {
   const logger = createLogger("atlas-analyzer-v2", req);
 
-  try {
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "SDR2";
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("Missing Supabase environment variables");
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
-    // IXC Proxy URL construído corretamente
-    const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME") || "SDR2";
+  
+  // IXC Proxy URL construído corretamente
+  const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
     // 1) Entrada
     const { windowMinutes = 90 } = await req.json().catch(() => ({}));
@@ -352,33 +335,23 @@ Ação: ${recommendation}`;
         .eq("id", inserted.id);
     }
 
-    logger.info("Insight created", {
-      id: inserted.id,
-      severity,
-      probableCause,
-      groups: groups.slice(0, 5),
-      notified,
-      notificationsSent: notificationDetails.length,
-    });
+  logger.info("Insight created", {
+    id: inserted.id,
+    severity,
+    probableCause,
+    groups: groups.slice(0, 5),
+    notified,
+    notificationsSent: notificationDetails.length,
+  });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        insight_id: inserted.id,
-        severity,
-        probable_cause: probableCause,
-        kpis,
-        groups,
-        notified,
-        notification_details: notificationDetails,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (err: any) {
-    logger.error("atlas-analyzer-v2 error", { error: err.message, stack: err.stack });
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
+  return {
+    success: true,
+    insight_id: inserted.id,
+    severity,
+    probable_cause: probableCause,
+    kpis,
+    groups,
+    notified,
+    notification_details: notificationDetails,
+  };
+}));

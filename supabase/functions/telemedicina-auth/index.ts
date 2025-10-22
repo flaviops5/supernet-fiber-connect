@@ -1,31 +1,17 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('telemedicina-auth', async (req, { supabase }) => {
+  const { cpf, password } = await req.json();
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (!cpf || !password) {
+    throw new Error('CPF e senha são obrigatórios');
   }
 
-  try {
-    const { cpf, password } = await req.json();
-
-    if (!cpf || !password) {
-      return new Response(
-        JSON.stringify({ error: 'CPF e senha são obrigatórios' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Usar proxy centralizado do IXC com HMAC
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const proxyUrl = `${supabaseUrl}/functions/v1/ixc-proxy`;
+  // Usar proxy centralizado do IXC com HMAC
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const proxyUrl = `${supabaseUrl}/functions/v1/ixc-proxy`;
     
     console.log('🔧 Usando IXC Proxy centralizado com autenticação HMAC');
 
@@ -52,16 +38,13 @@ serve(async (req) => {
       searchBody
     );
 
-    console.log('📦 Resposta da busca:', searchData.data);
+  console.log('📦 Resposta da busca:', searchData.data);
 
-    if (!searchData.data || !searchData.data.registros || searchData.data.registros.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Cliente não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  if (!searchData.data || !searchData.data.registros || searchData.data.registros.length === 0) {
+    throw new Error('Cliente não encontrado');
+  }
 
-    const cliente = searchData.data.registros[0];
+  const cliente = searchData.data.registros[0];
     console.log('✅ Cliente encontrado:', cliente.razao);
 
     // 2. Validar senha (simplificado - em produção deve usar hash)
@@ -110,62 +93,36 @@ serve(async (req) => {
     } catch (error) {
       console.warn('⚠️ Erro ao buscar contratos:', error);
       // Continuar mesmo sem contratos
-    }
-
-    // 4. Registrar acesso no histórico
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
-      await supabase.from('customer_contact_history').insert({
-        cpf: cleanCpf,
-        customer_name: cliente.razao,
-        customer_email: cliente.email,
-        customer_phone: cliente.celular || cliente.telefone,
-        ixc_client_id: cliente.id,
-        contact_channel: 'telemedicina_widget',
-        contact_reason: 'Acesso ao portal de telemedicina',
-        was_found_in_ixc: true,
-        metadata: {
-          possui_telemedicina: possuiTelemedicina,
-          plano_telemedicina: planoTelemedicina,
-        }
-      });
-    }
-
-    // 5. Retornar dados do usuário
-    return new Response(
-      JSON.stringify({
-        success: true,
-        userData: {
-          id: cliente.id,
-          nome: cliente.razao,
-          cpf: cliente.cnpj_cpf,
-          email: cliente.email,
-          telefone: cliente.celular || cliente.telefone,
-          possui_telemedicina: possuiTelemedicina,
-          plano_telemedicina: planoTelemedicina,
-        },
-        telemedicinUrl: possuiTelemedicina ? telemedicinUrl : null,
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro na autenticação:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Erro ao processar autenticação',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
   }
-});
+
+  // 4. Registrar acesso no histórico
+  await supabase.from('customer_contact_history').insert({
+    cpf: cleanCpf,
+    customer_name: cliente.razao,
+    customer_email: cliente.email,
+    customer_phone: cliente.celular || cliente.telefone,
+    ixc_client_id: cliente.id,
+    contact_channel: 'telemedicina_widget',
+    contact_reason: 'Acesso ao portal de telemedicina',
+    was_found_in_ixc: true,
+    metadata: {
+      possui_telemedicina: possuiTelemedicina,
+      plano_telemedicina: planoTelemedicina,
+    }
+  });
+
+  // 5. Retornar dados do usuário
+  return {
+    success: true,
+    userData: {
+      id: cliente.id,
+      nome: cliente.razao,
+      cpf: cliente.cnpj_cpf,
+      email: cliente.email,
+      telefone: cliente.celular || cliente.telefone,
+      possui_telemedicina: possuiTelemedicina,
+      plano_telemedicina: planoTelemedicina,
+    },
+    telemedicinUrl: possuiTelemedicina ? telemedicinUrl : null,
+  };
+}));

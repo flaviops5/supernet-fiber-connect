@@ -1,26 +1,13 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('ai-suggest-reply', async (req, { supabase }) => {
+  const { conversation_id } = await req.json();
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (!conversation_id) {
+    throw new Error('conversation_id is required');
   }
 
-  try {
-    const { conversation_id } = await req.json();
-
-    if (!conversation_id) {
-      throw new Error('conversation_id is required');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
     // Load conversation details
     const { data: conversation } = await supabase
@@ -102,35 +89,15 @@ Sugira UMA resposta apropriada que o atendente pode usar ou editar:`;
       throw new Error('No suggestion generated');
     }
 
-    // Log the suggestion (optional)
-    await supabase.from('agent_metrics').insert({
-      agent_name: 'ai_suggestion',
-      action_type: 'generate_suggestion',
-      success: true,
-      duration_ms: 0,
-      conversation_id: conversation_id,
-      metadata: { suggestion_length: suggestion.length }
-    });
+  // Log the suggestion (optional)
+  await supabase.from('agent_metrics').insert({
+    agent_name: 'ai_suggestion',
+    action_type: 'generate_suggestion',
+    success: true,
+    duration_ms: 0,
+    conversation_id: conversation_id,
+    metadata: { suggestion_length: suggestion.length }
+  });
 
-    return new Response(
-      JSON.stringify({ suggestion }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error: any) {
-    console.error('Error generating suggestion:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        suggestion: 'Como posso ajudá-lo(a)?'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-});
+  return { suggestion };
+}));

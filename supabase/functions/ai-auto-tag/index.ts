@@ -1,9 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 const AVAILABLE_TAGS = [
   'financeiro',
@@ -22,22 +17,14 @@ const AVAILABLE_TAGS = [
   'urgente'
 ];
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('ai-auto-tag', async (req, { supabase }) => {
+  const { conversation_id, message_content } = await req.json();
+
+  if (!conversation_id || !message_content) {
+    throw new Error('conversation_id and message_content are required');
   }
 
-  try {
-    const { conversation_id, message_content } = await req.json();
-
-    if (!conversation_id || !message_content) {
-      throw new Error('conversation_id and message_content are required');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
     // Load current conversation tags
     const { data: conversation } = await supabase
@@ -121,38 +108,21 @@ Mensagem do cliente:
       console.error('Error updating tags:', updateError);
     }
 
-    // Log the auto-tagging
-    await supabase.from('agent_metrics').insert({
-      agent_name: 'ai_auto_tag',
-      action_type: 'auto_tag',
-      success: true,
-      duration_ms: 0,
-      conversation_id: conversation_id,
-      metadata: { 
-        added_tags: suggestedTags,
-        final_tags: newTags 
-      }
-    });
+  // Log the auto-tagging
+  await supabase.from('agent_metrics').insert({
+    agent_name: 'ai_auto_tag',
+    action_type: 'auto_tag',
+    success: true,
+    duration_ms: 0,
+    conversation_id: conversation_id,
+    metadata: { 
+      added_tags: suggestedTags,
+      final_tags: newTags 
+    }
+  });
 
-    return new Response(
-      JSON.stringify({ 
-        suggested_tags: suggestedTags,
-        all_tags: newTags
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error: any) {
-    console.error('Error auto-tagging:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-});
+  return { 
+    suggested_tags: suggestedTags,
+    all_tags: newTags
+  };
+}));

@@ -1,16 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler('site-analyzer-agent', async (req) => {
     const { message, conversationHistory } = await req.json();
     const GOOGLE_API_KEY = 'AIzaSyDp7M8qcIlYVKVBMNMfLbzgHWpxjd2sOb0';
 
@@ -96,22 +86,8 @@ Contexto do projeto:
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta da API';
+  const data = await response.json();
+  const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta da API';
 
-    return new Response(
-      JSON.stringify({ response: aiResponse }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error in site-analyzer-agent:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Erro ao processar análise',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
+  return { response: aiResponse };
+}));

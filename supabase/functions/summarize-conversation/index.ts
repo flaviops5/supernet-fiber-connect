@@ -1,33 +1,17 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('summarize-conversation', async (req, { supabase }) => {
+  const correlationId = `summary-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const { conversationId } = await req.json();
+  
+  if (!conversationId) {
+    throw new Error('conversationId é obrigatório');
   }
 
-  try {
-    const correlationId = `summary-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const { conversationId } = await req.json();
-    
-    if (!conversationId) {
-      throw new Error('conversationId é obrigatório');
-    }
-
-    console.log(`📝 [${correlationId}] Summarize conversation: ${conversationId}`);
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  console.log(`📝 [${correlationId}] Summarize conversation: ${conversationId}`);
 
     // Sprint 1: LGPD Audit para acesso à conversa
     await logLGPDAccess(
@@ -116,21 +100,7 @@ ${messageHistory}`;
 
     if (updateError) throw updateError;
 
-    console.log('Resumo gerado com sucesso para conversa:', conversationId);
+  console.log('Resumo gerado com sucesso para conversa:', conversationId);
 
-    return new Response(
-      JSON.stringify({ summary }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Erro ao resumir conversa:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return { summary };
+}));

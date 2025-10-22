@@ -1,20 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+Deno.serve(createPublicHandler('process-dlq', async (req, { supabase }) => {
 
     console.log('🔄 Processing Dead Letter Queue...');
 
@@ -94,27 +80,16 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    console.log(`✅ DLQ processing complete: ${successCount} success, ${failCount} failed`);
+  console.log(`✅ DLQ processing complete: ${successCount} success, ${failCount} failed`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processed: (failedActions?.length || 0),
-        success_count: successCount,
-        fail_count: failCount,
-        timestamp: new Date().toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Error processing DLQ:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
+  return {
+    success: true,
+    processed: (failedActions?.length || 0),
+    success_count: successCount,
+    fail_count: failCount,
+    timestamp: new Date().toISOString()
+  };
+}));
 
 async function retryWhatsApp(supabase: any, action: any) {
   const { phone, message } = action.action_payload;

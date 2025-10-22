@@ -1,26 +1,13 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+Deno.serve(createPublicHandler('ai-text-review', async (req, { supabase }) => {
+  const { text } = await req.json();
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (!text || text.trim().length === 0) {
+    throw new Error('Texto é obrigatório');
   }
 
-  try {
-    const { text } = await req.json();
-
-    if (!text || text.trim().length === 0) {
-      throw new Error('Texto é obrigatório');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
     const systemPrompt = `Você é um revisor de texto especializado em atendimento ao cliente.
 
@@ -72,37 +59,17 @@ Texto revisado:`;
       throw new Error('Nenhuma revisão gerada');
     }
 
-    // Log the review
-    await supabase.from('agent_metrics').insert({
-      agent_name: 'ai_text_review',
-      action_type: 'review_text',
-      success: true,
-      duration_ms: 0,
-      metadata: { 
-        original_length: text.length,
-        reviewed_length: reviewedText.length 
-      }
-    });
+  // Log the review
+  await supabase.from('agent_metrics').insert({
+    agent_name: 'ai_text_review',
+    action_type: 'review_text',
+    success: true,
+    duration_ms: 0,
+    metadata: { 
+      original_length: text.length,
+      reviewed_length: reviewedText.length 
+    }
+  });
 
-    return new Response(
-      JSON.stringify({ reviewedText }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error: any) {
-    console.error('Error reviewing text:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        reviewedText: null
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-});
+  return { reviewedText };
+}));

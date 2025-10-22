@@ -1,9 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 interface FlowStep {
   id: string;
@@ -23,21 +18,12 @@ interface ConversationPath {
   responses: Array<{ step: string; response: string }>;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supabase }) => {
+  const { agentType } = await req.json();
+
+  if (!agentType) {
+    throw new Error('agentType é obrigatório');
   }
-
-  try {
-    const { agentType } = await req.json();
-
-    if (!agentType) {
-      throw new Error('agentType é obrigatório');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log(`🔄 Buscando steps para agente: ${agentType}`);
 
@@ -110,29 +96,15 @@ Deno.serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    console.log(`✅ ${simulations.length} simulações salvas com sucesso!`);
+  console.log(`✅ ${simulations.length} simulações salvas com sucesso!`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        totalSimulations: simulations.length,
-        agentType,
-        avgQualityScore: simulations.reduce((acc, s) => acc + (s.quality_score || 0), 0) / simulations.length
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return {
+    success: true,
+    totalSimulations: simulations.length,
+    agentType,
+    avgQualityScore: simulations.reduce((acc, s) => acc + (s.quality_score || 0), 0) / simulations.length
+  };
+}));
 
 // Gerar todos os caminhos possíveis no fluxo
 function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
