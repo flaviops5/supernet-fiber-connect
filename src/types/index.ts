@@ -6,3 +6,4 @@
 export * from './ixc.types';
 export * from './agent.types';
 export * from './conversation.types';
+export * from './diagnostico.types';

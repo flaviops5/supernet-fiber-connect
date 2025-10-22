@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, AlertTriangle, CheckCircle, XCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export const DiagnosticoClienteCompleto = () => {
   const [loading, setLoading] = useState(false);
@@ -61,7 +62,7 @@ export const DiagnosticoClienteCompleto = () => {
           raw: clientData
         };
 
-        console.log("✓ Dados básicos:", diagnostico.etapas.dadosBasicos.data);
+        logger.debug("✓ Dados básicos:", { data: diagnostico.etapas.dadosBasicos.data });
       } catch (error: any) {
         diagnostico.etapas.dadosBasicos = {
           success: false,
@@ -71,7 +72,7 @@ export const DiagnosticoClienteCompleto = () => {
       }
 
       // ETAPA 2: Buscar status online via radusuarios
-      console.log("\n🔌 ETAPA 2: Verificando status online (radusuarios)...");
+      logger.info("🔌 ETAPA 2: Verificando status online (radusuarios)...");
       try {
         const { data: radiusData, error: radiusError } = await supabase.functions.invoke('ixc-proxy', {
           body: {
@@ -109,8 +110,8 @@ export const DiagnosticoClienteCompleto = () => {
           raw: radiusData
         };
 
-        console.log(`✓ Status Online: ${online.length} online, ${offline.length} offline`);
-        console.log("Registros detalhados:", diagnostico.etapas.statusOnline.registros);
+        logger.info(`✓ Status Online: ${online.length} online, ${offline.length} offline`);
+        logger.debug("Registros detalhados:", { registros: diagnostico.etapas.statusOnline.registros });
       } catch (error: any) {
         diagnostico.etapas.statusOnline = {
           success: false,
@@ -120,7 +121,7 @@ export const DiagnosticoClienteCompleto = () => {
       }
 
       // ETAPA 3: Buscar contratos
-      console.log("\n📜 ETAPA 3: Buscando contratos...");
+      logger.info("📜 ETAPA 3: Buscando contratos...");
       try {
         const { data: contractsData, error: contractsError } = await supabase.functions.invoke('ixc-proxy', {
           body: {
@@ -154,8 +155,8 @@ export const DiagnosticoClienteCompleto = () => {
           raw: contractsData
         };
 
-        console.log(`✓ Contratos encontrados: ${registros.length}`);
-        console.log("Detalhes:", diagnostico.etapas.contratos.contratos);
+        logger.info(`✓ Contratos encontrados: ${registros.length}`);
+        logger.debug("Detalhes:", { contratos: diagnostico.etapas.contratos.contratos });
       } catch (error: any) {
         diagnostico.etapas.contratos = {
           success: false,
@@ -165,7 +166,7 @@ export const DiagnosticoClienteCompleto = () => {
       }
 
       // ETAPA 4: Buscar títulos financeiros (TODOS)
-      console.log("\n💰 ETAPA 4: Buscando títulos financeiros...");
+      logger.info("💰 ETAPA 4: Buscando títulos financeiros...");
       try {
         const { data: titlesData, error: titlesError } = await supabase.functions.invoke('ixc-proxy', {
           body: {
@@ -223,8 +224,8 @@ export const DiagnosticoClienteCompleto = () => {
           raw: titlesData
         };
 
-        console.log(`✓ Títulos: ${registros.length} total, ${emAberto.length} em aberto, ${vencidos.length} vencidos`);
-        console.log("Títulos vencidos:", diagnostico.etapas.titulos.titulosVencidos);
+        logger.info(`✓ Títulos: ${registros.length} total, ${emAberto.length} em aberto, ${vencidos.length} vencidos`);
+        logger.debug("Títulos vencidos:", { titulos: diagnostico.etapas.titulos.titulosVencidos });
       } catch (error: any) {
         diagnostico.etapas.titulos = {
           success: false,
@@ -234,7 +235,7 @@ export const DiagnosticoClienteCompleto = () => {
       }
 
       // ETAPA 5: Análise da Lógica de Bloqueio e Redução de Velocidade
-      console.log("\n🧠 ETAPA 5: Analisando lógica de bloqueio e redução...");
+      logger.info("🧠 ETAPA 5: Analisando lógica de bloqueio e redução...");
       const analiseLogica: any = {
         codigosBloqueioProgramados: {
           'CA': 'Cancelado por Atraso',
@@ -394,19 +395,19 @@ export const DiagnosticoClienteCompleto = () => {
         inconsistencias: analiseLogica.inconsistencias
       };
 
-      console.log("\n📊 RESUMO DO DIAGNÓSTICO:");
-      console.log("========================");
-      console.log("Cliente encontrado:", diagnostico.resumo.clienteEncontrado);
-      console.log("Status online:", diagnostico.resumo.isOnline ? "ONLINE" : "OFFLINE");
-      console.log("Tem contratos:", diagnostico.resumo.temContratos);
-      console.log("Tem atraso:", diagnostico.resumo.temAtraso);
-      console.log("Títulos vencidos:", diagnostico.resumo.titulosVencidos);
-      console.log("Dias de atraso (mais antigo):", diagnostico.resumo.diasAtrasoMaisAntigo);
-      console.log("Valor total em atraso: R$", diagnostico.resumo.valorTotalAtraso.toFixed(2));
-      console.log("Está bloqueado (total):", diagnostico.resumo.estaBloqueado);
-      console.log("Está com redução de velocidade:", diagnostico.resumo.estaComReducao);
-      console.log("Política aplicada:", diagnostico.resumo.politicaBloqueio.tipo);
-      console.log("Inconsistências detectadas:", diagnostico.resumo.inconsistencias.length);
+      logger.info("📊 RESUMO DO DIAGNÓSTICO:", {
+        clienteEncontrado: diagnostico.resumo.clienteEncontrado,
+        statusOnline: diagnostico.resumo.isOnline ? "ONLINE" : "OFFLINE",
+        temContratos: diagnostico.resumo.temContratos,
+        temAtraso: diagnostico.resumo.temAtraso,
+        titulosVencidos: diagnostico.resumo.titulosVencidos,
+        diasAtrasoMaisAntigo: diagnostico.resumo.diasAtrasoMaisAntigo,
+        valorTotalAtraso: diagnostico.resumo.valorTotalAtraso.toFixed(2),
+        estaBloqueado: diagnostico.resumo.estaBloqueado,
+        estaComReducao: diagnostico.resumo.estaComReducao,
+        politicaAplicada: diagnostico.resumo.politicaBloqueio.tipo,
+        inconsistenciasTotal: diagnostico.resumo.inconsistencias.length
+      });
 
       setResult(diagnostico);
 
