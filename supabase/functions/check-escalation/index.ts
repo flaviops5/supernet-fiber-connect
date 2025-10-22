@@ -1,11 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { z } from "https://deno.land/x/zod/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // -------- utils --------
 const log = (level: "info" | "warn" | "error", msg: string, meta: Record<string, unknown> = {}) =>
@@ -32,39 +27,23 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 3, baseDelayMs = 300):
   for (let i = 0; i < tries; i++) {
     try { return await fn(); } catch (e) {
       lastErr = e;
-      await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, i))); // 300, 600, 1200
+      await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, i)));
     }
   }
   throw lastErr;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createAuthenticatedHandler(
+  'check-escalation',
+  async (req, { supabase, user }) => {
     const raw = await req.json().catch(() => null);
     const body = BodySchema.safeParse(raw);
     if (!body.success) {
       log("warn", "invalid_body", { issues: body.error.format() });
-      return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error("Invalid request body");
     }
 
     const { conversation_id, message_content, current_department } = body.data;
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    // ⚠️ Use a ANON KEY aqui! A RLS vai proteger as tabelas.
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, anonKey, { 
-      global: { 
-        headers: { 
-          Authorization: req.headers.get("Authorization") ?? "" 
-        } 
-      } 
-    });
 
     // carrega settings + regras em paralelo
     const [settingsRes, rulesRes] = await Promise.all([
@@ -84,14 +63,10 @@ serve(async (req) => {
     const rules = rulesRes.data ?? [];
 
     if (!settings?.enabled) {
-      return new Response(JSON.stringify({ should_escalate: false, reason: "Escalation disabled" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { should_escalate: false, reason: "Escalation disabled" };
     }
     if (rules.length === 0) {
-      return new Response(JSON.stringify({ should_escalate: false, reason: "No rules found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { should_escalate: false, reason: "No rules found" };
     }
 
     const msgNorm = normalize(message_content);
@@ -150,23 +125,16 @@ serve(async (req) => {
         continue;
       }
 
-      return new Response(JSON.stringify({
+      return {
         should_escalate: true,
         escalation_mode: settings.mode,
         target_department: rule.to_department,
         target_agent_id: target.user_id,
         rule_id: rule.id,
         matched_keywords: keywords.filter(k => msgNorm.includes(normalize(k))),
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      };
     }
 
-    return new Response(JSON.stringify({ should_escalate: false, reason: "No matching rules" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    log("error", "unexpected_error", { error: String(error) });
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return { should_escalate: false, reason: "No matching rules" };
   }
-});
+));

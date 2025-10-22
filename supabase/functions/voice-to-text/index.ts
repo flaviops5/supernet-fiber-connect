@@ -1,10 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts"
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
 // Process base64 in chunks to prevent memory issues
 function processBase64Chunks(base64String: string, chunkSize = 32768) {
@@ -36,13 +31,10 @@ function processBase64Chunks(base64String: string, chunkSize = 32768) {
   return result;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  try {
-    const { audio, format = 'webm' } = await req.json()
+Deno.serve(createPublicHandler(
+  'voice-to-text',
+  async (req, { supabase }) => {
+    const { audio, format = 'webm' } = await req.json();
     
     if (!audio) {
       throw new Error('No audio data provided')
@@ -76,22 +68,9 @@ serve(async (req) => {
       throw new Error(`OpenAI API error: ${errorText}`)
     }
 
-    const result = await response.json()
+    const result = await response.json();
     console.log('Transcription successful:', result.text);
 
-    return new Response(
-      JSON.stringify({ text: result.text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in voice-to-text:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return { text: result.text };
   }
-})
+));

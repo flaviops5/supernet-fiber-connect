@@ -1,10 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
 interface CepLookupRequest {
   cep?: string;
@@ -12,28 +7,13 @@ interface CepLookupRequest {
   action: 'check_coverage' | 'list_plans' | 'find_region';
 }
 
-serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  try {
-    console.log('Chatbot CEP lookup request received')
+Deno.serve(createPublicHandler(
+  'chatbot-cep-lookup',
+  async (req, { supabase }) => {
+    console.log('Chatbot CEP lookup request received');
     
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    const body = await req.json()
-    console.log('Request body:', body)
+    const body = await req.json();
+    console.log('Request body:', body);
 
     // Extract CEP from message if not provided directly
     let cep = body.cep
@@ -59,37 +39,20 @@ serve(async (req) => {
       default:
         return await checkCepCoverage(supabase, cep, body.message)
     }
-
-  } catch (error) {
-    console.error('Error in chatbot CEP lookup:', error)
-    return new Response(
-      JSON.stringify({ 
-        response: 'Desculpe, não consegui processar sua consulta no momento. Tente novamente ou entre em contato pelo WhatsApp (61) 99999-9999.',
-        error: error instanceof Error ? error.message : String(error)
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
   }
-})
+));
 
 async function checkCepCoverage(supabase: any, cep: string, originalMessage: string) {
-  try {
-    if (!cep || cep.length !== 8) {
-      return new Response(
-        JSON.stringify({ 
-          response: `Para verificar a cobertura na sua região, preciso do seu CEP completo com 8 dígitos. 
+  if (!cep || cep.length !== 8) {
+    return { 
+      response: `Para verificar a cobertura na sua região, preciso do seu CEP completo com 8 dígitos. 
 
 Por exemplo: "Meu CEP é 70000-000" ou "Tenho cobertura em 71000000?"
 
 Você pode me informar seu CEP?`,
-          requires_cep: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+      requires_cep: true
+    };
+  }
 
     console.log('Checking coverage for CEP:', cep)
 
@@ -115,10 +78,9 @@ Você pode me informar seu CEP?`,
       .single()
 
     if (cepError || !cepData) {
-      console.log('No coverage found for CEP:', cep)
-      return new Response(
-        JSON.stringify({ 
-          response: `❌ **Infelizmente não temos cobertura para o CEP ${formatCep(cep)}** na região consultada.
+      console.log('No coverage found for CEP:', cep);
+      return { 
+        response: `❌ **Infelizmente não temos cobertura para o CEP ${formatCep(cep)}** na região consultada.
 
 🌟 **Mas temos uma ótima notícia!** Estamos sempre expandindo nossa rede de fibra óptica.
 
@@ -129,11 +91,9 @@ Você pode me informar seu CEP?`,
 Deixe seu contato e te avisaremos assim que a fibra óptica chegar na sua região! 
 
 Você também pode consultar outros CEPs próximos se desejar.`,
-          has_coverage: false,
-          cep: formatCep(cep)
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        has_coverage: false,
+        cep: formatCep(cep)
+      };
     }
 
     // Get available plans for this CEP
@@ -221,21 +181,13 @@ Você também pode consultar outros CEPs próximos se desejar.`,
       response += `• Telefone: (61) 3333-3333`
     }
 
-    return new Response(
-      JSON.stringify({ 
-        response,
-        has_coverage: true,
-        cep: formatCep(cep),
-        region: cepData.region_name,
-        plans: plans.length
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in checkCepCoverage:', error)
-    throw error
-  }
+    return { 
+      response,
+      has_coverage: true,
+      cep: formatCep(cep),
+      region: cepData.region_name,
+      plans: plans.length
+    };
 }
 
 async function listAvailablePlans(supabase: any, cep?: string) {
@@ -302,27 +254,15 @@ async function listAvailablePlans(supabase: any, cep?: string) {
     response += `• WhatsApp: (61) 99999-9999\n`
     response += `• Telefone: (61) 3333-3333`
 
-    return new Response(
-      JSON.stringify({ response }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in listAvailablePlans:', error)
-    throw error
-  }
+    return { response };
 }
 
 async function findRegionInfo(supabase: any, cep: string) {
-  try {
-    if (!cep || cep.length !== 8) {
-      return new Response(
-        JSON.stringify({ 
-          response: 'Para consultar informações da região, preciso de um CEP válido com 8 dígitos.' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+  if (!cep || cep.length !== 8) {
+    return { 
+      response: 'Para consultar informações da região, preciso de um CEP válido com 8 dígitos.' 
+    };
+  }
 
     const { data: regions, error } = await supabase
       .from('coverage_areas')
@@ -342,15 +282,7 @@ async function findRegionInfo(supabase: any, cep: string) {
     response += `• WhatsApp: (61) 99999-9999\n`
     response += `• Telefone: (61) 3333-3333`
 
-    return new Response(
-      JSON.stringify({ response }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in findRegionInfo:', error)
-    throw error
-  }
+    return { response };
 }
 
 function formatCep(cep: string): string {

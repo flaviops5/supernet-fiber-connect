@@ -31,6 +31,14 @@
 3. ✅ **support-tech-agent** - Suporte técnico (já tinha error handler)
 4. ✅ **support-financial-agent** - Suporte financeiro (já tinha error handler)
 
+### Utilitários e Automação (Grupo 1.3)
+28. ✅ **generate-ai-faq** - Gera FAQs com IA
+29. ✅ **chatbot-cep-lookup** - Consulta CEP no chatbot
+30. ✅ **check-due-invoices** - Verifica faturas vencendo
+31. ✅ **check-escalation** - Sistema de escalonamento
+32. ✅ **generate-contract-pdf** - Gera PDF de contrato
+33. ✅ **voice-to-text** - Transcrição de áudio
+
 ## 🔄 Funções com Proteção Parcial (Error Handler + Metrics)
 
 ### Agentes com Streaming
@@ -71,9 +79,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 29 (35%)
+- **Com proteção completa:** 35 (42%)
 - **Com proteção parcial:** 4 (5%)
-- **Pendentes:** 50 (60%)
+- **Pendentes:** 44 (53%)
 
 ## 🎯 Próximos Passos
 

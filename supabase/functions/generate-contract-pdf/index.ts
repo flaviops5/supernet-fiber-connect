@@ -1,10 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
 interface ContractData {
   appointmentId: string;
@@ -22,27 +17,12 @@ interface ContractData {
   contractNumber: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'generate-contract-pdf',
+  async (req, { supabase }) => {
     const contractData: ContractData = await req.json();
     
     console.log('Generating contract PDF for:', contractData.planName);
-
-    // Criar conexão com Supabase
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
 
     // Gerar número do contrato se não fornecido
     let contractNumber = contractData.contractNumber;
@@ -83,59 +63,25 @@ const handler = async (req: Request): Promise<Response> => {
       // Usar template padrão
       const contractHTML = generateContractHTML(contractData, contractNumber, defaultTemplate.template_content);
       
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          contractHTML,
-          contractNumber,
-          message: 'Contract HTML generated with default template'
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders,
-          },
-        }
-      );
+      return { 
+        success: true,
+        contractHTML,
+        contractNumber,
+        message: 'Contract HTML generated with default template'
+      };
     }
 
     // Gerar HTML do contrato substituindo variáveis
     const contractHTML = generateContractHTML(contractData, contractNumber, templateData.template_content);
     
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        contractHTML,
-        contractNumber,
-        message: 'Contract HTML generated successfully'
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
-      }
-    );
-
-  } catch (error: any) {
-    console.error('Error generating contract PDF:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to generate contract PDF',
-        details: error.message 
-      }),
-      {
-        status: 500,
-        headers: { 
-          'Content-Type': 'application/json', 
-          ...corsHeaders 
-        },
-      }
-    );
+    return { 
+      success: true,
+      contractHTML,
+      contractNumber,
+      message: 'Contract HTML generated successfully'
+    };
   }
-};
+));
 
 function generateContractHTML(data: ContractData, contractNumber: string, templateContent: string): string {
   const currentDate = new Date().toLocaleDateString('pt-BR');
@@ -185,5 +131,3 @@ function numberToWords(num: number): string {
   
   return result + ' reais';
 }
-
-serve(handler);

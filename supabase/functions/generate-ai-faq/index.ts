@@ -1,27 +1,13 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'generate-ai-faq',
+  async (req, { supabase }) => {
     const { theme } = await req.json();
 
     if (!theme || theme.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Theme is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      throw new Error('Theme is required');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -141,27 +127,9 @@ Gere 3-5 FAQs completas baseadas neste tema. Pense em dúvidas reais que cliente
 
     console.log(`Successfully generated ${validatedFAQs.length} FAQs`);
 
-    return new Response(
-      JSON.stringify({ 
-        faqs: validatedFAQs,
-        theme: theme 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error) {
-    console.error('Error in generate-ai-faq:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : undefined
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return { 
+      faqs: validatedFAQs,
+      theme: theme 
+    };
   }
-});
+));
