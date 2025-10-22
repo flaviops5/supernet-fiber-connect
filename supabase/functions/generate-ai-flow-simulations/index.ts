@@ -1,23 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'generate-ai-flow-simulations',
+  async (req, { supabase }) => {
     const { agentType, theme, numVariations = 3 } = await req.json();
     
     if (!agentType || !theme) {
-      return new Response(
-        JSON.stringify({ error: 'agentType and theme are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('agentType and theme are required');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -121,25 +110,6 @@ Retorne JSON no formato:
       throw new Error('Invalid JSON response from AI');
     }
 
-    return new Response(
-      JSON.stringify(parsedContent),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
-
-  } catch (error) {
-    console.error('Error in generate-ai-flow-simulations:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        conversations: []
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return parsedContent;
   }
-});
+));

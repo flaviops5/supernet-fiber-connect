@@ -1,22 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'generate-blog-content',
+  async (req, { supabase }) => {
     const { prompt, type, category } = await req.json();
 
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
@@ -82,20 +72,9 @@ Use formato Markdown para formatação.`;
     const data = await response.json();
     const generatedContent = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ 
+    return { 
       content: generatedContent,
       success: true 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Error in generate-blog-content function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Erro desconhecido',
-      success: false 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    };
   }
-});
+));

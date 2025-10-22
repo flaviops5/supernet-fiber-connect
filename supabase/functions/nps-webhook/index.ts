@@ -1,23 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
+Deno.serve(createPublicHandler(
+  'nps-webhook',
+  async (req, { supabase }) => {
     const payload = await req.json();
     console.log('NPS Webhook recebido:', payload);
 
@@ -35,26 +20,12 @@ serve(async (req) => {
     } = payload;
 
     if (!campaign_id || !recipient_id || !customer_name || score === undefined) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Campos obrigatórios: campaign_id, recipient_id, customer_name, score' 
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      throw new Error('Campos obrigatórios: campaign_id, recipient_id, customer_name, score');
     }
 
     // Validar score (0-10)
     if (score < 0 || score > 10) {
-      return new Response(
-        JSON.stringify({ error: 'Score deve estar entre 0 e 10' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      throw new Error('Score deve estar entre 0 e 10');
     }
 
     // Calcular categoria baseado no score
@@ -110,33 +81,14 @@ serve(async (req) => {
     // 1. Marcar detractores para follow-up (mark_detractor_followup)
     // 2. Atualizar estatísticas NPS (update_nps_stats)
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Resposta NPS processada com sucesso',
-        data: {
-          id: npsResponse.id,
-          category,
-          follow_up_needed: category === 'detractor',
-        }
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    return { 
+      success: true, 
+      message: 'Resposta NPS processada com sucesso',
+      data: {
+        id: npsResponse.id,
+        category,
+        follow_up_needed: category === 'detractor',
       }
-    );
-
-  } catch (error) {
-    console.error('Erro no webhook NPS:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Erro ao processar resposta NPS',
-        details: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    };
   }
-});
+));
