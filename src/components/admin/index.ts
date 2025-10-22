@@ -11,3 +11,5 @@ export { default as MessageShortcutsManager } from './MessageShortcutsManager';
 export { default as ClosureMessagesManager } from './ClosureMessagesManager';
 export { default as AgentDepartmentManagement } from './AgentDepartmentManagement';
 export { default as EscalationSettings } from './EscalationSettings';
+export { default as Dashboard } from './Dashboard';
+export { default as ReviewsManagement } from './ReviewsManagement';
