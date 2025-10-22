@@ -60,8 +60,6 @@ export const IXCContractsList = () => {
 
         await loadLocalPlans();
 
-        console.log('IXC Plans Response:', data);
-
         if ((data.total || 0) === 0) {
           toast({
             title: "Nenhum plano encontrado",
@@ -103,7 +101,6 @@ export const IXCContractsList = () => {
           title: "Planos sincronizados",
           description: `${data.synced} planos sincronizados com sucesso${data.errors > 0 ? ` (${data.errors} erros)` : ''}.`,
         });
-        console.log('Sync results:', data.results);
       } else {
         throw new Error(data.error || 'Erro ao sincronizar planos');
       }

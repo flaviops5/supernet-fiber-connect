@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export function IXCFunctionsTester() {
   const [testing, setTesting] = useState(false);
@@ -14,16 +15,15 @@ export function IXCFunctionsTester() {
     setResult(null);
     
     try {
-      console.log("🔍 Iniciando teste de todas as funções IXC...");
+      logger.info('Starting IXC functions test');
       
       const { data, error } = await supabase.functions.invoke('test-all-ixc-functions');
       
       if (error) {
-        console.error("❌ Erro ao testar funções:", error);
+        logger.error('IXC functions test failed', error);
         toast.error("Erro ao testar funções");
         setResult({ success: false, error: error.message });
       } else {
-        console.log("📥 Resultado dos testes:", data);
         setResult(data);
         
         if (data.summary.failed === 0) {
@@ -33,7 +33,7 @@ export function IXCFunctionsTester() {
         }
       }
     } catch (error) {
-      console.error("❌ Erro inesperado:", error);
+      logger.error('Unexpected error during IXC functions test', error as Error);
       toast.error("Erro inesperado ao testar funções");
       setResult({ 
         success: false, 

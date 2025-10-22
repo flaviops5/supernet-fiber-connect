@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -67,18 +68,16 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         };
         
         const agent = agentMap[data.department] || 'routing';
-        console.log('Loaded conversation agent:', agent, 'from department:', data.department);
         setCurrentAgent(agent);
       }
     } catch (error) {
-      console.error('Error loading conversation agent:', error);
+      // Error loading conversation agent
     }
   };
 
   const loadConversationMessages = async (convId?: string) => {
     const targetId = convId || conversationId;
     if (!targetId) {
-      console.warn('⚠️ Sem conversationId para carregar mensagens');
       return;
     }
 
@@ -99,7 +98,7 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         })));
       }
     } catch (error) {
-      console.error('Error loading messages:', error);
+      logger.error('Error loading messages', error as Error);
     }
   };
 
@@ -138,7 +137,6 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         
         activeConversationId = newConversation.id;
         setConversationId(activeConversationId);
-        console.log('Nova conversa criada:', activeConversationId);
       }
 
       let finalAgent = currentAgent;
@@ -163,7 +161,6 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
 
         // Se já tem departamento atribuído, enviar direto para o agente especializado
         if (conversation?.department) {
-          console.log('📨 Continuando com agente do departamento:', conversation.department);
           
           // Salvar mensagem do cliente
           await supabase.from('conversation_messages').insert({
@@ -185,12 +182,12 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
                 customer_cpf: customerData?.cpf,
                 message: userMessage.content,
               },
-            });
+          });
 
-            if (agentError) {
-              console.error('❌ Erro ao chamar agente:', agentError);
-              throw agentError;
-            }
+          if (agentError) {
+            logger.error('Error calling agent', agentError);
+            throw agentError;
+          }
 
             // Atualizar estado do agente
             setCurrentAgent(agentFunction);
@@ -219,16 +216,13 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
           }
         });
 
-        if (routingError) throw routingError;
+      if (routingError) throw routingError;
 
-        console.log('🧭 Routing response:', routingData);
+      // Após resposta do routing-agent, sempre recarregar mensagens salvas no banco
+      await loadConversationMessages(activeConversationId);
 
-        // Após resposta do routing-agent, sempre recarregar mensagens salvas no banco
-        await loadConversationMessages(activeConversationId);
-
-        // Se foi transferido para departamento especializado, chamar o agente correto
-        if (routingData.targetDepartment && routingData.targetDepartment !== 'cloe') {
-          console.log('🎯 Transferindo para departamento:', routingData.targetDepartment);
+      // Se foi transferido para departamento especializado, chamar o agente correto
+      if (routingData.targetDepartment && routingData.targetDepartment !== 'cloe') {
           
           let agentFunction = '';
           if (routingData.targetDepartment === 'comercial') agentFunction = 'sales-agent';
@@ -236,14 +230,13 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
           else if (routingData.targetDepartment === 'financeiro') agentFunction = 'support-financial-agent';
 
           // Atualizar estado do agente
-          if (agentFunction) {
-            setCurrentAgent(agentFunction);
-          }
+        if (agentFunction) {
+          setCurrentAgent(agentFunction);
+        }
 
-          if (agentFunction) {
-            console.log('📞 Invocando agente:', agentFunction);
-            try {
-              const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
+        if (agentFunction) {
+          try {
+            const { data: agentResponse, error: agentError } = await supabase.functions.invoke(agentFunction, {
                 body: {
                   messages: [{ role: 'user', content: userMessage.content }],
                   userContext: {
@@ -252,14 +245,12 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
                     customerData,
                   },
                 },
-              });
+            });
 
-              console.log('🤖 Resposta do agente:', agentResponse);
-              
-              if (agentError) {
-                console.error('❌ Erro ao chamar agente:', agentError);
-                throw agentError;
-              }
+            if (agentError) {
+              logger.error('Error calling specialized agent', agentError);
+              throw agentError;
+            }
 
               // Sales-agent retorna mensagem diretamente ou em um objeto
               const agentMessage = typeof agentResponse === 'string' 
@@ -276,18 +267,18 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
                 });
               }
 
-              await loadConversationMessages(activeConversationId);
-            } catch (error) {
-              console.error('❌ Erro ao chamar agente especializado:', error);
-            }
+            await loadConversationMessages(activeConversationId);
+          } catch (error) {
+            logger.error('Error calling specialized agent', error as Error);
           }
         }
+      }
 
         setIsLoading(false);
         return;
 
     } catch (error: any) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message', error);
       toast({
         title: 'Erro ao enviar mensagem',
         description: error.message || 'Tente novamente',

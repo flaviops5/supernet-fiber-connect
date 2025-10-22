@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import WhatsAppConversations from "./WhatsAppConversations";
+import { logger } from "@/lib/logger";
 import WhatsAppTester from "./WhatsAppTester";
 import WhatsAppFlowTest from "./WhatsAppFlowTest";
 import { SendPaymentTest } from "./SendPaymentTest";
@@ -68,9 +69,7 @@ export default function WhatsAppSetup() {
   const testWebhook = async () => {
     setTestingWebhook(true);
     try {
-      console.log('🧪 Iniciando teste de integração WhatsApp...');
-      console.log('📱 Enviando mensagem para:', "5561933008252");
-      console.log('📦 Instância:', instanceName);
+      logger.info('Testing WhatsApp integration', { instanceName });
       
       const { data, error } = await supabase.functions.invoke('send-whatsapp-message', {
         body: {
@@ -80,10 +79,8 @@ export default function WhatsAppSetup() {
         }
       });
 
-      console.log('📥 Resposta completa:', { data, error });
-
       if (error) {
-        console.error('❌ Erro da função:', error);
+        logger.error('WhatsApp test failed', error);
         throw new Error(error.message || 'Erro ao chamar a função');
       }
 
@@ -92,10 +89,8 @@ export default function WhatsAppSetup() {
         throw new Error('Resposta vazia da função');
       }
 
-      console.log('📊 Status da resposta:', data);
-
       // Verificar múltiplos formatos de sucesso
-      const isSuccess = 
+      const isSuccess =
         data?.status === 'success' || 
         data?.message?.includes('success') ||
         data?.data?.status === 'SENT';

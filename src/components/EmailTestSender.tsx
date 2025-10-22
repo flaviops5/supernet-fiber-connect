@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Send, Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface EmailTemplate {
   id: string;
@@ -42,7 +43,7 @@ export const EmailTestSender = () => {
         variables: Array.isArray(t.variables) ? t.variables as string[] : []
       })));
     } catch (error) {
-      console.error('Error loading templates:', error);
+      logger.error('Error loading templates', error as Error);
       toast.error('Erro ao carregar templates');
     } finally {
       setLoading(false);
@@ -93,9 +94,8 @@ export const EmailTestSender = () => {
       if (error) throw error;
 
       toast.success('Email de teste enviado com sucesso!');
-      console.log('Email sent:', data);
     } catch (error: any) {
-      console.error('Error sending email:', error);
+      logger.error('Error sending email', error);
       toast.error(error.message || 'Erro ao enviar email de teste');
     } finally {
       setSending(false);

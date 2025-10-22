@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Search, CheckCircle2, XCircle, AlertCircle, Activity, ChevronDown, ChevronRight } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface EndpointTest {
   endpoint: string;
@@ -101,13 +102,11 @@ export const IXCEndpointTester = () => {
     setResults(null);
 
     try {
-      console.log('🔍 Testando endpoints:', IXC_ENDPOINTS.map(e => e.endpoint));
+      logger.info('Testing IXC GPON endpoints');
       
       const { data, error } = await supabase.functions.invoke('ixc-discover-gpon-endpoints', {
         body: { endpoints: IXC_ENDPOINTS.map(e => e.endpoint) }
       });
-
-      console.log('📦 Resposta da API:', data);
 
       if (error) throw error;
 

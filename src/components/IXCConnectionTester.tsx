@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, Info } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export function IXCConnectionTester() {
   const [testing, setTesting] = useState(false);
@@ -14,16 +15,15 @@ export function IXCConnectionTester() {
     setResult(null);
     
     try {
-      console.log("🔍 Iniciando teste de conexão IXC...");
+      logger.info('Starting IXC connection test');
       
       const { data, error } = await supabase.functions.invoke('test-ixc-connection');
       
       if (error) {
-        console.error("❌ Erro ao testar conexão:", error);
+        logger.error('IXC connection test failed', error);
         toast.error("Erro ao testar conexão");
         setResult({ success: false, error: error.message });
       } else {
-        console.log("📥 Resultado do teste:", data);
         setResult(data);
         
         if (data.success) {
@@ -33,7 +33,7 @@ export function IXCConnectionTester() {
         }
       }
     } catch (error) {
-      console.error("❌ Erro inesperado:", error);
+      logger.error('Unexpected error during IXC connection test', error as Error);
       toast.error("Erro inesperado ao testar conexão");
       setResult({ 
         success: false, 

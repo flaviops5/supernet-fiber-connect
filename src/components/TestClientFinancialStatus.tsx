@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export const TestClientFinancialStatus = () => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export const TestClientFinancialStatus = () => {
     try {
       const clientId = "313";
       
-      console.log("🔍 Verificando status do cliente IXC:", clientId);
+      logger.info('Checking client financial status', { clientId });
 
       // 1. Buscar status dos contratos
       const { data: contractsData } = await supabase.functions.invoke('ixc-integration', {
@@ -25,8 +26,6 @@ export const TestClientFinancialStatus = () => {
         })
       });
 
-      console.log("📋 Contratos:", contractsData);
-
       // 2. Buscar títulos financeiros
       const { data: titlesData } = await supabase.functions.invoke('ixc-integration', {
         body: JSON.stringify({
@@ -34,8 +33,6 @@ export const TestClientFinancialStatus = () => {
           params: { customerId: clientId }
         })
       });
-
-      console.log("💰 Títulos financeiros:", titlesData);
 
       setResult({
         clientId,
@@ -46,7 +43,7 @@ export const TestClientFinancialStatus = () => {
       });
 
     } catch (error: any) {
-      console.error("❌ Erro ao verificar status:", error);
+      logger.error('Error checking client financial status', error);
       setResult({
         error: error.message || "Erro desconhecido",
         timestamp: new Date().toISOString()
