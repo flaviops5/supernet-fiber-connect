@@ -1,40 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { simulateMassOutage, clearMassOutage } from "../_shared/mass-outage-helper.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+Deno.serve(createPublicHandler('simulate-mass-outage', async (req) => {
+  const { action } = await req.json();
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (action === "activate") {
+    return await simulateMassOutage();
+  } else if (action === "deactivate") {
+    return await clearMassOutage();
+  } else {
+    throw new Error("Invalid action. Use 'activate' or 'deactivate'");
   }
-
-  try {
-    const { action } = await req.json();
-
-    let result;
-    if (action === "activate") {
-      result = await simulateMassOutage();
-    } else if (action === "deactivate") {
-      result = await clearMassOutage();
-    } else {
-      throw new Error("Invalid action. Use 'activate' or 'deactivate'");
-    }
-
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error in simulate-mass-outage:", error);
-    return new Response(
-      JSON.stringify({ ok: false, error: error.message }),
-      { 
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
-    );
-  }
-});
+}));

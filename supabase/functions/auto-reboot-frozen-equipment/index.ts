@@ -9,13 +9,8 @@
 // - Cooldown: 1x por dia por equipamento
 // - Exclui horário 1h-6h
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface RadiusUser {
   id: string;
@@ -36,33 +31,22 @@ interface ClientStatus {
   bloqueado_financeiro: string; // 'S' ou 'N'
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { supabase }) => {
+  console.log('🔄 Iniciando verificação de equipamentos travados...');
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+
+  // Verificar horário (não executar entre 1h-6h)
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour >= 1 && hour < 6) {
+    console.log('⏰ Horário de madrugada (1h-6h) - ignorando verificação');
+    return { 
+      skipped: true, 
+      reason: 'Horário de madrugada (1h-6h)' 
+    };
   }
-
-  try {
-    console.log('🔄 Iniciando verificação de equipamentos travados...');
-
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // Verificar horário (não executar entre 1h-6h)
-    const now = new Date();
-    const hour = now.getHours();
-    if (hour >= 1 && hour < 6) {
-      console.log('⏰ Horário de madrugada (1h-6h) - ignorando verificação');
-      return new Response(
-        JSON.stringify({ 
-          skipped: true, 
-          reason: 'Horário de madrugada (1h-6h)' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // 1. Buscar clientes online do IXC
     console.log('📡 Consultando clientes online no IXC...');
@@ -127,18 +111,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`🚨 ${suspectClients.length} clientes com banda suspeita (< 900 Kbps)`);
+  console.log(`🚨 ${suspectClients.length} clientes com banda suspeita (< 900 Kbps)`);
 
-    if (suspectClients.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          message: 'Nenhum equipamento com problema detectado',
-          checked: onlineUsers.length,
-          suspects: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  if (suspectClients.length === 0) {
+    return { 
+      message: 'Nenhum equipamento com problema detectado',
+      checked: onlineUsers.length,
+      suspects: 0
+    };
+  }
 
     const results = [];
 
@@ -408,30 +389,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('\n✅ Verificação concluída!');
-    console.log(`📊 Resultados: ${JSON.stringify(results, null, 2)}`);
+  console.log('\n✅ Verificação concluída!');
+  console.log(`📊 Resultados: ${JSON.stringify(results, null, 2)}`);
 
-    return new Response(
-      JSON.stringify({
-        message: 'Verificação concluída',
-        checked: onlineUsers.length,
-        suspects: suspectClients.length,
-        results
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Erro na função:', error.message);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return {
+    message: 'Verificação concluída',
+    checked: onlineUsers.length,
+    suspects: suspectClients.length,
+    results
+  };
+}));

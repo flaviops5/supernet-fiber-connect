@@ -1,10 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { recordMetric } from '../_shared/metrics-helper.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from '../_shared/base-handler.ts';
 
 interface MaintenanceTask {
   id: string;
@@ -17,95 +11,72 @@ interface MaintenanceTask {
   metadata: any;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+Deno.serve(createPublicHandler('network-maintenance-executor', async (req, { supabase }) => {
+  console.log('🔧 Iniciando ciclo de manutenção inteligente');
+
+  // Buscar configurações
+  const { data: settings } = await supabase
+    .from('maintenance_settings')
+    .select('*')
+    .single();
+
+  if (!settings?.enabled) {
+    console.log('⏸️ Sistema de manutenção desabilitado');
+    return { skipped: true };
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  // Verificar estabilidade da rede (últimos 10 min sem falhas críticas)
+  const { data: recentFailures } = await supabase
+    .from('maintenance_execution_log')
+    .select('id')
+    .eq('status', 'failed')
+    .eq('priority', 'high')
+    .gte('created_at', new Date(Date.now() - settings.network_stable_threshold_minutes * 60000).toISOString());
 
-    console.log('🔧 Iniciando ciclo de manutenção inteligente');
+  const networkStable = !recentFailures || recentFailures.length === 0;
 
-    // Buscar configurações
-    const { data: settings } = await supabase
-      .from('maintenance_settings')
-      .select('*')
-      .single();
+  // PRIORIDADE ALTA - Sempre executar
+  const highPriorityResults = await executeTasks(supabase, 'high', settings);
 
-    if (!settings?.enabled) {
-      console.log('⏸️ Sistema de manutenção desabilitado');
-      return new Response(JSON.stringify({ skipped: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verificar estabilidade da rede (últimos 10 min sem falhas críticas)
-    const { data: recentFailures } = await supabase
-      .from('maintenance_execution_log')
-      .select('id')
-      .eq('status', 'failed')
-      .eq('priority', 'high')
-      .gte('created_at', new Date(Date.now() - settings.network_stable_threshold_minutes * 60000).toISOString());
-
-    const networkStable = !recentFailures || recentFailures.length === 0;
-
-    // PRIORIDADE ALTA - Sempre executar
-    const highPriorityResults = await executeTasks(supabase, 'high', settings);
-
-    // Se houve falha crítica, parar aqui
-    const criticalFailure = highPriorityResults.some(r => r.status === 'failed');
-    if (criticalFailure) {
-      console.log('🚨 Falha crítica detectada - interrompendo prioridades inferiores');
-      await sendAlert(supabase, settings, 'Falha crítica na manutenção de prioridade alta');
-      return new Response(JSON.stringify({
-        success: false,
-        high_priority: highPriorityResults,
-        stopped_due_to_critical_failure: true
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // PRIORIDADE MÉDIA - Executar se rede estável
-    let mediumPriorityResults = [];
-    if (networkStable) {
-      mediumPriorityResults = await executeTasks(supabase, 'medium', settings);
-    } else {
-      console.log('⚠️ Rede instável - pulando prioridade média');
-    }
-
-    // PRIORIDADE BAIXA - Executar se sobrar recursos
-    let lowPriorityResults = [];
-    if (networkStable && !criticalFailure) {
-      lowPriorityResults = await executeTasks(supabase, 'low', settings);
-    } else {
-      console.log('⏭️ Pulando prioridade baixa');
-    }
-
-    // Verificar padrões de falhas recorrentes
-    await escalateRecurringFailures(supabase, settings);
-
-    return new Response(JSON.stringify({
-      success: true,
-      network_stable: networkStable,
+  // Se houve falha crítica, parar aqui
+  const criticalFailure = highPriorityResults.some(r => r.status === 'failed');
+  if (criticalFailure) {
+    console.log('🚨 Falha crítica detectada - interrompendo prioridades inferiores');
+    await sendAlert(supabase, settings, 'Falha crítica na manutenção de prioridade alta');
+    return {
+      success: false,
       high_priority: highPriorityResults,
-      medium_priority: mediumPriorityResults,
-      low_priority: lowPriorityResults
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-  } catch (error: any) {
-    console.error('❌ Erro no executor de manutenção:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+      stopped_due_to_critical_failure: true
+    };
   }
-});
+
+  // PRIORIDADE MÉDIA - Executar se rede estável
+  let mediumPriorityResults = [];
+  if (networkStable) {
+    mediumPriorityResults = await executeTasks(supabase, 'medium', settings);
+  } else {
+    console.log('⚠️ Rede instável - pulando prioridade média');
+  }
+
+  // PRIORIDADE BAIXA - Executar se sobrar recursos
+  let lowPriorityResults = [];
+  if (networkStable && !criticalFailure) {
+    lowPriorityResults = await executeTasks(supabase, 'low', settings);
+  } else {
+    console.log('⏭️ Pulando prioridade baixa');
+  }
+
+  // Verificar padrões de falhas recorrentes
+  await escalateRecurringFailures(supabase, settings);
+
+  return {
+    success: true,
+    network_stable: networkStable,
+    high_priority: highPriorityResults,
+    medium_priority: mediumPriorityResults,
+    low_priority: lowPriorityResults
+  };
+}));
 
 async function executeTasks(supabase: any, priority: string, settings: any) {
   const now = new Date();

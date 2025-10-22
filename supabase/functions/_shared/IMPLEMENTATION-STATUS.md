@@ -48,6 +48,16 @@
 33. ✅ **graylog-logs-export** - Exporta logs para Graylog
 34. ✅ **test-equipment-connectivity** - Testa conectividade de equipamentos
 
+### Reboot e Mass Outage (Grupo 1.5)
+35. ✅ **reboot-client-equipment** - Reinicia equipamento do cliente
+36. ✅ **auto-reboot-frozen-equipment** - Auto-reboot de equipamentos travados
+37. ✅ **check-reboot-candidates** - Verifica candidatos a reboot
+38. ✅ **detect-mass-outage** - Detecta quedas em massa
+39. ✅ **simulate-mass-outage** - Simula quedas em massa (testes)
+40. ✅ **mass-outage-executor** - Executa ações de queda em massa
+41. ✅ **network-maintenance-executor** - Executor de manutenção de rede
+42. ✅ **retry-failed-actions** - Reprocessa ações falhadas (DLQ)
+
 ## 🔄 Funções com Proteção Parcial (Error Handler + Metrics)
 
 ### Agentes com Streaming
@@ -88,9 +98,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 42 (51%)
+- **Com proteção completa:** 50 (60%)
 - **Com proteção parcial:** 4 (5%)
-- **Pendentes:** 37 (44%)
+- **Pendentes:** 29 (35%)
 
 ## 🎯 Próximos Passos
 

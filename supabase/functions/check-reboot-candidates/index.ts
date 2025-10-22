@@ -1,10 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface RadiusUser {
   id: string;
@@ -45,21 +40,13 @@ function parseSessionSeconds(user: RadiusUser): number {
   return 0;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase }) => {
+  console.log('🔍 Verificando clientes com banda baixa...');
 
-  try {
-    console.log('🔍 Verificando clientes com banda baixa...');
-
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
-    // URL do proxy centralizado
-    const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  
+  // URL do proxy centralizado
+  const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
     console.log('📡 Buscando clientes ONLINE via IXC proxy (filtro direto)...');
@@ -88,18 +75,15 @@ Deno.serve(async (req) => {
       throw new Error(`Falha ao buscar clientes online via proxy: ${error.message}`);
     }
     
-    if (!radiusData?.data?.registros) {
-      console.warn('⚠️ IXC retornou resposta válida mas sem registros');
-      return new Response(
-        JSON.stringify({
-          candidates: [],
-          total: 0,
-          timestamp: new Date().toISOString(),
-          message: 'Nenhum cliente online encontrado no momento'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  if (!radiusData?.data?.registros) {
+    console.warn('⚠️ IXC retornou resposta válida mas sem registros');
+    return {
+      candidates: [],
+      total: 0,
+      timestamp: new Date().toISOString(),
+      message: 'Nenhum cliente online encontrado no momento'
+    };
+  }
 
     const onlineUsers: RadiusUser[] = Array.isArray(radiusData.data.registros) 
       ? radiusData.data.registros 
@@ -186,28 +170,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`🚨 ${candidates.length} clientes com banda baixa encontrados`);
+  console.log(`🚨 ${candidates.length} clientes com banda baixa encontrados`);
 
-    return new Response(
-      JSON.stringify({
-        candidates,
-        total: candidates.length,
-        timestamp: new Date().toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Erro na função:', error.message);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        candidates: []
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-  }
-});
+  return {
+    candidates,
+    total: candidates.length,
+    timestamp: new Date().toISOString()
+  };
+}));
