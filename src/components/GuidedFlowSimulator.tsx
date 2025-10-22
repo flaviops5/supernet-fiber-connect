@@ -460,6 +460,19 @@ export default function GuidedFlowSimulator() {
         pathIndex++;
       }
 
+      // Adicionar o último passo se existir (mesmo sem awaits_response)
+      if (currentStepKey) {
+        const finalStep = steps?.find(s => s.step_key === currentStepKey);
+        if (finalStep && !messages.find(m => m.step_key === finalStep.step_key)) {
+          messages.push({
+            step_key: finalStep.step_key,
+            question: finalStep.question,
+            selected_option: '',
+            selected_option_label: '(Mensagem final)'
+          });
+        }
+      }
+
       newConversations[variationId] = messages;
       newCompletions[variationId] = true;
     }
