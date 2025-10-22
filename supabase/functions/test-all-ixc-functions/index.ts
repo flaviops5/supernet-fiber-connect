@@ -1,22 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'test-all-ixc-functions',
+  async (req, { supabase }) => {
     console.log('🔍 Iniciando teste completo de todas as funções IXC...');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // supabase já injetado via context
 
     const results = [];
 
@@ -141,34 +131,20 @@ serve(async (req) => {
       diagnosis = `⚠️ ${failCount} de ${totalTests} funções estão falhando - problema parcial`;
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        summary: {
-          total: totalTests,
-          success: successCount,
-          failed: failCount,
-          successRate,
-          diagnosis
-        },
-        results,
-        errorGroups,
-        recommendation: failCount > 0 
-          ? 'Verifique as credenciais IXC (IXC_API_BASE_URL, IXC_API_USERNAME, IXC_API_PASSWORD) no Supabase'
-          : 'Tudo funcionando! Credenciais IXC estão corretas.'
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error: any) {
-    console.error('❌ Erro ao testar funções:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: 'Erro ao executar testes',
-        details: error.message 
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return {
+      success: true,
+      summary: {
+        total: totalTests,
+        success: successCount,
+        failed: failCount,
+        successRate,
+        diagnosis
+      },
+      results,
+      errorGroups,
+      recommendation: failCount > 0 
+        ? 'Verifique as credenciais IXC (IXC_API_BASE_URL, IXC_API_USERNAME, IXC_API_PASSWORD) no Supabase'
+        : 'Tudo funcionando! Credenciais IXC estão corretas.'
+    };
   }
-});
+));

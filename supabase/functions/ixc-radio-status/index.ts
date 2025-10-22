@@ -1,16 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-radio-status',
+  async (req, { supabase }) => {
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
     const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
@@ -203,30 +196,11 @@ serve(async (req) => {
 
     console.log(`✅ ${towersArray.length} torres/POPs encontradas`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        total_towers: towersArray.length,
-        total_radios: towersArray.reduce((sum, t) => sum + t.total, 0),
-        towers: towersArray,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Erro ao buscar status dos equipamentos rádio:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false,
-        total_towers: 0,
-        total_radios: 0,
-        towers: [],
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return {
+      success: true,
+      total_towers: towersArray.length,
+      total_radios: towersArray.reduce((sum, t) => sum + t.total, 0),
+      towers: towersArray,
+    };
   }
-});
+));

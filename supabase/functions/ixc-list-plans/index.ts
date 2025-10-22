@@ -1,17 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-list-plans',
+  async (req, { supabase }) => {
     console.log('📋 Listando todos os planos do IXC...');
 
     // Credenciais IXC
@@ -100,27 +92,10 @@ serve(async (req) => {
       type: plan.tipo || 'I',
     }));
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        total: formattedPlans.length,
-        plans: formattedPlans,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      },
-    );
-
-  } catch (error) {
-    console.error('❌ Erro ao listar planos:', error);
-    const msg = (error as Error)?.message || 'Erro desconhecido';
-    return new Response(
-      JSON.stringify({ success: false, error: msg }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      },
-    );
+    return {
+      success: true,
+      total: formattedPlans.length,
+      plans: formattedPlans,
+    };
   }
-});
+));

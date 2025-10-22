@@ -1,16 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-discover-gpon-endpoints',
+  async (req, { supabase }) => {
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
     const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');
@@ -166,55 +159,30 @@ serve(async (req) => {
     const errorEndpoints = results.filter(r => r.status === 'ERROR');
     const unknownEndpoints = results.filter(r => r.status === 'UNKNOWN_FORMAT' || r.status === 'PARSE_ERROR');
 
-    console.log('\n📊 RESUMO DA DESCOBERTA:');
-    console.log(`✅ Endpoints funcionais: ${existingEndpoints.length}`);
-    console.log(`❌ Endpoints não encontrados: ${notFoundEndpoints.length}`);
-    console.log(`⚠️ Endpoints com erro IXC: ${ixcErrorEndpoints.length}`);
-    console.log(`⚠️ Endpoints com outros erros: ${errorEndpoints.length + unknownEndpoints.length}`);
+    console.log('✅ ${existingEndpoints.length} endpoints funcionais');
+    console.log('❌ Endpoints não encontrados: ${notFoundEndpoints.length}');
+    console.log('⚠️ Endpoints com erro IXC: ${ixcErrorEndpoints.length}');
+    console.log('⚠️ Endpoints com outros erros: ${errorEndpoints.length + unknownEndpoints.length}');
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        summary: {
-          total: potentialEndpoints.length,
-          functional: existingEndpoints.length,
-          notFound: notFoundEndpoints.length,
-          ixcErrors: ixcErrorEndpoints.length,
-          otherErrors: errorEndpoints.length + unknownEndpoints.length
-        },
-        functionalEndpoints: existingEndpoints.map(e => ({
-          endpoint: e.endpoint,
-          recordCount: e.recordCount
-        })),
-        ixcErrorEndpoints: ixcErrorEndpoints.map(e => ({
-          endpoint: e.endpoint,
-          errorMessage: e.errorMessage,
-          details: e.message
-        })),
-        allResults: results
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro na descoberta:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
+    return {
+      success: true,
+      summary: {
+        total: potentialEndpoints.length,
+        functional: existingEndpoints.length,
+        notFound: notFoundEndpoints.length,
+        ixcErrors: ixcErrorEndpoints.length,
+        otherErrors: errorEndpoints.length + unknownEndpoints.length
+      },
+      functionalEndpoints: existingEndpoints.map(e => ({
+        endpoint: e.endpoint,
+        recordCount: e.recordCount
+      })),
+      ixcErrorEndpoints: ixcErrorEndpoints.map(e => ({
+        endpoint: e.endpoint,
+        errorMessage: e.errorMessage,
+        details: e.message
+      })),
+      allResults: results
+    };
   }
-});
+));

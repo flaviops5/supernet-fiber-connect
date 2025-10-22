@@ -1,27 +1,18 @@
 // ============================================
 // IXC PROXY - Ponto único de acesso ao IXC
 // ============================================
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { validateHMACRequest } from "../_shared/hmac.ts";
 import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hmac-signature, x-hmac-timestamp, X-HMAC-Signature, X-HMAC-Timestamp',
-};
-
-// Cache em memória (simples)
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 segundos
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const startTime = Date.now();
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-proxy',
+  async (req, { supabase }) => {
+    const startTime = Date.now();
     // Ler corpo PRIMEIRO (só pode ser lido uma vez)
     const requestBody = await req.json() as IXCProxyRequest;
     const { method, path, query, body } = requestBody;
@@ -29,7 +20,6 @@ serve(async (req) => {
     // 🔐 Validar HMAC (se configurado)
     const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
     if (HMAC_SECRET) {
-      // Obter headers HMAC
       const hmacSignature = req.headers.get('X-HMAC-Signature');
       const hmacTimestamp = req.headers.get('X-HMAC-Timestamp');
       
@@ -37,34 +27,27 @@ serve(async (req) => {
         // Fallback: permitir sem HMAC para não bloquear ambiente de teste/UI
         console.warn('🔐 HMAC headers ausentes - prosseguindo em modo compatibilidade');
       } else {
+        // Validar timestamp (não mais de 5 minutos)
+        const timestamp = parseInt(hmacTimestamp);
+        const now = Date.now();
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        
+        if (Math.abs(now - timestamp) > FIVE_MINUTES) {
+          console.error('🔐 HMAC validation failed: Timestamp expired');
+          throw new Error('Unauthorized: Timestamp expired');
+        }
 
-      // Validar timestamp (não mais de 5 minutos)
-      const timestamp = parseInt(hmacTimestamp);
-      const now = Date.now();
-      const FIVE_MINUTES = 5 * 60 * 1000;
-      
-      if (Math.abs(now - timestamp) > FIVE_MINUTES) {
-        console.error('🔐 HMAC validation failed: Timestamp expired');
-        return new Response(
-          JSON.stringify({ ok: false, error: 'Unauthorized: Timestamp expired' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // Validar assinatura
+        const { signPayload } = await import('../_shared/hmac.ts');
+        const expectedSignature = await signPayload(JSON.stringify(requestBody), HMAC_SECRET);
+        
+        if (hmacSignature !== expectedSignature) {
+          console.error('🔐 HMAC validation failed: Invalid signature');
+          throw new Error('Unauthorized: Invalid signature');
+        }
+        
+        console.log('✅ HMAC validated');
       }
-
-      // Validar assinatura
-      const { signPayload } = await import('../_shared/hmac.ts');
-      const expectedSignature = await signPayload(JSON.stringify(requestBody), HMAC_SECRET);
-      
-      if (hmacSignature !== expectedSignature) {
-        console.error('🔐 HMAC validation failed: Invalid signature');
-        return new Response(
-          JSON.stringify({ ok: false, error: 'Unauthorized: Invalid signature' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('✅ HMAC validated');
-    }
     }
  
     console.log(`📡 IXC Proxy: ${method} ${path}${query ? '?' + query : ''}`);
@@ -76,16 +59,13 @@ serve(async (req) => {
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         console.log('💾 Cache HIT:', cacheKey);
         const duration = Date.now() - startTime;
-        return new Response(
-          JSON.stringify({ 
-            ok: true, 
-            status: 200, 
-            data: cached.data,
-            cached: true,
-            duration_ms: duration
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return { 
+          ok: true, 
+          status: 200, 
+          data: cached.data,
+          cached: true,
+          duration_ms: duration
+        };
       }
     }
 
@@ -227,29 +207,6 @@ serve(async (req) => {
       error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error'))
     };
 
-    return new Response(
-      JSON.stringify({ ...response, duration_ms: duration }),
-      {
-        status: responseStatus, // ✅ Status HTTP reflete o erro real detectado
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-
-  } catch (error: any) {
-    const duration = Date.now() - startTime;
-    console.error('❌ IXC Proxy error:', error);
-    
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        status: 500,
-        error: error.message,
-        duration_ms: duration
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return { ...response, duration_ms: duration };
   }
-});
+));

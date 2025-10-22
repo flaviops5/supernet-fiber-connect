@@ -1,16 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'test-ixc-connection',
+  async (req, { supabase }) => {
     const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
@@ -24,19 +17,7 @@ serve(async (req) => {
 
     // Validar configurações
     if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Credenciais do IXC não configuradas completamente',
-          details: {
-            base_url: !!IXC_API_BASE_URL,
-            username: !!IXC_API_USERNAME,
-            password: !!IXC_API_PASSWORD,
-            hmac: !!HMAC_SECRET
-          }
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('Credenciais do IXC não configuradas completamente');
     }
 
     // ✅ Normalizar URL removendo /adm.php
@@ -68,29 +49,26 @@ serve(async (req) => {
     if (isHtml) {
       const isLoginPage = responseText.includes('login') || responseText.includes('autenticar') || responseText.includes('senha');
       
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          message: isLoginPage 
-            ? '❌ IXC retornou página de login - credenciais inválidas ou IP bloqueado'
-            : '❌ IXC retornou HTML ao invés de JSON - verifique a URL da API',
-          details: {
-            status: testResponse.status,
-            response_type: 'HTML',
-            is_login_page: isLoginPage,
-            base_url: IXC_API_BASE_URL,
-            endpoint_tested: '/webservice/v1/cliente',
-            html_preview: responseText.substring(0, 500),
-            possible_causes: [
-              'URL base incorreta',
-              'Credenciais inválidas (usuário/senha)',
-              'IP do servidor não está na whitelist do IXC',
-              'Problema de CORS ou segurança no IXC'
-            ]
-          }
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return {
+        success: false,
+        message: isLoginPage 
+          ? '❌ IXC retornou página de login - credenciais inválidas ou IP bloqueado'
+          : '❌ IXC retornou HTML ao invés de JSON - verifique a URL da API',
+        details: {
+          status: testResponse.status,
+          response_type: 'HTML',
+          is_login_page: isLoginPage,
+          base_url: IXC_API_BASE_URL,
+          endpoint_tested: '/webservice/v1/cliente',
+          html_preview: responseText.substring(0, 500),
+          possible_causes: [
+            'URL base incorreta',
+            'Credenciais inválidas (usuário/senha)',
+            'IP do servidor não está na whitelist do IXC',
+            'Problema de CORS ou segurança no IXC'
+          ]
+        }
+      };
     }
 
     // Tentar parsear JSON
@@ -98,48 +76,31 @@ serve(async (req) => {
     try {
       responseData = JSON.parse(responseText);
     } catch (jsonError) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          message: '❌ Resposta inválida do IXC (não é JSON nem HTML válido)',
-          details: {
-            status: testResponse.status,
-            response_preview: responseText.substring(0, 500),
-            parse_error: jsonError instanceof Error ? jsonError.message : 'Erro ao parsear JSON'
-          }
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return {
+        success: false,
+        message: '❌ Resposta inválida do IXC (não é JSON nem HTML válido)',
+        details: {
+          status: testResponse.status,
+          response_preview: responseText.substring(0, 500),
+          parse_error: jsonError instanceof Error ? jsonError.message : 'Erro ao parsear JSON'
+        }
+      };
     }
 
     // Sucesso!
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: '✅ Conexão com IXC estabelecida com sucesso!',
-        details: {
-          status: testResponse.status,
-          response_type: 'JSON',
-          base_url_configured: true,
-          credentials_valid: true,
-          hmac_configured: !!HMAC_SECRET,
-          base_url: IXC_API_BASE_URL,
-          endpoint_tested: '/webservice/v1/cliente',
-          response_data: responseData
-        }
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro no teste de conexão:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: 'Erro ao testar conexão com IXC',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return {
+      success: true,
+      message: '✅ Conexão com IXC estabelecida com sucesso!',
+      details: {
+        status: testResponse.status,
+        response_type: 'JSON',
+        base_url_configured: true,
+        credentials_valid: true,
+        hmac_configured: !!HMAC_SECRET,
+        base_url: IXC_API_BASE_URL,
+        endpoint_tested: '/webservice/v1/cliente',
+        response_data: responseData
+      }
+    };
   }
-});
+));

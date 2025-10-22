@@ -7,7 +7,7 @@
  * Endpoint IXC: botao_rel_22991 (Relatório de Potência/Resumo ONU)
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { getOnuSignalStatus } from '../_shared/ixc-client.ts';
 
 /**
@@ -106,18 +106,9 @@ function interpretTX(tx: number): { status: string; level: string; message: stri
   };
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-onu-signal',
+  async (req, { supabase }) => {
     console.log('📡 IXC ONU Signal Status - Iniciando consulta...');
 
     const { clientId } = await req.json();
@@ -199,30 +190,9 @@ Deno.serve(async (req) => {
 
     console.log('✅ Dados de sinal obtidos e interpretados:', JSON.stringify(signalData, null, 2));
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        data: signalData
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro ao buscar sinal ONU:', error);
-    
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: error.message || 'Erro ao buscar dados de sinal',
-        details: error.toString()
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return {
+      ok: true,
+      data: signalData
+    };
   }
-});
+));

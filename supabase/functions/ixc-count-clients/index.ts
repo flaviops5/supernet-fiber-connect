@@ -1,17 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-count-clients',
+  async (req, { supabase }) => {
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/ixc-proxy`;
 
     console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');
@@ -137,20 +130,11 @@ serve(async (req) => {
     console.log(`   Offline: ${clientDetails.offline}`);
     console.log(`   Total: ${clientDetails.total}`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        total_clientes: clientDetails.total,
-        detalhes: clientDetails,
-        optimization: 'Filtros aplicados direto na query IXC',
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error: any) {
-    console.error('Erro ao contar clientes IXC:', error);
-    return new Response(
-      JSON.stringify({ error: error.message, success: false }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return {
+      success: true,
+      total_clientes: clientDetails.total,
+      detalhes: clientDetails,
+      optimization: 'Filtros aplicados direto na query IXC',
+    };
   }
-});
+));

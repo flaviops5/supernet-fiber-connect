@@ -1,7 +1,8 @@
 // ============================================
 // IXC ENDPOINTS HEALTH - Usa lógica treinada (_shared/ixc-client)
 // ============================================
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
 const corsHeaders = {
@@ -79,13 +80,10 @@ async function pMap<T, R>(items: T[], limit: number, mapper: (item: T, index: nu
   return results;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const startAll = Date.now();
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-endpoints-health',
+  async (req, { supabase }) => {
+    const startAll = Date.now();
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     if (!SUPABASE_URL) {
       throw new Error("SUPABASE_URL não configurada nos secrets");
@@ -133,14 +131,6 @@ serve(async (req) => {
     const notFound = results.filter(r => r.status === "not_found").length;
     const errors = results.filter(r => r.status === "error").length;
 
-    return new Response(
-      JSON.stringify({ ok: true, total: results.length, success, notFound, errors, duration_ms: durationAll, results }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: any) {
-    return new Response(
-      JSON.stringify({ ok: false, status: 500, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return { ok: true, total: results.length, success, notFound, errors, duration_ms: durationAll, results };
   }
-});
+));

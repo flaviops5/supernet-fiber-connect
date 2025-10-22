@@ -10,6 +10,20 @@
 5. ✅ **send-whatsapp-message** - Envia mensagens WhatsApp
 6. ✅ **ixc-list-contracts** - Lista contratos do IXC
 7. ✅ **process-contract** - Processa contratos de clientes
+8. ✅ **ixc-integration** - Integração principal IXC
+9. ✅ **ixc-count-clients** - Conta clientes online/offline
+10. ✅ **ixc-list-plans** - Lista planos IXC
+11. ✅ **ixc-sync-plans** - Sincroniza planos IXC
+12. ✅ **ixc-onu-signal** - Sinal ONU (TX/RX)
+13. ✅ **ixc-pon-status** - Status portas PON
+14. ✅ **ixc-radio-status** - Status equipamentos rádio
+15. ✅ **ixc-revenue-stats** - Estatísticas de receita
+16. ✅ **ixc-endpoints-health** - Health check endpoints IXC
+17. ✅ **test-ixc-connection** - Testa conexão IXC
+18. ✅ **test-all-ixc-functions** - Testa todas funções IXC
+19. ✅ **ixc-discover-gpon-endpoints** - Descobre endpoints GPON
+20. ✅ **ixc-financial-analytics** - Analytics financeiro
+21. ✅ **ixc-proxy** - Proxy IXC com cache
 
 ### Autenticadas (createProtectedHandler)
 1. ✅ **reset-circuit-breaker** - Reset manual com verificação admin
@@ -57,9 +71,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 15 (18%)
+- **Com proteção completa:** 29 (35%)
 - **Com proteção parcial:** 4 (5%)
-- **Pendentes:** 64 (77%)
+- **Pendentes:** 50 (60%)
 
 ## 🎯 Próximos Passos
 

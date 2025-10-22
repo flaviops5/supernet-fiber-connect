@@ -2,8 +2,8 @@
 // IXC Financial Analytics com Persistência
 // ============================================
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
@@ -224,25 +224,18 @@ function computeAnalytics(contracts: Contract[], invoices: Invoice[]) {
   return result;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const startTime = Date.now();
-  const logger = createLogger("ixc-financial-analytics", req);
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-financial-analytics',
+  async (req, { supabase }) => {
+    const startTime = Date.now();
+    const logger = createLogger("ixc-financial-analytics", req);
     logger.info("Iniciando análise financeira");
 
     // Validar autenticação
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       logger.warn("Unauthorized - missing auth header");
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw new Error('Unauthorized');
     }
 
     // Buscar dados do IXC usando o proxy e circuit breaker
@@ -274,8 +267,7 @@ serve(async (req) => {
     // Computar analytics
     const analytics = computeAnalytics(contracts, invoices);
 
-    // Persistir no Supabase
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // Persistir no Supabase (supabase já injetado via context)
     
     const { error: insertError } = await supabase
       .from("financial_analytics")
@@ -317,29 +309,13 @@ serve(async (req) => {
       duration_ms: Date.now() - startTime
     });
 
-    return new Response(JSON.stringify({
+    return {
       success: true,
       ...analytics,
       metadata: {
         computation_time_ms: Date.now() - startTime,
         cached: false
       }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
-  } catch (error: any) {
-    logger.error("Erro na análise financeira", {
-      error: error.message,
-      duration_ms: Date.now() - startTime
-    });
-    
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    };
   }
-});
+));
