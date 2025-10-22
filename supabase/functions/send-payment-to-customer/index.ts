@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
 import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
+import { handleEdgeFunctionError } from "../_shared/error-handler.ts";
+import { recordMetric } from "../_shared/metrics-helper.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +11,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = Date.now();
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -374,6 +378,15 @@ serve(async (req) => {
     }
 
     console.log('✅ Mensagem enviada com sucesso!');
+    
+    // Registrar métrica de sucesso
+    recordMetric({
+      agent_name: 'send-payment-to-customer',
+      action_type: 'payment_sent',
+      success: true,
+      duration_ms: Date.now() - startTime,
+      metadata: { customer_id: customerId }
+    }).catch(console.error);
 
     return new Response(
       JSON.stringify({
@@ -402,12 +415,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Erro geral:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Erro interno do servidor'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    
+    // Registrar métrica de erro
+    recordMetric({
+      agent_name: 'send-payment-to-customer',
+      action_type: 'payment_sent',
+      success: false,
+      duration_ms: Date.now() - startTime,
+      error_message: error.message || 'Unknown error'
+    }).catch(console.error);
+    
+    return handleEdgeFunctionError(error, 'send-payment-to-customer');
   }
 });

@@ -7,6 +7,9 @@
 2. ✅ **nps-webhook** - Recebe respostas NPS
 3. ✅ **generate-blog-content** - Gera conteúdo de blog com OpenAI
 4. ✅ **generate-ai-flow-simulations** - Gera simulações de conversas
+5. ✅ **send-whatsapp-message** - Envia mensagens WhatsApp
+6. ✅ **ixc-list-contracts** - Lista contratos do IXC
+7. ✅ **process-contract** - Processa contratos de clientes
 
 ### Autenticadas (createProtectedHandler)
 1. ✅ **reset-circuit-breaker** - Reset manual com verificação admin
@@ -19,10 +22,12 @@
 ### Agentes com Streaming
 1. ✅ **automacao-agent** - Error handler + metrics
 2. ✅ **telemedicina-agent** - Error handler + metrics
-3. ⏳ **sales-agent** - Pendente (complexo, requer análise)
-4. ⏳ **logistics-agent** - Pendente (complexo, requer análise)
 
-## ⏳ Funções Pendentes (71 funções)
+### Funções Complexas
+1. ✅ **send-payment-to-customer** - Error handler + metrics (mantém circuit breaker)
+2. ✅ **whatsapp-webhook** - Error handler + metrics (mantém HMAC validation)
+
+## ⏳ Funções Pendentes (68 funções)
 
 ### Prioridade Alta (Acesso a dados sensíveis)
 - [ ] **ixc-integration** - Busca clientes no IXC
@@ -52,9 +57,9 @@
 ## 📈 Estatísticas
 
 - **Total de funções:** 83
-- **Com proteção completa:** 8 (10%)
-- **Com proteção parcial:** 2 (2%)
-- **Pendentes:** 73 (88%)
+- **Com proteção completa:** 15 (18%)
+- **Com proteção parcial:** 4 (5%)
+- **Pendentes:** 64 (77%)
 
 ## 🎯 Próximos Passos
 

@@ -1,17 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'ixc-list-contracts',
+  async (req, { supabase }) => {
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
     const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');
@@ -24,7 +16,7 @@ serve(async (req) => {
       throw new Error('IXC_API_BASE_URL not configured');
     }
 
-    // ✅ Normalizar URL removendo /adm.php
+    // Normalizar URL removendo /adm.php
     const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '');
 
     const bodyJson = await req.json().catch(() => ({} as Record<string, unknown>));
@@ -50,7 +42,9 @@ serve(async (req) => {
       });
       const text = await res.text();
       let data: any;
-      try { data = JSON.parse(text); } catch {
+      try { 
+        data = JSON.parse(text); 
+      } catch {
         console.error(`[IXC ${endpoint}] Non-JSON response:`, text);
         throw new Error(`Invalid response from IXC at /${endpoint}`);
       }
@@ -63,102 +57,48 @@ serve(async (req) => {
 
     console.log('Fetching speed plans from IXC radgrupos...');
 
-    // Use radgrupos (Planos de velocidades) which has all info: name, download, upload, value
+    // Use radgrupos (Planos de velocidades)
     const endpoint = 'radgrupos';
     let found: any[] = [];
     let lastTotal = 0;
 
-    try {
-      const form: Record<string, string> = {
-        page: String(page),
-        rp: String(rp),
-        sortname: 'radgrupos.grupo',
-        sortorder: 'asc',
-      };
-      if (search) {
-        form.qtype = 'radgrupos.grupo';
-        form.oper = 'L';
-        form.query = search;
-      }
-
-      const data = await postIXC(endpoint, form);
-      lastTotal = Number(data?.total || 0);
-
-      const registros = Array.isArray(data?.registros)
-        ? data.registros
-        : (data?.registros ? Object.values(data.registros) : []);
-
-      if (registros && registros.length > 0) {
-        console.log(`✓ radgrupos returned ${registros.length} speed plans`);
-        found = registros as any[];
-      } else if (Array.isArray(data?.data) && data.data.length) {
-        console.log(`✓ radgrupos (data) returned ${data.data.length} speed plans`);
-        found = data.data;
-      }
-    } catch (e) {
-      console.error('radgrupos fetch failed:', (e as Error)?.message);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Erro ao buscar planos de velocidade via /radgrupos: ${(e as Error)?.message}`,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-      );
+    const form: Record<string, string> = {
+      page: String(page),
+      rp: String(rp),
+      sortname: 'radgrupos.grupo',
+      sortorder: 'asc',
+    };
+    
+    if (search) {
+      form.qtype = 'radgrupos.grupo';
+      form.oper = 'L';
+      form.query = search;
     }
 
-    if (!found.length) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Nenhum plano de velocidade encontrado via /radgrupos.',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-      );
+    const result = await postIXC(endpoint, form);
+    lastTotal = result?.total ?? 0;
+
+    if (result?.registros && Array.isArray(result.registros)) {
+      found = result.registros.map((r: any) => ({
+        id: r.id_grupo || r.id,
+        name: r.grupo || r.velocidade || '',
+        download: r.download || '',
+        upload: r.upload || '',
+        value: r.valor || '',
+      }));
     }
 
-    // Normalize radgrupos fields
-    const normalized = found.map((r: any) => {
-      const price = r.valor_produto ?? r.valor ?? r.mensalidade ?? null;
-      const down = r.download ?? null;
-      const up = r.upload ?? null;
-      const descricao = r.grupo ?? r.nome ?? r.descricao ?? `Plano ${r.id ?? ''}`;
-      return {
-        id: String(r.id ?? ''),
-        descricao: String(descricao ?? ''),
-        valor: price !== null ? String(price) : undefined,
-        download: down !== null ? String(down) : undefined,
-        upload: up !== null ? String(up) : undefined,
-        raw: r,
-      };
-    });
+    console.log(`Found ${found.length} plans (total: ${lastTotal})`);
 
-    // Filter plans with download/upload (actual internet plans)
-    const internetPlans = normalized.filter(p => p.download || p.upload);
-
-    console.log(`IXC radgrupos fetch OK: ${internetPlans.length} internet plans (total: ${normalized.length})`);
-
-    const total = lastTotal || internetPlans.length;
-    const totalPages = Math.max(1, Math.ceil(total / rp));
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        contracts: internetPlans,
-        total,
+    return {
+      success: true,
+      plans: found,
+      pagination: {
         page,
-        rp,
-        totalPages,
-        endpoint: 'radgrupos',
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-    );
-
-  } catch (error) {
-    console.error('Error fetching plans from IXC:', error);
-    const msg = (error as Error)?.message || 'Unknown error';
-    return new Response(
-      JSON.stringify({ success: false, error: msg }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-    );
+        perPage: rp,
+        total: lastTotal,
+        totalPages: Math.ceil(lastTotal / rp)
+      }
+    };
   }
-});
+));

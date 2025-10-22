@@ -1,10 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
 interface ContractRequest {
   customerData: {
@@ -28,28 +22,12 @@ interface ContractRequest {
   timestamp: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
+Deno.serve(createPublicHandler(
+  'process-contract',
+  async (req, { supabase }) => {
     const { customerData, planData, timestamp }: ContractRequest = await req.json();
 
     console.log('Processing contract request:', { customerData, planData });
-
-    // Criar conexão com Supabase
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
 
     // Buscar plano pelo nome para obter o ID
     const { data: plan } = await supabase
@@ -82,91 +60,65 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      throw new Error('Erro ao salvar agendamento no banco de dados');
+      throw new Error(`Erro ao salvar agendamento: ${dbError.message}`);
     }
 
-    console.log('Appointment saved with ID:', appointmentId);
+    console.log('Contract processed successfully, appointment ID:', appointmentId);
 
-    // Format message for WhatsApp
-    const periodText = customerData.appointmentPeriod === 'manha' ? 'Manhã (08h-12h)' : 'Tarde (13h-17h)';
-    const appointmentDateFormatted = new Date(customerData.appointmentDate).toLocaleDateString('pt-BR');
-    
-    const message = `🔥 *NOVA SOLICITAÇÃO DE CONTRATAÇÃO* 🔥
+    // Enviar email de confirmação
+    try {
+      const emailPayload = {
+        to: customerData.email,
+        subject: 'Confirmação de Agendamento - SUPERNET FIBRA',
+        html: `
+          <h2>Agendamento Confirmado!</h2>
+          <p>Olá ${customerData.name},</p>
+          <p>Seu agendamento foi realizado com sucesso!</p>
+          <h3>Detalhes do Plano:</h3>
+          <ul>
+            <li><strong>Plano:</strong> ${planData.name}</li>
+            <li><strong>Velocidade:</strong> ${planData.speed}</li>
+            <li><strong>Valor:</strong> R$ ${planData.price.toFixed(2)}</li>
+          </ul>
+          <h3>Dados da Instalação:</h3>
+          <ul>
+            <li><strong>Data:</strong> ${customerData.appointmentDate}</li>
+            <li><strong>Período:</strong> ${customerData.appointmentPeriod}</li>
+            <li><strong>Endereço:</strong> ${customerData.address}</li>
+            <li><strong>CEP:</strong> ${customerData.cep}</li>
+          </ul>
+          <p>Nossa equipe entrará em contato em breve para confirmar os detalhes.</p>
+          <p>Atenciosamente,<br>Equipe SUPERNET FIBRA</p>
+        `
+      };
 
-📋 *DADOS DO CLIENTE:*
-👤 Nome: ${customerData.name}
-📧 Email: ${customerData.email}
-📱 Telefone: ${customerData.phone}
-🆔 CPF: ${customerData.cpf}
-🎂 Nascimento: ${customerData.birthDate}
-📍 CEP: ${customerData.cep}
-🏠 Endereço: ${customerData.address}
-💳 Melhor dia pagamento: Dia ${customerData.paymentDay}
+      await supabase.functions.invoke('send-locaweb-email', {
+        body: emailPayload
+      });
 
-💡 *PLANO ESCOLHIDO:*
-🚀 ${planData.name}
-⚡ Velocidade: ${planData.speed}
-💰 Valor: R$ ${planData.price.toFixed(2).replace('.', ',')}/mês
+      console.log('Confirmation email sent successfully');
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError);
+      // Não falha o processo se o email falhar
+    }
 
-📅 *AGENDAMENTO DE INSTALAÇÃO:*
-🗓️ Data: ${appointmentDateFormatted}
-⏰ Período: ${periodText}
-
-${customerData.observations ? `📝 *Observações:* ${customerData.observations}` : ''}
-
-⏰ *Solicitação:* ${new Date(timestamp).toLocaleString('pt-BR')}
-🆔 *ID Agendamento:* ${appointmentId}
-
-Entre em contato com o cliente o mais breve possível! 📞`;
-
-    // Send to WhatsApp (you can replace this with your preferred WhatsApp API service)
-    // For now, we'll use a direct WhatsApp link that can be opened manually
-    const whatsappNumber = "5561992757062"; // WhatsApp number configured
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-    
-    console.log('WhatsApp URL generated:', whatsappUrl);
-    console.log('Message content:', message);
-
-    // Here you could integrate with a WhatsApp Business API service like:
-    // - Twilio WhatsApp API
-    // - WhatsApp Business Cloud API
-    // - Other WhatsApp service providers
-    
-    // For demonstration, we'll just log the message
-    // In production, you would send this via your WhatsApp API service
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Contract request processed successfully',
-        appointmentId: appointmentId,
-        whatsappUrl: whatsappUrl
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders,
-        },
+    return {
+      success: true,
+      appointmentId,
+      message: 'Agendamento realizado com sucesso! Você receberá um email de confirmação.',
+      customerData: {
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone
+      },
+      planData: {
+        name: planData.name,
+        price: planData.price
+      },
+      appointmentDetails: {
+        date: customerData.appointmentDate,
+        period: customerData.appointmentPeriod
       }
-    );
-
-  } catch (error: any) {
-    console.error('Error processing contract:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'Failed to process contract request',
-        details: error.message 
-      }),
-      {
-        status: 500,
-        headers: { 
-          'Content-Type': 'application/json', 
-          ...corsHeaders 
-        },
-      }
-    );
+    };
   }
-};
-
-serve(handler);
+));

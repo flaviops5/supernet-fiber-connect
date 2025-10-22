@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { validateHMACRequest } from '../_shared/hmac.ts';
 import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction.ts';
 import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +18,7 @@ function generateCorrelationId(): string {
 
 serve(async (req) => {
   const correlationId = generateCorrelationId();
+  const startTime = Date.now();
   
   console.log(`🎯 [${correlationId}] Webhook endpoint hit`, {
     method: req.method,
@@ -556,6 +559,14 @@ serve(async (req) => {
     }
 
     // Outros tipos de evento
+    recordMetric({
+      agent_name: 'whatsapp-webhook',
+      action_type: 'webhook_processed',
+      success: true,
+      duration_ms: Date.now() - startTime,
+      metadata: { event_type: eventType }
+    }).catch(console.error);
+    
     return new Response(
       JSON.stringify({ success: true, eventType: eventType, processed: false }),
       {
@@ -567,15 +578,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Webhook error:', error);
     
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    // Registrar métrica de erro
+    recordMetric({
+      agent_name: 'whatsapp-webhook',
+      action_type: 'webhook_processed',
+      success: false,
+      duration_ms: Date.now() - startTime,
+      error_message: error.message || 'Unknown error'
+    }).catch(console.error);
+    
+    return handleEdgeFunctionError(error, 'whatsapp-webhook');
   }
 });

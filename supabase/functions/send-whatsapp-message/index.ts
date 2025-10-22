@@ -1,40 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createPublicHandler } from "../_shared/base-handler.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    console.log('📨 Received request to send-whatsapp-message');
-    
-    // Parse request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.error('❌ Failed to parse request body:', e);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid request body' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    const { phone, message, instanceName = 'SDR2' } = body;
+Deno.serve(createPublicHandler(
+  'send-whatsapp-message',
+  async (req, { supabase }) => {
+    const { phone, message, instanceName = 'SDR2' } = await req.json();
     
     console.log('📨 Send WhatsApp Message Request:', { phone, instanceName, messageLength: message?.length });
     
     if (!phone || !message) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Phone and message are required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      throw new Error('Phone and message are required');
     }
 
     const apiKey = Deno.env.get('EVOLUTION_API_KEY');
@@ -44,23 +18,16 @@ serve(async (req) => {
     console.log(`   API Key present: ${!!apiKey} (length: ${apiKey?.length || 0})`);
     console.log(`   Base URL: ${baseUrl || 'NOT SET'}`);
 
-    // Remove trailing slash from baseUrl to avoid double slashes
+    // Remove trailing slash from baseUrl
     if (baseUrl && baseUrl.endsWith('/')) {
       baseUrl = baseUrl.slice(0, -1);
-      console.log(`   Base URL after cleanup: ${baseUrl}`);
     }
 
     if (!apiKey || !baseUrl) {
-      console.error('❌ Missing credentials:', { hasApiKey: !!apiKey, hasBaseUrl: !!baseUrl });
-      return new Response(
-        JSON.stringify({ success: false, error: 'Evolution API credentials not configured' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+      throw new Error('Evolution API credentials not configured');
     }
 
     console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
-    console.log(`🔗 Full API URL: ${baseUrl}/message/sendText/${instanceName}`);
-    console.log(`🔑 API Key preview: ${apiKey ? `${apiKey.substring(0, 15)}...` : 'NOT SET'}`);
 
     // Format phone number
     const cleanPhone = phone.replace(/\D/g, '');
@@ -73,8 +40,6 @@ serve(async (req) => {
       'apikey': apiKey,
       'Content-Type': 'application/json',
     };
-    
-    console.log('📋 Request headers:', { ...headers, apikey: headers.apikey.substring(0, 15) + '...' });
 
     // Send message via Evolution API
     const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
@@ -83,54 +48,32 @@ serve(async (req) => {
       body: JSON.stringify({
         number: formattedPhone,
         text: message,
-        delay: 1200
       }),
     });
 
-    console.log(`📡 Evolution API Response Status: ${response.status}`);
+    const responseText = await response.text();
+    console.log(`📡 Evolution API Response (${response.status}):`, responseText);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Evolution API Error:', response.status, errorText);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Evolution API error: ${response.status}`,
-          details: errorText 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
-      );
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('❌ Failed to parse Evolution API response:', responseText);
+      throw new Error('Invalid response from Evolution API');
     }
 
-    const data = await response.json();
-    console.log('✅ Message sent successfully:', data);
+    if (!response.ok) {
+      console.error(`❌ Evolution API Error (${response.status}):`, responseData);
+      throw new Error(responseData?.message || `Evolution API error: ${response.status}`);
+    }
 
-    return new Response(
-      JSON.stringify({
-        status: 'success',
-        message: 'Message sent successfully',
-        data: {
-          id: data.key?.id || data.messageId,
-          status: data.status || 'SENT'
-        }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('❌ Unexpected error:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error?.message || 'Internal server error',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    console.log('✅ WhatsApp message sent successfully');
+
+    return {
+      success: true,
+      data: responseData,
+      phone: formattedPhone,
+      instanceName,
+    };
   }
-});
+));
