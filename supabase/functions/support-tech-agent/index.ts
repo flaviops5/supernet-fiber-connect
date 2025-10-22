@@ -2,11 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
+import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 
 // Cache de simulações aprovadas (30 minutos)
 let approvedSimulationsCache: { data: any[], timestamp: number } | null = null;
@@ -1072,18 +1068,6 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       }
     );
   } catch (error) {
-    const err = (error as Error)?.message ?? String(error);
-    logger.error("Erro no suporte técnico", { error: err });
-    
-    return new Response(
-      JSON.stringify({ 
-        error: err,
-        message: "Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente ou entre em contato pelo telefone (11) 99999-9999."
-      }), 
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return handleEdgeFunctionError(error, "support-tech-agent");
   }
 });

@@ -4,6 +4,7 @@ import { ROUTING_AGENT_CONFIG } from "./config.ts";
 import { CLOE_MARTINS_SYSTEM_PROMPT, ROUTING_AGENT_SYSTEM_PROMPT } from "./prompts.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
+import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import {
   getClientRoutingStatus,
   determineTargetDepartment,
@@ -14,10 +15,7 @@ import {
 } from "./helpers.ts";
 import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS headers imported from error-handler
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -368,10 +366,6 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
       { headers: corsHeaders, status: 200 }
     );
   } catch (err: any) {
-    logger.error("Erro crítico no routing-agent", { error: err.message, stack: err.stack });
-    return new Response(
-      JSON.stringify({ ok: false, error: err.message }),
-      { headers: corsHeaders, status: 500 }
-    );
+    return handleEdgeFunctionError(err, "routing-agent");
   }
 });

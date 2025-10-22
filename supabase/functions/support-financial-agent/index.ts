@@ -3,11 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { logConversationAccess } from '../_shared/lgpd-logger.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
+import { createLogger } from "../_shared/structured-logger.ts";
 
 interface Message {
   role: string;
@@ -19,16 +16,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const logger = createLogger("support-financial-agent", req);
+
   try {
     const { messages, conversationId, customerData, routeReason, attachments } = await req.json();
     
     const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    console.log(`💰 [${correlationId}] support-financial-agent: Processing request`);
-    console.log(`📋 [${correlationId}] Route reason:`, routeReason);
-    
-    if (attachments && attachments.length > 0) {
-      console.log(`📎 [${correlationId}] ${attachments.length} attachment(s) received`);
-    }
+    logger.info("Processing request", { correlationId, routeReason, hasAttachments: !!attachments?.length });
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -43,8 +37,8 @@ serve(async (req) => {
       .single();
 
     if (configError || !agentConfig) {
-      console.error('Error fetching agent config:', configError);
-      throw new Error('Agent configuration not found');
+      logger.error("Agent configuration not found", { error: configError });
+      throw new StandardError('CONFIG_ERROR', 'Agent configuration not found', 500);
     }
 
     // Get conversation history
@@ -101,7 +95,9 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
     let paymentInfo = '';
     
     if (routeReason === 'blocked_or_overdue' && customerData?.ixc_client_id) {
-      console.log('🔓 Cliente bloqueado/em atraso - tentando desbloqueio automático...');
+      logger.info("Cliente bloqueado/em atraso - tentando desbloqueio automático", {
+        ixc_client_id: customerData.ixc_client_id
+      });
       
       // 📝 Register action_log for unblock attempt
       const { data: actionLog } = await supabase
@@ -145,7 +141,7 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
           });
 
           if (blockedContract) {
-            console.log(`📋 Contrato bloqueado encontrado: ${blockedContract.id}`);
+            logger.info("Contrato bloqueado encontrado", { contract_id: blockedContract.id });
             
             // Função para formatar data no padrão brasileiro
             const formatarData = (data: string | null | undefined): string => {
@@ -230,7 +226,9 @@ Para restabelecer o acesso, é necessário regularizar o pagamento pendente. Ap�
                   .eq('id', actionLog.id);
               }
               
-              console.log('❌ Cliente não pode usar desbloqueio de confiança - já usado sem pagamento');
+              logger.info("Cliente não pode usar desbloqueio - já usado sem pagamento", {
+                contract_id: blockedContract.id
+              });
             } else if (desbloqueioAtivoRecentemente) {
               // Se já tem desbloqueio ativo, não tenta novamente
               desbloqueioInfo = `
@@ -257,10 +255,15 @@ Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento
                   .eq('id', actionLog.id);
               }
               
-              console.log('⚠️ Desbloqueio já está ativo no contrato');
+              logger.warn("Desbloqueio já ativo no contrato", {
+                contract_id: blockedContract.id,
+                nao_bloquear_ate: naoBloquearAte
+              });
             } else {
               // Pode tentar desbloqueio normalmente
-              console.log('✅ Cliente pode usar desbloqueio de confiança - tentando...');
+              logger.info("Cliente pode usar desbloqueio - tentando...", {
+                contract_id: blockedContract.id
+              });
             
             // Tentar desbloqueio de confiança
             const unblockResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
@@ -279,7 +282,9 @@ Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento
               const unblockData = await unblockResponse.json();
               
               if (unblockData.data?.success) {
-                console.log('✅ Desbloqueio bem-sucedido!');
+                logger.info("Desbloqueio bem-sucedido", { 
+                  contract_id: blockedContract.id 
+                });
                 
                 // 📝 Update action_log with success
                 if (actionLog) {
@@ -313,7 +318,9 @@ Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento
                   const titles = titlesData.data?.titles || [];
                   
                   if (titles.length > 0) {
-                    console.log(`💰 ${titles.length} título(s) pendente(s) encontrado(s)`);
+                    logger.info("Títulos pendentes encontrados", { 
+                      count: titles.length 
+                    });
                     const firstTitle = titles[0];
                     
                     // Buscar QR Code PIX do primeiro título
@@ -331,7 +338,9 @@ Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento
 
                     if (pixResponse.ok) {
                       const pixData = await pixResponse.json();
-                      console.log('🏦 QR Code PIX obtido');
+                      logger.info("QR Code PIX obtido", { 
+                        title_id: firstTitle.id 
+                      });
                       
                       paymentInfo = `
 
@@ -376,7 +385,10 @@ ${paymentInfo || '⚠️ Dados de pagamento não disponíveis - solicite manualm
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
               } else {
-                console.log('❌ Falha no desbloqueio:', unblockData.data?.error);
+                logger.warn("Falha no desbloqueio", { 
+                  error: unblockData.data?.error,
+                  contract_id: blockedContract.id
+                });
                 
                 // 📝 Update action_log with failure
                 if (actionLog) {
@@ -408,7 +420,9 @@ O sistema IXC não permitiu a liberação automática. Oriente o cliente a regul
           }
         }
       } catch (error) {
-        console.error('Erro ao tentar desbloqueio automático:', error);
+        logger.error("Erro ao tentar desbloqueio automático", { 
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
     }
 
@@ -789,16 +803,6 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
     );
 
   } catch (error: any) {
-    console.error('Error in support-financial-agent:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        message: 'Desculpe, estou com dificuldades no momento. Por favor, entre em contato pelo WhatsApp (11) 99999-9999 ou e-mail contato@supernetfibra.com.br.'
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return handleEdgeFunctionError(error, "support-financial-agent");
   }
 });
