@@ -64,41 +64,39 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
 }
 
 /**
- * Buscar a pergunta aprovada para um step específico
+ * Sanitizar TODAS as menções incorretas de PON piscando
  */
 function sanitizeRedLightQuestion(text: string): string {
   if (!text) return text;
   let out = text;
 
-  // Substitui menções incorretas de "LOS ou PON" apenas por "LOS"
-  out = out.replace(/(LOS|los)\s*(\/|ou|e)\s*(PON|pon)/g, 'LOS');
-  out = out.replace(/(PON|pon)\s*(\/|ou|e)\s*(LOS|los)/g, 'LOS');
-
-  // Remove trechos que indiquem PON piscando
-  out = out.replace(/PON[^\n]*piscand[oa][^\n]*/gi, 'PON');
-
-  // Garante a pergunta correta sobre LOS piscando
-  if (!/luz[^\n]*LOS[^\n]*piscand[oa]/i.test(out)) {
-    out = out.replace(/\?\s*$/, '');
-    out += "\n\nVocê está vendo a luz LOS piscando? 🔴";
-  }
-
-  // Adiciona observação sobre PON verde, se não existir
-  if (!/PON[^\n]*(VERDE|fixa)/i.test(out)) {
-    out += "\n\nObs.: a luz PON normalmente é VERDE (fixa ou piscando).";
+  // Remover TODAS as referências a "PON piscando" ou "LOS ou PON piscando"
+  out = out.replace(/\*\*LOS\*\*\s*(ou|\/)\s*\*\*PON\*\*/gi, '**LOS (vermelha)**');
+  out = out.replace(/luz\s+\*\*PON\*\*\s*(ou|\/)\s*\*\*LOS\*\*/gi, 'luz **LOS (vermelha)**');
+  out = out.replace(/\*\*PISCANDO\*\*\s*\(não fixa\)/gi, '**PISCANDO** (intermitente)');
+  
+  // Garantir que sempre mencione que PON é verde
+  if (!/PON.*verde/i.test(out)) {
+    out = out.replace(/Está piscando\?/, 'Você está vendo a **luz LOS** piscando? 🔴\n\nObs.: a **luz PON** normalmente é **VERDE** (fixa ou piscando).');
   }
 
   return out;
 }
 
+/**
+ * Buscar a pergunta aprovada para um step específico
+ */
 function getApprovedQuestionForStep(approvedMessages: any[], stepKey: string): string | null {
   if (!approvedMessages || approvedMessages.length === 0) return null;
   
   const message = approvedMessages.find((msg: any) => msg.step_key === stepKey);
   let question: string | null = message?.question || null;
+  
+  // SEMPRE sanitizar cenario_a_verificar_luz_vermelha
   if (question && stepKey === 'cenario_a_verificar_luz_vermelha') {
     question = sanitizeRedLightQuestion(question);
   }
+  
   return question;
 }
 
@@ -531,7 +529,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           } else if (rx >= -28 && rx <= -24) {
             // CENÁRIO C: Sinal fraco
             scenario = "C";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a **luz LOS (vermelha)** está **PISCANDO** (intermitente).\n\nObs.: a **luz PON** normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a **luz LOS** piscando? 🔴`;
+            const cenarioCMessage = getApprovedQuestionForStep(approvedMessages, 'cenario_c_sinal_fraco');
+            scenarioMessage = cenarioCMessage || `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a **luz LOS (vermelha)** está **PISCANDO** (intermitente).\n\nObs.: a **luz PON** normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a **luz LOS** piscando? 🔴`;
           } else {
             // CENÁRIO D: Sinal crítico
             scenario = "D";
@@ -1090,7 +1089,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           if (manipulationInterpretation.result === 'confirmou' && manipulationInterpretation.confidence >= 0.6) {
             // Cliente manipulou o conector → Verificar resultado
             const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_resultado_manipulacao');
-            responseMessage = approvedQuestion || `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?`;
+            responseMessage = approvedQuestion || `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **LOS** parou de **PISCAR** e ficou **VERDE FIXA**?`;
             
             await logger.info("🎯 Usando texto aprovado para verificar_resultado_manipulacao", {
               conversation_id,
@@ -1155,8 +1154,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               ]
             },
             aiContext: {
-              expectedAction: "verificar se a luz vermelha parou de piscar e ficou verde fixa após manipular o cabo de fibra",
-              previousAgentMessage: "Agora me diga: a luz VERMELHA parou de PISCAR e ficou VERDE FIXA?"
+              expectedAction: "verificar se a luz LOS parou de piscar e ficou verde fixa após manipular o cabo de fibra",
+              previousAgentMessage: "Agora me diga: a luz LOS parou de PISCAR e ficou VERDE FIXA?"
             }
           });
           
@@ -1458,14 +1457,14 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           // 🔌 FLUXO: Luzes apagadas = Verificação de energia (CENÁRIO A - PARTE 1)
           responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌  \n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
         } else if (hasRedLightBlinking) {
-          // 🔴 FLUXO ENERGIA: Cliente confirmou luz vermelha LOS/PON (CENÁRIO A - PARTE 3)
-          responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o conector **VERDE** (cabo de fibra)\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
+          // 🔴 FLUXO ENERGIA: Cliente confirmou luz LOS vermelha (CENÁRIO A - PARTE 3)
+          responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o conector **VERDE** (cabo de fibra)\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz **LOS** parou de **PISCAR** e ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
         } else if (noRedLight) {
           // Cliente confirmou que NÃO tem luz vermelha piscando - abrir atendimento
           responseMessage = `Ok! Se não há luz vermelha mas o equipamento continua sem conexão, vou abrir um atendimento técnico prioritário. 🔧\n\nNossa equipe vai entrar em contato para agendar uma visita e resolver isso o mais rápido possível.\n\nPreciso de mais alguma coisa agora?`;
         } else if (fiberReconnected) {
           // Cliente concluiu manipulação do conector - verificar resultado
-          responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nMe diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?\n\nE você consegue navegar agora?`;
+          responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nMe diga: a luz **LOS** parou de **PISCAR** e ficou **VERDE FIXA**?\n\nE você consegue navegar agora?`;
         } else if (saysPowerAvailable) {
           // 🔌 FLUXO ENERGIA: Cliente confirmou energia OK (CENÁRIO A - PARTE 2)
           const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');

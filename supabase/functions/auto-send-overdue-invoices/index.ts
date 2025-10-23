@@ -1,5 +1,10 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supabase }) => {
   const { testClientName } = await req.json().catch(() => ({}));
   
