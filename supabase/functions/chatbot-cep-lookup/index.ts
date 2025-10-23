@@ -255,6 +255,10 @@ async function listAvailablePlans(supabase: any, cep?: string) {
     response += `• Telefone: (61) 3333-3333`
 
     return { response };
+  } catch (error) {
+    console.error('Erro ao listar planos:', error);
+    return { response: 'Desculpe, não consegui listar os planos agora. Tente novamente em instantes.' };
+  }
 }
 
 async function findRegionInfo(supabase: any, cep: string) {
