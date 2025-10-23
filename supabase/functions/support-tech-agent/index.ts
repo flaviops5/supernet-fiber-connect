@@ -16,7 +16,11 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
   const cacheKey = `approved_simulations_${subject}`;
   const cached = simulationCache.get(cacheKey);
   
-  if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5min cache (menor que antes)
+  if (
+    cached &&
+    Date.now() - cached.timestamp < 5 * 60 * 1000 &&
+    Array.isArray(cached.data) && cached.data.length > 0
+  ) {
     return cached.data;
   }
   
@@ -28,13 +32,28 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
     .eq('status', 'approved')
     .not('approved_messages', 'is', null)
     .order('updated_at', { ascending: false })
-    .limit(1); // Pegar apenas a mais recente aprovada
+    .limit(1);
   
-  if (error || !approvals || approvals.length === 0) {
-    return [];
+  let messages: any[] = [];
+  if (!error && approvals && approvals.length > 0) {
+    messages = approvals[0].approved_messages || [];
   }
   
-  const messages = approvals[0].approved_messages || [];
+  // Fallback inteligente: se não houver mensagens aprovadas, usar perguntas dos steps ativos do assunto
+  if (!messages || messages.length === 0) {
+    const { data: steps, error: stepsError } = await supabase
+      .from('agent_flow_steps')
+      .select('step_key, question')
+      .eq('agent_type', 'support-tech-agent')
+      .eq('subject_key', subject)
+      .eq('is_active', true);
+    
+    if (!stepsError && steps && steps.length > 0) {
+      messages = steps
+        .filter((s: any) => s.step_key && s.question)
+        .map((s: any) => ({ step_key: s.step_key, question: s.question }));
+    }
+  }
   
   simulationCache.set(cacheKey, {
     data: messages,
