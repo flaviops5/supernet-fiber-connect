@@ -16,51 +16,127 @@ import {
 import OmnichannelChat from "@/components/OmnichannelChat";
 
 const TEST_CPFS = [
+  // Cenários de Roteamento
   {
     cpf: "111.111.111-11",
     scenario: "Cliente OFFLINE + Sem Pendências",
     expected: "Luan Silva (Suporte Técnico)",
-    color: "bg-blue-500"
+    color: "bg-blue-500",
+    category: "Roteamento"
   },
   {
     cpf: "222.222.222-22",
     scenario: "Cliente OFFLINE + Bloqueado",
     expected: "Julia Martins (Financeiro)",
-    color: "bg-purple-500"
+    color: "bg-purple-500",
+    category: "Roteamento"
   },
   {
     cpf: "333.333.333-33",
     scenario: "Cliente ONLINE + Sem Pendências",
     expected: "Cloé Martins (aguarda intenção)",
-    color: "bg-green-500"
+    color: "bg-green-500",
+    category: "Roteamento"
   },
   {
     cpf: "444.444.444-44",
     scenario: "Cliente ONLINE + Com Pendências",
     expected: "Julia Martins (Financeiro)",
-    color: "bg-purple-500"
+    color: "bg-purple-500",
+    category: "Roteamento"
   },
   {
     cpf: "999.999.999-99",
     scenario: "Cliente Novo (não existe)",
     expected: "Vicente (Vendas após 3 tentativas)",
-    color: "bg-orange-500"
+    color: "bg-orange-500",
+    category: "Roteamento"
+  },
+  
+  // Cenários do Luan - Diagnóstico Técnico
+  {
+    cpf: "100.000.000-01",
+    scenario: "🔌 OFFLINE - TX/RX = 0.00 (Sem Energia)",
+    expected: "Luan detecta problema de ENERGIA",
+    color: "bg-red-600",
+    category: "Luan - TX/RX",
+    details: "Equipamento desligado, TX: 0.00, RX: 0.00"
+  },
+  {
+    cpf: "100.000.000-02",
+    scenario: "🟡 OFFLINE - Sinal Fraco (RX: -26 dBm)",
+    expected: "Luan detecta problema de cabo/conector",
+    color: "bg-yellow-600",
+    category: "Luan - TX/RX",
+    details: "TX: 0.2, RX: -26.5 (fraco)"
+  },
+  {
+    cpf: "100.000.000-03",
+    scenario: "🔴 OFFLINE - Sinal Crítico (RX: -32 dBm)",
+    expected: "Luan detecta problema GRAVE na rede",
+    color: "bg-red-700",
+    category: "Luan - TX/RX",
+    details: "TX: -3.0, RX: -32.0 (crítico)"
+  },
+  {
+    cpf: "100.000.000-04",
+    scenario: "🟢 OFFLINE - Sinal OK (RX: -18 dBm)",
+    expected: "Luan informa que sinal está OK",
+    color: "bg-green-600",
+    category: "Luan - TX/RX",
+    details: "TX: 0.5, RX: -18.2 (excelente) - problema não é sinal"
+  },
+  {
+    cpf: "100.000.000-05",
+    scenario: "🚨 Mass Outage Ativo",
+    expected: "Luan detecta mass outage (1542 clientes)",
+    color: "bg-orange-600",
+    category: "Luan - Mass Outage",
+    details: "Pane massiva em Taguatinga/Samambaia - SRI"
+  },
+  {
+    cpf: "100.000.000-06",
+    scenario: "👥 Cliente com Múltiplos Contratos",
+    expected: "Luan lista contratos e pergunta qual",
+    color: "bg-cyan-600",
+    category: "Luan - Outros",
+    details: "2+ contratos ativos, precisa identificar qual está com problema"
   }
 ];
 
 const VALIDATION_CHECKLIST = [
-  { id: 1, item: "Cloé solicita CPF no início" },
-  { id: 2, item: "Sistema consulta customer_contact_history antes do IXC" },
-  { id: 3, item: "CPF é validado no formato correto" },
-  { id: 4, item: "Tentativas são registradas no histórico" },
-  { id: 5, item: "Cliente BLOQUEADO → Julia (Financeiro)" },
-  { id: 6, item: "Cliente OFFLINE → Luan (Técnico)" },
-  { id: 7, item: "Cliente ONLINE → Cloé continua" },
-  { id: 8, item: "Julia SEMPRE informa STATUS do cliente" },
-  { id: 9, item: "Julia tenta desbloqueio automático" },
-  { id: 10, item: "Julia SEMPRE envia PIX e Boleto" },
-  { id: 11, item: "Protocolos são gerados (PROT-XXXXX)" },
-  { id: 12, item: "Mensagens são salvas no banco" }
+  // Roteamento Básico
+  { id: 1, item: "✅ Cloé solicita CPF no início", category: "Roteamento" },
+  { id: 2, item: "✅ Sistema consulta customer_contact_history antes do IXC", category: "Roteamento" },
+  { id: 3, item: "✅ CPF é validado no formato correto", category: "Roteamento" },
+  { id: 4, item: "✅ Tentativas são registradas no histórico", category: "Roteamento" },
+  { id: 5, item: "✅ Cliente BLOQUEADO → Julia (Financeiro)", category: "Roteamento" },
+  { id: 6, item: "✅ Cliente OFFLINE → Luan (Técnico)", category: "Roteamento" },
+  { id: 7, item: "✅ Cliente ONLINE → Cloé continua", category: "Roteamento" },
+  { id: 8, item: "✅ Protocolos são gerados (PROT-XXXXX)", category: "Roteamento" },
+  { id: 9, item: "✅ Mensagens são salvas no banco", category: "Roteamento" },
+  
+  // Julia (Financeiro)
+  { id: 10, item: "✅ Julia SEMPRE informa STATUS do cliente", category: "Julia" },
+  { id: 11, item: "✅ Julia tenta desbloqueio automático", category: "Julia" },
+  { id: 12, item: "✅ Julia SEMPRE envia PIX e Boleto", category: "Julia" },
+  
+  // Luan (Técnico) - Diagnóstico TX/RX
+  { id: 13, item: "🔌 Luan detecta TX/RX = 0.00 (sem energia)", category: "Luan - TX/RX" },
+  { id: 14, item: "🟡 Luan detecta sinal fraco (-26 a -28 dBm)", category: "Luan - TX/RX" },
+  { id: 15, item: "🔴 Luan detecta sinal crítico (< -28 dBm)", category: "Luan - TX/RX" },
+  { id: 16, item: "🟢 Luan identifica sinal OK mas offline", category: "Luan - TX/RX" },
+  { id: 17, item: "✅ Luan abre atendimento IXC quando necessário", category: "Luan - TX/RX" },
+  
+  // Luan - Mass Outage
+  { id: 18, item: "🚨 Luan detecta mass outage ativo", category: "Luan - Mass Outage" },
+  { id: 19, item: "✅ Luan informa região afetada (SRI)", category: "Luan - Mass Outage" },
+  { id: 20, item: "✅ Luan informa número de clientes afetados", category: "Luan - Mass Outage" },
+  { id: 21, item: "✅ Luan NÃO faz reboot durante mass outage", category: "Luan - Mass Outage" },
+  
+  // Luan - Outros
+  { id: 22, item: "👥 Luan lista múltiplos contratos corretamente", category: "Luan - Outros" },
+  { id: 23, item: "✅ Luan pergunta qual contrato está com problema", category: "Luan - Outros" }
 ];
 
 export const TestOmnichannelComplete = () => {
@@ -157,42 +233,57 @@ export const TestOmnichannelComplete = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {TEST_CPFS.map((test, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <code className="text-lg font-mono font-bold">
-                            {test.cpf}
-                          </code>
-                          <Badge className={`${test.color} text-white`}>
-                            CPF #{index + 1}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-sm">
-                            <span className="font-semibold">Cenário:</span> {test.scenario}
-                          </p>
-                          <p className="text-sm flex items-center gap-2">
-                            <span className="font-semibold">Roteamento Esperado:</span>
-                            <Badge variant="outline">{test.expected}</Badge>
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(test.cpf);
-                        }}
-                      >
-                        Copiar CPF
-                      </Button>
+              <div className="space-y-6">
+                {/* Agrupar por categoria */}
+                {Array.from(new Set(TEST_CPFS.map(t => t.category))).map(category => (
+                  <div key={category} className="space-y-3">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      {category}
+                    </h4>
+                    <div className="space-y-3">
+                      {TEST_CPFS.filter(t => t.category === category).map((test, index) => (
+                        <Card key={test.cpf} className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-3">
+                                <code className="text-base font-mono font-bold">
+                                  {test.cpf}
+                                </code>
+                                <Badge className={`${test.color} text-white`}>
+                                  {test.category}
+                                </Badge>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <p className="text-sm">
+                                  <span className="font-semibold">Cenário:</span> {test.scenario}
+                                </p>
+                                <p className="text-sm flex items-start gap-2">
+                                  <span className="font-semibold whitespace-nowrap">Esperado:</span>
+                                  <span>{test.expected}</span>
+                                </p>
+                                {test.details && (
+                                  <p className="text-xs text-muted-foreground bg-muted p-2 rounded mt-2">
+                                    💡 {test.details}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(test.cpf);
+                              }}
+                            >
+                              Copiar
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
-                  </Card>
+                  </div>
                 ))}
 
                 <Alert className="mt-6">
@@ -220,24 +311,34 @@ export const TestOmnichannelComplete = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {VALIDATION_CHECKLIST.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                    onClick={() => toggleCheck(item.id)}
-                  >
-                    <div className="mt-0.5">
-                      {checkedItems.includes(item.id) ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-sm ${checkedItems.includes(item.id) ? 'line-through text-muted-foreground' : ''}`}>
-                        {item.item}
-                      </p>
+              <div className="space-y-6">
+                {/* Agrupar checklist por categoria */}
+                {Array.from(new Set(VALIDATION_CHECKLIST.map(i => i.category))).map(category => (
+                  <div key={category} className="space-y-2">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      {category}
+                    </h4>
+                    <div className="space-y-2">
+                      {VALIDATION_CHECKLIST.filter(i => i.category === category).map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
+                          onClick={() => toggleCheck(item.id)}
+                        >
+                          <div className="mt-0.5">
+                            {checkedItems.includes(item.id) ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm ${checkedItems.includes(item.id) ? 'line-through text-muted-foreground' : ''}`}>
+                              {item.item}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

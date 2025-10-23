@@ -4,7 +4,6 @@ import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
-import TestLuanScenarios from "@/components/tests/TestLuanScenarios";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -52,35 +51,27 @@ const AdminTestes = () => {
 
           <TabsContent value="simulations" className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-4">🔐 Teste de Validação de CPF (Solução Híbrida)</h3>
+              <h3 className="text-lg font-semibold mb-4">🧪 Chat Omnichannel - Cloe + Luan</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Teste a nova validação real de CPF com mascaramento automático (LGPD compliant)
+                Teste completo do fluxo: Cloe (routing) + Luan (técnico) com cenários de TX/RX, mass outage e diagnósticos
+              </p>
+              <TestOmnichannelComplete />
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">🔐 Validação de CPF</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Teste a validação real de CPF com mascaramento automático (LGPD compliant)
               </p>
               <TestCPFValidation />
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">🧪 Cenários Completos do Luan (Suporte Técnico)</h3>
+              <h3 className="text-lg font-semibold mb-4">Teste Rápido - Suporte Técnico</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Teste o agente Luan em múltiplos cenários: sem energia, sinal fraco/crítico, mass outage, etc.
-              </p>
-              <TestLuanScenarios />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste do Suporte Técnico + Mass Outage</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Ative/desative pane massiva e teste o agente técnico (Luan) com detecção integrada
+                Teste rápido do Luan com mass outage ativo/inativo
               </p>
               <TestSupportTechAgent />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste Completo Omnichannel</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Simulação completa do fluxo de atendimento: desde a solicitação de CPF até o roteamento para o departamento correto
-              </p>
-              <TestOmnichannelComplete />
             </div>
           </TabsContent>
 
