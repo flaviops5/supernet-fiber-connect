@@ -1420,7 +1420,14 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nMe diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?\n\nE você consegue navegar agora?`;
         } else if (saysPowerAvailable) {
           // 🔌 FLUXO ENERGIA: Cliente confirmou energia OK (CENÁRIO A - PARTE 2)
-          responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_luz_vermelha');
+          responseMessage = approvedQuestion || `Ok! O equipamento está com energia. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
+          
+          await logger.info("🎯 [FLUXO LEGADO] Usando texto aprovado para verificar_luz_vermelha", {
+            conversation_id,
+            usando_aprovado: !!approvedQuestion
+          });
         } else if (rebootCompleted) {
           // Cliente terminou o reboot manual
           responseMessage = `Perfeito! Aguarde mais 1 minuto para sincronização completa. ⏳\n\nEnquanto isso, me diga: **as luzes estabilizaram?** \n\n💡 **PON/LOS** - está verde fixo?  \n⚡ **POWER** - está verde fixo?`;
