@@ -66,11 +66,40 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
 /**
  * Buscar a pergunta aprovada para um step específico
  */
+function sanitizeRedLightQuestion(text: string): string {
+  if (!text) return text;
+  let out = text;
+
+  // Substitui menções incorretas de "LOS ou PON" apenas por "LOS"
+  out = out.replace(/(LOS|los)\s*(\/|ou|e)\s*(PON|pon)/g, 'LOS');
+  out = out.replace(/(PON|pon)\s*(\/|ou|e)\s*(LOS|los)/g, 'LOS');
+
+  // Remove trechos que indiquem PON piscando
+  out = out.replace(/PON[^\n]*piscand[oa][^\n]*/gi, 'PON');
+
+  // Garante a pergunta correta sobre LOS piscando
+  if (!/luz[^\n]*LOS[^\n]*piscand[oa]/i.test(out)) {
+    out = out.replace(/\?\s*$/, '');
+    out += "\n\nVocê está vendo a luz LOS piscando? 🔴";
+  }
+
+  // Adiciona observação sobre PON verde, se não existir
+  if (!/PON[^\n]*(VERDE|fixa)/i.test(out)) {
+    out += "\n\nObs.: a luz PON normalmente é VERDE (fixa ou piscando).";
+  }
+
+  return out;
+}
+
 function getApprovedQuestionForStep(approvedMessages: any[], stepKey: string): string | null {
   if (!approvedMessages || approvedMessages.length === 0) return null;
   
   const message = approvedMessages.find((msg: any) => msg.step_key === stepKey);
-  return message?.question || null;
+  let question: string | null = message?.question || null;
+  if (question && stepKey === 'cenario_a_verificar_luz_vermelha') {
+    question = sanitizeRedLightQuestion(question);
+  }
+  return question;
 }
 
 /**
@@ -502,7 +531,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           } else if (rx >= -28 && rx <= -24) {
             // CENÁRIO C: Sinal fraco
             scenario = "C";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a luz **PON** ou **LOS** está **PISCANDO** (não fixa).\n\nEstá piscando?`;
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a **luz LOS (vermelha)** está **PISCANDO** (intermitente).\n\nObs.: a **luz PON** normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a **luz LOS** piscando? 🔴`;
           } else {
             // CENÁRIO D: Sinal crítico
             scenario = "D";
