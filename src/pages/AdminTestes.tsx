@@ -4,6 +4,7 @@ import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
+import TestLuanScenarios from "@/components/tests/TestLuanScenarios";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -56,6 +57,14 @@ const AdminTestes = () => {
                 Teste a nova validação real de CPF com mascaramento automático (LGPD compliant)
               </p>
               <TestCPFValidation />
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">🧪 Cenários Completos do Luan (Suporte Técnico)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Teste o agente Luan em múltiplos cenários: sem energia, sinal fraco/crítico, mass outage, etc.
+              </p>
+              <TestLuanScenarios />
             </div>
 
             <div className="border-t pt-6">
