@@ -329,24 +329,29 @@ export default function GuidedFlowSimulator() {
       subjectKey,
       scenarioKey, 
       variationPath, 
-      status 
+      status,
+      approvedMessages
     }: { 
       agentType: string;
       subjectKey?: string;
       scenarioKey: string; 
       variationPath: string; 
-      status: 'approved' | 'rejected' 
+      status: 'approved' | 'rejected';
+      approvedMessages?: ConversationMessage[];
     }) => {
+      const payload: any = {
+        agent_type: agentType,
+        subject_key: subjectKey,
+        scenario_key: scenarioKey,
+        variation_path: variationPath,
+        status,
+        approved_messages: approvedMessages || [],
+        updated_at: new Date().toISOString()
+      };
+      
       const { error } = await supabase
         .from('agent_flow_scenario_approvals')
-        .upsert({
-          agent_type: agentType as any,
-          subject_key: subjectKey,
-          scenario_key: scenarioKey,
-          variation_path: variationPath,
-          status,
-          updated_at: new Date().toISOString()
-        }, {
+        .upsert(payload, {
           onConflict: 'agent_type,subject_key,scenario_key,variation_path'
         });
       
@@ -490,14 +495,16 @@ export default function GuidedFlowSimulator() {
       const variation = variations.find(v => v.id === variationId);
       if (variation) {
         const variationPath = variation.path.join('→');
+        const messages = conversations[variationId] || [];
         
-        // Salvar no banco
+        // Salvar no banco com as mensagens aprovadas
         saveApprovalMutation.mutate({
           agentType: selectedAgent,
           subjectKey: selectedSubject,
           scenarioKey: selectedScenario,
           variationPath,
-          status
+          status,
+          approvedMessages: status === 'approved' ? messages : undefined
         });
         
         // Atualizar estado local

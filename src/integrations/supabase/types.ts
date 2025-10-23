@@ -129,6 +129,7 @@ export type Database = {
         Row: {
           agent_type: Database["public"]["Enums"]["agent_type"]
           approved_by: string | null
+          approved_messages: Json | null
           created_at: string | null
           id: string
           notes: string | null
@@ -141,6 +142,7 @@ export type Database = {
         Insert: {
           agent_type: Database["public"]["Enums"]["agent_type"]
           approved_by?: string | null
+          approved_messages?: Json | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -153,6 +155,7 @@ export type Database = {
         Update: {
           agent_type?: Database["public"]["Enums"]["agent_type"]
           approved_by?: string | null
+          approved_messages?: Json | null
           created_at?: string | null
           id?: string
           notes?: string | null
@@ -979,7 +982,7 @@ export type Database = {
           available: boolean
           cep_end: string
           cep_start: string
-          coordinates: unknown | null
+          coordinates: unknown
           coverage_area_id: string | null
           created_at: string
           id: string
@@ -990,7 +993,7 @@ export type Database = {
           available?: boolean
           cep_end: string
           cep_start: string
-          coordinates?: unknown | null
+          coordinates?: unknown
           coverage_area_id?: string | null
           created_at?: string
           id?: string
@@ -1001,7 +1004,7 @@ export type Database = {
           available?: boolean
           cep_end?: string
           cep_start?: string
-          coordinates?: unknown | null
+          coordinates?: unknown
           coverage_area_id?: string | null
           created_at?: string
           id?: string
@@ -1395,7 +1398,7 @@ export type Database = {
           reopen_count: number | null
           reopened_from_conversation_id: string | null
           resolved_at: string | null
-          search_vector: unknown | null
+          search_vector: unknown
           status: Database["public"]["Enums"]["conversation_status"]
           tags: string[] | null
           updated_at: string | null
@@ -1425,7 +1428,7 @@ export type Database = {
           reopen_count?: number | null
           reopened_from_conversation_id?: string | null
           resolved_at?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           status?: Database["public"]["Enums"]["conversation_status"]
           tags?: string[] | null
           updated_at?: string | null
@@ -1455,7 +1458,7 @@ export type Database = {
           reopen_count?: number | null
           reopened_from_conversation_id?: string | null
           resolved_at?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           status?: Database["public"]["Enums"]["conversation_status"]
           tags?: string[] | null
           updated_at?: string | null
@@ -3560,7 +3563,7 @@ export type Database = {
           blocked_until: string | null
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           updated_at: string
           user_id: string | null
           window_start: string
@@ -3571,7 +3574,7 @@ export type Database = {
           blocked_until?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           updated_at?: string
           user_id?: string | null
           window_start?: string
@@ -3582,7 +3585,7 @@ export type Database = {
           blocked_until?: string | null
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           updated_at?: string
           user_id?: string | null
           window_start?: string
@@ -3724,7 +3727,7 @@ export type Database = {
           event_description: string
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           severity: string | null
           user_agent: string | null
           user_id: string | null
@@ -3735,7 +3738,7 @@ export type Database = {
           event_description: string
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -3746,7 +3749,7 @@ export type Database = {
           event_description?: string
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -3977,7 +3980,7 @@ export type Database = {
           language: string | null
           metadata: Json | null
           parent_id: string | null
-          search_vector: unknown | null
+          search_vector: unknown
           tags: string[] | null
           title: string
           updated_at: string | null
@@ -3995,7 +3998,7 @@ export type Database = {
           language?: string | null
           metadata?: Json | null
           parent_id?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           tags?: string[] | null
           title: string
           updated_at?: string | null
@@ -4013,7 +4016,7 @@ export type Database = {
           language?: string | null
           metadata?: Json | null
           parent_id?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           tags?: string[] | null
           title?: string
           updated_at?: string | null
@@ -4035,7 +4038,7 @@ export type Database = {
           activity_type: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           user_agent: string | null
           user_id: string
@@ -4045,7 +4048,7 @@ export type Database = {
           activity_type: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_agent?: string | null
           user_id: string
@@ -4055,7 +4058,7 @@ export type Database = {
           activity_type?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           user_agent?: string | null
           user_id?: string
@@ -4088,18 +4091,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      anonymize_old_conversations: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
-      calculate_nps_category: {
-        Args: { score: number }
-        Returns: string
-      }
+      anonymize_old_conversations: { Args: never; Returns: number }
+      calculate_nps_category: { Args: { score: number }; Returns: string }
       check_rate_limit: {
         Args: {
           action_type_param: string
@@ -4109,21 +4102,12 @@ export type Database = {
         }
         Returns: Json
       }
-      cleanup_expired_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_expired_webhooks: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      create_installation_appointment: {
-        Args:
-          | {
+      cleanup_expired_cache: { Args: never; Returns: number }
+      cleanup_expired_webhooks: { Args: never; Returns: number }
+      cleanup_old_logs: { Args: never; Returns: undefined }
+      create_installation_appointment:
+        | {
+            Args: {
               p_address_city: string
               p_address_complement: string
               p_address_neighborhood: string
@@ -4145,7 +4129,10 @@ export type Database = {
               p_plan_price: number
               p_plan_speed: string
             }
-          | {
+            Returns: string
+          }
+        | {
+            Args: {
               p_appointment_date: string
               p_appointment_period: string
               p_customer_address: string
@@ -4161,20 +4148,11 @@ export type Database = {
               p_plan_price: number
               p_plan_speed: string
             }
-        Returns: string
-      }
-      disable_maintenance_cron: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      enable_maintenance_cron: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_contract_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+            Returns: string
+          }
+      disable_maintenance_cron: { Args: never; Returns: undefined }
+      enable_maintenance_cron: { Args: never; Returns: undefined }
+      generate_contract_number: { Args: never; Returns: string }
       get_available_agents_for_department: {
         Args: {
           dept: Database["public"]["Enums"]["agent_department"]
@@ -4192,11 +4170,11 @@ export type Database = {
         Returns: string
       }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_migration_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           migrated_docs: number
           migration_progress: number
@@ -4204,64 +4182,12 @@ export type Database = {
           total_docs: number
         }[]
       }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
       }
       log_security_event: {
         Args: {
@@ -4299,42 +4225,6 @@ export type Database = {
           tags: string[]
           title: string
         }[]
-      }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
     }
     Enums: {

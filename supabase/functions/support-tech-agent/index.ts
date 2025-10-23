@@ -5,72 +5,53 @@ import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import { hybridInterpret, normalizeText, detectFrustration } from "../_shared/ai-response-interpreter.ts";
 
-// Cache de simulações aprovadas (30 minutos)
-let approvedSimulationsCache: { data: any[], timestamp: number } | null = null;
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+// Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
+const simulationCache = new Map<string, { data: any, timestamp: number }>();
 
-async function getApprovedSimulations(supabase: any, subject: string): Promise<string> {
-  // Verificar cache
-  if (approvedSimulationsCache && 
-      Date.now() - approvedSimulationsCache.timestamp < CACHE_TTL &&
-      approvedSimulationsCache.data.length > 0) {
-    return formatSimulationsForPrompt(approvedSimulationsCache.data, subject);
+/**
+ * Buscar exemplos de simulações aprovadas para incluir no contexto
+ * Retorna array de mensagens aprovadas para usar no fluxo
+ */
+async function getApprovedSimulations(supabase: any, subject: string): Promise<any[]> {
+  const cacheKey = `approved_simulations_${subject}`;
+  const cached = simulationCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5min cache (menor que antes)
+    return cached.data;
   }
-
-  // Buscar simulações aprovadas de energia
-  const { data, error } = await supabase
-    .from("agent_flow_scenario_approvals")
-    .select(`
-      variation_path,
-      notes,
-      agent_type,
-      subject_key,
-      scenario_key
-    `)
-    .eq("agent_type", "support-tech-agent")
-    .eq("subject_key", "energia")
-    .eq("status", "approved")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Erro ao buscar simulações aprovadas:", error);
-    return "";
+  
+  const { data: approvals, error } = await supabase
+    .from('agent_flow_scenario_approvals')
+    .select('scenario_key, variation_path, approved_messages, updated_at')
+    .eq('agent_type', 'support-tech-agent')
+    .eq('subject_key', subject)
+    .eq('status', 'approved')
+    .not('approved_messages', 'is', null)
+    .order('updated_at', { ascending: false })
+    .limit(1); // Pegar apenas a mais recente aprovada
+  
+  if (error || !approvals || approvals.length === 0) {
+    return [];
   }
-
-  if (!data || data.length === 0) {
-    return "";
-  }
-
-  // Atualizar cache
-  approvedSimulationsCache = {
-    data,
+  
+  const messages = approvals[0].approved_messages || [];
+  
+  simulationCache.set(cacheKey, {
+    data: messages,
     timestamp: Date.now()
-  };
-
-  return formatSimulationsForPrompt(data, subject);
+  });
+  
+  return messages;
 }
 
-function formatSimulationsForPrompt(simulations: any[], subject: string): string {
-  if (!simulations || simulations.length === 0) {
-    return "";
-  }
-
-  let prompt = `\n\n## 📚 EXEMPLOS APROVADOS DE CONVERSAS SOBRE ${subject.toUpperCase()}\n\n`;
-  prompt += `Você tem acesso a ${simulations.length} variações aprovadas de conversas reais sobre ${subject}.\n`;
-  prompt += `Use estes exemplos como referência para tom, abordagem e sequência de perguntas:\n\n`;
-
-  simulations.forEach((sim, idx) => {
-    prompt += `### Variação ${idx + 1}: ${sim.scenario_key}\n`;
-    prompt += `**Caminho:** ${sim.variation_path}\n`;
-    if (sim.notes) {
-      prompt += `**Observações:** ${sim.notes}\n`;
-    }
-    prompt += `---\n\n`;
-  });
-
-  prompt += `⚠️ **IMPORTANTE:** Use estes exemplos como guia, mas adapte naturalmente à situação específica do cliente.\n`;
-
-  return prompt;
+/**
+ * Buscar a pergunta aprovada para um step específico
+ */
+function getApprovedQuestionForStep(approvedMessages: any[], stepKey: string): string | null {
+  if (!approvedMessages || approvedMessages.length === 0) return null;
+  
+  const message = approvedMessages.find((msg: any) => msg.step_key === stepKey);
+  return message?.question || null;
 }
 
 /**
@@ -764,9 +745,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             method: lightInterpretation.method
           });
           
+          // Buscar mensagens aprovadas para usar textos customizados
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          
           if (lightInterpretation.result === 'negou' && lightInterpretation.confidence >= 0.6) {
             // Luzes apagadas → Verificar energia
-            responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌\n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
+            const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_energia');
+            responseMessage = approvedQuestion || `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌\n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
+            
+            await logger.info("🎯 Usando texto aprovado para verificar_energia", {
+              conversation_id,
+              usando_aprovado: !!approvedQuestion
+            });
             
             await supabase
               .from("conversations")
@@ -781,7 +771,13 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               
           } else if (lightInterpretation.result === 'confirmou' && lightInterpretation.confidence >= 0.6) {
             // Luzes acesas → Pular para verificação de luz vermelha
-            responseMessage = `Ok! As luzes estão acesas. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
+            const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_luz_vermelha');
+            responseMessage = approvedQuestion || `Ok! As luzes estão acesas. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
+            
+            await logger.info("🎯 Usando texto aprovado para verificar_luz_vermelha", {
+              conversation_id,
+              usando_aprovado: !!approvedQuestion
+            });
             
             await supabase
               .from("conversations")
@@ -849,9 +845,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             reasoning: interpretation.reasoning
           });
           
+          // Buscar mensagens aprovadas
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          
           if (interpretation.result === 'confirmou' && interpretation.confidence >= 0.6) {
             // Energia OK → Verificar luz vermelha
-            responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
+            const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_luz_vermelha');
+            responseMessage = approvedQuestion || `Ok! O equipamento está com energia. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
+            
+            await logger.info("🎯 Usando texto aprovado para verificar_luz_vermelha", {
+              conversation_id,
+              usando_aprovado: !!approvedQuestion
+            });
             
             await supabase
               .from("conversations")
@@ -917,9 +922,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             method: redLightInterpretation.method
           });
           
+          // Buscar mensagens aprovadas
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          
           if (redLightInterpretation.result === 'confirmou' && redLightInterpretation.confidence >= 0.6) {
             // Tem luz vermelha → Instruir manipulação do conector
-            responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o cabo fino (fibra óptica) - é um cabo bem fininho que entra no equipamento\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
+            const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_aguardando_manipulacao');
+            responseMessage = approvedQuestion || `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o cabo fino (fibra óptica) - é um cabo bem fininho que entra no equipamento\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
+            
+            await logger.info("🎯 Usando texto aprovado para aguardando_manipulacao", {
+              conversation_id,
+              usando_aprovado: !!approvedQuestion
+            });
             
             await supabase
               .from("conversations")
@@ -1022,9 +1036,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             method: manipulationInterpretation.method
           });
           
+          // Buscar mensagens aprovadas
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          
           if (manipulationInterpretation.result === 'confirmou' && manipulationInterpretation.confidence >= 0.6) {
             // Cliente manipulou o conector → Verificar resultado
-            responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?`;
+            const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_resultado_manipulacao');
+            responseMessage = approvedQuestion || `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?`;
+            
+            await logger.info("🎯 Usando texto aprovado para verificar_resultado_manipulacao", {
+              conversation_id,
+              usando_aprovado: !!approvedQuestion
+            });
             
             await supabase
               .from("conversations")
@@ -1096,6 +1119,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             reasoning: resultInterpretation.reasoning
           });
           
+          // Buscar mensagens aprovadas
+          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          
           if (resultInterpretation.result === 'confirmou' && resultInterpretation.confidence >= 0.6) {
             // Luz ficou verde → Consultar IXC para verificar se voltou online
             logger.info("Cenário A: Luz ficou verde - consultando IXC");
@@ -1121,7 +1147,13 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             
             if (isOnlineNow) {
               // Cliente voltou online → Perguntar se consegue navegar
-              responseMessage = `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
+              const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_navegacao');
+              responseMessage = approvedQuestion || `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
+              
+              await logger.info("🎯 Usando texto aprovado para verificar_navegacao", {
+                conversation_id,
+                usando_aprovado: !!approvedQuestion
+              });
               
             await supabase
               .from("conversations")
