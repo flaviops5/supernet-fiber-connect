@@ -67,9 +67,9 @@ Por favor, verifique:
 Após confirmar, me avise."
 
 2. Se cliente confirmar energia OK:
-"Agora verifique se há uma LUZ VERMELHA chamada 'LOS' ou 'PON' piscando no equipamento.
+"Agora verifique se a luz **LOS** (vermelha) está piscando no equipamento.
 
-Tem essa luz vermelha?"
+A luz **PON** normalmente é **VERDE** (fixa ou piscando)."
 
 3. Se SIM (luz vermelha piscando):
 "Essa luz indica problema no sinal da fibra óptica. Vou te enviar as instruções para tentar resolver:
@@ -84,7 +84,7 @@ Tem essa luz vermelha?"
 
 Aguarde 1 minuto após reconectar para o equipamento sincronizar.
 
-Veja se a LUZ VERMELHA parou de PISCAR e agora está VERDE FIXA.
+Veja se a **luz LOS** parou de **PISCAR** e se a **PON** ficou **VERDE FIXA**.
 
 Me avise quando terminar."
 

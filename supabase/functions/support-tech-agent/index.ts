@@ -781,7 +781,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               
           } else if (lightInterpretation.result === 'confirmou' && lightInterpretation.confidence >= 0.6) {
             // Luzes acesas → Pular para verificação de luz vermelha
-            responseMessage = `Ok! As luzes estão acesas. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
+            responseMessage = `Ok! As luzes estão acesas. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
             
             await supabase
               .from("conversations")
@@ -851,7 +851,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           
           if (interpretation.result === 'confirmou' && interpretation.confidence >= 0.6) {
             // Energia OK → Verificar luz vermelha
-            responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
+            responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
             
             await supabase
               .from("conversations")
@@ -906,8 +906,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               ]
             },
             aiContext: {
-              expectedAction: "verificar se há uma luz vermelha (LOS/PON) piscando no equipamento",
-              previousAgentMessage: "Você está vendo uma luz vermelha piscando no equipamento?"
+              expectedAction: "verificar se a luz LOS (vermelha) está piscando no equipamento",
+              previousAgentMessage: "Você está vendo a luz LOS (vermelha) piscando no equipamento?"
             }
           });
           
@@ -946,7 +946,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                   ixc_client_id,
                   customer_name: customerName,
                   ticket_subject: "Equipamento offline sem sinal óptico",
-                  ticket_description: `Cliente ${customerName} reportou equipamento offline. Diagnóstico: luzes acesas mas sem luz vermelha LOS/PON. Possível problema no equipamento ou fibra.`,
+                  ticket_description: `Cliente ${customerName} reportou equipamento offline. Diagnóstico: luzes acesas mas sem luz vermelha LOS. Possível problema no equipamento ou fibra.`,
                   ticket_priority: "high"
                 }
               );
@@ -973,7 +973,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           } else {
             // Incerto → Explicação detalhada
             const newAttempts = clarificationAttempts + 1;
-            responseMessage = `Desculpe, não entendi se você está vendo ou não a luz vermelha. 🤔\n\nOlhe no equipamento e me diga:\n- **"sim"** se você VÊ uma luz vermelha (LOS ou PON) **PISCANDO**\n- **"não"** se NÃO TEM nenhuma luz vermelha ou se está verde/fixa`;
+            responseMessage = `Desculpe, não entendi se você está vendo ou não a luz vermelha. 🤔\n\nOlhe no equipamento e me diga:\n- **"sim"** se você VÊ a luz **LOS (vermelha)** **PISCANDO**\n- **"não"** se NÃO TEM luz **LOS vermelha** piscando e a **PON está VERDE/fixa**`;
             
             await supabase
               .from("conversations")
