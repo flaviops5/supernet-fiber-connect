@@ -3,7 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { 
   Info, 
   MessageSquare, 
@@ -11,7 +14,11 @@ import {
   XCircle, 
   AlertTriangle,
   ClipboardList,
-  MessageCircle
+  MessageCircle,
+  Search,
+  User,
+  Loader2,
+  Database
 } from "lucide-react";
 import OmnichannelChat from "@/components/OmnichannelChat";
 
@@ -141,6 +148,9 @@ const VALIDATION_CHECKLIST = [
 
 export const TestOmnichannelComplete = () => {
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
+  const [searchCPF, setSearchCPF] = useState("");
+  const [searchingIXC, setSearchingIXC] = useState(false);
+  const [ixcClients, setIxcClients] = useState<any[]>([]);
 
   const toggleCheck = (id: number) => {
     setCheckedItems(prev => 
@@ -148,6 +158,55 @@ export const TestOmnichannelComplete = () => {
         ? prev.filter(i => i !== id)
         : [...prev, id]
     );
+  };
+
+  const searchIXCClient = async () => {
+    if (!searchCPF || searchCPF.length < 11) {
+      toast.error("CPF inválido. Digite um CPF com 11 dígitos.");
+      return;
+    }
+
+    setSearchingIXC(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ixc-proxy', {
+        body: {
+          endpoint: 'cliente',
+          method: 'GET',
+          params: {
+            qtype: 'cliente.cnpj_cpf',
+            query: searchCPF.replace(/\D/g, ''),
+            oper: '=',
+            page: '1',
+            rp: '10',
+            sortname: 'cliente.id',
+            sortorder: 'desc'
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.registros && data.registros.length > 0) {
+        setIxcClients(data.registros);
+        toast.success(`${data.registros.length} cliente(s) encontrado(s)`);
+      } else {
+        setIxcClients([]);
+        toast.info("Nenhum cliente encontrado com este CPF");
+      }
+    } catch (error: any) {
+      toast.error("Erro ao buscar cliente: " + error.message);
+      setIxcClients([]);
+    } finally {
+      setSearchingIXC(false);
+    }
+  };
+
+  const formatCPF = (cpf: string) => {
+    const cleaned = cpf.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+    return cpf;
   };
 
   return (
@@ -161,14 +220,18 @@ export const TestOmnichannelComplete = () => {
       </Alert>
 
       <Tabs defaultValue="test" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="test" className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4" />
-            Chat de Teste
+            Chat
+          </TabsTrigger>
+          <TabsTrigger value="real-clients" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Clientes Reais
           </TabsTrigger>
           <TabsTrigger value="cpfs" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            CPFs de Teste
+            CPFs Mock
           </TabsTrigger>
           <TabsTrigger value="validation" className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
@@ -220,6 +283,119 @@ export const TestOmnichannelComplete = () => {
                   </code>
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="real-clients" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Buscar Clientes Reais do IXC
+              </CardTitle>
+              <CardDescription>
+                Busque clientes reais do IXC Soft por CPF para testar o Chat Omnichannel com dados reais
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-3">
+                <Input
+                  placeholder="Digite o CPF (somente números)"
+                  value={searchCPF}
+                  onChange={(e) => setSearchCPF(e.target.value.replace(/\D/g, ''))}
+                  maxLength={11}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={searchIXCClient}
+                  disabled={searchingIXC || searchCPF.length < 11}
+                >
+                  {searchingIXC ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Buscando...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Buscar
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {ixcClients.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm">
+                    {ixcClients.length} cliente(s) encontrado(s):
+                  </h4>
+                  {ixcClients.map((client: any) => (
+                    <Card key={client.id} className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <User className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-semibold">{client.razao}</p>
+                              <code className="text-xs text-muted-foreground">
+                                ID IXC: {client.id}
+                              </code>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">CPF:</span>{' '}
+                              <code className="font-mono">{formatCPF(client.cnpj_cpf)}</code>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Email:</span>{' '}
+                              <span>{client.email || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Telefone:</span>{' '}
+                              <span>{client.fone1 || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Cidade:</span>{' '}
+                              <span>{client.cidade || 'N/A'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <Badge variant={client.bloqueado === 'N' ? 'default' : 'destructive'}>
+                              {client.bloqueado === 'N' ? '✓ Desbloqueado' : '⚠️ Bloqueado'}
+                            </Badge>
+                            <Badge variant="outline">
+                              Status: {client.situacao || 'N/A'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const cpf = formatCPF(client.cnpj_cpf);
+                            navigator.clipboard.writeText(cpf);
+                            toast.success(`CPF copiado: ${cpf}`);
+                          }}
+                        >
+                          Copiar CPF
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Como usar:</strong> Busque um cliente real do IXC, copie o CPF e use no Chat de Teste 
+                  para validar o comportamento com dados reais (status de conexão, bloqueios, contratos, etc).
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
