@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
+import { hybridInterpret, normalizeText } from "../_shared/ai-response-interpreter.ts";
 
 // Cache de simulações aprovadas (30 minutos)
 let approvedSimulationsCache: { data: any[], timestamp: number } | null = null;
@@ -672,7 +673,43 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         
         // ETAPA 2: Verificar energia (após confirmar luzes apagadas)
         else if (flowState === "cenario_a_verificar_energia") {
-          if (saysPowerAvailable) {
+          // Usar sistema híbrido para interpretar resposta
+          const interpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion|volt(ou|aram)|acend(eu|eram)|normal)/i,
+              denied: /\b(n[ãa]o|nao|nn?|nem)\b/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "sim está ligado",
+                "está na tomada",
+                "tem energia",
+                "voltou a energia",
+                "as luzes acenderam",
+                "está funcionando",
+                "tudo ligado"
+              ],
+              denied: [
+                "não tem energia",
+                "está desligado",
+                "não está ligado",
+                "sem energia"
+              ]
+            },
+            aiContext: {
+              expectedAction: "verificar se o equipamento está com energia elétrica",
+              previousAgentMessage: "Por favor, confira: Equipamento está ligado na tomada? Fonte de energia está conectada?"
+            }
+          });
+          
+          logger.info("Interpretação híbrida - Energia", {
+            result: interpretation.result,
+            confidence: interpretation.confidence,
+            method: interpretation.method,
+            reasoning: interpretation.reasoning
+          });
+          
+          if (interpretation.result === 'confirmou' && interpretation.confidence >= 0.6) {
             // Energia OK → Verificar luz vermelha
             responseMessage = `Ok! O equipamento está com energia. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
             
@@ -685,9 +722,12 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                 }
               })
               .eq("id", conversation_id);
-          } else {
+          } else if (interpretation.result === 'negou' && interpretation.confidence >= 0.6) {
             // Sem energia → Orientar cliente a resolver energia primeiro
             responseMessage = `Entendi! Parece que o problema é na energia elétrica. ⚡\n\nAntes de continuar, você precisa:\n1️⃣ Verificar o disjuntor\n2️⃣ Testar outra tomada\n3️⃣ Garantir que há energia no local\n\nAssim que tiver energia, me avise que continuo o diagnóstico!`;
+          } else {
+            // Incerto → Pedir clarificação
+            responseMessage = `Desculpe, não entendi. 🤔\n\nO equipamento **está ligado na tomada e com energia**?\n\nMe responda **sim** ou **não**.`;
           }
         }
         
@@ -778,7 +818,44 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         
         // ETAPA 5: Verificar resultado após manipulação
         else if (flowState === "cenario_a_verificar_resultado_manipulacao") {
-          if (lightTurnedGreen) {
+          // Usar sistema híbrido para interpretar resultado
+          const resultInterpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|verde|parou|fixa|ok|funcionou|volt(ou|aram)|resolv(eu|ido)|conseg[ou])/i,
+              denied: /(n[ãa]o|nao|continua|ainda).*?(vermelh[oa]|pisca)/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "ficou verde",
+                "parou de piscar",
+                "luz fixa agora",
+                "voltou",
+                "funcionou",
+                "resolveu",
+                "está normal",
+                "consigo navegar"
+              ],
+              denied: [
+                "continua vermelha",
+                "ainda piscando",
+                "não resolveu",
+                "não funcionou"
+              ]
+            },
+            aiContext: {
+              expectedAction: "verificar se a luz vermelha parou de piscar e ficou verde fixa após manipular o cabo de fibra",
+              previousAgentMessage: "Agora me diga: a luz VERMELHA parou de PISCAR e ficou VERDE FIXA?"
+            }
+          });
+          
+          logger.info("Interpretação híbrida - Resultado", {
+            result: resultInterpretation.result,
+            confidence: resultInterpretation.confidence,
+            method: resultInterpretation.method,
+            reasoning: resultInterpretation.reasoning
+          });
+          
+          if (resultInterpretation.result === 'confirmou' && resultInterpretation.confidence >= 0.6) {
             // Luz ficou verde → Consultar IXC para verificar se voltou online
             logger.info("Cenário A: Luz ficou verde - consultando IXC");
             
@@ -850,7 +927,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                 })
                 .eq("id", conversation_id);
             }
-          } else if (lightStillRed) {
+          } else if (resultInterpretation.result === 'negou' && resultInterpretation.confidence >= 0.6) {
             // Luz continua vermelha → Pedir foto + ticket + humano
             logger.info("Cenário A: Luz continua vermelha - solicitando foto");
             
@@ -893,7 +970,40 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         
         // ETAPA 6: Verificar navegação (após confirmar que está online)
         else if (flowState === "cenario_a_verificar_navegacao") {
-          if (/(sim|s[ií]|consigo|funciona|ok)/i.test(currentMessage)) {
+          // Usar sistema híbrido para verificar se consegue navegar
+          const navInterpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|consigo|funciona|ok|normal|t[aá]|volta)/i,
+              denied: /(n[ãa]o|nao|ainda|continua).*?(consigo|funciona|lent|trava)/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "sim consigo",
+                "está funcionando",
+                "voltou normal",
+                "tá tudo ok",
+                "navega normal"
+              ],
+              denied: [
+                "não consigo",
+                "ainda não funciona",
+                "continua sem internet",
+                "não navega"
+              ]
+            },
+            aiContext: {
+              expectedAction: "testar se consegue navegar na internet normalmente",
+              previousAgentMessage: "Consegue navegar na internet normalmente?"
+            }
+          });
+          
+          logger.info("Interpretação híbrida - Navegação", {
+            result: navInterpretation.result,
+            confidence: navInterpretation.confidence,
+            method: navInterpretation.method
+          });
+          
+          if (navInterpretation.result === 'confirmou' && navInterpretation.confidence >= 0.6) {
             // Consegue navegar → Encerrar com sucesso
             responseMessage = `Perfeito! Problema resolvido! 🎉\n\nPreciso de mais alguma coisa?`;
             
@@ -906,7 +1016,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                 }
               })
               .eq("id", conversation_id);
-          } else if (isNegation || /(não|nao|continua|ainda)/i.test(currentMessage)) {
+          } else if (navInterpretation.result === 'negou' && navInterpretation.confidence >= 0.6) {
             // Não consegue navegar → Ticket + humano
             logger.info("Cenário A: Online mas não navega - abrindo ticket");
             
@@ -942,7 +1052,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
           } else {
-            responseMessage = `Você consegue abrir sites no navegador? Me responda **sim** ou **não**.`;
+            // Incerto → Pedir clarificação
+            responseMessage = `Desculpe, não entendi. 🤔\n\nVocê **consegue navegar** na internet e abrir sites normalmente?\n\nMe responda **sim** ou **não**.`;
           }
         }
         
