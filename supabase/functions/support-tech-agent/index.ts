@@ -599,19 +599,39 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           context: "Seguindo protocolo de energia com variações aprovadas como referência"
         });
 
-        // Detectores de resposta
+        // Detectores de resposta (melhorados para capturar variações naturais)
         const isNegation = /\b(n[ãa]o|nao|nn?|nem)\b/i.test(currentMessage);
+        
         const saysOff = /(apag(ad[oa]s?|ou)|sem luz|desligad[oa]s?|tud[oa] (apagad|desligad|escur)|escur[oa])/i.test(currentMessage) ||
           (isNegation && /(aces[ao]s?|acesas|acessas|piscando)/i.test(currentMessage));
-        const saysPowerAvailable = /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
-          /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage);
+        
+        // Detectar confirmação de energia ou que as luzes voltaram/acenderam
+        const saysPowerAvailable = (
+          // Confirmações diretas
+          (/(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
+           /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage)) ||
+          // Luzes voltaram/acenderam (implica que energia voltou)
+          /(volt(ou|aram)|acend(eu|eram)|funcion(ou|ando)|normal(iz)?)/i.test(currentMessage) &&
+          /(luz(es)?|equipamento|internet|tudo)/i.test(currentMessage)
+        );
+        
         const hasRedLightBlinking = /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec)/i.test(currentMessage) &&
           /(vermelh[oa]|los|pon|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
+        
         const noRedLight = isNegation && /(vermelh[oa]|los|pon|pisca)/i.test(currentMessage);
-        const fiberReconnected = /(reconect(ei|ado)|tirei\s*e\s*(re)?coloquei|manipul(ei|ado)|fiz|terminei)/i.test(currentMessage) &&
+        
+        const fiberReconnected = /(reconect(ei|ado)|tirei\s*e\s*(re)?coloquei|manipul(ei|ado)|fiz|terminei|test(ei|ado))/i.test(currentMessage) &&
           /(conector|fibra|verde|cabo)/i.test(currentMessage);
-        const lightTurnedGreen = /(sim|s[ií]|verde|parou|fixa|ok)/i.test(currentMessage) &&
-          /(verde|parou|luz|fixa)/i.test(currentMessage);
+        
+        // Detectar sucesso: luz verde OU resolução
+        const lightTurnedGreen = (
+          // Luz verde específica
+          (/(sim|s[ií]|verde|parou|fixa|ok|funcionou)/i.test(currentMessage) &&
+           /(verde|parou|luz|fixa)/i.test(currentMessage)) ||
+          // Resoluções gerais: voltou, funcionou, resolveu
+          /(volt(ou|aram)|resolv(eu|ido)|funcion(ou|ando)|t[aá] (funcionando|online|ok|normal)|conseg[ou])/i.test(currentMessage)
+        );
+        
         const lightStillRed = (isNegation || /continua|ainda/i.test(currentMessage)) &&
           /(vermelh[oa]|pisca)/i.test(currentMessage);
 
