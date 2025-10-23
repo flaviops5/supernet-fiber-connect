@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
-import { hybridInterpret, normalizeText } from "../_shared/ai-response-interpreter.ts";
+import { hybridInterpret, normalizeText, detectFrustration } from "../_shared/ai-response-interpreter.ts";
 
 // Cache de simulações aprovadas (30 minutos)
 let approvedSimulationsCache: { data: any[], timestamp: number } | null = null;
@@ -584,6 +584,99 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
       logger.info("Estado do fluxo", { flowState, scenario });
 
+      // 🚨 DETECTOR DE FRUSTRAÇÃO (Priority #2)
+      const frustration = detectFrustration(message);
+      if (frustration.isFrustrated) {
+        logger.info("🚨 Frustração detectada", {
+          intensity: frustration.intensity,
+          indicators: frustration.indicators
+        });
+        
+        // Frustração alta ou média → transferir imediatamente
+        if (frustration.intensity === 'high' || frustration.intensity === 'medium') {
+          responseMessage = `${customerName}, percebo que você está frustrado. 😔\n\nVou te transferir agora mesmo para um atendente humano que pode te ajudar melhor!\n\nSó um momento! ⏳`;
+          
+          await supabase
+            .from("conversations")
+            .update({
+              status: "active",
+              department: "tecnico",
+              assigned_agent_id: null,
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                needs_human_transfer: true,
+                transfer_reason: "client_frustrated",
+                frustration_level: frustration.intensity,
+                frustration_indicators: frustration.indicators
+              }
+            })
+            .eq("id", conversation_id);
+          
+          // Salvar resposta e retornar
+          await supabase
+            .from("conversation_messages")
+            .insert({
+              conversation_id,
+              sender_type: "agent",
+              content: responseMessage
+            });
+          
+          return new Response(JSON.stringify({ 
+            message: responseMessage,
+            transferred: true,
+            reason: 'frustration'
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+      }
+
+      // 📊 CONTADOR DE TENTATIVAS DE CLARIFICAÇÃO (Priority #1)
+      const clarificationAttempts = (currentConversation?.metadata as any)?.clarification_attempts || 0;
+      const lastClarificationStep = (currentConversation?.metadata as any)?.last_clarification_step;
+      
+      // Se já tentou clarificar 2x no mesmo step → transferir para humano
+      if (clarificationAttempts >= 2 && lastClarificationStep === flowState) {
+        logger.info("⚠️ Limite de clarificações atingido", {
+          attempts: clarificationAttempts,
+          step: flowState
+        });
+        
+        responseMessage = `${customerName}, estou tendo dificuldade em entender suas respostas. 😅\n\nVou te transferir para um atendente humano que pode te ajudar melhor!\n\nSó um momento! ⏳`;
+        
+        await supabase
+          .from("conversations")
+          .update({
+            status: "active",
+            department: "tecnico",
+            assigned_agent_id: null,
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              needs_human_transfer: true,
+              transfer_reason: "clarification_limit_exceeded",
+              clarification_attempts: clarificationAttempts
+            }
+          })
+          .eq("id", conversation_id);
+        
+        // Salvar resposta e retornar
+        await supabase
+          .from("conversation_messages")
+          .insert({
+            conversation_id,
+            sender_type: "agent",
+            content: responseMessage
+          });
+        
+        return new Response(JSON.stringify({ 
+          message: responseMessage,
+          transferred: true,
+          reason: 'clarification_limit'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
       const currentMessage = message.toLowerCase();
@@ -636,9 +729,42 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         const lightStillRed = (isNegation || /continua|ainda/i.test(currentMessage)) &&
           /(vermelh[oa]|pisca)/i.test(currentMessage);
 
-        // ETAPA 1: Verificar se luzes estão acesas
+        // ETAPA 1: Verificar se luzes estão acesas (Priority #3 - Cobertura completa)
         if (flowState === "cenario_a_verificar_luzes") {
-          if (saysOff) {
+          const lightInterpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|aces[ao]s?|acesas|ligad|pisca|verde)/i,
+              denied: /(n[ãa]o|nao|apag|deslig|sem\s+luz|escur|tud[oa]\s+(apag|deslig))/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "sim estão acesas",
+                "as luzes estão ligadas",
+                "tem luz sim",
+                "está piscando",
+                "tem luzes acesas"
+              ],
+              denied: [
+                "não tem luz",
+                "está tudo apagado",
+                "sem nenhuma luz",
+                "tudo escuro",
+                "apagadas"
+              ]
+            },
+            aiContext: {
+              expectedAction: "verificar se as luzes do equipamento estão acesas ou apagadas",
+              previousAgentMessage: "As luzes do equipamento estão acesas ou apagadas?"
+            }
+          });
+          
+          logger.info("Interpretação híbrida - Luzes", {
+            result: lightInterpretation.result,
+            confidence: lightInterpretation.confidence,
+            method: lightInterpretation.method
+          });
+          
+          if (lightInterpretation.result === 'negou' && lightInterpretation.confidence >= 0.6) {
             // Luzes apagadas → Verificar energia
             responseMessage = `Entendi! Se as luzes do equipamento não estão acesas, vamos verificar a energia. 🔌\n\nPor favor, confira:\n\n1️⃣ **Equipamento está ligado na tomada?** ✅\n2️⃣ **Fonte de energia está conectada?** 🔌\n3️⃣ **Botão Power está ligado (se houver)?** 💡\n4️⃣ **Tem energia elétrica no local?** Teste com outro aparelho\n\nMe avise após verificar!`;
             
@@ -647,12 +773,13 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               .update({
                 metadata: {
                   ...(currentConversation?.metadata as any || {}),
-                  flow_state: "cenario_a_verificar_energia"
+                  flow_state: "cenario_a_verificar_energia",
+                  clarification_attempts: 0 // Reset contador
                 }
               })
               .eq("id", conversation_id);
               
-          } else if (/(sim|s[ií]|aces[ao]s?|acesas|ligad)/i.test(currentMessage)) {
+          } else if (lightInterpretation.result === 'confirmou' && lightInterpretation.confidence >= 0.6) {
             // Luzes acesas → Pular para verificação de luz vermelha
             responseMessage = `Ok! As luzes estão acesas. 💡\n\nAgora verifique se há uma **LUZ VERMELHA** chamada 'LOS' ou 'PON' **PISCANDO** no equipamento.\n\nVocê está vendo essa luz vermelha piscando? 🔴`;
             
@@ -661,13 +788,26 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               .update({
                 metadata: {
                   ...(currentConversation?.metadata as any || {}),
-                  flow_state: "cenario_a_verificar_luz_vermelha"
+                  flow_state: "cenario_a_verificar_luz_vermelha",
+                  clarification_attempts: 0 // Reset contador
                 }
               })
               .eq("id", conversation_id);
           } else {
-            // Resposta ambígua
-            responseMessage = `Desculpe, não entendi. 🤔\n\nAs luzes do equipamento estão **acesas** ou **apagadas**?`;
+            // Resposta ambígua - incrementar contador
+            const newAttempts = clarificationAttempts + 1;
+            responseMessage = `Desculpe, não entendi se você está dizendo que as luzes estão **ACESAS** (ligadas, piscando) ou **APAGADAS** (sem nenhuma luz). 🤔\n\nPor favor, me responda apenas:\n- **"acesas"** se tem alguma luz ligada\n- **"apagadas"** se não tem nenhuma luz`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  clarification_attempts: newAttempts,
+                  last_clarification_step: flowState
+                }
+              })
+              .eq("id", conversation_id);
           }
         }
         
@@ -726,20 +866,58 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             // Sem energia → Orientar cliente a resolver energia primeiro
             responseMessage = `Entendi! Parece que o problema é na energia elétrica. ⚡\n\nAntes de continuar, você precisa:\n1️⃣ Verificar o disjuntor\n2️⃣ Testar outra tomada\n3️⃣ Garantir que há energia no local\n\nAssim que tiver energia, me avise que continuo o diagnóstico!`;
           } else {
-            // Incerto → Pedir clarificação
-            responseMessage = `Desculpe, não entendi. 🤔\n\nO equipamento **está ligado na tomada e com energia**?\n\nMe responda **sim** ou **não**.`;
+            // Incerto → Pedir clarificação com mais detalhe
+            const newAttempts = clarificationAttempts + 1;
+            responseMessage = `Desculpe, não entendi se você está dizendo que o equipamento **TEM ENERGIA** (está ligado na tomada e funcionando) ou **NÃO TEM ENERGIA** (sem energia elétrica). 🤔\n\nPor favor, me responda:\n- **"tem energia"** se o equipamento está ligado e com luz\n- **"sem energia"** se não tem energia no local`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  clarification_attempts: newAttempts,
+                  last_clarification_step: flowState
+                }
+              })
+              .eq("id", conversation_id);
           }
         }
         
-        // ETAPA 3: Verificar luz vermelha LOS/PON
+        // ETAPA 3: Verificar luz vermelha LOS/PON (Priority #3)
         else if (flowState === "cenario_a_verificar_luz_vermelha") {
-          logger.info("Etapa 3: Verificando resposta sobre luz vermelha", { 
-            hasRedLightBlinking, 
-            noRedLight, 
-            currentMessage 
+          const redLightInterpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec|vermelh|los|pon|pisca)/i,
+              denied: /(n[ãa]o|nao|nem|verde|normal|fixa)/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "sim está piscando",
+                "tem luz vermelha",
+                "o los está vermelho",
+                "está piscando vermelho",
+                "tem uma luz vermelha piscando"
+              ],
+              denied: [
+                "não tem luz vermelha",
+                "está verde",
+                "não está piscando",
+                "tudo normal"
+              ]
+            },
+            aiContext: {
+              expectedAction: "verificar se há uma luz vermelha (LOS/PON) piscando no equipamento",
+              previousAgentMessage: "Você está vendo uma luz vermelha piscando no equipamento?"
+            }
           });
           
-          if (hasRedLightBlinking) {
+          logger.info("Interpretação híbrida - Luz Vermelha", {
+            result: redLightInterpretation.result,
+            confidence: redLightInterpretation.confidence,
+            method: redLightInterpretation.method
+          });
+          
+          if (redLightInterpretation.result === 'confirmou' && redLightInterpretation.confidence >= 0.6) {
             // Tem luz vermelha → Instruir manipulação do conector
             responseMessage = `Perfeito! Essa luz vermelha indica problema no sinal da fibra óptica. 🔴\n\nVou te enviar as instruções para tentar resolver:\n\n⚠️ **ATENÇÃO ao manusear:**\n- Segure o conector pela **BASE** (não pelo cabo)\n- Retire com **cuidado** (não force)\n- **Não dobre** o cabo\n- Reconecte **firmemente** até ouvir um 'click'\n\n📋 **Passo a passo:**\n1️⃣ Localize o cabo fino (fibra óptica) - é um cabo bem fininho que entra no equipamento\n2️⃣ **Retire** com cuidado o conector que está encaixado\n3️⃣ **Recoloque firmemente** - empurre o conector de volta até ouvir um 'click'\n4️⃣ Aguarde **1 minuto** para sincronização\n5️⃣ Veja se a luz ficou **VERDE FIXA**\n\nMe avise quando terminar! 🔧`;
             
@@ -748,11 +926,12 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               .update({
                 metadata: {
                   ...(currentConversation?.metadata as any || {}),
-                  flow_state: "cenario_a_aguardando_manipulacao"
+                  flow_state: "cenario_a_aguardando_manipulacao",
+                  clarification_attempts: 0 // Reset
                 }
               })
               .eq("id", conversation_id);
-          } else if (noRedLight) {
+          } else if (redLightInterpretation.result === 'negou' && redLightInterpretation.confidence >= 0.6) {
             // Não tem luz vermelha → Abrir ticket
             logger.info("Cenário A: Cliente sem luz vermelha - abrindo ticket");
             
@@ -790,15 +969,60 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                   transfer_reason: "sem_luz_vermelha_equipamento_offline"
                 }
               })
-              .eq("id", conversation_id);
+                .eq("id", conversation_id);
           } else {
-            responseMessage = `Desculpe, não entendi. 🤔\n\nVocê está vendo uma **luz vermelha piscando** no equipamento?\n\nMe responda **sim** ou **não**.`;
+            // Incerto → Explicação detalhada
+            const newAttempts = clarificationAttempts + 1;
+            responseMessage = `Desculpe, não entendi se você está vendo ou não a luz vermelha. 🤔\n\nOlhe no equipamento e me diga:\n- **"sim"** se você VÊ uma luz vermelha (LOS ou PON) **PISCANDO**\n- **"não"** se NÃO TEM nenhuma luz vermelha ou se está verde/fixa`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  clarification_attempts: newAttempts,
+                  last_clarification_step: flowState
+                }
+              })
+              .eq("id", conversation_id);
           }
         }
         
-        // ETAPA 4: Aguardando manipulação do conector
+        // ETAPA 4: Aguardando manipulação do conector (Priority #3)
         else if (flowState === "cenario_a_aguardando_manipulacao") {
-          if (fiberReconnected) {
+          const manipulationInterpretation = await hybridInterpret(currentMessage, {
+            regexDetectors: {
+              confirmed: /(reconect|tirei|coloquei|manipul|fiz|terminei|test|pront|feito|ok)/i,
+              denied: /(n[ãa]o|nao|ainda|espera|aguard)/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "já fiz",
+                "já reconectei",
+                "terminei de fazer",
+                "pronto",
+                "feito",
+                "manipulei o cabo"
+              ],
+              denied: [
+                "ainda não fiz",
+                "ainda não mexi",
+                "não consegui"
+              ]
+            },
+            aiContext: {
+              expectedAction: "manipular (retirar e reconectar) o cabo de fibra óptica do equipamento",
+              previousAgentMessage: "Retire e reconecte o conector da fibra. Me avise quando terminar!"
+            }
+          });
+          
+          logger.info("Interpretação híbrida - Manipulação", {
+            result: manipulationInterpretation.result,
+            confidence: manipulationInterpretation.confidence,
+            method: manipulationInterpretation.method
+          });
+          
+          if (manipulationInterpretation.result === 'confirmou' && manipulationInterpretation.confidence >= 0.6) {
             // Cliente manipulou o conector → Verificar resultado
             responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nAgora me diga: a luz **VERMELHA** parou de **PISCAR** e ficou **VERDE FIXA**?`;
             
@@ -807,12 +1031,29 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               .update({
                 metadata: {
                   ...(currentConversation?.metadata as any || {}),
-                  flow_state: "cenario_a_verificar_resultado_manipulacao"
+                  flow_state: "cenario_a_verificar_resultado_manipulacao",
+                  clarification_attempts: 0 // Reset
                 }
               })
               .eq("id", conversation_id);
+          } else if (manipulationInterpretation.result === 'negou' && manipulationInterpretation.confidence >= 0.6) {
+            // Cliente não fez ainda
+            responseMessage = `Ok! Sem pressa. 😊\n\nQuando você retirar e reconectar o cabo de fibra, me avise para continuar o diagnóstico! 🔧`;
           } else {
-            responseMessage = `Você já manipulou o conector da fibra conforme as instruções?\n\nMe avise quando terminar para continuar o diagnóstico! 🔧`;
+            // Incerto
+            const newAttempts = clarificationAttempts + 1;
+            responseMessage = `Desculpe, não entendi se você já fez o procedimento. 🤔\n\nVocê já **RETIROU e RECONECTOU** o cabo de fibra do equipamento?\n\nMe responda:\n- **"sim"** ou **"feito"** se já fez\n- **"não"** se ainda não fez`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  clarification_attempts: newAttempts,
+                  last_clarification_step: flowState
+                }
+              })
+              .eq("id", conversation_id);
           }
         }
         
@@ -882,17 +1123,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               // Cliente voltou online → Perguntar se consegue navegar
               responseMessage = `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
               
-              await supabase
-                .from("conversations")
-                .update({
-                  metadata: {
-                    ...(currentConversation?.metadata as any || {}),
-                    flow_state: "cenario_a_verificar_navegacao"
-                  }
-                })
-                .eq("id", conversation_id);
-            } else {
-              // Continua offline → Abrir ticket
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: "cenario_a_verificar_navegacao",
+                  clarification_attempts: 0 // Reset
+                }
+              })
+              .eq("id", conversation_id);
+          } else {
+            // Continua offline → Abrir ticket
               logger.info("Cenário A: Luz verde mas continua offline - abrindo ticket");
               
               // Executar tools configuradas (criar_atendimento_ixc)
@@ -1012,7 +1254,8 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               .update({
                 metadata: {
                   ...(currentConversation?.metadata as any || {}),
-                  flow_state: "cenario_a_resolvido"
+                  flow_state: "cenario_a_resolvido",
+                  clarification_attempts: 0 // Reset
                 }
               })
               .eq("id", conversation_id);
@@ -1052,8 +1295,20 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
           } else {
-            // Incerto → Pedir clarificação
-            responseMessage = `Desculpe, não entendi. 🤔\n\nVocê **consegue navegar** na internet e abrir sites normalmente?\n\nMe responda **sim** ou **não**.`;
+            // Incerto → Explicação detalhada
+            const newAttempts = clarificationAttempts + 1;
+            responseMessage = `Desculpe, não entendi se a internet está funcionando. 🤔\n\nPor favor, tente abrir um site (como Google ou YouTube) e me diga:\n- **"sim"** se você CONSEGUE navegar e abrir sites\n- **"não"** se NÃO CONSEGUE acessar a internet`;
+            
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  clarification_attempts: newAttempts,
+                  last_clarification_step: flowState
+                }
+              })
+              .eq("id", conversation_id);
           }
         }
         

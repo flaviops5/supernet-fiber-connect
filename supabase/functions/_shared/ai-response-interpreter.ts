@@ -10,6 +10,121 @@ interface InterpretationResult {
 }
 
 /**
+ * Detecta sinais de frustração do cliente
+ */
+export function detectFrustration(message: string): {
+  isFrustrated: boolean;
+  intensity: 'low' | 'medium' | 'high';
+  indicators: string[];
+} {
+  const normalized = normalizeText(message);
+  const indicators: string[] = [];
+  
+  // Padrões de frustração
+  const frustrationPatterns = {
+    high: [
+      /ja\s+falei/i,
+      /quantas\s+vezes/i,
+      /eu\s+disse/i,
+      /nao\s+entende/i,
+      /idiota/i,
+      /burro/i,
+      /incompetente/i,
+      /pqp/i,
+      /desgraca/i,
+      /merda/i
+    ],
+    medium: [
+      /de\s+novo/i,
+      /outra\s+vez/i,
+      /repetir/i,
+      /ja\s+respondi/i,
+      /nao\s+aguento\s+mais/i,
+      /que\s+saco/i,
+      /meu\s+deus/i,
+      /serio/i
+    ],
+    low: [
+      /afe/i,
+      /nossa/i,
+      /caramba/i,
+      /po\s/i,
+      /\bpo\b/i
+    ]
+  };
+  
+  let intensity: 'low' | 'medium' | 'high' = 'low';
+  let isFrustrated = false;
+  
+  // Verificar padrões de alta intensidade
+  for (const pattern of frustrationPatterns.high) {
+    if (pattern.test(normalized)) {
+      indicators.push(pattern.source);
+      intensity = 'high';
+      isFrustrated = true;
+    }
+  }
+  
+  // Se não encontrou high, verificar medium
+  if (!isFrustrated) {
+    for (const pattern of frustrationPatterns.medium) {
+      if (pattern.test(normalized)) {
+        indicators.push(pattern.source);
+        intensity = 'medium';
+        isFrustrated = true;
+      }
+    }
+  }
+  
+  // Se não encontrou medium, verificar low
+  if (!isFrustrated) {
+    for (const pattern of frustrationPatterns.low) {
+      if (pattern.test(normalized)) {
+        indicators.push(pattern.source);
+        intensity = 'low';
+        isFrustrated = true;
+      }
+    }
+  }
+  
+  // Detectar repetição excessiva (mesma palavra 3+ vezes)
+  const words = normalized.split(/\s+/);
+  const wordCount: Record<string, number> = {};
+  for (const word of words) {
+    if (word.length > 3) { // Ignorar palavras muito curtas
+      wordCount[word] = (wordCount[word] || 0) + 1;
+      if (wordCount[word] >= 3) {
+        indicators.push(`repetição: "${word}"`);
+        isFrustrated = true;
+        if (intensity === 'low') intensity = 'medium';
+      }
+    }
+  }
+  
+  // Detectar CAPS LOCK (>50% maiúsculas)
+  const uppercaseCount = (message.match(/[A-Z]/g) || []).length;
+  const letterCount = (message.match(/[A-Za-z]/g) || []).length;
+  if (letterCount > 5 && uppercaseCount / letterCount > 0.5) {
+    indicators.push('CAPS LOCK');
+    isFrustrated = true;
+    if (intensity === 'low') intensity = 'medium';
+  }
+  
+  // Detectar múltiplos pontos de exclamação
+  const exclamationCount = (message.match(/!/g) || []).length;
+  if (exclamationCount >= 3) {
+    indicators.push('múltiplos !!!');
+    isFrustrated = true;
+  }
+  
+  return {
+    isFrustrated,
+    intensity,
+    indicators
+  };
+}
+
+/**
  * Normaliza texto para comparação
  */
 export function normalizeText(text: string): string {
