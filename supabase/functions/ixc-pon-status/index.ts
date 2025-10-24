@@ -29,7 +29,7 @@ Deno.serve(createPublicHandler(
     const onuUrl = `https://${IXC_BASE_HOST}/webservice/v1/pon_onu`;
     let page = 1;
     const itemsPerPage = 500;
-    const allOnus: any[] = [];
+    const allOnus: Array<Record<string, unknown>> = [];
 
     while (page <= 3) { // Limitar a 3 páginas para não sobrecarregar
       const bodyOnu = JSON.stringify({

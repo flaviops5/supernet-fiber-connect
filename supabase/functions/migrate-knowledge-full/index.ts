@@ -114,8 +114,8 @@ Deno.serve(createPublicHandler('migrate-knowledge-full', async (req, { supabase 
         await delay(100);
 
       } catch (error) {
-        const err: any = error;
-        const errorMsg = typeof err?.message === 'string' ? err.message : String(err);
+        const err = error as Error;
+        const errorMsg = err?.message || String(error);
         console.error(`✗ [${processed}/${allDocs.length}] Erro migrando ${doc.title}:`, errorMsg);
         errors.push({ 
           id: doc.id, 

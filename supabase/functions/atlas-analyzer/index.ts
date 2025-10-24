@@ -271,7 +271,7 @@ Deno.serve(createPublicHandler('atlas-analyzer', async (req, { supabase }) => {
 
     // 11) Notificação em HIGH
     let notified = false;
-    const notificationDetails: any[] = [];
+    const notificationDetails: Array<{ type: string; message: string; data?: unknown }> = [];
     
     if (severity === "HIGH") {
       // buscar responsáveis

@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface CepLookupRequest {
   cep?: string;
@@ -190,7 +191,7 @@ Você também pode consultar outros CEPs próximos se desejar.`,
     };
 }
 
-async function listAvailablePlans(supabase: any, cep?: string) {
+async function listAvailablePlans(supabase: SupabaseClient, cep?: string) {
   try {
     let query = supabase
       .from('plans')
@@ -204,7 +205,7 @@ async function listAvailablePlans(supabase: any, cep?: string) {
 
     let response = `🚀 **Nossos Planos de Internet Fibra Óptica:**\n\n`
 
-    plans?.forEach((plan: any) => {
+    plans?.forEach((plan: { id: number; name: string; speed: string; price: number; original_price?: number; description?: string; features?: Array<{ text: string }>; image_url?: string; popular?: boolean }) => {
       const discount = plan.original_price ? 
         Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
       
@@ -234,7 +235,7 @@ async function listAvailablePlans(supabase: any, cep?: string) {
       }
 
       if (plan.features && Array.isArray(plan.features)) {
-        plan.features.forEach((feature: any) => {
+        plan.features.forEach((feature) => {
           response += `  ✓ ${feature.text}\n`
         })
       }
@@ -261,7 +262,7 @@ async function listAvailablePlans(supabase: any, cep?: string) {
   }
 }
 
-async function findRegionInfo(supabase: any, cep: string) {
+async function findRegionInfo(supabase: SupabaseClient, cep: string) {
   if (!cep || cep.length !== 8) {
     return { 
       response: 'Para consultar informações da região, preciso de um CEP válido com 8 dígitos.' 

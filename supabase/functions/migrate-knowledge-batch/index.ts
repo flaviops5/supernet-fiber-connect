@@ -111,8 +111,8 @@ Deno.serve(createPublicHandler('migrate-knowledge-batch', async (req, { supabase
         console.log(`✓ Migrado: ${doc.title} (${doc.id})`);
 
       } catch (error) {
-        const err: any = error;
-        const errorMsg = typeof err?.message === 'string' ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
+        const err = error as Error;
+        const errorMsg = err?.message || String(error);
         console.error(`✗ Erro migrando ${doc.id}:`, errorMsg);
         errors.push({ id: doc.id, error: errorMsg });
       }

@@ -491,7 +491,7 @@ serve(async (req) => {
       REGION: 6
     };
     
-    const massOutages: any[] = [];
+    const massOutages: Array<{ region: string; city: string; count: number; clients: Array<{ nome: string; cpf: string }> }> = [];
     const createdEventKeys = new Set<string>(); // Rastrear eventos criados para evitar duplicatas
 
     // HIERARQUIA DE PRIORIDADE: PON > CTO > Região

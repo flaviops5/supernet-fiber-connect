@@ -11,8 +11,8 @@ Deno.serve(createPublicHandler(
 
     let page = 1;
     const itemsPerPage = 1000;
-    const allOnlineUsers: any[] = [];
-    const allOfflineUsers: any[] = [];
+    const allOnlineUsers: Array<Record<string, unknown>> = [];
+    const allOfflineUsers: Array<Record<string, unknown>> = [];
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
     try {
@@ -36,7 +36,7 @@ Deno.serve(createPublicHandler(
           bodyOnline
         );
 
-        const onlineRegistros: any[] = Array.isArray(onlineData?.data?.registros)
+        const onlineRegistros: Array<Record<string, unknown>> = Array.isArray(onlineData?.data?.registros)
           ? onlineData.data.registros
           : (onlineData?.data?.registros ? Object.values(onlineData.data.registros) : []);
 
@@ -81,7 +81,7 @@ Deno.serve(createPublicHandler(
           bodyOffline
         );
 
-        const offlineRegistros: any[] = Array.isArray(offlineData?.data?.registros)
+        const offlineRegistros: Array<Record<string, unknown>> = Array.isArray(offlineData?.data?.registros)
           ? offlineData.data.registros
           : (offlineData?.data?.registros ? Object.values(offlineData.data.registros) : []);
 

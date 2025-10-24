@@ -127,7 +127,7 @@ async function executeConfiguredTools(
   ticket_id?: string;
   errors?: string[];
 }> {
-  const results: any = {};
+  const results: Record<string, unknown> = {};
   const errors: string[] = [];
 
   try {
@@ -320,7 +320,7 @@ Analise a imagem e identifique:
 Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
           // Preparar conteúdo com imagem
-          const imageContent: any[] = [
+          const imageContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
             {
               type: "text",
               text: imagePrompt

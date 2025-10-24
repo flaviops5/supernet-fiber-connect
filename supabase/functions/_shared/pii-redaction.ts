@@ -66,7 +66,7 @@ export function redactPIIObject(
     return obj.map(item => redactPIIObject(item, level, sensitiveFields));
   }
 
-  const redacted: any = {};
+  const redacted: Record<string, unknown> = {};
   
   for (const [key, value] of Object.entries(obj)) {
     const issensitive = sensitiveFields.some(field => 

@@ -148,7 +148,7 @@ serve(async (req) => {
                            messageData.message?.extendedTextMessage?.text || '';
       
       // Capturar imagens anexadas
-      const attachments: any[] = [];
+      const attachments: Array<{ type: string; url: string; mime_type?: string }> = [];
       
       // Verificar se há imagem
       if (messageData.message?.imageMessage) {

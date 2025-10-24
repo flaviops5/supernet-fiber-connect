@@ -20,7 +20,7 @@ Deno.serve(createPublicHandler('process-alerts', async (req, { supabase }) => {
 
     if (configError) throw configError;
 
-    const alerts: any[] = [];
+    const alerts: Array<{ id: string; type: string; message: string; severity: string; created_at: string }> = [];
 
     for (const config of (configs as AlertConfig[])) {
       console.log(`📊 Checking alert: ${config.alert_type}`);

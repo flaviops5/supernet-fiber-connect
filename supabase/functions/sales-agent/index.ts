@@ -189,7 +189,7 @@ serve(async (req) => {
           );
         }
 
-        const ixcResp: any = (customerResult && (customerResult.data ?? customerResult.response ?? customerResult)) as any;
+        const ixcResp = (customerResult && (customerResult.data ?? customerResult.response ?? customerResult)) as Record<string, unknown>;
         if (ixcResp?.type === 'error' || ixcResp?.error) {
           const msg: string = ixcResp?.message || ixcResp?.error || 'Erro ao criar cliente no IXC';
           let status = 400;

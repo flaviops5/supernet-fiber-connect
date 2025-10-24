@@ -307,7 +307,7 @@ async function escalateRecurringFailures(supabase: any, settings: any) {
     .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
   // Agrupar e contar falhas
-  const failureCount: any = {};
+  const failureCount: Record<string, number> = {};
   failures?.forEach((f: any) => {
     failureCount[f.task_id] = (failureCount[f.task_id] || 0) + 1;
   });

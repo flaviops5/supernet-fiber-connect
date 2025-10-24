@@ -1,6 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+interface IXCError extends Error {
+  details?: Record<string, unknown>;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -245,16 +249,16 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
 
   if (!response.ok) {
     console.error(`HTTP ${response.status}:`, rawText);
-    const err: any = new Error(`Erro HTTP ${response.status}`);
-    err.details = { status: response.status, rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    const err: IXCError = new Error(`Erro HTTP ${response.status}`);
+    err.details = { status: response.status, rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as FormData) };
     throw err;
   }
 
   // Verifica se retornou HTML de erro do IXC
   if (rawText.includes('<div') && rawText.includes('Ocorreu um erro ao processar')) {
     console.error('IXC retornou erro HTML:', rawText);
-    const err: any = new Error('Erro interno do IXC - parâmetros inválidos ou endpoint não suportado');
-    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    const err: IXCError = new Error('Erro interno do IXC - parâmetros inválidos ou endpoint não suportado');
+    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as FormData) };
     throw err;
   }
 
@@ -263,8 +267,8 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
     data = JSON.parse(rawText);
   } catch (_e) {
     console.error('Resposta não é JSON válido:', rawText);
-    const err: any = new Error('Resposta inválida da API IXC');
-    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as any) };
+    const err: IXCError = new Error('Resposta inválida da API IXC');
+    err.details = { rawText, url, ixcsoft: ixcsoftHeader, form: Object.fromEntries(body as FormData) };
     throw err;
   }
   return { ok: response.ok, status: response.status, data, rawText, ixcsoft: ixcsoftHeader };
@@ -1594,7 +1598,7 @@ async function getFinancialTitles(baseUrl: string, auth: string, params: any) {
     // Se não, busca por data de vencimento ou outros parâmetros
     console.log(`💰 Buscando títulos financeiros com parâmetros:`, params);
     
-    const requestBody: any = {
+    const requestBody: Record<string, string> = {
       page: params.page || '1',
       rp: params.rp || '1000',
       sortname: params.sortname || 'fn_areceber.data_vencimento',
