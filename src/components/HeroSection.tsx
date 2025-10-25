@@ -189,10 +189,10 @@ const HeroSection = () => {
                   </div>)}
 
                 {/* Navigation buttons */}
-                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/20 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-background/30 transition-colors shadow-md">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors">
+                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/20 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-background/30 transition-colors shadow-md">
                   <ChevronRight className="w-5 h-5" />
                 </button>
 

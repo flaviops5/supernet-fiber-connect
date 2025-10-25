@@ -245,9 +245,9 @@ const Automacao = () => {
               </Button>
               <Button 
                 size="lg" 
-                variant="outline"
+                variant="hero"
                 onClick={() => document.getElementById('pacotes')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-white/10 border-white text-white hover:bg-white/20 text-lg px-8 py-6"
+                className="text-lg px-8 py-6"
               >
                 Ver Pacotes
               </Button>

@@ -270,9 +270,9 @@ const Blog = () => {
               <Input
                 type="email"
                 placeholder="Seu melhor e-mail"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/70"
+                className="bg-background/10 border-border/20 text-foreground placeholder:text-muted-foreground"
               />
-              <Button className="bg-white text-primary hover:bg-white/90">
+              <Button className="bg-background text-foreground hover:bg-background/90">
                 Assinar Blog
               </Button>
             </div>
