@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,7 +88,7 @@ export default function MessageShortcutsManager() {
             title: formData.title,
             shortcut_key: formData.shortcut_key,
             message_text: formData.message_text,
-            department: formData.department as string[],
+            department: formData.department as Database['public']['Enums']['agent_department'][],
             ai_agents: formData.ai_agents,
             usage_context: formData.usage_context,
             updated_at: new Date().toISOString()
@@ -100,7 +101,7 @@ export default function MessageShortcutsManager() {
             title: formData.title,
             shortcut_key: formData.shortcut_key,
             message_text: formData.message_text,
-            department: formData.department as string[],
+            department: formData.department as Database['public']['Enums']['agent_department'][],
             ai_agents: formData.ai_agents,
             usage_context: formData.usage_context,
           }]);

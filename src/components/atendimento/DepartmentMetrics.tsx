@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ export default function DepartmentMetrics() {
         const { data: conversations } = await supabase
           .from('conversations')
           .select('status, created_at, first_response_at')
-          .eq('department', dept as string);
+          .eq('department', dept as Database['public']['Enums']['agent_department']);
 
         const waiting = conversations?.filter(c => c.status === 'waiting').length || 0;
         const active = conversations?.filter(c => c.status === 'active').length || 0;
@@ -50,7 +51,7 @@ export default function DepartmentMetrics() {
         const { data: agents } = await supabase
           .from('agent_presence')
           .select('user_id')
-          .eq('department', dept as string)
+          .eq('department', dept as Database['public']['Enums']['agent_department'])
           .eq('status', 'online');
 
         allStats.push({

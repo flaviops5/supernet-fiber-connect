@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -80,7 +81,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
 
     // Filtrar por departamento do agente
     if (agentDepartment && agentDepartment !== 'todos') {
-      query = query.eq('department', agentDepartment as string);
+      query = query.eq('department', agentDepartment as Database['public']['Enums']['agent_department']);
     }
 
     // Filtrar por status

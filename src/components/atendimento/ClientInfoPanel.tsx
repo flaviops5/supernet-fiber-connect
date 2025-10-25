@@ -564,11 +564,11 @@ export default function ClientInfoPanel({ conversationId }: Props) {
               <div className="p-4 bg-muted rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Valor:</span>
-                  <span className="text-lg font-bold">R$ {paymentInfo.valor}</span>
+                  <span className="text-lg font-bold">R$ {String(paymentInfo.valor)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Vencimento:</span>
-                  <span className="font-medium">{paymentInfo.vencimento}</span>
+                  <span className="font-medium">{String(paymentInfo.vencimento)}</span>
                 </div>
               </div>
 
@@ -577,18 +577,18 @@ export default function ClientInfoPanel({ conversationId }: Props) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold">🏦 PIX Copia e Cola</h4>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(paymentInfo.qrcode, 'PIX')}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar
-                    </Button>
-                  </div>
-                  <div className="p-3 bg-muted rounded font-mono text-xs break-all max-h-32 overflow-y-auto">
-                    {paymentInfo.qrcode}
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(String(paymentInfo.qrcode), 'PIX')}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar
+                  </Button>
+                </div>
+                <div className="p-3 bg-muted rounded font-mono text-xs break-all max-h-32 overflow-y-auto">
+                  {String(paymentInfo.qrcode)}
+                </div>
                 </div>
               )}
 
@@ -597,37 +597,37 @@ export default function ClientInfoPanel({ conversationId }: Props) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold">🔢 Código de Barras</h4>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(paymentInfo.codbar, 'Código de Barras')}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar
-                    </Button>
-                  </div>
-                  <div className="p-3 bg-muted rounded font-mono text-sm break-all">
-                    {paymentInfo.codbar}
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(String(paymentInfo.codbar), 'Código de Barras')}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar
+                  </Button>
+                </div>
+                <div className="p-3 bg-muted rounded font-mono text-sm break-all">
+                  {String(paymentInfo.codbar)}
+                </div>
                 </div>
               )}
 
               {/* Links */}
               <div className="space-y-2">
-                {paymentInfo.url_boleto && (
+                {paymentInfo.url_boleto && typeof paymentInfo.url_boleto === 'string' && (
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.open(paymentInfo.url_boleto, '_blank')}
+                    onClick={() => window.open(paymentInfo.url_boleto as string, '_blank')}
                   >
                     📎 Abrir Boleto
                   </Button>
                 )}
-                {paymentInfo.qrcode_link && (
+                {paymentInfo.qrcode_link && typeof paymentInfo.qrcode_link === 'string' && (
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.open(paymentInfo.qrcode_link, '_blank')}
+                    onClick={() => window.open(paymentInfo.qrcode_link as string, '_blank')}
                   >
                     🔗 Link de Pagamento
                   </Button>
