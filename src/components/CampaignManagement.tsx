@@ -94,9 +94,12 @@ export function CampaignManagement() {
 
   const handleStatusChange = async (campaignId: string, newStatus: string) => {
     try {
+      const validStatuses = ['draft', 'scheduled', 'running', 'completed', 'paused', 'cancelled'] as const;
+      type CampaignStatus = typeof validStatuses[number];
+      
       const { error } = await supabase
         .from('campaigns')
-        .update({ status: newStatus as any })
+        .update({ status: newStatus as CampaignStatus })
         .eq('id', campaignId);
 
       if (error) throw error;

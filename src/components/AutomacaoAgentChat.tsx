@@ -6,11 +6,18 @@ import { Bot, Send, MessageCircle, Loader2, X, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import automacaoHero from '@/assets/automacao-hero.jpg';
 import { MediaUpload } from './MediaUpload';
+import { parseError } from '@/types/error.types';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+type MessageContent = string | Array<{
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string };
+}>;
 
 export const AutomacaoAgentChat = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -36,7 +43,7 @@ export const AutomacaoAgentChat = () => {
     setInput('');
     setIsLoading(true);
 
-    const messageContent: any = attachedImage 
+    const messageContent: MessageContent = attachedImage 
       ? [
           { type: 'text', text: userMessage || 'Veja a imagem anexada' },
           { type: 'image_url', image_url: { url: attachedImage } }
@@ -76,8 +83,9 @@ export const AutomacaoAgentChat = () => {
         }]);
       }
 
-    } catch (error: any) {
-      console.error('Erro ao enviar mensagem:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao enviar mensagem:', err);
       toast.error('Erro ao processar sua mensagem. Tente novamente.');
       
       setMessages(prev => [...prev, {

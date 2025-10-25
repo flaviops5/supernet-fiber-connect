@@ -7,10 +7,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, AlertCircle, CheckCircle2, TestTube } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { parseError } from "@/types/error.types";
+
+interface InvoiceDetail {
+  status: 'sent' | 'error' | 'no_overdue_titles';
+  clientName: string;
+  phone?: string;
+  titleValue?: string;
+  dueDate?: string;
+  error?: string;
+}
+
+interface InvoiceResult {
+  success: boolean;
+  stats: {
+    totalContracts: number;
+    contractsFA: number;
+    sent: number;
+    errors: number;
+  };
+  details?: InvoiceDetail[];
+  error?: string;
+}
 
 export function AutoSendOverdueInvoices() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<InvoiceResult | null>(null);
   const [testClientName, setTestClientName] = useState("");
   const { toast } = useToast();
 
@@ -48,11 +70,12 @@ export function AutoSendOverdueInvoices() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      console.error('Erro:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro:', err);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao executar envio automático",
+        description: err.message || "Erro ao executar envio automático",
         variant: "destructive",
       });
     } finally {
@@ -147,7 +170,7 @@ export function AutoSendOverdueInvoices() {
             {result.details && result.details.length > 0 && (
               <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
                 <h3 className="font-semibold mb-3">Detalhes do Processamento</h3>
-                {result.details.map((detail: any, index: number) => (
+                {result.details.map((detail, index: number) => (
                   <div key={index} className="flex items-start gap-2 p-2 border-b last:border-b-0">
                     {detail.status === 'sent' && (
                       <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />

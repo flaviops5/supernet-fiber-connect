@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AgentConfigEditor from './AgentConfigEditor';
 import { useNavigate } from 'react-router-dom';
+import type { Json } from '@/integrations/supabase/types';
 
 interface AgentStats {
   totalConversations: number;
@@ -36,8 +37,19 @@ interface AgentConfig {
   model: string;
   temperature: number;
   max_tokens: number;
-  capabilities: any;
+  capabilities: Json;
   is_active: boolean;
+}
+
+// Helper to convert Json capabilities to string[]
+function parseCapabilities(capabilities: Json): string[] {
+  if (Array.isArray(capabilities)) {
+    return capabilities.filter((item): item is string => typeof item === 'string');
+  }
+  if (typeof capabilities === 'object' && capabilities !== null) {
+    return Object.values(capabilities).filter((item): item is string => typeof item === 'string');
+  }
+  return [];
 }
 
 export function AgentManagement() {
@@ -315,7 +327,11 @@ export function AgentManagement() {
           </DialogHeader>
           {editingConfig && (
             <AgentConfigEditor
-              config={{...editingConfig, description: editingConfig.description || ''}}
+              config={{
+                ...editingConfig,
+                description: editingConfig.description || '',
+                capabilities: parseCapabilities(editingConfig.capabilities)
+              }}
               onClose={() => setEditingConfig(null)}
               onSave={() => {
                 loadAgentConfigs();

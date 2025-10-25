@@ -38,9 +38,15 @@ interface ContractTemplate {
   updated_at: string;
 }
 
+interface PlanData {
+  id: string;
+  name: string;
+  speed: string;
+}
+
 const ContractTemplatesView: React.FC = () => {
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<PlanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -62,14 +68,24 @@ const ContractTemplatesView: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates((data || []).map(template => ({
-        ...template,
-        plan_types: Array.isArray(template.plan_types) 
-          ? (template.plan_types as string[])
-          : (template.plan_types as any)?.length 
-            ? Array.from(template.plan_types as any)
-            : ['all']
-      })));
+      setTemplates((data || []).map(template => {
+        let planTypes: string[] = ['all'];
+        
+        if (Array.isArray(template.plan_types)) {
+          planTypes = template.plan_types as string[];
+        } else if (template.plan_types && typeof template.plan_types === 'object') {
+          // Handle object case - convert to array if possible
+          const planTypesObj = template.plan_types as Record<string, unknown>;
+          if ('length' in planTypesObj) {
+            planTypes = Object.values(planTypesObj).filter((v): v is string => typeof v === 'string');
+          }
+        }
+        
+        return {
+          ...template,
+          plan_types: planTypes
+        };
+      }));
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({

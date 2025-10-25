@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, X } from 'lucide-react';
+import { parseError } from '@/types/error.types';
 
 interface AgentConfig {
   id: string;
@@ -61,11 +62,12 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
       
       onSave();
       onClose();
-    } catch (error: any) {
-      console.error('Error saving config:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error saving config:', err);
       toast({
         title: 'Erro ao salvar',
-        description: error.message,
+        description: err.message,
         variant: 'destructive',
       });
     } finally {

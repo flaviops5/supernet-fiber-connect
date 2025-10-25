@@ -7,15 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Upload, Download, FileSpreadsheet, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { JsonObject } from '@/types/common.types';
+
+interface ImportDetail {
+  line: number;
+  error: string;
+  data?: JsonObject;
+}
 
 interface ImportResult {
   success: number;
   errors: number;
-  details: {
-    line: number;
-    error: string;
-    data?: any;
-  }[];
+  details: ImportDetail[];
 }
 
 const CepBulkImport = () => {
