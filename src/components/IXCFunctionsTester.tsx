@@ -8,7 +8,29 @@ import { logger } from "@/lib/logger";
 
 export function IXCFunctionsTester() {
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    error?: string;
+    successfulFunctions: string[];
+    failedFunctions: string[];
+    errorGroups: Record<string, string[]>;
+    results?: Array<{
+      success: boolean;
+      function: string;
+      data?: unknown;
+      duration_ms?: number;
+      error?: string;
+    }>;
+    recommendation?: string;
+    summary: {
+      total: number;
+      successful: number;
+      failed: number;
+      successRate?: number;
+      diagnosis?: string;
+      success?: boolean;
+    };
+  } | null>(null);
 
   const testAllFunctions = async () => {
     setTesting(true);
@@ -22,7 +44,14 @@ export function IXCFunctionsTester() {
       if (error) {
         logger.error('IXC functions test failed', error);
         toast.error("Erro ao testar funções");
-        setResult({ success: false, error: error.message });
+        setResult({ 
+          success: false, 
+          error: error.message,
+          successfulFunctions: [],
+          failedFunctions: [],
+          errorGroups: {},
+          summary: { total: 0, successful: 0, failed: 0 }
+        });
       } else {
         setResult(data);
         
@@ -37,7 +66,11 @@ export function IXCFunctionsTester() {
       toast.error("Erro inesperado ao testar funções");
       setResult({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        successfulFunctions: [],
+        failedFunctions: [],
+        errorGroups: {},
+        summary: { total: 0, successful: 0, failed: 0 }
       });
     } finally {
       setTesting(false);
@@ -128,8 +161,8 @@ export function IXCFunctionsTester() {
             <div className="space-y-2">
               <h4 className="font-semibold text-sm">Resultados Detalhados:</h4>
               <div className="space-y-1">
-                {result.results.map((r: { success: boolean; function: string; data?: unknown; duration_ms?: number; error?: string }, idx: number) => (
-                  <div 
+                {result.results.map((r, idx: number) => (
+                  <div
                     key={idx}
                     className={`flex items-center justify-between p-3 rounded border text-sm ${
                       r.success
@@ -167,8 +200,8 @@ export function IXCFunctionsTester() {
             <div className="space-y-2">
               <h4 className="font-semibold text-sm">Erros Agrupados:</h4>
               <div className="space-y-2">
-                {Object.entries(result.errorGroups).map(([error, functions]: [string, any], idx) => (
-                  <div 
+                {Object.entries(result.errorGroups).map(([error, functions]: [string, string[]], idx) => (
+                  <div
                     key={idx}
                     className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded"
                   >

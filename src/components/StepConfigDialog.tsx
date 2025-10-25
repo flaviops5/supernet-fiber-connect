@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import {
   Dialog,
   DialogContent,
@@ -23,11 +24,11 @@ interface FlowStep {
   step_order: number;
   question: string;
   instruction: string;
-  response_options: any;
-  response_variations: any;
-  tool_calls: any;
+  response_options: Record<string, unknown> | null;
+  response_variations: Record<string, unknown> | null;
+  tool_calls: Array<{ tool: string; params?: Record<string, unknown> }> | null;
   step_tools: string[] | null;
-  next_step_map: any;
+  next_step_map: Record<string, string> | null;
   awaits_response: boolean;
   is_active: boolean;
   media_id: string | null;
@@ -89,18 +90,18 @@ const { data: step, isLoading } = useQuery({
         .eq('id', stepId)
         .single();
       if (error) throw error;
-      return data as FlowStep;
+      return data as unknown as FlowStep;
     }
 
     const { data, error } = await supabase
       .from('agent_flow_steps')
-      .select('*')
-      .eq('agent_type', agentType as any)
-      .eq('step_key', stepKey)
+        .select('*')
+        .eq('agent_type', agentType as Database['public']['Enums']['agent_type'])
+        .eq('step_key', stepKey)
       .single();
     
     if (error) throw error;
-    return data as FlowStep;
+    return data as unknown as FlowStep;
   },
   enabled: isOpen && (!!stepId || (!!stepKey && !!agentType)),
 });
@@ -163,7 +164,7 @@ const { data: step, isLoading } = useQuery({
           ...data,
           step_tools: selectedTools.length > 0 ? selectedTools : null,
           updated_at: new Date().toISOString()
-        } as any)
+        } as unknown as Database['public']['Tables']['agent_flow_steps']['Update'])
         .eq('id', step.id);
       
       if (error) throw error;

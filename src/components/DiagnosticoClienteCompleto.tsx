@@ -648,8 +648,8 @@ export const DiagnosticoClienteCompleto = () => {
               </Button>
             </summary>
             <div className="p-3 bg-muted/50 space-y-3">
-              {result.etapas.analiseLogica?.inconsistencias?.map((inc: any, idx: number) => (
-                <div 
+              {result.etapas.analiseLogica?.inconsistencias?.map((inc, idx: number) => (
+                <div
                   key={idx}
                   className={`p-3 rounded border-l-4 ${
                     inc.gravidade === 'CRÍTICA' ? 'border-red-500 bg-red-50 dark:bg-red-950' :

@@ -555,7 +555,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
                 <Droppable droppableId="features">
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                      {formData.features.map((feature: any, index: number) => (
+                      {formData.features.map((feature: PlanFeature, index: number) => (
                         <Draggable key={`feature-${index}`} draggableId={`feature-${index}`} index={index}>
                           {(provided, snapshot) => (
                             <div

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +98,7 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       const { data, error } = await supabase
         .from('agent_flow_subjects')
         .select('*')
-        .eq('agent_type', agentToUse as any)
+        .eq('agent_type', agentToUse as Database['public']['Enums']['agent_type'])
         .order('display_order');
       
       if (error) throw error;
@@ -112,7 +113,7 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       const { error } = await supabase
         .from('agent_flow_subjects')
         .insert([{
-          agent_type: agentToUse as any,
+          agent_type: agentToUse as Database['public']['Enums']['agent_type'],
           ...data,
           default_tools: selectedTools.length > 0 ? selectedTools : null,
         }]);

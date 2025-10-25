@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -115,7 +116,7 @@ export default function GuidedFlowSimulator() {
       const { data, error } = await supabase
         .from('agent_flow_subjects')
         .select('*')
-        .eq('agent_type', selectedAgent as any)
+        .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
         .eq('is_active', true)
         .order('display_order');
       
@@ -133,7 +134,7 @@ export default function GuidedFlowSimulator() {
       let query = supabase
         .from('agent_flow_steps')
         .select('*')
-        .eq('agent_type', selectedAgent as any)
+        .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
         .eq('is_active', true);
       
       // Filtrar por assunto se selecionado
@@ -158,7 +159,7 @@ export default function GuidedFlowSimulator() {
       let query = supabase
         .from('agent_flow_scenario_approvals')
         .select('*')
-        .eq('agent_type', selectedAgent as any)
+        .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
         .eq('scenario_key', selectedScenario);
       
       // Filtrar por assunto se selecionado
@@ -371,7 +372,7 @@ export default function GuidedFlowSimulator() {
       
       const { error } = await supabase
         .from('agent_flow_scenario_approvals')
-        .upsert([payload as any], {
+        .upsert([payload as unknown as Database['public']['Tables']['agent_flow_scenario_approvals']['Insert']], {
           onConflict: 'agent_type,subject_key,scenario_key,variation_path'
         });
       
@@ -575,7 +576,7 @@ export default function GuidedFlowSimulator() {
     const { error } = await supabase
       .from('agent_flow_scenario_approvals')
       .delete()
-      .eq('agent_type', selectedAgent as any)
+      .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
       .eq('subject_key', selectedSubject);
 
     if (error) {
@@ -726,7 +727,7 @@ export default function GuidedFlowSimulator() {
                     {variations.map(variation => {
                       const variationPath = variation.path.join('→');
                       const savedStatus = savedApprovals?.find(
-                        (approval: any) => approval.variation_path === variationPath
+                        (approval) => approval.variation_path === variationPath
                       );
                       const status = savedStatus?.status || variationStatuses[variation.id] || 'pending';
                       const statusColor = status === 'approved' ? 'text-green-600' : status === 'rejected' ? 'text-red-600' : 'text-orange-600';
@@ -866,7 +867,7 @@ export default function GuidedFlowSimulator() {
               const isComplete = simulationComplete[variationId];
               const variationPath = variation?.path.join('→') || '';
               const savedStatus = savedApprovals?.find(
-                (approval: any) => approval.variation_path === variationPath
+                (approval) => approval.variation_path === variationPath
               );
               const currentStatus = savedStatus?.status || variationStatuses[variationId] || 'pending';
 
