@@ -106,8 +106,9 @@ export function EmailTemplateManagement() {
       setIsDialogOpen(false);
       resetForm();
       loadTemplates();
-    } catch (error: any) {
-      toast.error('Erro ao salvar template: ' + error.message);
+    } catch (error) {
+      const err = parseError(error);
+      toast.error('Erro ao salvar template: ' + err.message);
     }
   };
 
@@ -123,8 +124,9 @@ export function EmailTemplateManagement() {
       if (error) throw error;
       toast.success('Template excluído com sucesso!');
       loadTemplates();
-    } catch (error: any) {
-      toast.error('Erro ao excluir template: ' + error.message);
+    } catch (error) {
+      const err = parseError(error);
+      toast.error('Erro ao excluir template: ' + err.message);
     }
   };
 

@@ -5,13 +5,58 @@ import { Card } from "@/components/ui/card";
 import { Loader2, AlertTriangle, CheckCircle, XCircle, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
+import { parseError } from "@/types/error.types";
+import type { JsonValue } from "@/types/common.types";
+
+interface AnalysisLogic {
+  codigosBloqueioProgramados: Record<string, string>;
+  statusEncontrado: Array<{
+    contratoId: string | number;
+    statusInternet: string;
+    situacaoFinanceira: string;
+    bloqueado: boolean;
+    pagoAte: string;
+    interpretacao: string;
+  }>;
+  deveriaBloqueado: boolean;
+  estaBloqueado: boolean;
+  estaComReducao: boolean;
+  motivoBloqueio: string[];
+  inconsistencias: Array<{
+    tipo: string;
+    gravidade: string;
+    descricao: string;
+    acaoSugerida: string;
+    detalhamento: Record<string, JsonValue>;
+  }>;
+  politicaBloqueio: {
+    tipo: string;
+    descricao: string;
+  };
+}
+
+interface DiagnosticResult {
+  clientId: string;
+  clientCPF: string;
+  clientName: string;
+  timestamp: string;
+  etapas: Record<string, JsonValue> & {
+    analiseLogica?: AnalysisLogic;
+  };
+  resumo: Record<string, JsonValue> & {
+    valorTotalAtraso?: number;
+    politicaBloqueio?: AnalysisLogic['politicaBloqueio'];
+    inconsistencias?: AnalysisLogic['inconsistencias'];
+  };
+  error?: string;
+}
 
 export const DiagnosticoClienteCompleto = () => {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<DiagnosticResult | null>(null);
   const { toast } = useToast();
 
-  const copyToClipboard = (content: any, label: string) => {
+  const copyToClipboard = (content: JsonValue, label: string) => {
     navigator.clipboard.writeText(JSON.stringify(content, null, 2));
     toast({
       title: "Copiado!",
@@ -23,7 +68,7 @@ export const DiagnosticoClienteCompleto = () => {
     setLoading(true);
     setResult(null);
 
-    const diagnostico: any = {
+    const diagnostico: DiagnosticResult = {
       clientId: "313",
       clientCPF: "619.538.901-30",
       clientName: "Cláudio Máximo Chaves",
@@ -63,12 +108,13 @@ export const DiagnosticoClienteCompleto = () => {
         };
 
         logger.debug("✓ Dados básicos:", { data: diagnostico.etapas.dadosBasicos.data });
-      } catch (error: any) {
+      } catch (error) {
+        const err = parseError(error);
         diagnostico.etapas.dadosBasicos = {
           success: false,
-          error: error.message
+          error: err.message
         };
-        console.error("✗ Erro ao buscar dados básicos:", error.message);
+        console.error("✗ Erro ao buscar dados básicos:", err.message);
       }
 
       // ETAPA 2: Buscar status online via radusuarios
@@ -91,8 +137,8 @@ export const DiagnosticoClienteCompleto = () => {
         if (radiusError) throw radiusError;
 
         const registros = radiusData?.data?.registros || [];
-        const online = registros.filter((r: any) => r.online === 'S' || r.online === 'SS');
-        const offline = registros.filter((r: any) => r.online === 'N');
+        const online = registros.filter((r: Record<string, JsonValue>) => r.online === 'S' || r.online === 'SS');
+        const offline = registros.filter((r: Record<string, JsonValue>) => r.online === 'N');
 
         diagnostico.etapas.statusOnline = {
           success: true,
@@ -100,7 +146,7 @@ export const DiagnosticoClienteCompleto = () => {
           online: online.length,
           offline: offline.length,
           isOnline: online.length > 0,
-          registros: registros.map((r: any) => ({
+          registros: registros.map((r: Record<string, JsonValue>) => ({
             login: r.login,
             online: r.online,
             ip: r.ip,
@@ -112,12 +158,13 @@ export const DiagnosticoClienteCompleto = () => {
 
         logger.info(`✓ Status Online: ${online.length} online, ${offline.length} offline`);
         logger.debug("Registros detalhados:", { registros: diagnostico.etapas.statusOnline.registros });
-      } catch (error: any) {
+      } catch (error) {
+        const err = parseError(error);
         diagnostico.etapas.statusOnline = {
           success: false,
-          error: error.message
+          error: err.message
         };
-        console.error("✗ Erro ao buscar status online:", error.message);
+        console.error("✗ Erro ao buscar status online:", err.message);
       }
 
       // ETAPA 3: Buscar contratos
@@ -143,7 +190,7 @@ export const DiagnosticoClienteCompleto = () => {
         diagnostico.etapas.contratos = {
           success: true,
           totalContratos: registros.length,
-          contratos: registros.map((c: any) => ({
+          contratos: registros.map((c: Record<string, JsonValue>) => ({
             id: c.id,
             plano: c.plano || c.descricao,
             status: c.status,
@@ -157,12 +204,13 @@ export const DiagnosticoClienteCompleto = () => {
 
         logger.info(`✓ Contratos encontrados: ${registros.length}`);
         logger.debug("Detalhes:", { contratos: diagnostico.etapas.contratos.contratos });
-      } catch (error: any) {
+      } catch (error) {
+        const err = parseError(error);
         diagnostico.etapas.contratos = {
           success: false,
-          error: error.message
+          error: err.message
         };
-        console.error("✗ Erro ao buscar contratos:", error.message);
+        console.error("✗ Erro ao buscar contratos:", err.message);
       }
 
       // ETAPA 4: Buscar títulos financeiros (TODOS)
@@ -188,14 +236,14 @@ export const DiagnosticoClienteCompleto = () => {
 
         const registros = titlesData?.data?.registros || [];
         const hoje = new Date();
-        const emAberto = registros.filter((t: any) => 
+        const emAberto = registros.filter((t: Record<string, JsonValue>) => 
           t.status !== 'Pago' && 
           t.status !== 'Baixado' &&
           t.status !== 'pago' &&
           t.status !== 'baixado'
         );
-        const vencidos = emAberto.filter((t: any) => {
-          const vencimento = new Date(t.data_vencimento);
+        const vencidos = emAberto.filter((t: Record<string, JsonValue>) => {
+          const vencimento = new Date(String(t.data_vencimento));
           return vencimento < hoje;
         });
 
@@ -205,7 +253,7 @@ export const DiagnosticoClienteCompleto = () => {
           emAberto: emAberto.length,
           vencidos: vencidos.length,
           temAtraso: vencidos.length > 0,
-          titulos: registros.map((t: any) => ({
+          titulos: registros.map((t: Record<string, JsonValue>) => ({
             id: t.id,
             descricao: t.descricao,
             valor: t.valor,
@@ -214,29 +262,30 @@ export const DiagnosticoClienteCompleto = () => {
             status: t.status,
             situacao: t.situacao
           })),
-          titulosVencidos: vencidos.map((t: any) => ({
+          titulosVencidos: vencidos.map((t: Record<string, JsonValue>) => ({
             id: t.id,
             descricao: t.descricao,
             valor: t.valor,
             data_vencimento: t.data_vencimento,
-            diasAtraso: Math.floor((hoje.getTime() - new Date(t.data_vencimento).getTime()) / (1000 * 60 * 60 * 24))
+            diasAtraso: Math.floor((hoje.getTime() - new Date(String(t.data_vencimento)).getTime()) / (1000 * 60 * 60 * 24))
           })),
           raw: titlesData
         };
 
         logger.info(`✓ Títulos: ${registros.length} total, ${emAberto.length} em aberto, ${vencidos.length} vencidos`);
         logger.debug("Títulos vencidos:", { titulos: diagnostico.etapas.titulos.titulosVencidos });
-      } catch (error: any) {
+      } catch (error) {
+        const err = parseError(error);
         diagnostico.etapas.titulos = {
           success: false,
-          error: error.message
+          error: err.message
         };
-        console.error("✗ Erro ao buscar títulos:", error.message);
+        console.error("✗ Erro ao buscar títulos:", err.message);
       }
 
       // ETAPA 5: Análise da Lógica de Bloqueio e Redução de Velocidade
       logger.info("🧠 ETAPA 5: Analisando lógica de bloqueio e redução...");
-      const analiseLogica: any = {
+      const analiseLogica: AnalysisLogic = {
         codigosBloqueioProgramados: {
           'CA': 'Cancelado por Atraso',
           'CM': 'Cortado Manualmente', 
@@ -259,18 +308,18 @@ export const DiagnosticoClienteCompleto = () => {
 
       // Analisar contratos e identificar tipo de restrição
       if (diagnostico.etapas.contratos?.success) {
-        diagnostico.etapas.contratos.contratos.forEach((contrato: any) => {
+        (diagnostico.etapas.contratos.contratos as Record<string, JsonValue>[]).forEach((contrato: Record<string, JsonValue>) => {
           const statusInternet = String(contrato.status_internet || contrato.status || '').toUpperCase();
           const situacaoFinanceira = String(contrato.situacao_financeira_contrato || '').toUpperCase();
           const bloqueado = contrato.bloqueado === 'S' || contrato.bloqueado === true;
           const pagoAteData = contrato.pago_ate_data || '';
           
           analiseLogica.statusEncontrado.push({
-            contratoId: contrato.id,
+            contratoId: String(contrato.id),
             statusInternet: statusInternet,
             situacaoFinanceira: situacaoFinanceira,
             bloqueado: bloqueado,
-            pagoAte: pagoAteData,
+            pagoAte: String(pagoAteData),
             interpretacao: analiseLogica.codigosBloqueioProgramados[statusInternet] || 'Status Desconhecido'
           });
 
@@ -294,15 +343,16 @@ export const DiagnosticoClienteCompleto = () => {
 
       // Verificar se DEVERIA estar bloqueado baseado nos títulos
       const hoje = new Date();
-      const titulosVencidos = diagnostico.etapas.titulos?.vencidos || 0;
-      const valorTotalAtraso = diagnostico.etapas.titulos?.titulosVencidos?.reduce(
-        (sum: number, t: any) => sum + parseFloat(t.valor || 0), 
+      const titulosVencidosCount = Number(diagnostico.etapas.titulos?.vencidos || 0);
+      const titulosVencidosArray = (diagnostico.etapas.titulos?.titulosVencidos as Record<string, JsonValue>[] | undefined) || [];
+      const valorTotalAtraso = titulosVencidosArray.reduce(
+        (sum: number, t: Record<string, JsonValue>) => sum + parseFloat(String(t.valor || 0)), 
         0
-      ) || 0;
+      );
 
-      if (titulosVencidos > 0) {
+      if (titulosVencidosCount > 0) {
         analiseLogica.deveriaBloqueado = true;
-        analiseLogica.motivoBloqueio.push(`${titulosVencidos} título(s) vencido(s) - R$ ${valorTotalAtraso.toFixed(2)}`);
+        analiseLogica.motivoBloqueio.push(`${titulosVencidosCount} título(s) vencido(s) - R$ ${valorTotalAtraso.toFixed(2)}`);
       }
 
       // Detectar inconsistências com base em redução vs bloqueio
@@ -310,24 +360,24 @@ export const DiagnosticoClienteCompleto = () => {
       
       // Calcular dias de atraso da fatura mais antiga vencida
       let diasAtrasoMaisAntigo = 0;
-      if (diagnostico.etapas.titulos?.titulosVencidos?.length > 0) {
+      if (titulosVencidosArray.length > 0) {
         const maisAntigoVencimento = new Date(
-          Math.min(...diagnostico.etapas.titulos.titulosVencidos.map((t: any) => new Date(t.data_vencimento).getTime()))
+          Math.min(...titulosVencidosArray.map((t: Record<string, JsonValue>) => new Date(String(t.data_vencimento)).getTime()))
         );
         diasAtrasoMaisAntigo = Math.floor((hoje.getTime() - maisAntigoVencimento.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       // Análise baseada na política de bloqueio detectada
-      if (analiseLogica.estaComReducao && isOnline && titulosVencidos > 0) {
+      if (analiseLogica.estaComReducao && isOnline && titulosVencidosCount > 0) {
         analiseLogica.inconsistencias.push({
           tipo: 'REDUCAO_VELOCIDADE_ATIVA',
           gravidade: 'MÉDIA',
-          descricao: `Cliente está ONLINE com REDUÇÃO DE VELOCIDADE por débito de ${titulosVencidos} fatura(s) vencida(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}). Política: redução antes do bloqueio total.`,
+          descricao: `Cliente está ONLINE com REDUÇÃO DE VELOCIDADE por débito de ${titulosVencidosCount} fatura(s) vencida(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}). Política: redução antes do bloqueio total.`,
           acaoSugerida: `Sistema funcionando conforme esperado. Após ${diasAtrasoMaisAntigo} dias de atraso, aplicou redução de velocidade. Verificar quando será aplicado bloqueio total.`,
           detalhamento: {
             diasAtraso: diasAtrasoMaisAntigo,
             valorDevido: valorTotalAtraso,
-            titulosVencidos: titulosVencidos,
+            titulosVencidos: titulosVencidosCount,
             politica: 'Redução → Bloqueio Total'
           }
         });
@@ -347,11 +397,11 @@ export const DiagnosticoClienteCompleto = () => {
         });
       }
 
-      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidos > 0 && isOnline) {
+      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidosCount > 0 && isOnline) {
         analiseLogica.inconsistencias.push({
           tipo: 'DEVEDOR_SEM_RESTRICAO',
           gravidade: 'ALTA',
-          descricao: `Cliente possui ${titulosVencidos} título(s) vencido(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}), está ONLINE mas NÃO tem nenhuma restrição no sistema`,
+          descricao: `Cliente possui ${titulosVencidosCount} título(s) vencido(s) há ${diasAtrasoMaisAntigo} dias (R$ ${valorTotalAtraso.toFixed(2)}), está ONLINE mas NÃO tem nenhuma restrição no sistema`,
           acaoSugerida: 'Verificar configuração de bloqueio automático no IXC. Cliente devedor sem qualquer penalidade.',
           detalhamento: {
             diasAtraso: diasAtrasoMaisAntigo,
@@ -362,7 +412,7 @@ export const DiagnosticoClienteCompleto = () => {
         });
       }
 
-      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidos === 0 && isOnline) {
+      if (!analiseLogica.estaBloqueado && !analiseLogica.estaComReducao && titulosVencidosCount === 0 && isOnline) {
         analiseLogica.inconsistencias.push({
           tipo: 'SITUACAO_REGULAR',
           gravidade: 'NENHUMA',
@@ -379,12 +429,14 @@ export const DiagnosticoClienteCompleto = () => {
       diagnostico.etapas.analiseLogica = analiseLogica;
 
       // Gerar resumo expandido
+      const totalContratosValue = Number(diagnostico.etapas.contratos?.totalContratos || 0);
+      
       diagnostico.resumo = {
         clienteEncontrado: diagnostico.etapas.dadosBasicos?.success || false,
         isOnline: isOnline,
-        temContratos: (diagnostico.etapas.contratos?.totalContratos || 0) > 0,
+        temContratos: totalContratosValue > 0,
         temAtraso: diagnostico.etapas.titulos?.temAtraso || false,
-        titulosVencidos: titulosVencidos,
+        titulosVencidos: titulosVencidosCount,
         valorTotalAtraso: valorTotalAtraso,
         diasAtrasoMaisAntigo: diasAtrasoMaisAntigo,
         deveriaBloqueado: analiseLogica.deveriaBloqueado,
@@ -411,11 +463,17 @@ export const DiagnosticoClienteCompleto = () => {
 
       setResult(diagnostico);
 
-    } catch (error: any) {
-      console.error("❌ ERRO GERAL NO DIAGNÓSTICO:", error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error("❌ ERRO GERAL NO DIAGNÓSTICO:", err);
       setResult({
-        ...diagnostico,
-        error: error.message
+        clientId: "313",
+        clientCPF: "619.538.901-30",
+        clientName: "Cláudio Máximo Chaves",
+        timestamp: new Date().toISOString(),
+        etapas: {},
+        resumo: {},
+        error: err.message
       });
     } finally {
       setLoading(false);
@@ -582,7 +640,7 @@ export const DiagnosticoClienteCompleto = () => {
                 variant="ghost"
                 onClick={(e) => {
                   e.preventDefault();
-                  copyToClipboard(result.etapas.analiseLogica, "Análise da Lógica");
+                  copyToClipboard(result.etapas.analiseLogica as unknown as JsonValue, "Análise da Lógica");
                 }}
                 className="h-7 w-7 p-0"
               >
@@ -620,7 +678,7 @@ export const DiagnosticoClienteCompleto = () => {
                 variant="ghost"
                 onClick={(e) => {
                   e.preventDefault();
-                  copyToClipboard(result, "Resumo Completo");
+                  copyToClipboard(result as unknown as JsonValue, "Resumo Completo");
                 }}
                 className="h-7 w-7 p-0"
               >

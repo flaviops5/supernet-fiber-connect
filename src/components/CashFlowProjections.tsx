@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { parseError } from "@/types/error.types";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -65,8 +66,9 @@ export const CashFlowProjections = () => {
       
       if (error) throw error;
       setSettings(data);
-    } catch (error: any) {
-      console.error('Erro ao buscar configurações:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar configurações:', err);
     }
   };
 
@@ -80,11 +82,12 @@ export const CashFlowProjections = () => {
       
       if (error) throw error;
       setProjections(data || []);
-    } catch (error: any) {
-      console.error('Erro ao buscar projeções:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar projeções:', err);
       toast({
         title: "Erro ao carregar projeções",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -105,11 +108,12 @@ export const CashFlowProjections = () => {
       });
       
       await fetchProjections();
-    } catch (error: any) {
-      console.error('Erro ao calcular projeções:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao calcular projeções:', err);
       toast({
         title: "Erro ao calcular projeções",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -132,6 +136,11 @@ export const CashFlowProjections = () => {
   };
 
   // Agrupar projeções por data
+  interface GroupedDataItem {
+    date: string;
+    [key: string]: string | number;
+  }
+
   const groupedData = projections.reduce((acc, proj) => {
     const date = proj.projection_date;
     if (!acc[date]) {
@@ -141,9 +150,9 @@ export const CashFlowProjections = () => {
     acc[date][`${proj.scenario}_acc`] = proj.accumulated_cash_flow;
     acc[date][`${proj.scenario}_revenue`] = proj.projected_revenue;
     return acc;
-  }, {} as Record<string, any>);
+  }, {} as Record<string, GroupedDataItem>);
 
-  const chartData = Object.values(groupedData).map((item: any) => ({
+  const chartData = Object.values(groupedData).map((item: GroupedDataItem) => ({
     ...item,
     dateLabel: formatDate(item.date)
   }));

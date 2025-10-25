@@ -55,10 +55,11 @@ export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGenerat
         description: `${data.conversations?.length || 0} variações criadas pela IA`
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao gerar conversas', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },
@@ -106,10 +107,11 @@ export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGenerat
         description: 'A conversa foi salva e atrelada ao assunto selecionado.',
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({
         title: 'Erro ao aprovar',
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     }
