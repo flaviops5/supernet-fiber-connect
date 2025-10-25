@@ -8,6 +8,7 @@ import { Loader2, Sparkles, Copy, Check, X, Edit, AlertCircle } from 'lucide-rea
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
+import { parseError } from '@/types/error.types';
 
 interface GeneratedFAQ {
   question: string;
@@ -40,8 +41,9 @@ export const AIFAQGenerator = () => {
         toast.error('Formato de resposta inválido');
       }
     },
-    onError: (error: any) => {
-      console.error('Error generating FAQs:', error);
+    onError: (error) => {
+      const err = parseError(error);
+      console.error('Error generating FAQs:', err.message);
       toast.error('Erro ao gerar FAQs. Tente novamente.');
     }
   });

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ThumbsUp, ThumbsDown, Copy } from 'lucide-react';
+import { parseError } from '@/types/error.types';
 
 interface GeneratedConversation {
   id: string;

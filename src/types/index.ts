@@ -11,3 +11,7 @@ export * from './common.types';
 export * from './ixc-extended.types';
 export * from './campaign.types';
 export * from './financial.types';
+export * from './error.types';
+export * from './api.types';
+export * from './event.types';
+export * from './admin.types';

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailTestSender } from './EmailTestSender';
+import { parseError } from '@/types/error.types';
 
 interface EmailTemplate {
   id: string;
@@ -68,8 +69,9 @@ export function EmailTemplateManagement() {
       }));
       
       setTemplates(templatesWithParsedVars);
-    } catch (error: any) {
-      toast.error('Erro ao carregar templates: ' + error.message);
+    } catch (error) {
+      const err = parseError(error);
+      toast.error('Erro ao carregar templates: ' + err.message);
     } finally {
       setIsLoading(false);
     }
