@@ -1,12 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 Deno.serve(createPublicHandler('automacao-agent', async (req) => {
+  const logger = createLogger('automacao-agent', req);
   const correlationId = `automacao-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   const { messages } = await req.json();
     
-    console.log(`🏠 [${correlationId}] Automação agent request`);
+    logger.info('Automação agent request', { correlationId });
 
     const systemPrompt = `Você é um assistente especializado em AUTOMAÇÃO RESIDENCIAL da SUPERNET FIBRA, uma empresa de telecomunicações e tecnologia.
 
@@ -134,9 +136,9 @@ Seja sempre profissional, prestativo e técnico. Use emojis moderadamente para t
       throw new Error('Resposta vazia da API');
     }
 
-  console.log("✅ Resposta gerada com sucesso");
+  logger.info('Resposta gerada com sucesso', { correlationId });
 
-  return { 
+  return {
     message: assistantMessage,
     metadata: {
       model: 'google/gemini-2.5-flash',

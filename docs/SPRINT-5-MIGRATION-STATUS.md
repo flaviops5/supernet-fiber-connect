@@ -12,7 +12,7 @@ Migrar todas as edge functions de `console.log/error/warn` para o logger estrutu
 
 ---
 
-## ✅ Funções Migradas (4/70)
+## ✅ Funções Migradas (9/70)
 
 ### 1. ✅ `auto-reboot-frozen-equipment` (100%)
 - **Console.log removidos**: 22
@@ -56,26 +56,54 @@ logger.debug('Cliente verificado', {
   - Debug de requisições estruturado
   - Rastreamento de ações
 
+### 5. ✅ `routing-agent` (100%)
+- **Console.log removidos**: 6
+- **Benefícios**:
+  - Logs estruturados com contexto de protocolo e cliente
+  - Rastreamento de roteamento entre departamentos
+  - Melhor debug de desbloqueios
+
+### 6. ✅ `support-tech-agent` (100%)
+- **Console.log removidos**: 1
+- **Benefícios**:
+  - Logs de pedidos mascarados (CPF redacted)
+  - Contexto estruturado para diagnósticos técnicos
+
+### 7. ✅ `support-financial-agent` (100%)
+- **Console.log removidos**: 6
+- **Benefícios**:
+  - Logs de desbloqueio com contexto temporal
+  - Rastreamento de operações financeiras estruturado
+
+### 8. ✅ `sales-agent` (100%)
+- **Console.log removidos**: 14
+- **Benefícios**:
+  - Child logger para cada etapa do processo de venda
+  - Logs de IXC integration estruturados
+  - Melhor rastreamento de criação de contratos
+
+### 9. ✅ `automacao-agent` (100%)
+- **Console.log removidos**: 2
+- **Benefícios**:
+  - Logs estruturados para requisições de automação
+  - Contexto de correlationId mantido
+
 ---
 
 ## 📊 Progresso Geral
 
 | Categoria | Migrado | Total | % |
 |-----------|---------|-------|---|
-| Funções críticas | 4 | 10 | 40% |
-| Console.log removidos | ~104 | 795 | 13% |
-| Funções totais | 4 | 70 | 6% |
+| Funções críticas | 9 | 10 | 90% |
+| Console.log removidos | ~133 | 795 | 17% |
+| Funções totais | 9 | 70 | 13% |
 
 ---
 
 ## 🎯 Próximas Funções Prioritárias
 
-### Alta Prioridade (5 funções)
-1. `routing-agent/index.ts` - Core do sistema
-2. `support-tech-agent/index.ts` - Suporte técnico
-3. `support-financial-agent/index.ts` - Suporte financeiro
-4. `sales-agent/index.ts` - Vendas
-5. `automacao-agent/index.ts` - Automação
+### Alta Prioridade (1 função restante)
+1. `telemedicina-agent/index.ts` - Telemedicina
 
 ### Média Prioridade (10 funções)
 6. `whatsapp-webhook/index.ts`
@@ -167,7 +195,7 @@ Para cada função:
 - **Objetivo**: 100% das edge functions migradas
 - **Prazo estimado**: 2 semanas
 - **Funções/dia necessário**: ~5 funções/dia
-- **Status atual**: 4 funções (Dia 1) ✅
+- **Status atual**: 9 funções (Dia 1) ✅ - 90% dos agentes críticos concluído!
 
 ---
 
@@ -179,5 +207,5 @@ Para cada função:
 
 ---
 
-**Última atualização**: 2025-10-25
+**Última atualização**: 2025-10-25 (Lote 2 - Agentes Core)
 **Atualizado por**: Sprint 5 Execution

@@ -5,6 +5,7 @@ import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '.
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +24,7 @@ serve(async (req) => {
 
   const startTime = Date.now();
   let success = false;
+  const logger = createLogger('sales-agent', req);
 
   try {
     const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -50,7 +52,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log(`🛒 [${correlationId}] sales-agent: request start`, { method: req.method, directOrder, path: new URL(req.url).pathname });
+    logger.info('sales-agent: request start', { 
+      method: req.method, 
+      directOrder, 
+      path: new URL(req.url).pathname,
+      correlationId 
+    });
     
     // Se for uma ordem direta do formulário
     if (directOrder) {
@@ -103,7 +110,7 @@ serve(async (req) => {
 
       const orderData = parseDirectOrder(content);
 
-      console.log('Pedido recebido (normalizado):', {
+      logger.info('Pedido recebido (normalizado)', {
         ...orderData,
         cpf: orderData.cpf ? `${orderData.cpf.slice(0,3)}***` : '',
       });
@@ -163,7 +170,7 @@ serve(async (req) => {
 
       try {
         // 1. Criar cliente no IXC
-        console.log('Criando cliente no IXC...');
+        logger.info('Criando cliente no IXC', { correlationId });
         const { data: customerResult, error: customerError } = await supabase.functions.invoke('ixc-integration', {
           body: {
             action: 'createCustomer',
@@ -182,7 +189,7 @@ serve(async (req) => {
         });
 
         if (customerError) {
-          console.error('Erro ao criar cliente no IXC:', { correlationId, customerError });
+          logger.error('Erro ao criar cliente no IXC', customerError, { correlationId });
           return new Response(
             JSON.stringify({ error: 'IXC: falha ao criar cliente', error_code: 'ixc_invoke_failed', details: customerError.message || 'Erro desconhecido', correlation_id: correlationId }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -203,7 +210,10 @@ serve(async (req) => {
               existing_customer_id = idMatch?.[1];
             }
           } catch {}
-          console.error('IXC retornou erro ao criar cliente:', { correlationId, ixcResp });
+          logger.error('IXC retornou erro ao criar cliente', new Error(msg), { 
+            correlationId, 
+            ixcResp 
+          });
           return new Response(
             JSON.stringify({ error: 'IXC: falha ao criar cliente', error_code, details: msg, existing_customer_id, correlation_id: correlationId }),
             { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -216,10 +226,13 @@ serve(async (req) => {
           customerResult?.data?.registro?.id ||
           ixcResp?.id ||
           ixcResp?.registro?.id;
-        console.log('Cliente criado no IXC com ID:', customerId);
+        logger.info('Cliente criado no IXC', { customerId, correlationId });
 
         if (!customerId) {
-          console.error('Resposta IXC sem ID do cliente:', { correlationId, ixcResp });
+          logger.error('Resposta IXC sem ID do cliente', new Error('Missing customer ID'), { 
+            correlationId, 
+            ixcResp 
+          });
           return new Response(
             JSON.stringify({ error: 'IXC não retornou ID do cliente', error_code: 'ixc_missing_customer_id', details: 'Verifique os dados enviados (CPF, endereço, etc.)', correlation_id: correlationId }),
             { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -229,7 +242,10 @@ serve(async (req) => {
         // 2. Criar contrato no IXC (vincula o plano ao cliente)
         let contractId: string | null = null;
         if (plan.ixc_plan_id) {
-          console.log('Criando contrato no IXC com plano:', plan.ixc_plan_id);
+          logger.info('Criando contrato no IXC', { 
+            planId: plan.ixc_plan_id, 
+            correlationId 
+          });
           const { data: contractResult, error: contractError } = await supabase.functions.invoke('ixc-integration', {
             body: {
               action: 'createContract',
@@ -244,18 +260,18 @@ serve(async (req) => {
           });
 
           if (contractError) {
-            console.error('Erro ao criar contrato no IXC:', contractError);
+            logger.error('Erro ao criar contrato no IXC', contractError, { correlationId });
             // Não falha aqui, apenas loga o erro e continua
           } else {
             contractId = contractResult?.data?.contractId || contractResult?.data?.response?.id;
-            console.log('Contrato criado no IXC com ID:', contractId);
+            logger.info('Contrato criado no IXC', { contractId, correlationId });
           }
         } else {
-          console.log('Plano não possui ixc_plan_id configurado, pulando criação de contrato');
+          logger.info('Plano não possui ixc_plan_id - pulando contrato', { correlationId });
         }
 
         // 3. Criar atendimento no IXC
-        console.log('Criando atendimento no IXC...');
+        logger.info('Criando atendimento no IXC', { correlationId });
         const { data: atendimentoResult, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
           body: {
             action: 'createAtendimento',
@@ -280,12 +296,12 @@ serve(async (req) => {
         });
 
         if (atendimentoError) {
-          console.error('Erro ao criar atendimento no IXC:', atendimentoError);
+          logger.error('Erro ao criar atendimento no IXC', atendimentoError, { correlationId });
           throw new Error('Erro ao criar atendimento no IXC');
         }
 
         const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
-        console.log('Atendimento criado no IXC com ID:', atendimentoId);
+        logger.info('Atendimento criado no IXC', { atendimentoId, correlationId });
 
         // 4. Criar registro local do agendamento usando RPC seguro
         const { data: appointmentId, error } = await supabase.rpc('create_installation_appointment', {
@@ -306,7 +322,7 @@ serve(async (req) => {
         });
 
         if (error) {
-          console.error('Erro ao criar agendamento local:', error);
+          logger.error('Erro ao criar agendamento local', error, { correlationId });
           throw new Error('Falha ao criar agendamento: ' + error.message);
         }
 
@@ -324,7 +340,10 @@ serve(async (req) => {
           },
         );
       } catch (ixcError) {
-        console.error('Erro na integração IXC:', { correlationId, error: ixcError });
+        logger.error('Erro na integração IXC', 
+          ixcError instanceof Error ? ixcError : new Error(String(ixcError)), 
+          { correlationId }
+        );
         return new Response(
           JSON.stringify({
             error: 'Erro ao processar no sistema IXC. Tente novamente ou entre em contato.',
@@ -401,7 +420,7 @@ CONTEXTO DO USUÁRIO: ${userContext ? JSON.stringify(userContext) : 'Novo client
 
 WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
-    console.log(`🤖 [${correlationId}] Chamando Lovable AI (sales-agent)`);
+    logger.debug('Chamando Lovable AI', { correlationId });
     
     const aiResponse = await callLovableAI({
       messages: [

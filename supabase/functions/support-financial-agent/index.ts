@@ -177,24 +177,27 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
             const naoBloquearAte = blockedContract.nao_bloquear_ate;
             const desbloqueioAtivoRecentemente = blockedContract.desbloqueio_confianca_ativo === 'S';
             
-            // Verificar se a data limite já passou
-            let desbloqueioIndisponivel = false;
-            if (dtUltimoDesbloqueio && naoBloquearAte) {
-              try {
-                const dataLimite = new Date(naoBloquearAte);
-                const dataAtual = new Date();
-                // Se a data limite já passou, significa que não pagou dentro do prazo
-                if (dataAtual > dataLimite) {
-                  desbloqueioIndisponivel = true;
-                  console.log('⚠️ Desbloqueio indisponível: usado anteriormente e prazo expirado');
-                  console.log(`Data último desbloqueio: ${dtUltimoDesbloqueio}`);
-                  console.log(`Data limite (não bloquear até): ${naoBloquearAte}`);
-                  console.log(`Data atual: ${dataAtual.toISOString()}`);
-                }
-              } catch (error) {
-                console.error('Erro ao verificar datas de desbloqueio:', error);
-              }
+        // Verificar se a data limite já passou
+        let desbloqueioIndisponivel = false;
+        if (dtUltimoDesbloqueio && naoBloquearAte) {
+          try {
+            const dataLimite = new Date(naoBloquearAte);
+            const dataAtual = new Date();
+            // Se a data limite já passou, significa que não pagou dentro do prazo
+            if (dataAtual > dataLimite) {
+              desbloqueioIndisponivel = true;
+              logger.warn('Desbloqueio indisponível: usado anteriormente e prazo expirado', {
+                dt_ultimo_desbloqueio: dtUltimoDesbloqueio,
+                nao_bloquear_ate: naoBloquearAte,
+                data_atual: dataAtual.toISOString()
+              });
             }
+          } catch (error) {
+            logger.error('Erro ao verificar datas de desbloqueio', 
+              error instanceof Error ? error : new Error(String(error))
+            );
+          }
+        }
             
             // Se desbloqueio está indisponível, informar ao agente SEM tentar desbloquear
             if (desbloqueioIndisponivel) {
