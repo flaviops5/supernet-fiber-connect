@@ -22,7 +22,7 @@ const TelemedicinaChatWidget = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: Telemed
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [chatbotId]);
+  }, []); // chatbotId not used in effect
 
   // Auto-reset session every 30 minutes of inactivity
   useEffect(() => {

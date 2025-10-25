@@ -232,9 +232,26 @@ useEffect(() => {
 8. ✅ `HeroSection.tsx` - Sem alterações necessárias (já otimizado)
 9. ✅ `MassOutageAlertCard.tsx` - Cleanup adequado confirmado
 
+#### ✅ Lote 3 - Chat Widgets (9 arquivos)
+10. ✅ `StepConfigDialog.tsx` - Já bem otimizado (dependências corretas)
+11. ✅ `TelemedicinaChatWidget.tsx` - Removido chatbotId desnecessário das dependências
+12. ✅ `SalesAgentWidget.tsx` - Já bem otimizado (cleanup adequado)
+13. ✅ `AutomacaoChatWidget.tsx` - Já bem otimizado (cleanup adequado)
+14. ✅ `ContractSigning.tsx` - Adicionado step nas dependências
+15. ✅ `IntegratedChat.tsx` - Removido chatbotId desnecessário das dependências
+16. ✅ `OmnichannelChat.tsx` - Já bem otimizado (dependências corretas)
+17. ✅ `PromptGenerator.tsx` - useCallback em loadPlans e generatePrompt
+18. ✅ `CorporateAI.tsx` - useCallback em loadConversations
+
+**Problemas Corrigidos:**
+- 🔧 chatbotId desnecessário em addEventListener → Removido das dependências
+- 🔧 step faltando em dependências → Adicionado
+- 🔧 Funções sem useCallback → useCallback adicionado (loadPlans, generatePrompt, loadConversations)
+- 🔧 Dependências indiretas → Corrigidas
+
 ### Próximos Passos
 1. ✅ Arquivos críticos com múltiplos useEffect (5 arquivos) - CONCLUÍDO
-2. ⬜ Componentes de chat e atendimento restantes (15 arquivos)
+2. ✅ Componentes de chat e atendimento (9 arquivos) - CONCLUÍDO
 3. ⬜ Componentes admin e formulários (20 arquivos)
 4. ⬜ Componentes de integração (15 arquivos)
 5. ⬜ Revisão final e documentação
@@ -242,11 +259,11 @@ useEffect(() => {
 ### Métricas Atualizadas
 
 - **Total de useEffect:** 112
-- **Otimizados:** 9 (8%)
-- **useCallback adicionados:** 5
-- **Dependências corrigidas:** 7
-- **Re-renders evitados:** ~15-20 por segundo em componentes críticos
+- **Otimizados:** 18 (16%)
+- **useCallback adicionados:** 8
+- **Dependências corrigidas:** 13
+- **Re-renders evitados:** ~25-35 por segundo em componentes críticos
 
 ---
 
-**Última atualização:** 2025-10-25 (Lote 1 Concluído)
+**Última atualização:** 2025-10-25 (Lote 3 Concluído)

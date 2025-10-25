@@ -22,7 +22,7 @@ const IntegratedChat = ({ chatbotId = "zyFH0AihcEAIixsQekuvr" }: IntegratedChatP
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, []); // chatbotId not used in effect
 
   // Auto-reset session every 30 minutes of inactivity
   useEffect(() => {

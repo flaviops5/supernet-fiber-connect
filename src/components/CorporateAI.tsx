@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,7 +68,7 @@ const CorporateAI = () => {
     scrollToBottom();
   }, [messages]);
 
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     setLoadingConversations(true);
     try {
       const { data, error } = await supabase
@@ -88,7 +88,7 @@ const CorporateAI = () => {
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, [toast]);
 
   const loadMessages = async (conversationId: string) => {
     try {
@@ -272,7 +272,7 @@ const CorporateAI = () => {
 
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, [loadConversations]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

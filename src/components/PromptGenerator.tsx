@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +22,7 @@ export const PromptGenerator = () => {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('plans')
@@ -36,9 +36,9 @@ export const PromptGenerator = () => {
       console.error('Error loading plans:', error);
       toast.error('Erro ao carregar planos');
     }
-  };
+  }, []);
 
-  const generatePrompt = () => {
+  const generatePrompt = useCallback(() => {
     const generateImpactPhrase = (plan: Plan) => {
       const speedNumber = parseInt(plan.speed.replace(/\D/g, ''));
       
@@ -150,7 +150,7 @@ ${plans.map(plan =>
 ).join('\n')}`;
 
     setPrompt(promptText);
-  };
+  }, [plans]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(prompt);
@@ -165,7 +165,7 @@ ${plans.map(plan =>
     if (plans.length > 0) {
       generatePrompt();
     }
-  }, [plans]);
+  }, [plans, generatePrompt]);
 
   const refreshData = async () => {
     setLoading(true);

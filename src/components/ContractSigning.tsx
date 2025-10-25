@@ -61,7 +61,8 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
     if (isOpen && step === 1) {
       generateContract();
     }
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, step]); // generateContract called once on mount, step dependency needed
 
   // Initialize signature pad
   useEffect(() => {
