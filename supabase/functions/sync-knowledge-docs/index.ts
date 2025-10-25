@@ -102,6 +102,13 @@ Deno.serve(createPublicHandler('sync-knowledge-docs', async (req, { supabase }) 
         path: 'docs/knowledge-base/README.md',
         category: 'documentacao',
         agentTypes: ['admin']
+      },
+      
+      // ========== GOVERNANÇA E AUDITORIA ==========
+      {
+        path: 'docs/current-routing-map.md',
+        category: 'governanca',
+        agentTypes: ['admin', 'routing']
       }
     ];
 
