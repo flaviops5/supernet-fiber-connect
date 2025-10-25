@@ -5,12 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, CheckCircle, XCircle } from "lucide-react";
+import { parseError } from "@/types/error.types";
+
+interface PaymentResult {
+  success: boolean;
+  data?: {
+    customer: { name: string; phone: string };
+    payment: { valor: string; vencimento: string; hasPix: boolean; hasBoleto: boolean };
+    whatsapp: { messageId: string };
+  };
+  error?: string;
+}
 
 export const SendPaymentTest = () => {
   const [phone, setPhone] = useState("");
   const [cpf, setCpf] = useState("61953890130");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<PaymentResult | null>(null);
   const { toast } = useToast();
 
   const handleSend = async () => {
@@ -47,14 +58,15 @@ export const SendPaymentTest = () => {
           variant: "destructive"
         });
       }
-    } catch (error: any) {
-      console.error('Erro:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro:', err);
       toast({
         title: "❌ Erro",
-        description: error.message,
+        description: err.message,
         variant: "destructive"
       });
-      setResult({ success: false, error: error.message });
+      setResult({ success: false, error: err.message });
     } finally {
       setLoading(false);
     }

@@ -7,11 +7,18 @@ import { toast } from 'sonner';
 import confidentWoman from '@/assets/family-internet-v3.jpg';
 import ContractSigning from './ContractSigning';
 import { MediaUpload } from './MediaUpload';
+import { parseError } from '@/types/error.types';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
+
+type MessageContent = string | Array<{
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string };
+}>;
 
 interface ContractData {
   appointmentId: string;
@@ -62,7 +69,7 @@ export const SalesAgentChat = () => {
     setIsLoading(true);
 
     // Prepara o conteúdo da mensagem (texto + imagem se houver)
-    const messageContent: any = attachedImage 
+    const messageContent: MessageContent = attachedImage 
       ? [
           { type: 'text', text: userMessage || 'Veja a imagem anexada' },
           { type: 'image_url', image_url: { url: attachedImage } }
@@ -167,10 +174,11 @@ export const SalesAgentChat = () => {
         }
       }
 
-    } catch (error: any) {
-      console.error('Erro ao enviar mensagem:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao enviar mensagem:', err);
       toast.error('Erro ao processar sua mensagem. Tente novamente.');
-      setMessages(prev => [...prev, { 
+      setMessages(prev => [...prev, {
         role: 'assistant', 
         content: 'Desculpe, tive um problema ao processar sua mensagem. Pode tentar novamente?' 
       }]);

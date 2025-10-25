@@ -4,10 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { logger } from "@/lib/logger";
+import { parseError } from "@/types/error.types";
+
+interface ClientStatusResult {
+  clientId?: string;
+  contracts?: unknown;
+  titles?: unknown;
+  hasOverdue?: boolean;
+  timestamp?: string;
+  error?: string;
+}
 
 export const TestClientFinancialStatus = () => {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ClientStatusResult | null>(null);
 
   const checkClientStatus = async () => {
     setLoading(true);
@@ -42,10 +52,11 @@ export const TestClientFinancialStatus = () => {
         timestamp: new Date().toISOString()
       });
 
-    } catch (error: any) {
-      logger.error('Error checking client financial status', error);
+    } catch (error) {
+      const err = parseError(error);
+      logger.error('Error checking client financial status', err);
       setResult({
-        error: error.message || "Erro desconhecido",
+        error: err.message || "Erro desconhecido",
         timestamp: new Date().toISOString()
       });
     } finally {

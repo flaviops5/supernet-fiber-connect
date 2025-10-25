@@ -5,6 +5,16 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, CheckCircle, Users, Search, Zap } from 'lucide-react';
+import { parseError } from '@/types/error.types';
+import type { Json } from '@/integrations/supabase/types';
+
+interface MassOutageMetadata {
+  group_type?: string;
+  pon_port?: string;
+  bairros?: string[];
+  power_outage?: boolean;
+  power_outage_description?: string;
+}
 
 interface MassOutageEvent {
   id: string;
@@ -14,7 +24,13 @@ interface MassOutageEvent {
   detected_at: string;
   resolved_at: string | null;
   status: string;
-  metadata?: any;
+  metadata?: Json;
+}
+
+// Helper to parse metadata safely
+function parseMetadata(metadata: Json | undefined): MassOutageMetadata | undefined {
+  if (!metadata || typeof metadata !== 'object' || metadata === null) return undefined;
+  return metadata as MassOutageMetadata;
 }
 
 export function MassOutageHistory() {
@@ -35,11 +51,12 @@ export function MassOutageHistory() {
 
       if (error) throw error;
       setEvents(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar histórico:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao carregar histórico:', err);
       toast({
         title: "Erro ao carregar histórico",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -133,12 +150,12 @@ export function MassOutageHistory() {
                         <div>
                           <h3 className="font-bold">{event.region_pattern}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {event.metadata?.group_type && `${event.metadata.group_type}`}
-                            {event.metadata?.pon_port && ` - Porta: ${event.metadata.pon_port}`}
+                            {parseMetadata(event.metadata)?.group_type && `${parseMetadata(event.metadata)?.group_type}`}
+                            {parseMetadata(event.metadata)?.pon_port && ` - Porta: ${parseMetadata(event.metadata)?.pon_port}`}
                           </p>
-                          {event.metadata?.bairros && event.metadata.bairros.length > 0 && (
+                          {parseMetadata(event.metadata)?.bairros && parseMetadata(event.metadata)!.bairros!.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              Bairros: {event.metadata.bairros.join(', ')}
+                              Bairros: {parseMetadata(event.metadata)!.bairros!.join(', ')}
                             </p>
                           )}
                         </div>
@@ -148,7 +165,7 @@ export function MassOutageHistory() {
                           <Users className="h-3 w-3" />
                           {event.affected_count} clientes
                         </Badge>
-                        {event.metadata?.power_outage && (
+                        {parseMetadata(event.metadata)?.power_outage && (
                           <Badge variant="outline" className="gap-1 text-xs border-yellow-500/50 text-yellow-500">
                             <Zap className="h-3 w-3" />
                             Falta de energia

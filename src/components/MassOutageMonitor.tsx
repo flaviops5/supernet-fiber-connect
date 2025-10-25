@@ -6,6 +6,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, RefreshCw, Users, MapPin, Clock, CheckCircle, Loader2, Zap } from 'lucide-react';
+import { parseError } from '@/types/error.types';
+import type { Json } from '@/integrations/supabase/types';
+
+interface MassOutageMetadata {
+  group_type?: string;
+  pon_port?: string;
+  bairros?: string[];
+  power_outage?: boolean;
+  power_outage_description?: string;
+}
 
 interface MassOutageEvent {
   id: string;
@@ -16,7 +26,13 @@ interface MassOutageEvent {
   resolved_at: string | null;
   status: string;
   notifications_sent: boolean;
-  metadata?: any;
+  metadata?: Json;
+}
+
+// Helper to parse metadata safely
+function parseMetadata(metadata: Json | undefined): MassOutageMetadata | undefined {
+  if (!metadata || typeof metadata !== 'object' || metadata === null) return undefined;
+  return metadata as MassOutageMetadata;
 }
 
 export function MassOutageMonitor() {
@@ -36,11 +52,12 @@ export function MassOutageMonitor() {
 
       if (error) throw error;
       setEvents(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar eventos:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao carregar eventos:', err);
       toast({
         title: "Erro ao carregar eventos",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -64,11 +81,12 @@ export function MassOutageMonitor() {
       } else {
         throw new Error(data?.error || 'Erro ao detectar quedas');
       }
-    } catch (error: any) {
-      console.error('Erro ao detectar quedas:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao detectar quedas:', err);
       toast({
         title: "Erro na detecção",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -180,19 +198,19 @@ export function MassOutageMonitor() {
                           <h3 className="font-bold text-lg">{event.region_pattern}</h3>
                           <div className="flex flex-col gap-1">
                             <p className="text-sm text-muted-foreground">
-                              {event.metadata?.group_type && `${event.metadata.group_type}`}
-                              {event.metadata?.pon_port && ` - Porta: ${event.metadata.pon_port}`}
+                              {parseMetadata(event.metadata)?.group_type && `${parseMetadata(event.metadata)?.group_type}`}
+                              {parseMetadata(event.metadata)?.pon_port && ` - Porta: ${parseMetadata(event.metadata)?.pon_port}`}
                             </p>
-                            {event.metadata?.group_type === 'Porta PON' && event.metadata?.pon_port && (
+                            {parseMetadata(event.metadata)?.group_type === 'Porta PON' && parseMetadata(event.metadata)?.pon_port && (
                               <Badge variant="outline" className="w-fit gap-1 text-xs">
                                 <MapPin className="h-3 w-3" />
-                                PON: {event.metadata.pon_port}
+                                PON: {parseMetadata(event.metadata)!.pon_port}
                               </Badge>
                             )}
-                            {event.metadata?.bairros && event.metadata.bairros.length > 0 && (
+                            {parseMetadata(event.metadata)?.bairros && parseMetadata(event.metadata)!.bairros!.length > 0 && (
                               <Badge variant="secondary" className="w-fit gap-1 text-xs mt-1">
                                 <MapPin className="h-3 w-3" />
-                                Bairros: {event.metadata.bairros.join(', ')}
+                                Bairros: {parseMetadata(event.metadata)!.bairros!.join(', ')}
                               </Badge>
                             )}
                           </div>
@@ -203,7 +221,7 @@ export function MassOutageMonitor() {
                           <Users className="h-3 w-3" />
                           {event.affected_count} clientes
                         </Badge>
-                        {event.metadata?.power_outage && (
+                        {parseMetadata(event.metadata)?.power_outage && (
                           <Badge variant="outline" className="gap-2 border-yellow-500 text-yellow-500">
                             <Zap className="h-3 w-3" />
                             Falta de Energia
@@ -212,11 +230,11 @@ export function MassOutageMonitor() {
                       </div>
                     </div>
 
-                    {event.metadata?.power_outage && event.metadata?.power_outage_description && (
+                    {parseMetadata(event.metadata)?.power_outage && parseMetadata(event.metadata)?.power_outage_description && (
                       <Alert className="border-yellow-500/50 bg-yellow-500/10">
                         <Zap className="h-4 w-4 text-yellow-500" />
                         <AlertDescription className="text-sm">
-                          <strong>Causa identificada:</strong> {event.metadata.power_outage_description}
+                          <strong>Causa identificada:</strong> {parseMetadata(event.metadata)!.power_outage_description}
                         </AlertDescription>
                       </Alert>
                     )}
