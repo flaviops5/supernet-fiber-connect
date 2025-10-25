@@ -13,7 +13,7 @@ import { IXCEndpointTester } from '@/components/IXCEndpointTester';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import { TestIXCSubjects } from '@/components/tests/TestIXCSubjects';
-import type { IXCResponse } from '@/types/api.types';
+import type { EdgeFunctionResponse } from '@/types/api.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface IXCCustomer {
@@ -40,7 +40,7 @@ const IXCIntegration = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<IXCCustomer | null>(null);
-  const [lastResponse, setLastResponse] = useState<IXCResponse<unknown> | null>(null);
+  const [lastResponse, setLastResponse] = useState<EdgeFunctionResponse<unknown> | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
   const [errorDetails, setErrorDetails] = useState<{ error: Error; data?: unknown } | null>(null);
   const [customerStatus, setCustomerStatus] = useState<{
@@ -75,6 +75,7 @@ const IXCIntegration = () => {
       [key: string]: unknown;
     };
     ixcContractId?: string;
+    ixcClientId?: string;
     errorDetails?: Record<string, unknown>;
   } | null>(null);
   
@@ -133,7 +134,7 @@ const IXCIntegration = () => {
         throw customerError;
       }
       
-      const responseData = customerData as IXCResponse<{ id?: string }>;
+      const responseData = customerData as EdgeFunctionResponse<{ id?: string }>;
       if (responseData && 'success' in responseData && responseData.success === false) {
         const errorData = {
           success: false,
@@ -333,7 +334,7 @@ const IXCIntegration = () => {
 
       if (error) throw error;
       
-      const responseData = data as IXCResponse<{ id?: string; registro?: { id?: string } }>;
+      const responseData = data as EdgeFunctionResponse<{ id?: string; registro?: { id?: string } }>;
       if (responseData && responseData.success === false) {
         throw new Error(responseData.error || 'Erro ao criar atendimento no IXC');
       }
@@ -875,8 +876,12 @@ const IXCIntegration = () => {
                   setTestResults({
                     success: true,
                     planUsed: plans,
-                    agentResponse,
-                    appointment,
+                    appointment: appointment ? {
+                      date: appointment.appointment_date,
+                      period: appointment.appointment_period,
+                      customer_email: appointment.customer_email,
+                      ixc_contract_id: appointment.ixc_contract_id || undefined,
+                    } : undefined,
                     ixcClientId: appointment?.ixc_contract_id ? "Criado" : "Não criado",
                     ixcContractId: appointment?.ixc_contract_id || "Não criado",
                   });
