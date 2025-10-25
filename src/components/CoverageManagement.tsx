@@ -14,7 +14,7 @@ interface CoverageArea {
   name: string;
   region_code: string;
   color: string;
-  coordinates: any;
+  coordinates: unknown;
   active: boolean;
 }
 

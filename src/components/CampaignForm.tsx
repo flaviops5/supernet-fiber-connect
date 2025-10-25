@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, X, Image, Video, FileAudio } from 'lucide-react';
+import type { CampaignType, CampaignChannel, CTAType } from '@/types';
 
 interface CampaignFormProps {
   onSuccess: () => void;
@@ -84,15 +86,15 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
 
     try {
       // Criar campanha
-      const { data: campaign, error: campaignError } = await supabase
+      const { data: campaign, error: campaignError} = await supabase
         .from('campaigns')
         .insert([{
           name: formData.name,
           description: formData.description,
-          type: formData.type as any,
-          channels: formData.channels as any,
+          type: formData.type as Database['public']['Tables']['campaigns']['Row']['type'],
+          channels: formData.channels as Database['public']['Tables']['campaigns']['Row']['channels'],
           target_filters: formData.targetFilters,
-          status: 'draft' as any,
+          status: 'draft' as Database['public']['Tables']['campaigns']['Row']['status'],
         }])
         .select()
         .single();
@@ -107,7 +109,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
           content_text: formData.contentText,
           media_type: formData.mediaType || null,
           media_url: formData.mediaUrl || null,
-          cta_type: formData.ctaType as any,
+          cta_type: formData.ctaType as Database['public']['Tables']['campaign_content']['Row']['cta_type'],
           cta_config: formData.ctaConfig,
         }]);
 

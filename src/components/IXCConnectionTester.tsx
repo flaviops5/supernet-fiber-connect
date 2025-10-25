@@ -6,9 +6,23 @@ import { Loader2, CheckCircle, XCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
+interface ConnectionTestResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  details?: {
+    base_url_configured?: boolean;
+    credentials_valid?: boolean;
+    hmac_configured?: boolean;
+    status?: number;
+    error?: unknown;
+    base_url?: string;
+  };
+}
+
 export function IXCConnectionTester() {
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ConnectionTestResult | null>(null);
 
   const testConnection = async () => {
     setTesting(true);

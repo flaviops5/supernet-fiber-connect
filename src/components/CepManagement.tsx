@@ -32,7 +32,7 @@ interface CepData {
   region_name: string;
   coverage_area_id: string;
   available: boolean;
-  coordinates: any;
+  coordinates: unknown;
   coverage_area?: CoverageArea;
   plans?: Plan[];
 }

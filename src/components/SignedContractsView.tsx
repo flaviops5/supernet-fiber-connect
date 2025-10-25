@@ -87,7 +87,7 @@ const SignedContractsView: React.FC = () => {
         .order('signed_at', { ascending: false });
 
       if (error) throw error;
-      setContracts((data as any[])?.map(contract => ({
+      setContracts((data as SignedContract[])?.map(contract => ({
         ...contract,
         ip_address: contract.ip_address?.toString() || 'N/A'
       })) || []);

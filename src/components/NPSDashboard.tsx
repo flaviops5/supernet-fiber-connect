@@ -68,7 +68,7 @@ export function NPSDashboard() {
 
       const formattedStats = statsData?.map(stat => ({
         ...stat,
-        campaign_name: (stat.campaign as any)?.name || 'Sem nome',
+        campaign_name: (stat.campaign as { name?: string } | null)?.name || 'Sem nome',
       })) || [];
 
       setStats(formattedStats);
