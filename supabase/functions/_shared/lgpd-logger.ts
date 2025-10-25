@@ -4,7 +4,8 @@
  * Registra todos os acessos a dados pessoais conforme Art. 37 da LGPD
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import type { JsonObject } from './error-types.ts';
 
 interface LGPDAuditLog {
   user_id?: string;
@@ -13,13 +14,13 @@ interface LGPDAuditLog {
   resource_id?: string;
   legal_basis: 'consent' | 'legitimate_interest' | 'legal_obligation' | 'contract';
   purpose: string;
-  data_accessed?: Record<string, any>;
+  data_accessed?: JsonObject;
   ip_address?: string;
   user_agent?: string;
 }
 
 export async function logLGPDAccess(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   log: LGPDAuditLog
 ): Promise<void> {
   try {
@@ -45,7 +46,7 @@ export async function logLGPDAccess(
  * Helper para registrar acesso a conversação
  */
 export async function logConversationAccess(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   conversationId: string,
   userId: string | undefined,
   purpose: string,
@@ -67,11 +68,11 @@ export async function logConversationAccess(
  * Helper para registrar processamento de dados pessoais
  */
 export async function logPIIProcessing(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   actionType: 'access' | 'export' | 'delete' | 'anonymize',
   dataType: string,
   purpose: string,
-  dataAccessed?: Record<string, any>
+  dataAccessed?: JsonObject
 ): Promise<void> {
   await logLGPDAccess(supabase, {
     action_type: actionType,
@@ -86,7 +87,7 @@ export async function logPIIProcessing(
  * Helper para registrar consentimento
  */
 export async function logConsent(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   customerId: string,
   granted: boolean,
   purpose: string

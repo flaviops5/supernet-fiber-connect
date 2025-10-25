@@ -2,6 +2,7 @@
 // METRICS HELPER - Registra métricas automaticamente
 // ============================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import type { JsonObject } from "./error-types.ts";
 
 export interface MetricData {
   agent_name: string;
@@ -10,7 +11,7 @@ export interface MetricData {
   success: boolean;
   duration_ms: number;
   error_message?: string;
-  metadata?: any;
+  metadata?: JsonObject;
 }
 
 /**
@@ -67,8 +68,8 @@ export async function withMetrics<T>(
     result = await fn();
     success = true;
     return result;
-  } catch (error: any) {
-    errorMessage = error.message;
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw error;
   } finally {
     const duration = Date.now() - startTime;
@@ -92,7 +93,7 @@ export async function recordFailedAction(
   agentName: string,
   clientCpf: string | undefined,
   actionType: string,
-  actionPayload: any,
+  actionPayload: JsonValue,
   errorMessage: string,
   actionLogId?: string
 ) {

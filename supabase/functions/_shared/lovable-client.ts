@@ -6,6 +6,27 @@
 
 import { getLovableCircuitBreaker } from './circuit-breaker.ts';
 import { redactPII } from './pii-redaction.ts';
+import type { JsonObject, JsonValue } from './error-types.ts';
+
+export interface LovableTool {
+  type: string;
+  function: {
+    name: string;
+    description?: string;
+    parameters?: JsonObject;
+  };
+}
+
+export type LovableToolChoice = 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
+
+export interface LovableToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
 
 export interface LovableMessage {
   role: 'system' | 'user' | 'assistant';
@@ -17,8 +38,8 @@ export interface LovableRequest {
   messages: LovableMessage[];
   temperature?: number;
   max_completion_tokens?: number;
-  tools?: any[];
-  tool_choice?: any;
+  tools?: LovableTool[];
+  tool_choice?: LovableToolChoice;
 }
 
 export interface LovableResponse {
@@ -26,7 +47,7 @@ export interface LovableResponse {
   choices: Array<{
     message: {
       content?: string;
-      tool_calls?: any[];
+      tool_calls?: LovableToolCall[];
     };
     finish_reason: string;
   }>;
@@ -181,7 +202,7 @@ export function extractContent(response: LovableResponse): string {
 /**
  * Extrai tool calls da resposta Lovable
  */
-export function extractToolCalls(response: LovableResponse): any[] {
+export function extractToolCalls(response: LovableResponse): LovableToolCall[] {
   return response.choices[0]?.message?.tool_calls || [];
 }
 

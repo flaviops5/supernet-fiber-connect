@@ -16,35 +16,42 @@
 //   }
 // }));
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { handleEdgeFunctionError } from "./error-handler.ts";
 import { checkRateLimit, formatBlockedTime } from "./rate-limiter.ts";
 import { recordMetric } from "./metrics-helper.ts";
+import type { JsonValue } from "./error-types.ts";
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hmac-signature, x-timestamp',
 };
 
+export interface AuthUser {
+  id: string;
+  email?: string;
+  [key: string]: JsonValue;
+}
+
 export interface HandlerContext {
-  supabase: ReturnType<typeof createClient>;
-  user?: any;
+  supabase: SupabaseClient;
+  user?: AuthUser;
   cpf?: string;
   req: Request;
 }
 
-export interface HandlerConfig<T = any> {
+export interface HandlerConfig<T = JsonValue> {
   functionName: string;
   requireAuth?: boolean;
   enableRateLimit?: boolean;
-  extractCpf?: (req: Request, user?: any) => Promise<string | undefined>;
+  extractCpf?: (req: Request, user?: AuthUser) => Promise<string | undefined>;
   handler: (req: Request, context: HandlerContext) => Promise<T>;
 }
 
 /**
  * Cria um handler protegido com todas as camadas de segurança
  */
-export function createProtectedHandler<T = any>(config: HandlerConfig<T>) {
+export function createProtectedHandler<T = JsonValue>(config: HandlerConfig<T>) {
   return async (req: Request): Promise<Response> => {
     const startTime = Date.now();
     let success = false;
@@ -67,7 +74,7 @@ export function createProtectedHandler<T = any>(config: HandlerConfig<T>) {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       // 3. Autenticação (se necessário)
-      let user: any = undefined;
+      let user: AuthUser | undefined = undefined;
       if (config.requireAuth) {
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) {
@@ -168,7 +175,7 @@ export async function extractCpfFromBody(req: Request): Promise<string | undefin
 /**
  * Template para funções públicas (sem auth, sem rate limit)
  */
-export function createPublicHandler<T = any>(
+export function createPublicHandler<T = JsonValue>(
   functionName: string,
   handler: (req: Request, context: HandlerContext) => Promise<T>
 ) {
@@ -183,10 +190,10 @@ export function createPublicHandler<T = any>(
 /**
  * Template para funções autenticadas com rate limit
  */
-export function createAuthenticatedHandler<T = any>(
+export function createAuthenticatedHandler<T = JsonValue>(
   functionName: string,
   handler: (req: Request, context: HandlerContext) => Promise<T>,
-  extractCpf?: (req: Request, user?: any) => Promise<string | undefined>
+  extractCpf?: (req: Request, user?: AuthUser) => Promise<string | undefined>
 ) {
   return createProtectedHandler({
     functionName,

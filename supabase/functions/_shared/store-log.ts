@@ -3,6 +3,7 @@
 // ===============================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import type { JsonObject } from "./error-types.ts";
 
 export function storeLog({
   source,
@@ -14,7 +15,7 @@ export function storeLog({
   source: string;
   level: "INFO" | "WARN" | "ERROR";
   message: string;
-  context?: Record<string, any>;
+  context?: JsonObject;
   durationMs?: number;
 }) {
   try {

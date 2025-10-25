@@ -3,9 +3,12 @@
  * Utiliza a tabela ixc_cache para armazenar dados temporários
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import type { JsonValue } from "./error-types.ts";
+
 interface CacheEntry {
   key: string;
-  value: any;
+  value: JsonValue;
   expires_at: string;
 }
 
@@ -15,8 +18,8 @@ interface CacheEntry {
  * @param key - Chave do cache
  * @returns Valor cacheado ou null se expirado/inexistente
  */
-export async function getCache<T>(
-  supabase: any,
+export async function getCache<T = JsonValue>(
+  supabase: SupabaseClient,
   key: string
 ): Promise<T | null> {
   try {
@@ -52,9 +55,9 @@ export async function getCache<T>(
  * @param ttlSeconds - Tempo de vida em segundos
  */
 export async function setCache(
-  supabase: any,
+  supabase: SupabaseClient,
   key: string,
-  value: any,
+  value: JsonValue,
   ttlSeconds: number
 ): Promise<boolean> {
   try {
@@ -85,7 +88,7 @@ export async function setCache(
  * @param key - Chave do cache
  */
 export async function invalidateCache(
-  supabase: any,
+  supabase: SupabaseClient,
   key: string
 ): Promise<boolean> {
   try {
@@ -114,8 +117,8 @@ export async function invalidateCache(
  * @param fetchFn - Função assíncrona para buscar os dados
  * @param ttlSeconds - Tempo de vida em segundos
  */
-export async function getCachedOrFetch<T>(
-  supabase: any,
+export async function getCachedOrFetch<T = JsonValue>(
+  supabase: SupabaseClient,
   key: string,
   fetchFn: () => Promise<T>,
   ttlSeconds: number

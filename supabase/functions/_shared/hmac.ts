@@ -44,7 +44,7 @@ export async function verifySignature(
  * Adiciona headers HMAC para requisição interna
  */
 export async function addHMACHeaders(
-  body: any,
+  body: JsonValue,
   secret: string
 ): Promise<Record<string, string>> {
   const payload = JSON.stringify(body);

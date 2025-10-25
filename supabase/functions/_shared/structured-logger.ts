@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
 
 // Cria cliente Supabase local seguro
 function getSupabase() {
@@ -7,8 +8,8 @@ function getSupabase() {
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) throw new Error("Variáveis de ambiente Supabase ausentes");
     return createClient(url, key);
-  } catch (err: any) {
-    console.error("⚠️ Falha ao inicializar Supabase no logger:", err.message);
+  } catch (err) {
+    console.error("⚠️ Falha ao inicializar Supabase no logger:", err instanceof Error ? err.message : 'Unknown error');
     return null;
   }
 }
@@ -16,7 +17,7 @@ function getSupabase() {
 export function createLogger(agentName: string, req?: Request) {
   const supabase = getSupabase();
 
-  async function storeLog(level: string, message: string, metadata: Record<string, any> = {}) {
+  async function storeLog(level: string, message: string, metadata: JsonObject = {}) {
     try {
       if (!supabase) {
         console.warn("⚠️ Supabase não inicializado — log não persistido:", message);
@@ -33,21 +34,21 @@ export function createLogger(agentName: string, req?: Request) {
             timestamp: new Date().toISOString(),
           },
         ]);
-    } catch (err: any) {
-      console.error("❌ Falha ao salvar log:", err.message);
+    } catch (err) {
+      console.error("❌ Falha ao salvar log:", err instanceof Error ? err.message : 'Unknown error');
     }
   }
 
   return {
-    info: (msg: string, meta?: Record<string, any>) => {
+    info: (msg: string, meta?: JsonObject) => {
       console.log(`ℹ️ [${agentName}]`, msg, meta ?? "");
       return storeLog("info", msg, meta ?? {});
     },
-    warn: (msg: string, meta?: Record<string, any>) => {
+    warn: (msg: string, meta?: JsonObject) => {
       console.warn(`⚠️ [${agentName}]`, msg, meta ?? "");
       return storeLog("warn", msg, meta ?? {});
     },
-    error: (msg: string, meta?: Record<string, any>) => {
+    error: (msg: string, meta?: JsonObject) => {
       console.error(`❌ [${agentName}]`, msg, meta ?? "");
       return storeLog("error", msg, meta ?? {});
     },

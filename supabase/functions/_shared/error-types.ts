@@ -4,6 +4,16 @@
  */
 
 // ============================================
+// JSON TYPES
+// ============================================
+
+export type JsonValue = string | number | boolean | null | JsonObject | JsonArray;
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
+export type JsonArray = JsonValue[];
+
+// ============================================
 // INTERFACES DE ERRO
 // ============================================
 
@@ -11,20 +21,20 @@ export interface IXCError {
   type?: 'error';
   message: string;
   code?: string;
-  details?: unknown;
+  details?: JsonValue;
 }
 
 export interface EdgeFunctionError extends Error {
   code?: string;
-  statusCode?: number;
-  details?: unknown;
+  statusCode: number;
+  details?: JsonValue;
 }
 
 export interface APIError {
   message: string;
   status: number;
   code?: string;
-  details?: unknown;
+  details?: JsonValue;
 }
 
 // ============================================
@@ -35,7 +45,7 @@ export interface APIError {
  * Parse JSON com tratamento de erro robusto
  * @returns Objeto parseado ou null em caso de erro
  */
-export function parseJSON<T = unknown>(text: string): T | null {
+export function parseJSON<T = JsonValue>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
   } catch {
@@ -47,7 +57,7 @@ export function parseJSON<T = unknown>(text: string): T | null {
  * Parse JSON que lança erro se falhar
  * @throws Error com mensagem descritiva
  */
-export function parseJSONStrict<T = unknown>(text: string, context = 'JSON'): T {
+export function parseJSONStrict<T = JsonValue>(text: string, context = 'JSON'): T {
   try {
     return JSON.parse(text) as T;
   } catch (error) {
@@ -91,7 +101,7 @@ export function createEdgeFunctionError(
   message: string,
   statusCode = 500,
   code?: string,
-  details?: unknown
+  details?: JsonValue
 ): EdgeFunctionError {
   const error = new Error(message) as EdgeFunctionError;
   error.code = code;
