@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
+import { getErrorMessage } from '../_shared/error-types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,7 +85,7 @@ serve(async (req) => {
         console.log(`⚠️ LIMITE de ${MAX_PAGES} páginas atingido. Total: ${allRadUsers.length} clientes`);
       }
     } catch (error) {
-      console.error('❌ Erro ao buscar clientes offline do IXC:', error);
+      console.error('❌ Erro ao buscar clientes offline do IXC:', getErrorMessage(error));
       
       // Se falhou completamente, retornar erro informativo
       if (allRadUsers.length === 0) {
@@ -92,7 +93,7 @@ serve(async (req) => {
           JSON.stringify({
             success: false,
             error: 'Não foi possível buscar dados do IXC',
-            details: error.message,
+            details: getErrorMessage(error),
             suggestion: 'Verifique as credenciais IXC e conexão com API',
             total_offline: 0,
             mass_outages_detected: 0
@@ -836,10 +837,10 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
-  } catch (error: any) {
-    console.error('Erro ao detectar quedas em massa:', error);
+  } catch (error: unknown) {
+    console.error('Erro ao detectar quedas em massa:', getErrorMessage(error));
     return new Response(
-      JSON.stringify({ error: error.message, success: false }),
+      JSON.stringify({ error: getErrorMessage(error), success: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

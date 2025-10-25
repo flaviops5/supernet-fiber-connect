@@ -18,7 +18,7 @@ export interface RoutingPayload {
     };
   };
   ixc?: {
-    cliente_full?: any;
+    cliente_full?: unknown;
     radusuario?: {
       status: 'online' | 'offline';
       last_online_minutes?: number;
@@ -26,7 +26,7 @@ export interface RoutingPayload {
       ont_serial?: string;
       config_mismatch?: boolean;
     };
-    contracts?: any[];
+    contracts?: unknown[];
   };
   supabase?: {
     mass_outage_checked: boolean;
@@ -46,21 +46,38 @@ export interface ActionLogEntry {
   agent_name: string;
   client_cpf?: string;
   action_type: string;
-  action_payload: any;
+  action_payload: unknown;
   ixcticket_id?: string;
-  result?: any;
+  result?: unknown;
 }
 
 export interface IXCProxyRequest {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   query?: string;
-  body?: any;
+  body?: unknown;
 }
 
 export interface IXCProxyResponse {
   ok: boolean;
   status: number;
-  data?: any;
+  data?: unknown;
   error?: string;
+}
+
+// ============================================
+// ERROR TYPES (re-exported from error-types.ts)
+// ============================================
+
+export interface IXCError {
+  type?: 'error';
+  message: string;
+  code?: string;
+  details?: unknown;
+}
+
+export interface EdgeFunctionError extends Error {
+  code?: string;
+  statusCode?: number;
+  details?: unknown;
 }

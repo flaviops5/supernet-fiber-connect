@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parseJSONStrict, getErrorMessage } from '../_shared/error-types.ts';
 
 interface IXCError extends Error {
   details?: Record<string, unknown>;
@@ -77,12 +78,12 @@ serve(async (req) => {
       throw new Error('Request body está vazio');
     }
     
-    let parsedBody;
+    let parsedBody: { action?: string; params?: Record<string, unknown> };
     try {
-      parsedBody = JSON.parse(bodyText);
-    } catch (e) {
-      console.error('Erro ao fazer parse do JSON:', e);
-      throw new Error(`JSON inválido no body da requisição: ${(e as Error).message}`);
+      parsedBody = parseJSONStrict<{ action?: string; params?: Record<string, unknown> }>(bodyText, 'request body');
+    } catch (error) {
+      console.error('Erro ao fazer parse do JSON:', getErrorMessage(error));
+      throw new Error(`JSON inválido no body da requisição: ${getErrorMessage(error)}`);
     }
     
     const { action, params = {} } = parsedBody;
@@ -1237,13 +1238,13 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
     console.log(text);
     console.log('📥 Tamanho da resposta:', text.length, 'caracteres');
     
-    let data;
+    let data: { type?: string; message?: string; [key: string]: unknown };
     try {
-      data = JSON.parse(text);
+      data = parseJSONStrict<{ type?: string; message?: string; [key: string]: unknown }>(text, 'IXC response');
       console.log('✅ JSON parseado com sucesso');
     } catch (parseError) {
       console.error('❌ ERRO ao fazer parse do JSON');
-      console.error('Erro:', parseError);
+      console.error('Erro:', getErrorMessage(parseError));
       console.error('Primeiros 500 caracteres da resposta:', text.substring(0, 500));
       throw new Error(`Resposta inválida do IXC: ${text.substring(0, 200)}`);
     }

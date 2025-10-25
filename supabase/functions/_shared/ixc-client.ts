@@ -167,6 +167,27 @@ export async function callIxcWithRetry(
         throw new Error(`[NO_RETRY] Resposta inválida do IXC: ${preview}`);
       }
       
+      // Verificar formato de erro IXC: {"type":"error","message":"..."}
+      if (data.type === 'error' && data.message) {
+        // Erros específicos que não devem retry
+        const noRetryErrors = [
+          'não está disponível',
+          'não encontrado',
+          'permission denied',
+          'unauthorized'
+        ];
+        
+        const shouldNotRetry = noRetryErrors.some(err => 
+          data.message.toLowerCase().includes(err.toLowerCase())
+        );
+        
+        if (shouldNotRetry) {
+          throw new Error(`[NO_RETRY] IXC Error: ${data.message}`);
+        }
+        
+        throw new Error(`IXC Error: ${data.message}`);
+      }
+      
       if (!data.ok) {
         throw new Error(`IXC Error: ${data.error || 'Unknown error'}`);
       }

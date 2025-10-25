@@ -54,10 +54,10 @@ export function redactPII(text: string, level: RedactionLevel): string {
  * Mascara um objeto JSON recursivamente
  */
 export function redactPIIObject(
-  obj: any,
+  obj: unknown,
   level: RedactionLevel,
   sensitiveFields: string[] = ['cpf', 'phone', 'email', 'name', 'customer_name', 'customer_cpf', 'customer_phone', 'customer_email']
-): any {
+): unknown {
   if (!obj || typeof obj !== 'object') {
     return obj;
   }
