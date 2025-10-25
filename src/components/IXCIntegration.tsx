@@ -13,6 +13,7 @@ import { IXCEndpointTester } from '@/components/IXCEndpointTester';
 import { IXCConnectionTester } from '@/components/IXCConnectionTester';
 import { IXCFunctionsTester } from '@/components/IXCFunctionsTester';
 import { TestIXCSubjects } from '@/components/tests/TestIXCSubjects';
+import type { IXCResponse } from '@/types/api.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface IXCCustomer {
@@ -39,16 +40,43 @@ const IXCIntegration = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<IXCCustomer | null>(null);
-  const [lastResponse, setLastResponse] = useState<any>(null);
+  const [lastResponse, setLastResponse] = useState<IXCResponse<unknown> | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
-  const [errorDetails, setErrorDetails] = useState<any>(null);
-  const [customerStatus, setCustomerStatus] = useState<any>(null);
+  const [errorDetails, setErrorDetails] = useState<{ error: Error; data?: unknown } | null>(null);
+  const [customerStatus, setCustomerStatus] = useState<{
+    contracts?: Array<{ id: string; status: string }>;
+    financialTitles?: Array<{ id: string; status: string; valor: number }>;
+    pppoeLogin?: string;
+    isOnline?: boolean;
+    lastConnection?: string;
+    serviceStatus?: string; // Can be "ATIVO", "BLOQUEADO", "NORMALIZADO", "FINANCEIRO EM ATRASO", etc
+    contractCount?: number;
+  } | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
   const [atendimentoSubject, setAtendimentoSubject] = useState('');
   const [creatingAtendimento, setCreatingAtendimento] = useState(false);
   const [syncingKnowledge, setSyncingKnowledge] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
+  const [testResults, setTestResults] = useState<{
+    success: boolean;
+    results?: Array<{ endpoint: string; status: string; details?: string }>;
+    error?: string;
+    planUsed?: {
+      id: string;
+      name: string;
+      ixc_plan_id: string;
+      [key: string]: unknown;
+    };
+    appointment?: {
+      date: string;
+      period: string;
+      customer_email?: string;
+      ixc_contract_id?: string;
+      [key: string]: unknown;
+    };
+    ixcContractId?: string;
+    errorDetails?: Record<string, unknown>;
+  } | null>(null);
   
   // Dados de teste para jornada completa
   const generateUniqueTestData = () => {
@@ -105,15 +133,19 @@ const IXCIntegration = () => {
         throw customerError;
       }
       
-      if (customerData && (customerData as any).success === false) {
+      const responseData = customerData as IXCResponse<{ id?: string }>;
+      if (responseData && 'success' in responseData && responseData.success === false) {
         const errorData = {
           success: false,
-          error: (customerData as any).error,
-          details: (customerData as any).details,
+          error: 'error' in responseData ? String(responseData.error) : 'Erro desconhecido',
+          details: 'details' in responseData ? responseData.details : undefined,
           fullResponse: customerData
         };
-        setErrorDetails(errorData);
-        throw new Error((customerData as any).error || 'Erro ao criar cliente no IXC');
+        setErrorDetails({ 
+          error: new Error('error' in responseData ? String(responseData.error) : 'Erro ao criar cliente'), 
+          data: errorData 
+        });
+        throw new Error('error' in responseData ? String(responseData.error) : 'Erro ao criar cliente no IXC');
       }
 
       toast.success('Cliente criado no IXC com sucesso!');
@@ -300,11 +332,13 @@ const IXCIntegration = () => {
       });
 
       if (error) throw error;
-      if (data && (data as any).success === false) {
-        throw new Error((data as any).error || 'Erro ao criar atendimento no IXC');
+      
+      const responseData = data as IXCResponse<{ id?: string; registro?: { id?: string } }>;
+      if (responseData && responseData.success === false) {
+        throw new Error(responseData.error || 'Erro ao criar atendimento no IXC');
       }
 
-      const atendimentoId = (data as any)?.data?.id || (data as any)?.data?.registro?.id;
+      const atendimentoId = responseData?.data?.id || responseData?.data?.registro?.id;
       
       toast.success(`Atendimento criado com ID: ${atendimentoId}`);
       setAtendimentoSubject('');
