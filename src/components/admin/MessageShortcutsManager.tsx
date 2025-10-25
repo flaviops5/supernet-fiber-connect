@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { parseError } from '@/types/error.types';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,21 @@ interface MessageShortcut {
   ai_agents: string[];
   usage_context: string | null;
   usage_count: number;
+}
+
+interface ShortcutFormData {
+  title: string;
+  shortcut_key: string;
+  message_text: string;
+  department: any[];
+  ai_agents: string[];
+  usage_context: string;
+}
+
+interface ShortcutFormProps {
+  shortcut: MessageShortcut | null;
+  onSave: (formData: ShortcutFormData) => void;
+  onCancel: () => void;
 }
 
 export default function MessageShortcutsManager() {
@@ -60,7 +76,7 @@ export default function MessageShortcutsManager() {
     setLoading(false);
   };
 
-  const handleSave = async (formData: any) => {
+  const handleSave = async (formData: ShortcutFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -90,10 +106,11 @@ export default function MessageShortcutsManager() {
       setEditingShortcut(null);
       loadShortcuts();
     } catch (error) {
-      console.error('Error saving shortcut:', error);
+      const err = parseError(error);
+      console.error('Error saving shortcut:', err);
       toast({
         title: 'Erro',
-        description: 'Não foi possível salvar o atalho.',
+        description: err.message,
         variant: 'destructive',
       });
     }
@@ -113,10 +130,11 @@ export default function MessageShortcutsManager() {
 
       loadShortcuts();
     } catch (error) {
-      console.error('Error deleting shortcut:', error);
+      const err = parseError(error);
+      console.error('Error deleting shortcut:', err);
       toast({
         title: 'Erro',
-        description: 'Não foi possível remover o atalho.',
+        description: err.message,
         variant: 'destructive',
       });
     }
@@ -207,7 +225,7 @@ export default function MessageShortcutsManager() {
   );
 }
 
-function ShortcutForm({ shortcut, onSave, onCancel }: any) {
+function ShortcutForm({ shortcut, onSave, onCancel }: ShortcutFormProps) {
   const [formData, setFormData] = useState({
     title: shortcut?.title || '',
     shortcut_key: shortcut?.shortcut_key || '',

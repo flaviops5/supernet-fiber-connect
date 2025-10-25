@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Shield, Trash2, Plus, Users } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { parseError } from '@/types/error.types';
 import {
   Select,
   SelectContent,
@@ -154,11 +155,12 @@ export default function AgentDepartmentManagement() {
       setIsUniversal(false);
       
       await loadData();
-    } catch (error: any) {
-      console.error('Erro ao adicionar:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao adicionar:', err);
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível criar a atribuição.',
+        description: err.message,
         variant: 'destructive'
       });
     } finally {
@@ -188,11 +190,12 @@ export default function AgentDepartmentManagement() {
       });
 
       await loadData();
-    } catch (error: any) {
-      console.error('Erro ao remover:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao remover:', err);
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível remover a atribuição.',
+        description: err.message,
         variant: 'destructive'
       });
     } finally {

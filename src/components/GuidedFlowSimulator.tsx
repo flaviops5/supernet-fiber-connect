@@ -11,6 +11,8 @@ import { Loader2, Play, RotateCcw, CheckCircle, AlertCircle, ThumbsUp, MessageSq
 import StepConfigDialog from './StepConfigDialog';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { parseError } from '@/types/error.types';
+import type { JsonValue } from '@/types/common.types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +25,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+interface ResponseOption {
+  label?: string;
+  text?: string;
+  value?: string;
+  key?: string;
+  next_step?: string;
+}
+
 interface FlowStep {
   id: string;
   agent_type: string;
@@ -30,9 +40,9 @@ interface FlowStep {
   step_order: number;
   question: string;
   instruction: string;
-  response_options: any;
-  tool_calls: any;
-  next_step_map: any;
+  response_options: ResponseOption[] | Record<string, string> | null;
+  tool_calls: string[] | null;
+  next_step_map: Record<string, string> | null;
   is_active: boolean;
   subject_key?: string;
 }
@@ -172,12 +182,13 @@ export default function GuidedFlowSimulator() {
     if (!step.response_options) return [];
     
     if (Array.isArray(step.response_options)) {
-      return step.response_options.map((opt: any) => {
+      return step.response_options.map((opt: ResponseOption | string) => {
         // Formato complexo: { label: "...", value: "...", next_step: "..." }
-        if (typeof opt === 'object' && opt !== null && (opt.value || opt.key)) {
+        if (typeof opt === 'object' && opt !== null) {
+          const option = opt as ResponseOption;
           return {
-            key: String(opt.value || opt.key),
-            label: String(opt.label || opt.text || opt.value || opt.key),
+            key: String(option.value || option.key),
+            label: String(option.label || option.text || option.value || option.key),
           };
         }
         // Formato simples: string direta
@@ -314,10 +325,11 @@ export default function GuidedFlowSimulator() {
       setEditingStep(null);
       setEditedQuestion('');
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao atualizar', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },
@@ -339,7 +351,15 @@ export default function GuidedFlowSimulator() {
       status: 'approved' | 'rejected';
       approvedMessages?: ConversationMessage[];
     }) => {
-      const payload: any = {
+      const payload: {
+        agent_type: string;
+        subject_key?: string;
+        scenario_key: string;
+        variation_path: string;
+        status: 'approved' | 'rejected';
+        approved_messages: ConversationMessage[];
+        updated_at: string;
+      } = {
         agent_type: agentType,
         subject_key: subjectKey,
         scenario_key: scenarioKey,
@@ -351,7 +371,7 @@ export default function GuidedFlowSimulator() {
       
       const { error } = await supabase
         .from('agent_flow_scenario_approvals')
-        .upsert(payload, {
+        .upsert([payload as any], {
           onConflict: 'agent_type,subject_key,scenario_key,variation_path'
         });
       
@@ -360,10 +380,11 @@ export default function GuidedFlowSimulator() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scenario_approvals'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao salvar aprovação', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },

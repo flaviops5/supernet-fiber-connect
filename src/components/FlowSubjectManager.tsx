@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { parseError } from '@/types/error.types';
 
 interface FlowSubject {
   id: string;
@@ -30,6 +31,15 @@ interface FlowSubject {
 
 interface FlowSubjectManagerProps {
   agentType?: string;
+}
+
+interface SubjectFormData {
+  subject_key: string;
+  subject_name: string;
+  description: string;
+  icon: string;
+  display_order: number;
+  default_tools: string[];
 }
 
 const AGENT_TYPES = [
@@ -97,15 +107,15 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: SubjectFormData) => {
       const agentToUse = propAgentType || selectedAgent;
       const { error } = await supabase
         .from('agent_flow_subjects')
-        .insert({
+        .insert([{
           agent_type: agentToUse as any,
           ...data,
           default_tools: selectedTools.length > 0 ? selectedTools : null,
-        });
+        }]);
       
       if (error) throw error;
     },
@@ -114,17 +124,18 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       toast({ title: '✅ Assunto criado com sucesso!' });
       handleCloseDialog();
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao criar assunto', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: SubjectFormData }) => {
       const { error } = await supabase
         .from('agent_flow_subjects')
         .update({
@@ -140,10 +151,11 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       toast({ title: '✅ Assunto atualizado com sucesso!' });
       handleCloseDialog();
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao atualizar assunto', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },
@@ -162,10 +174,11 @@ export default function FlowSubjectManager({ agentType: propAgentType }: FlowSub
       queryClient.invalidateQueries({ queryKey: ['flow_subjects'] });
       toast({ title: '🗑️ Assunto removido com sucesso!' });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = parseError(error);
       toast({ 
         title: 'Erro ao remover assunto', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },

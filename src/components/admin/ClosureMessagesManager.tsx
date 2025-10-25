@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { parseError } from '@/types/error.types';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,18 @@ interface ClosureMessage {
   title: string;
   message: string;
   display_order: number;
+}
+
+interface ClosureMessageFormData {
+  title: string;
+  message: string;
+  display_order: number;
+}
+
+interface MessageFormProps {
+  message: ClosureMessage | null;
+  onSave: (formData: ClosureMessageFormData) => void;
+  onCancel: () => void;
 }
 
 export default function ClosureMessagesManager() {
@@ -45,7 +58,7 @@ export default function ClosureMessagesManager() {
     }
   };
 
-  const handleSave = async (formData: any) => {
+  const handleSave = async (formData: ClosureMessageFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -72,10 +85,11 @@ export default function ClosureMessagesManager() {
       setEditingMessage(null);
       loadMessages();
     } catch (error) {
-      console.error('Error saving message:', error);
+      const err = parseError(error);
+      console.error('Error saving message:', err);
       toast({
         title: 'Erro',
-        description: 'Não foi possível salvar a mensagem.',
+        description: err.message,
         variant: 'destructive',
       });
     }
@@ -95,10 +109,11 @@ export default function ClosureMessagesManager() {
 
       loadMessages();
     } catch (error) {
-      console.error('Error deleting message:', error);
+      const err = parseError(error);
+      console.error('Error deleting message:', err);
       toast({
         title: 'Erro',
-        description: 'Não foi possível remover a mensagem.',
+        description: err.message,
         variant: 'destructive',
       });
     }
@@ -174,7 +189,7 @@ export default function ClosureMessagesManager() {
   );
 }
 
-function MessageForm({ message, onSave, onCancel }: any) {
+function MessageForm({ message, onSave, onCancel }: MessageFormProps) {
   const [formData, setFormData] = useState({
     title: message?.title || '',
     message: message?.message || '',

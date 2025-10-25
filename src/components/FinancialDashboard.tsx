@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CashFlowProjections } from "./CashFlowProjections";
+import { parseError } from "@/types/error.types";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -67,13 +68,20 @@ interface FinancialAnalytics {
   monthlyRevenue: Array<{ month: string; revenue: number; contracts: number }>;
 }
 
+interface RevenueStats {
+  success: boolean;
+  totalMonthlyRevenue: number;
+  activeContracts: number;
+  averageTicket: number;
+}
+
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
 
 export const FinancialDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [loadingRevenue, setLoadingRevenue] = useState(false);
   const [analytics, setAnalytics] = useState<FinancialAnalytics | null>(null);
-  const [revenueStats, setRevenueStats] = useState<any>(null);
+  const [revenueStats, setRevenueStats] = useState<RevenueStats | null>(null);
   const { toast } = useToast();
 
   const fetchAnalytics = async () => {
@@ -92,11 +100,12 @@ export const FinancialDashboard = () => {
       } else {
         throw new Error(data?.error || 'Erro desconhecido');
       }
-    } catch (error: any) {
-      console.error('Erro ao buscar analytics:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar analytics:', err);
       toast({
         title: "Erro ao carregar dados",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -120,11 +129,12 @@ export const FinancialDashboard = () => {
       } else {
         throw new Error(data?.error || 'Erro ao carregar receita');
       }
-    } catch (error: any) {
-      console.error('Erro ao carregar receita:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao carregar receita:', err);
       toast({
         title: "Erro ao carregar receita",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
