@@ -67,11 +67,13 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // navigate é estável (do react-router), não precisa nas dependências
 
   // Check authorization whenever role changes
   useEffect(() => {
     if (!roleLoading && user) {
+      const rolesString = requiredRoles.join(',');
       if (requiredRoles.includes(userRole)) {
         setAuthorized(true);
         setError(null);
@@ -80,7 +82,8 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
         setAuthorized(false);
       }
     }
-  }, [userRole, roleLoading, user, requiredRoles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole, roleLoading, user, requiredRoles.join(',')]);
 
   const handleGoBack = () => {
     navigate('/');

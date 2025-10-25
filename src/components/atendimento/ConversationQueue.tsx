@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +57,64 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
 
+  const loadTags = useCallback(async () => {
+    const { data } = await supabase
+      .from('conversations')
+      .select('tags');
+    
+    if (data) {
+      const uniqueTags = new Set<string>();
+      data.forEach(conv => {
+        (conv.tags || []).forEach((tag: string) => uniqueTags.add(tag));
+      });
+      setAllTags(Array.from(uniqueTags).sort());
+    }
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    let query = supabase
+      .from('conversations')
+      .select('*')
+      .order('priority', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    // Filtrar por departamento do agente
+    if (agentDepartment && agentDepartment !== 'todos') {
+      query = query.eq('department', agentDepartment as any);
+    }
+
+    // Filtrar por status
+    if (filter === 'waiting') {
+      query = query.eq('status', 'waiting');
+    } else if (filter === 'active') {
+      query = query.eq('status', 'active');
+    } else if (filter === 'my') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        query = query.eq('assigned_agent_id', user.id);
+      }
+    }
+
+    // Filtrar por busca
+    if (searchQuery) {
+      query = query.or(`customer_name.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%`);
+    }
+
+    // Filtrar por tags
+    if (selectedTags.length > 0) {
+      query = query.contains('tags', selectedTags);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error loading conversations:', error);
+      return;
+    }
+
+    setConversations(data || []);
+  }, [agentDepartment, filter, searchQuery, selectedTags]);
+
   useEffect(() => {
     loadConversations();
     loadTags();
@@ -80,66 +138,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [agentDepartment, filter, searchQuery, selectedTags]);
-
-  const loadTags = async () => {
-    const { data } = await supabase
-      .from('conversations')
-      .select('tags');
-    
-    if (data) {
-      const uniqueTags = new Set<string>();
-      data.forEach(conv => {
-        (conv.tags || []).forEach((tag: string) => uniqueTags.add(tag));
-      });
-      setAllTags(Array.from(uniqueTags).sort());
-    }
-  };
-
-  const loadConversations = async () => {
-    let query = supabase
-      .from('conversations')
-      .select('*')
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    // Excluir conversas finalizadas de todas as filas de atendimento
-    query = query.neq('status', 'resolved');
-
-    if (filter === 'my') {
-      const { data: { user } } = await supabase.auth.getUser();
-      query = query.eq('assigned_agent_id', user?.id);
-    } else if (filter !== 'all') {
-      query = query.eq('status', filter);
-    }
-
-    // Filter by department if set
-    if (agentDepartment && filter === 'waiting') {
-      query = query.or(`department.eq.${agentDepartment},department.is.null`);
-    }
-
-    // Search query usando full-text search
-    if (searchQuery) {
-      query = query.textSearch('search_vector', searchQuery, {
-        type: 'websearch',
-        config: 'portuguese'
-      });
-    }
-
-    // Filter by tags
-    if (selectedTags.length > 0) {
-      query = query.overlaps('tags', selectedTags);
-    }
-
-    const { data, error } = await query.limit(100);
-
-    if (error) {
-      console.error('Error loading conversations:', error);
-      return;
-    }
-
-    setConversations(data || []);
-  };
+  }, [loadConversations, loadTags]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

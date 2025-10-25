@@ -69,27 +69,28 @@ export default function WhatsAppConversations() {
   }, []);
 
   useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation.id);
-      
-      // Subscribe to messages for selected conversation
-      const channel = supabase
-        .channel(`messages-${selectedConversation.id}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'conversation_messages',
-          filter: `conversation_id=eq.${selectedConversation.id}`
-        }, () => {
-          loadMessages(selectedConversation.id);
-        })
-        .subscribe();
+    if (!selectedConversation?.id) return;
+    
+    const conversationId = selectedConversation.id;
+    loadMessages(conversationId);
+    
+    // Subscribe to messages for selected conversation
+    const channel = supabase
+      .channel(`messages-${conversationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'conversation_messages',
+        filter: `conversation_id=eq.${conversationId}`
+      }, () => {
+        loadMessages(conversationId);
+      })
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [selectedConversation]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation?.id]); // Apenas o ID nas dependências
 
   useEffect(() => {
     // Scroll to bottom when messages change

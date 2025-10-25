@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,18 @@ export const MassOutageAlertCard = () => {
   const [activeEvents, setActiveEvents] = useState<MassOutageEvent[]>([]);
   const [isVisible, setIsVisible] = useState(true);
   const navigate = useNavigate();
+
+  const loadActiveEvents = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('mass_outage_events')
+      .select('*')
+      .eq('status', 'active')
+      .order('detected_at', { ascending: false });
+
+    if (!error && data) {
+      setActiveEvents(data as MassOutageEvent[]);
+    }
+  }, []);
 
   useEffect(() => {
     loadActiveEvents();
@@ -48,19 +60,7 @@ export const MassOutageAlertCard = () => {
       clearInterval(interval);
       subscription.unsubscribe();
     };
-  }, []);
-
-  const loadActiveEvents = async () => {
-    const { data, error } = await supabase
-      .from('mass_outage_events')
-      .select('*')
-      .eq('status', 'active')
-      .order('detected_at', { ascending: false });
-
-    if (!error && data) {
-      setActiveEvents(data as MassOutageEvent[]);
-    }
-  };
+  }, [loadActiveEvents]);
 
   // Efeito de piscar
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,7 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
   const rebootInProgress = !!lastAgentTrigger && !hasCompletionAfterTrigger;
   const rebootStartedAt = lastAgentTrigger ? Date.parse(lastAgentTrigger.created_at) : undefined;
 
-  const loadConversationTags = async () => {
+  const loadConversationTags = useCallback(async () => {
     if (!conversationId) return;
 
     const { data } = await supabase
@@ -79,7 +79,24 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     if (data?.tags) {
       setConversationTags(data.tags);
     }
-  };
+  }, [conversationId]);
+
+  const loadMessages = useCallback(async () => {
+    if (!conversationId) return;
+
+    const { data, error } = await supabase
+      .from('conversation_messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading messages:', error);
+      return;
+    }
+
+    setMessages(data || []);
+  }, [conversationId]);
 
   useEffect(() => {
     if (!conversationId) {
@@ -110,28 +127,11 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, loadMessages, loadConversationTags]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const loadMessages = async () => {
-    if (!conversationId) return;
-
-    const { data, error } = await supabase
-      .from('conversation_messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error loading messages:', error);
-      return;
-    }
-
-    setMessages(data || []);
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
