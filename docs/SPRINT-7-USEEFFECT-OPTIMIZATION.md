@@ -312,6 +312,22 @@ useEffect(() => {
 - ✅ Cleanup não necessário (apenas chamadas de fetch/query)
 - ✅ AutomacaoAgentChat tem useEffect correto com [messages] para scroll
 
+#### ✅ Lote 8 - Formulários e Notificações (8 arquivos - todos bem feitos)
+48. ✅ `EmailTestSender.tsx` - Padrão correto (mount only)
+49. ✅ `FAQ.tsx` - Padrão correto (mount only)
+50. ✅ `FAQForm.tsx` - Padrão correto (dependências [isOpen, faq] para reset)
+51. ✅ `FlowSubjectManager.tsx` - Padrão correto (dependências [propAgentType] para sync)
+52. ✅ `IXCPlanSelector.tsx` - Padrão correto (mount only)
+53. ✅ `NotificationTemplates.tsx` - Padrão correto (mount only)
+54. ✅ `PaymentNotifications.tsx` - Padrão correto (mount only + cleanup de realtime)
+55. ✅ `PlanForm.tsx` - Padrão correto (dependências [isOpen, plan?.id])
+
+**Observações:**
+- ✅ Todos os arquivos seguem padrões corretos: mount only ou dependências apropriadas
+- ✅ PaymentNotifications tem cleanup adequado para realtime subscription
+- ✅ FAQForm e PlanForm têm dependências corretas para reset de formulário
+- ✅ FlowSubjectManager sincroniza corretamente com props
+
 ### Próximos Passos
 1. ✅ Arquivos críticos com múltiplos useEffect (5 arquivos) - CONCLUÍDO
 2. ✅ Componentes de chat e atendimento (9 arquivos) - CONCLUÍDO
@@ -319,18 +335,19 @@ useEffect(() => {
 4. ✅ Componentes de gestão e monitoramento (7 arquivos) - CONCLUÍDO
 5. ✅ Componentes de métricas e gestão (4 arquivos) - CONCLUÍDO
 6. ✅ Componentes de formulários e configuração (8 arquivos) - CONCLUÍDO (todos bem feitos)
-7. ⬜ Componentes restantes (27 arquivos)
-8. ⬜ Revisão final e documentação
+7. ✅ Componentes de formulários e notificações (8 arquivos) - CONCLUÍDO (todos bem feitos)
+8. ⬜ Componentes restantes (19 arquivos)
+9. ⬜ Revisão final e documentação
 
 ### Métricas Atualizadas
 
 - **Total de useEffect:** 112
-- **Revisados/Otimizados:** 47 (42%)
+- **Revisados/Otimizados:** 55 (49%)
 - **useCallback adicionados:** 16
 - **Dependências corrigidas:** 22
-- **Arquivos bem feitos (sem mudanças necessárias):** 27
+- **Arquivos bem feitos (sem mudanças necessárias):** 35
 - **Re-renders evitados:** ~35-45 por segundo em componentes críticos
 
 ---
 
-**Última atualização:** 2025-10-25 (Lote 7 Concluído - Formulários e Configuração)
+**Última atualização:** 2025-10-25 (Lote 8 Concluído - Formulários e Notificações)
