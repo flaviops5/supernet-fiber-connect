@@ -60,10 +60,11 @@ export const RebootBlacklist = () => {
       setClientName("");
       setReason("");
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro ao adicionar cliente",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -85,10 +86,11 @@ export const RebootBlacklist = () => {
         description: "O cliente poderá ser reiniciado automaticamente novamente."
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro ao remover cliente",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     }

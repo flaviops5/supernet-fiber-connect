@@ -10,6 +10,18 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Power, Play } from "lucide-react";
 
+interface MaintenanceSettingsData {
+  id: string;
+  enabled: boolean;
+  high_priority_interval_minutes: number;
+  medium_priority_interval_minutes: number;
+  low_priority_interval_minutes: number;
+  network_stable_threshold_minutes: number;
+  max_concurrent_tasks: number;
+  alert_email: string;
+  auto_escalate_failures: boolean;
+}
+
 export const MaintenanceSettings = () => {
   const queryClient = useQueryClient();
 
@@ -39,7 +51,7 @@ export const MaintenanceSettings = () => {
     }
   });
 
-  const [formData, setFormData] = useState<any>(null);
+  const [formData, setFormData] = useState<MaintenanceSettingsData | null>(null);
   const [cronSchedule, setCronSchedule] = useState('');
 
   // Sincronizar formData quando settings carrega
@@ -53,7 +65,7 @@ export const MaintenanceSettings = () => {
   }
 
   const updateSettings = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Partial<MaintenanceSettingsData>) => {
       const { error } = await supabase
         .from('maintenance_settings')
         .update(data)

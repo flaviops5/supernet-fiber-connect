@@ -8,6 +8,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, PenTool, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { EdgeFunctionResponse } from '@/types/api.types';
+
+interface IXCIntegrationResponse {
+  success: boolean;
+  data?: {
+    id?: string;
+    registro?: {
+      id?: string;
+    };
+  };
+  error?: string;
+}
 
 interface ContractSigningProps {
   isOpen: boolean;
@@ -286,11 +298,12 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
           }
         });
 
-        if (ixcCustomerError || (ixcCustomerData && !(ixcCustomerData as any).success)) {
+        const ixcResponse = ixcCustomerData as IXCIntegrationResponse;
+        if (ixcCustomerError || (ixcResponse && !ixcResponse.success)) {
           throw new Error('Falha ao criar cliente no IXC');
         }
 
-        ixCustomerId = (ixcCustomerData as any)?.data?.id || (ixcCustomerData as any)?.data?.registro?.id || null;
+        ixCustomerId = ixcResponse?.data?.id || ixcResponse?.data?.registro?.id || null;
 
         if (!ixCustomerId) {
           throw new Error('Cliente no IXC criado, mas ID não retornado');
@@ -326,11 +339,12 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
           }
         });
 
-        if (ixcAtendimentoError || (ixcAtendimentoData && !(ixcAtendimentoData as any).success)) {
+        const ixcAtendimentoResponse = ixcAtendimentoData as IXCIntegrationResponse;
+        if (ixcAtendimentoError || (ixcAtendimentoResponse && !ixcAtendimentoResponse.success)) {
           throw new Error('Falha ao abrir atendimento no IXC');
         }
 
-        ixAtendimentoId = (ixcAtendimentoData as any)?.data?.id || (ixcAtendimentoData as any)?.data?.registro?.id || null;
+        ixAtendimentoId = ixcAtendimentoResponse?.data?.id || ixcAtendimentoResponse?.data?.registro?.id || null;
       } catch (ixcErr) {
         console.warn('IXC indisponível ou erro na criação. Prosseguindo sem bloquear.', ixcErr);
         toast({

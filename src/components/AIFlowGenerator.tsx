@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ThumbsUp, ThumbsDown, Copy } from 'lucide-react';
 import { parseError } from '@/types/error.types';
+import type { Database } from '@/integrations/supabase/types';
 
 interface GeneratedConversation {
   id: string;
@@ -88,7 +89,7 @@ export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGenerat
       const { error } = await supabase
         .from('agent_flow_scenario_approvals')
         .insert([{
-          agent_type: agentType as any,
+          agent_type: agentType as Database['public']['Enums']['agent_type'],
           subject_key: subjectKey,
           scenario_key: conversationId,
           variation_path: conversation.scenario_description,

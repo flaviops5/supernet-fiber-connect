@@ -76,10 +76,11 @@ export const RebootSettings = () => {
         description: "As novas configurações foram aplicadas com sucesso."
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({
         title: "Erro ao salvar configurações",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     }

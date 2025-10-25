@@ -113,8 +113,12 @@ export const SalesAgentChat = () => {
 
       // Verifica se o pedido foi criado com sucesso
       if (data.tool_results) {
+        interface ToolResult {
+          name: string;
+          content: string;
+        }
         const orderResult = data.tool_results.find(
-          (result: any) => result.name === 'create_installation_order'
+          (result: ToolResult) => result.name === 'create_installation_order'
         );
         
         if (orderResult) {

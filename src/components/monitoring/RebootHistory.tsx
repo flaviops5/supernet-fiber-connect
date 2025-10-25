@@ -25,7 +25,9 @@ export const RebootHistory = () => {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
+    type BadgeVariant = "default" | "destructive" | "secondary" | "outline";
+    
+    const variants: Record<string, { variant: BadgeVariant; label: string }> = {
       success: { variant: "default", label: "Sucesso" },
       failed: { variant: "destructive", label: "Falhou" },
       pending: { variant: "secondary", label: "Pendente" },
@@ -33,8 +35,8 @@ export const RebootHistory = () => {
       skipped: { variant: "outline", label: "Ignorado" }
     };
 
-    const config = variants[status] || { variant: "outline", label: status };
-    return <Badge variant={config.variant as any}>{config.label}</Badge>;
+    const config = variants[status] || { variant: "outline" as BadgeVariant, label: status };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   return (

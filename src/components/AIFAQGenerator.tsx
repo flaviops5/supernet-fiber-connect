@@ -63,8 +63,9 @@ export const AIFAQGenerator = () => {
     onSuccess: () => {
       toast.success('FAQ salva com sucesso!');
     },
-    onError: (error: any) => {
-      console.error('Error saving FAQ:', error);
+    onError: (error) => {
+      const err = parseError(error);
+      console.error('Error saving FAQ:', err);
       toast.error('Erro ao salvar FAQ');
     }
   });
