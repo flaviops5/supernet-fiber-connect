@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, FileText, DollarSign, Link2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { parseError } from "@/types/error.types";
 
 interface IXCPlan {
   id: string;
@@ -51,11 +52,12 @@ export const IXCPlanSelector = () => {
       } else {
         throw new Error(data.error || 'Erro ao carregar planos do IXC');
       }
-    } catch (error: any) {
-      console.error('Error loading IXC plans:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error loading IXC plans:', err);
       toast({
         title: "Erro ao carregar planos do IXC",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -73,7 +75,8 @@ export const IXCPlanSelector = () => {
       if (error) throw error;
       setLocalPlans(data || []);
     } catch (error) {
-      console.error('Error loading local plans:', error);
+      const err = parseError(error);
+      console.error('Error loading local plans:', err);
       toast({
         title: "Erro ao carregar planos locais",
         description: "Não foi possível carregar os planos do banco de dados.",
@@ -112,11 +115,12 @@ export const IXCPlanSelector = () => {
       setSelectedIXCPlan("");
       setSelectedLocalPlan("");
       loadLocalPlans();
-    } catch (error: any) {
-      console.error('Error linking plans:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error linking plans:', err);
       toast({
         title: "Erro ao vincular planos",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     }
@@ -160,11 +164,12 @@ export const IXCPlanSelector = () => {
 
       setSelectedIXCPlan("");
       loadLocalPlans();
-    } catch (error: any) {
-      console.error('Error creating plan:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error creating plan:', err);
       toast({
         title: "Erro ao criar plano",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     }

@@ -13,6 +13,7 @@ import { Brain, Plus, Search, Edit, Trash2, Folder, File, ChevronRight, Home, Fo
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import VectorMigrationPanel from './VectorMigrationPanel';
+import { parseError } from '@/types/error.types';
 
 interface KnowledgeItem {
   id: string;
@@ -112,7 +113,8 @@ const KnowledgeManagement = () => {
       }));
       setAllItems(formattedItems);
     } catch (error) {
-      console.error('Error loading knowledge items:', error);
+      const err = parseError(error);
+      console.error('Error loading knowledge items:', err);
       toast({
         title: "Erro",
         description: "Erro ao carregar base de conhecimento",
@@ -149,11 +151,12 @@ const KnowledgeManagement = () => {
       });
 
       loadKnowledgeItems();
-    } catch (error: any) {
-      console.error('Error syncing IXC docs:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error syncing IXC docs:', err);
       toast({
         title: "Erro ao sincronizar",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -179,11 +182,12 @@ const KnowledgeManagement = () => {
       });
 
       loadKnowledgeItems();
-    } catch (error: any) {
-      console.error('Error syncing markdown docs:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error syncing markdown docs:', err);
       toast({
         title: "Erro ao sincronizar",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -209,11 +213,12 @@ const KnowledgeManagement = () => {
       });
 
       loadKnowledgeItems();
-    } catch (error: any) {
-      console.error('Error syncing GitHub docs:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error syncing GitHub docs:', err);
       toast({
         title: "Erro ao sincronizar GitHub",
-        description: error.message || 'Verifique as configurações do GitHub',
+        description: err.message || 'Verifique as configurações do GitHub',
         variant: "destructive",
       });
     } finally {

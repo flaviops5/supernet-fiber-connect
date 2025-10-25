@@ -13,6 +13,7 @@ import { FileText, Edit, Eye, Save, X, AlertCircle, Mail } from "lucide-react";
 import { EmailTemplateManagement } from './EmailTemplateManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { parseError } from "@/types/error.types";
 
 interface Template {
   id: string;
@@ -43,11 +44,12 @@ export const NotificationTemplates = () => {
 
       if (error) throw error;
       setTemplates(data || []);
-    } catch (error: any) {
-      console.error('Erro ao buscar templates:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar templates:', err);
       toast({
         title: "Erro ao carregar templates",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -83,11 +85,12 @@ export const NotificationTemplates = () => {
 
       fetchTemplates();
       setEditingTemplate(null);
-    } catch (error: any) {
-      console.error('Erro ao salvar template:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao salvar template:', err);
       toast({
         title: "Erro ao salvar",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {

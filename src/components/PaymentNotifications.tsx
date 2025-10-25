@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play, MessageSquare, Mail, Search, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseError } from "@/types/error.types";
 
 interface Notification {
   id: string;
@@ -29,6 +30,21 @@ interface Notification {
   email_message: string | null;
 }
 
+interface PaymentInfo {
+  title: {
+    id: string;
+    valor: string;
+    data_vencimento: string;
+    status: string;
+    linhadig?: string;
+    [key: string]: unknown;
+  };
+  pix?: {
+    qrcode: string;
+    [key: string]: unknown;
+  };
+}
+
 const PRESET_DAYS = [5, 10, 15, 20, 25, 30];
 
 export const PaymentNotifications = () => {
@@ -39,7 +55,7 @@ export const PaymentNotifications = () => {
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [testCpf, setTestCpf] = useState('61953890130');
   const [testingPayment, setTestingPayment] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const { toast } = useToast();
 
   const fetchNotifications = async () => {
@@ -52,11 +68,12 @@ export const PaymentNotifications = () => {
 
       if (error) throw error;
       setNotifications((data || []) as Notification[]);
-    } catch (error: any) {
-      console.error('Erro ao buscar notificações:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar notificações:', err);
       toast({
         title: "Erro ao carregar notificações",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -106,11 +123,12 @@ export const PaymentNotifications = () => {
       });
 
       fetchNotifications();
-    } catch (error: any) {
-      console.error('Erro ao verificar faturas:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao verificar faturas:', err);
       toast({
         title: "Erro ao verificar faturas",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -160,11 +178,12 @@ export const PaymentNotifications = () => {
       });
 
       fetchNotifications();
-    } catch (error: any) {
-      console.error('Erro ao verificar faturas:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao verificar faturas:', err);
       toast({
         title: "Erro ao verificar faturas",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -236,11 +255,12 @@ export const PaymentNotifications = () => {
         description: `Encontrado título de R$ ${firstTitle.valor}`,
       });
 
-    } catch (error: any) {
-      console.error('Erro ao buscar informações de pagamento:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao buscar informações de pagamento:', err);
       toast({
         title: "Erro ao buscar informações",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -277,11 +297,12 @@ export const PaymentNotifications = () => {
       });
 
       fetchNotifications();
-    } catch (error: any) {
-      console.error('Erro ao enviar notificação de teste:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao enviar notificação de teste:', err);
       toast({
         title: "Erro ao enviar",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -427,7 +448,7 @@ export const PaymentNotifications = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(paymentInfo.pix.qrcode, "Código PIX")}
+                      onClick={() => copyToClipboard(String(paymentInfo.pix?.qrcode || ''), "Código PIX")}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -447,7 +468,7 @@ export const PaymentNotifications = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(paymentInfo.title.linhadig, "Código de barras")}
+                      onClick={() => copyToClipboard(String(paymentInfo.title.linhadig || ''), "Código de barras")}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>

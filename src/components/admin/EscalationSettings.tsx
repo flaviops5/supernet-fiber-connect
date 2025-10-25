@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ArrowRight, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { parseError } from '@/types/error.types';
 
 interface EscalationSettings {
   id: string;
@@ -61,7 +62,7 @@ export default function EscalationSettings() {
       
       if (error) throw error;
       setSettings(data as EscalationSettings);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
@@ -77,7 +78,7 @@ export default function EscalationSettings() {
       
       if (error) throw error;
       setRules(data || []);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao carregar regras');
     }
   };
@@ -95,7 +96,7 @@ export default function EscalationSettings() {
       
       setSettings({ ...settings, ...updates });
       toast.success('Configurações atualizadas');
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao atualizar configurações');
     }
   };
@@ -111,7 +112,7 @@ export default function EscalationSettings() {
       
       setRules(rules.map(r => r.id === ruleId ? { ...r, enabled } : r));
       toast.success(`Regra ${enabled ? 'ativada' : 'desativada'}`);
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao atualizar regra');
     }
   };
@@ -129,7 +130,7 @@ export default function EscalationSettings() {
       
       setRules(rules.filter(r => r.id !== ruleId));
       toast.success('Regra excluída');
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao excluir regra');
     }
   };
@@ -159,7 +160,7 @@ export default function EscalationSettings() {
       setEditingRule(null);
       setEditForm({});
       toast.success('Regra atualizada');
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Erro ao atualizar regra');
     }
   };
