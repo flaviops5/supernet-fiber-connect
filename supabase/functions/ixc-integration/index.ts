@@ -1,8 +1,24 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { parseJSONStrict, getErrorMessage } from '../_shared/error-types.ts';
+import { parseJSONStrict, getErrorMessage, type JsonValue, type JsonObject } from '../_shared/error-types.ts';
 import { createLogger } from '../_shared/logger.ts';
 import type { IXCCustomer } from '../_shared/types.ts';
+import type { 
+  IXCApiResponse, 
+  IXCError, 
+  IXCCliente,
+  IXCContrato,
+  IXCRadusuario,
+  IXCTitulo,
+  IXCAtendimento,
+  IXCCustomerStatus,
+  IXCListResponse,
+  IXCCustomerCreateData,
+  IXCAtendimentoCreateData,
+  IXCContractCreateData,
+  IXCSearchOptions,
+  IXCApiParams
+} from '../_shared/ixc-types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,7 +94,7 @@ serve(async (req) => {
     const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
     logger.debug('IXC API Base URL configured', { baseUrl });
 
-    let result: any = null;
+    let result: JsonValue = null;
 
     switch (action) {
       case 'getCustomers':
@@ -191,10 +207,10 @@ serve(async (req) => {
   } catch (error) {
     logger.error('Erro na integração IXC', { 
       error: error instanceof Error ? error.message : 'Unknown error',
-      details: (error as any)?.details 
+      details: error instanceof Error && 'details' in error ? (error as IXCError).details : undefined
     });
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    const errorDetails = (error as any)?.details;
+    const errorDetails = error instanceof Error && 'details' in error ? (error as IXCError).details : undefined;
     return new Response(JSON.stringify({ 
       success: false, 
       error: errorMessage,
@@ -206,8 +222,8 @@ serve(async (req) => {
   }
 });
 
-async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<any> {
-  const { ixcsoft: ixcsoftParam, ...rest } = params || ({} as any);
+async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<IXCApiResponse<JsonValue>> {
+  const { ixcsoft: ixcsoftParam, ...rest } = params || {};
   const ixcsoftHeader = (typeof ixcsoftParam === 'string' && ixcsoftParam) ? ixcsoftParam : 'listar';
   const body = new URLSearchParams(rest as Record<string, string>);
   const response = await fetch(url, {
@@ -237,9 +253,9 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
     throw err;
   }
 
-  let data: any;
+  let data: JsonValue;
   try {
-    data = JSON.parse(rawText);
+    data = JSON.parse(rawText) as JsonValue;
   } catch (_e) {
     console.error('Resposta não é JSON válido:', rawText);
     const err: IXCError = new Error('Resposta inválida da API IXC');
@@ -249,7 +265,7 @@ async function postIXC(url: string, auth: string, params: Record<string, string>
   return { ok: response.ok, status: response.status, data, rawText, ixcsoft: ixcsoftHeader };
 }
 
-async function getCustomers(baseUrl: string, auth: string, params: any): Promise<IXCCustomer[]> {
+async function getCustomers(baseUrl: string, auth: string, params: IXCSearchOptions): Promise<IXCCustomer[]> {
   const form: Record<string, string> = {};
   if (params.page) form.page = String(params.page);
   if (params.limit) form.rp = String(params.limit);
@@ -301,7 +317,7 @@ async function getCustomer(baseUrl: string, auth: string, customerId: string): P
   return null;
 }
 
-async function searchCustomers(baseUrl: string, auth: string, query: string, options?: any): Promise<IXCCustomer[]> {
+async function searchCustomers(baseUrl: string, auth: string, query: string, options?: IXCSearchOptions): Promise<IXCCustomer[]> {
   const raw = String(query ?? '').trim();
   const q = raw.replace(/["']/g, '').replace(/\s+/g, ' ');
   
@@ -501,7 +517,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string, opt
   }
 }
 
-async function getCustomerStatus(baseUrl: string, auth: string, customerId: string): Promise<any> {
+async function getCustomerStatus(baseUrl: string, auth: string, customerId: string): Promise<IXCCustomerStatus> {
   try {
     console.log(`Verificando status do cliente: ${customerId}`);
     
@@ -510,7 +526,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
     console.log('Dados completos do cliente:', JSON.stringify(customerData, null, 2));
     
     // Busca contratos do cliente usando grid_param para melhor precisão
-    let contracts: any[] = [];
+    let contracts: IXCContrato[] = [];
     console.log('Buscando contratos do cliente...');
     
     try {
@@ -605,12 +621,12 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
           if (users.length > 0) {
             // Log detalhado dos registros encontrados
             console.log('📋 Registros encontrados:');
-            users.forEach((u: any, idx: number) => {
-              console.log(`  [${idx}] Login: ${u.login || u.usuario || u.username || 'N/A'}, Online: ${u.online}, Data: ${u.data_inicio || 'N/A'}`);
+            users.forEach((u: IXCRadusuario, idx: number) => {
+              console.log(`  [${idx}] Login: ${u.login || 'N/A'}, Online: ${u.online}, Data: ${u.acctstarttime || 'N/A'}`);
             });
             
             // Verifica se algum registro tem online = 'S' ou 'SS'
-            const onlineUser = users.find((u: any) => u.online === 'S' || u.online === 'SS');
+            const onlineUser = users.find((u: IXCRadusuario) => u.online === 'S' || u.online === 'SS');
             
             if (onlineUser) {
               // Encontrou usuário online!
@@ -711,7 +727,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
       pppoeLogin: pppoeLogin,
       contractCount: contracts.length,
       accessStatus: accessStatus, // status do cadastro do cliente (referência)
-      activeContracts: contracts.filter((c: any) => 
+      activeContracts: contracts.filter((c: IXCContrato) => 
         c.status === 'Ativo' || 
         c.ativo === '1' || 
         c.ativo === 'S' || 
@@ -728,7 +744,7 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
   }
 }
 
-async function getOnlineClients(baseUrl: string, auth: string, params: any): Promise<any[]> {
+async function getOnlineClients(baseUrl: string, auth: string, params: IXCSearchOptions): Promise<IXCCliente[]> {
   try {
     console.log('Iniciando busca por clientes online...');
     
@@ -772,7 +788,7 @@ async function getOnlineClients(baseUrl: string, auth: string, params: any): Pro
         
         if (contractsOk && contractsData?.registros) {
           const contracts = Array.isArray(contractsData.registros) ? contractsData.registros : Object.values(contractsData.registros || {});
-          const activeContracts = contracts.filter((c: any) => 
+          const activeContracts = contracts.filter((c: IXCContrato) => 
             c.status === 'Ativo' || 
             c.ativo === '1' || 
             c.ativo === 'S' || 
@@ -820,7 +836,7 @@ async function getOnlineClients(baseUrl: string, auth: string, params: any): Pro
   }
 }
 
-async function getCustomersByStatus(baseUrl: string, auth: string, params: any): Promise<any[]> {
+async function getCustomersByStatus(baseUrl: string, auth: string, params: IXCSearchOptions): Promise<IXCCliente[]> {
   try {
     const status = params.status;
     const limit = params.limit || 100;
@@ -926,7 +942,7 @@ async function testConnection(baseUrl: string, auth: string): Promise<{ status: 
   }
 }
 
-async function createCustomer(baseUrl: string, auth: string, customerData: any): Promise<any> {
+async function createCustomer(baseUrl: string, auth: string, customerData: IXCCustomerCreateData): Promise<JsonObject> {
   try {
     console.log('Criando novo cliente no IXC:', customerData);
     
@@ -1094,7 +1110,7 @@ async function createCustomer(baseUrl: string, auth: string, customerData: any):
   }
 }
 
-async function createAtendimento(baseUrl: string, auth: string, customerId: string, atendimentoData: any): Promise<any> {
+async function createAtendimento(baseUrl: string, auth: string, customerId: string, atendimentoData: IXCAtendimentoCreateData): Promise<JsonObject> {
   try {
     console.log('========== CRIAR ATENDIMENTO IXC - INÍCIO ==========');
     console.log('📋 Customer ID:', customerId);
@@ -1283,7 +1299,7 @@ async function createAtendimento(baseUrl: string, auth: string, customerId: stri
   }
 }
 
-async function createContract(baseUrl: string, auth: string, customerId: string, contractData: any): Promise<any> {
+async function createContract(baseUrl: string, auth: string, customerId: string, contractData: IXCContractCreateData): Promise<JsonObject> {
   try {
     console.log('📝 Criando contrato no IXC para cliente:', customerId, contractData);
     
@@ -1513,9 +1529,9 @@ async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: s
     }
 
     // Tenta parsear resposta
-    let data: any;
+    let data: JsonValue;
     try {
-      data = JSON.parse(rawText);
+      data = JSON.parse(rawText) as JsonValue;
     } catch {
       // Se não for JSON, considera como sucesso se status 200
       data = { success: true, message: rawText };
@@ -1524,16 +1540,16 @@ async function desbloqueioConfianca(baseUrl: string, auth: string, contractId: s
     console.log('✅ Desbloqueio realizado com sucesso:', data);
     return { success: true, data };
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao tentar desbloqueio:', error);
     return { 
       success: false, 
-      error: error.message || 'Erro desconhecido ao tentar desbloqueio de confiança'
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao tentar desbloqueio de confiança'
     };
   }
 }
 
-async function getFinancialTitles(baseUrl: string, auth: string, params: any) {
+async function getFinancialTitles(baseUrl: string, auth: string, params: IXCSearchOptions) {
   try {
     // Se customerId for fornecido, busca por cliente
     if (params.customerId) {
@@ -1607,7 +1623,7 @@ async function getFinancialTitles(baseUrl: string, auth: string, params: any) {
       registros: data.registros || [],
       total: data.total || 0
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao buscar títulos:', error);
     throw error;
   }
@@ -1638,13 +1654,13 @@ async function getPixQrCode(baseUrl: string, auth: string, titleId: string) {
       qrcode_url: data.qrcode_url,
       qrcode_link: data.qrcode_original_link_pagamento
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro ao buscar QR Code PIX:', error);
     throw error;
   }
 }
 
-async function restartModem(baseUrl: string, auth: string, customerId: string): Promise<any> {
+async function restartModem(baseUrl: string, auth: string, customerId: string): Promise<JsonObject> {
   try {
     console.log(`🔄 Reiniciando modem do cliente: ${customerId}`);
     
@@ -1676,7 +1692,7 @@ async function restartModem(baseUrl: string, auth: string, customerId: string): 
   }
 }
 
-async function cleanMac(baseUrl: string, auth: string, radiusUserId: string): Promise<any> {
+async function cleanMac(baseUrl: string, auth: string, radiusUserId: string): Promise<JsonObject> {
   try {
     console.log(`🧹 Limpando MAC do radusuario: ${radiusUserId}`);
     

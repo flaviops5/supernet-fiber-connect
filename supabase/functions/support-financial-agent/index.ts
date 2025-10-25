@@ -21,7 +21,7 @@ serve(async (req) => {
   try {
     const { messages, conversationId, customerData, routeReason, attachments } = await req.json();
     
-    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
     logger.info("Processing request", { correlationId, routeReason, hasAttachments: !!attachments?.length });
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -134,7 +134,7 @@ IMPORTANTE: O desbloqueio de confiança é realizado automaticamente quando nece
           const contracts = statusData.data?.contracts || [];
           
           // Encontrar contrato bloqueado/em atraso ativo
-          const blockedContract = contracts.find((c: any) => {
+          const blockedContract = contracts.find((c: IXCContrato) => {
             const statusInternet = String(c.status_internet || '').toUpperCase();
             const financialBlockStatus = ['CA', 'CM', 'CB', 'FA'];
             return financialBlockStatus.includes(statusInternet) || /BLOQ|BLOQUE/.test(statusInternet);
@@ -517,7 +517,7 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
       console.log(`🔍 [${correlationId}] Analyzing ${attachments.length} image(s) with AI...`);
       
       try {
-        const imageMessages = attachments.map((att: any) => ({
+        const imageMessages = attachments.map((att: MessageAttachment) => ({
           type: "image_url",
           image_url: { url: att.url }
         }));
@@ -805,7 +805,7 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
       }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     return handleEdgeFunctionError(error, "support-financial-agent");
   }
 });

@@ -254,8 +254,8 @@ export async function getClientRoutingStatus(
       isOffline,
       suggestAutoReboot: isOffline && !massOutageContext.active, // 🆕 Sugerir reboot se offline e sem pane massiva
     };
-  } catch (err: any) {
-    console.error("❌ Erro ao buscar cliente IXC:", err.message);
+  } catch (err) {
+    console.error("❌ Erro ao buscar cliente IXC:", err instanceof Error ? err.message : 'Unknown error');
     return await getFallbackFromHistory(supabase, cpf);
   }
 }
@@ -294,8 +294,8 @@ async function getFallbackFromHistory(
         isOffline: false,
       };
     }
-  } catch (err: any) {
-    console.warn("⚠️ Erro ao buscar histórico:", err.message);
+  } catch (err) {
+    console.warn("⚠️ Erro ao buscar histórico:", err instanceof Error ? err.message : 'Unknown error');
   }
 
   return {

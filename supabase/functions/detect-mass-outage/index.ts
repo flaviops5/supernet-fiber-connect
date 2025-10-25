@@ -142,7 +142,7 @@ serve(async (req) => {
       maxRetries = 3,
       baseDelay = INITIAL_BACKOFF_MS
     ): Promise<T> => {
-      let lastError: any;
+      let lastError: Error | null = null;
       for (let i = 0; i < maxRetries; i++) {
         try {
           return await fn();
@@ -609,13 +609,13 @@ serve(async (req) => {
     // Função auxiliar para criar/atualizar eventos
     async function createOrUpdateEvent(
       groupKey: string,
-      clientsData: any[],
+      clientsData: JsonObject[],
       groupType: string,
       threshold: number,
       bairrosMap: Map<string, string[]>,
-      dyingGaspEvents: Map<string, any>,
-      supabase: any,
-      massOutages: any[],
+      dyingGaspEvents: Map<string, JsonObject>,
+      supabase: ReturnType<typeof createClient>,
+      massOutages: JsonObject[],
       createdEventKeys: Set<string>
     ) {
       const affectedLogins = clientsData.map(c => c.user.login);

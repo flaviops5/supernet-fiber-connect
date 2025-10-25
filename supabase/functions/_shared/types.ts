@@ -2,6 +2,8 @@
 // TIPOS PADRONIZADOS - RoutingPayload
 // ============================================
 
+import type { JsonValue, JsonObject } from './error-types.ts';
+
 export interface RoutingPayload {
   conversation_id: string;
   client: {
@@ -18,7 +20,7 @@ export interface RoutingPayload {
     };
   };
   ixc?: {
-    cliente_full?: unknown;
+    cliente_full?: JsonObject;
     radusuario?: {
       status: 'online' | 'offline';
       last_online_minutes?: number;
@@ -26,7 +28,7 @@ export interface RoutingPayload {
       ont_serial?: string;
       config_mismatch?: boolean;
     };
-    contracts?: unknown[];
+    contracts?: JsonValue[];
   };
   supabase?: {
     mass_outage_checked: boolean;
@@ -46,22 +48,22 @@ export interface ActionLogEntry {
   agent_name: string;
   client_cpf?: string;
   action_type: string;
-  action_payload: unknown;
+  action_payload: JsonValue;
   ixcticket_id?: string;
-  result?: unknown;
+  result?: JsonValue;
 }
 
 export interface IXCProxyRequest {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   query?: string;
-  body?: unknown;
+  body?: JsonValue;
 }
 
 export interface IXCProxyResponse {
   ok: boolean;
   status: number;
-  data?: unknown;
+  data?: JsonValue;
   error?: string;
 }
 
@@ -102,7 +104,7 @@ export interface IXCCustomer {
   participa_cobranca?: string;
   cob_envia_email?: string;
   tipo_assinante?: string;
-  [key: string]: unknown; // Para campos dinâmicos do IXC
+  [key: string]: JsonValue; // Para campos dinâmicos do IXC
 }
 
 export interface RadiusUser {

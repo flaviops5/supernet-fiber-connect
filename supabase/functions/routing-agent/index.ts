@@ -5,6 +5,8 @@ import { CLOE_MARTINS_SYSTEM_PROMPT, ROUTING_AGENT_SYSTEM_PROMPT } from "./promp
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
+import type { JsonValue, JsonObject } from "../_shared/error-types.ts";
+import type { LovableAIResponse, AgentRequest } from "../_shared/agent-types.ts";
 import {
   getClientRoutingStatus,
   determineTargetDepartment,
@@ -189,7 +191,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
             setTimeout(() => reject(new Error("Timeout: reboot demorou mais de 90s")), 90000)
           );
 
-          const { data, error } = await Promise.race([rebootPromise, timeoutPromise]) as any;
+          const { data, error } = await Promise.race([rebootPromise, timeoutPromise]) as { data: JsonObject | null; error: Error | null };
           
           if (!error && data) {
             rebootResult = data;
@@ -215,8 +217,8 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
               );
             }
           }
-        } catch (rebootError: any) {
-          logger.error("Erro no reboot pela Cloé", { error: rebootError.message });
+        } catch (rebootError) {
+          logger.error("Erro no reboot pela Cloé", { error: rebootError instanceof Error ? rebootError.message : 'Unknown error' });
         }
 
         // Reboot falhou ou cliente ainda offline - buscar TX/RX para Luan
@@ -231,8 +233,8 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
             onuSignal = signalData.data;
             logger.info("Sinal ONU obtido", { tx: onuSignal.tx_power, rx: onuSignal.rx_power });
           }
-        } catch (signalError: any) {
-          logger.error("Erro ao buscar sinal ONU", { error: signalError.message });
+        } catch (signalError) {
+          logger.error("Erro ao buscar sinal ONU", { error: signalError instanceof Error ? signalError.message : 'Unknown error' });
         }
 
         // Mensagem informando que o reboot não resolveu
@@ -322,10 +324,10 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           throw new Error(`Lovable AI error: ${aiResponse.status}`);
         }
 
-        const aiData = await aiResponse.json();
+        const aiData = await aiResponse.json() as LovableAIResponse;
         cloeMessage = aiData.choices?.[0]?.message?.content || "Olá! Como posso ajudar você hoje?";
-      } catch (aiError: any) {
-        logger.error("Erro ao chamar Lovable AI", { error: aiError.message });
+      } catch (aiError) {
+        logger.error("Erro ao chamar Lovable AI", { error: aiError instanceof Error ? aiError.message : 'Unknown error' });
         cloeMessage = "Olá! Estou aqui para ajudar. Qual é sua necessidade hoje?";
       }
 
@@ -365,7 +367,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
       JSON.stringify({ ok: true, protocol, targetDepartment }),
       { headers: corsHeaders, status: 200 }
     );
-  } catch (err: any) {
+  } catch (err) {
     return handleEdgeFunctionError(err, "routing-agent");
   }
 });

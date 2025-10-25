@@ -93,7 +93,7 @@ export async function recordFailedAction(
   agentName: string,
   clientCpf: string | undefined,
   actionType: string,
-  actionPayload: JsonValue,
+  actionPayload: JsonObject,
   errorMessage: string,
   actionLogId?: string
 ) {
