@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ export function MassOutageHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -45,7 +45,7 @@ export function MassOutageHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadHistory();
@@ -69,7 +69,7 @@ export function MassOutageHistory() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadHistory]);
 
   const filteredEvents = events.filter(event => 
     event.region_pattern.toLowerCase().includes(searchTerm.toLowerCase()) ||

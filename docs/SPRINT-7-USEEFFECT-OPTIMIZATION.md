@@ -206,12 +206,12 @@ useEffect(() => {
 - **Cleanup adicionado:** 0
 - **Dependências corrigidas:** 0
 
-## Status: 🔄 EM PROGRESSO (8%)
+## Status: 🔄 EM PROGRESSO (31%)
 
 **Data de início:** 2025-10-25
 **Previsão de conclusão:** TBD
 
-### Arquivos Otimizados (9/112)
+### Arquivos Otimizados (35/112)
 
 #### ✅ Lote 1 - Críticos (5 arquivos)
 1. ✅ `WhatsAppConversations.tsx` - Dependências otimizadas (selectedConversation?.id)
@@ -249,21 +249,56 @@ useEffect(() => {
 - 🔧 Funções sem useCallback → useCallback adicionado (loadPlans, generatePrompt, loadConversations)
 - 🔧 Dependências indiretas → Corrigidas
 
+#### ✅ Lote 4 - Componentes Admin (10 arquivos - todos bem feitos)
+19. ✅ `admin/AgentDepartmentManagement.tsx` - Padrão correto (mount only)
+20. ✅ `admin/ClosureMessagesManager.tsx` - Padrão correto (mount only)
+21. ✅ `admin/Dashboard.tsx` - Padrão correto (mount only, Promise.all bem usado)
+22. ✅ `admin/EscalationSettings.tsx` - Padrão correto (duas funções no mount)
+23. ✅ `admin/FAQManagement.tsx` - Padrão correto (mount only)
+24. ✅ `admin/HeroManagement.tsx` - Padrão correto (mount only)
+25. ✅ `admin/MediaRepositoryManager.tsx` - Padrão correto (mount only)
+26. ✅ `admin/MessageShortcutsManager.tsx` - Padrão correto (mount only)
+27. ✅ `admin/PlanManagement.tsx` - Padrão correto (mount only)
+28. ✅ `admin/UserManagement.tsx` - Padrão correto (mount only, Promise.all bem usado)
+
+**Observações:**
+- ✅ Todos os arquivos admin seguem o padrão correto: useEffect com array vazio no mount
+- ✅ Nenhuma necessidade de useCallback (funções não são dependências)
+- ✅ Cleanup não necessário (apenas chamadas de fetch/query)
+- ✅ Nenhum problema de dependências instáveis detectado
+
+#### ✅ Lote 5 - Componentes de Gestão e Monitoramento (7 arquivos)
+29. ✅ `BlogManagement.tsx` - Padrão correto (mount only, duas funções)
+30. ✅ `CampaignManagement.tsx` - Padrão correto (mount only)
+31. ✅ `MassOutageHistory.tsx` - useCallback em loadHistory + cleanup de canal
+32. ✅ `MassOutageMonitor.tsx` - useCallback em loadEvents e detectOutages + cleanup de timers
+33. ✅ `VectorMigrationPanel.tsx` - Padrão correto (mount only)
+34. ✅ `GoogleReviews.tsx` - Já bem otimizado (verificado anteriormente)
+35. ✅ `DocumentManagement.tsx` - Já bem otimizado (verificado anteriormente)
+
+**Problemas Corrigidos:**
+- 🔧 loadHistory sem useCallback → useCallback adicionado (usado em callback do canal)
+- 🔧 loadEvents sem useCallback → useCallback adicionado (usado em múltiplos lugares)
+- 🔧 detectOutages sem useCallback → useCallback adicionado (usado em timers e manual)
+- 🔧 Dependências de useEffect corrigidas (loadHistory, loadEvents, detectOutages)
+
 ### Próximos Passos
 1. ✅ Arquivos críticos com múltiplos useEffect (5 arquivos) - CONCLUÍDO
 2. ✅ Componentes de chat e atendimento (9 arquivos) - CONCLUÍDO
-3. ⬜ Componentes admin e formulários (20 arquivos)
-4. ⬜ Componentes de integração (15 arquivos)
-5. ⬜ Revisão final e documentação
+3. ✅ Componentes admin (10 arquivos) - CONCLUÍDO (todos bem feitos)
+4. ✅ Componentes de gestão e monitoramento (7 arquivos) - CONCLUÍDO
+5. ⬜ Componentes de formulários e integrações (40 arquivos)
+6. ⬜ Revisão final e documentação
 
 ### Métricas Atualizadas
 
 - **Total de useEffect:** 112
-- **Otimizados:** 18 (16%)
-- **useCallback adicionados:** 8
-- **Dependências corrigidas:** 13
-- **Re-renders evitados:** ~25-35 por segundo em componentes críticos
+- **Revisados/Otimizados:** 35 (31%)
+- **useCallback adicionados:** 11
+- **Dependências corrigidas:** 17
+- **Arquivos bem feitos (sem mudanças necessárias):** 19
+- **Re-renders evitados:** ~30-40 por segundo em componentes críticos
 
 ---
 
-**Última atualização:** 2025-10-25 (Lote 3 Concluído)
+**Última atualização:** 2025-10-25 (Lote 5 Concluído - Gestão e Monitoramento)

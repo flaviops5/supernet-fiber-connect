@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +25,7 @@ export function MassOutageMonitor() {
   const [detecting, setDetecting] = useState(false);
   const { toast } = useToast();
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -46,9 +46,9 @@ export function MassOutageMonitor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const detectOutages = async () => {
+  const detectOutages = useCallback(async () => {
     setDetecting(true);
     try {
       const { data, error } = await supabase.functions.invoke('detect-mass-outage');
@@ -74,7 +74,7 @@ export function MassOutageMonitor() {
     } finally {
       setDetecting(false);
     }
-  };
+  }, [toast, loadEvents]);
 
   useEffect(() => {
     loadEvents();
@@ -110,7 +110,7 @@ export function MassOutageMonitor() {
       clearInterval(detectionInterval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [loadEvents, detectOutages]);
 
   const activeEvents = events.filter(e => e.status === 'active');
 
