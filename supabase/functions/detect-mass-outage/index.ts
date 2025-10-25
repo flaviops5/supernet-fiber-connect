@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 import { getErrorMessage } from '../_shared/error-types.ts';
+import { createLogger } from '../_shared/logger.ts';
 import type { RadiusUser } from '../_shared/types.ts';
 
 const corsHeaders = {
@@ -15,8 +16,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const logger = createLogger('detect-mass-outage');
+
   try {
-    console.log('🔓 detect-mass-outage: chamada pública recebida');
+    logger.info('Chamada pública recebida');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
@@ -27,7 +30,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('🔍 Iniciando detecção de quedas em massa via proxy...');
+    logger.info('Iniciando detecção de quedas em massa via proxy');
 
     // Buscar clientes offline do IXC via proxy
     let page = 1;
@@ -49,7 +52,10 @@ serve(async (req) => {
           sortorder: 'desc',
         };
 
-        console.log(`📄 Buscando página ${page}/${MAX_PAGES} de clientes offline...`);
+        logger.info('Buscando página de clientes offline', { 
+          page,
+          maxPages: MAX_PAGES 
+        });
 
         const radData = await callIxcWithRetry(
           IXC_PROXY_URL,
@@ -63,12 +69,16 @@ serve(async (req) => {
           : (radData?.data?.registros ? Object.values(radData.data.registros) : []);
 
         if (!radRegistros || radRegistros.length === 0) {
-          console.log(`✅ Sem mais registros na página ${page}`);
+          logger.info('Sem mais registros', { page });
           break;
         }
 
         allRadUsers.push(...radRegistros);
-        console.log(`📊 Página ${page}: ${radRegistros.length} clientes offline (total: ${allRadUsers.length})`);
+        logger.info('Página processada', { 
+          page,
+          pageCount: radRegistros.length,
+          totalCount: allRadUsers.length 
+        });
 
         if (radRegistros.length < itemsPerPage) {
           break;
@@ -77,10 +87,15 @@ serve(async (req) => {
       }
       
       if (page > MAX_PAGES) {
-        console.log(`⚠️ LIMITE de ${MAX_PAGES} páginas atingido. Total: ${allRadUsers.length} clientes`);
+        logger.warn('Limite de páginas atingido', { 
+          maxPages: MAX_PAGES,
+          totalClients: allRadUsers.length 
+        });
       }
     } catch (error) {
-      console.error('❌ Erro ao buscar clientes offline do IXC:', getErrorMessage(error));
+      logger.error('Erro ao buscar clientes offline do IXC', { 
+        error: getErrorMessage(error) 
+      });
       
       // Se falhou completamente, retornar erro informativo
       if (allRadUsers.length === 0) {
@@ -98,10 +113,12 @@ serve(async (req) => {
       }
       
       // Se temos dados parciais, continuar
-      console.log(`⚠️ Continuando com ${allRadUsers.length} registros obtidos antes do erro`);
+      logger.warn('Continuando com dados parciais', { 
+        recordsObtained: allRadUsers.length 
+      });
     }
 
-    console.log(`📊 Total de clientes offline: ${allRadUsers.length}`);
+    logger.info('Total de clientes offline', { count: allRadUsers.length });
 
     // OTIMIZAÇÃO: Limitar a 200 clientes mais críticos para evitar sobrecarga no IXC
     const MAX_CLIENTS_TO_ENRICH = 200; // Reduzido de 500 para 200
@@ -152,11 +169,14 @@ serve(async (req) => {
     const skippedCount = allRadUsers.length - usersToEnrich.length;
     
     if (skippedCount > 0) {
-      console.log(`⚠️ Limitando análise a ${MAX_CLIENTS_TO_ENRICH} clientes prioritários (${skippedCount} ignorados)`);
+      logger.warn('Limitando análise para evitar sobrecarga', { 
+        maxClients: MAX_CLIENTS_TO_ENRICH,
+        skippedCount 
+      });
     }
 
     // Buscar informações de porta PON e bairro para cada cliente offline
-    console.log('🔍 Buscando informações de porta PON e localização...');
+    logger.info('Buscando informações de porta PON e localização');
     const clientsWithPon: Array<{ user: RadUser; ponPort?: string; cto?: string; bairro?: string }> = [];
     
     // OTIMIZAÇÃO: Processar em chunks com concorrência limitada
@@ -166,15 +186,21 @@ serve(async (req) => {
       chunks.push(usersToEnrich.slice(i, i + CHUNK_SIZE));
     }
     
-    console.log(`📦 Processando ${chunks.length} chunks de ${CHUNK_SIZE} clientes em paralelo...`);
+    logger.info('Processando chunks em paralelo', { 
+      totalChunks: chunks.length,
+      chunkSize: CHUNK_SIZE 
+    });
     
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
-      console.log(`📦 Chunk ${chunkIndex + 1}/${chunks.length}: ${chunk.length} clientes`);
+      logger.info('Processando chunk', { 
+        chunk: `${chunkIndex + 1}/${chunks.length}`,
+        clientsCount: chunk.length 
+      });
       
       // ⏱️ DELAY entre chunks para não sobrecarregar IXC
       if (chunkIndex > 0) {
-        console.log(`⏳ Aguardando ${CHUNK_DELAY_MS}ms antes do próximo chunk...`);
+        logger.info('Aguardando antes do próximo chunk', { delayMs: CHUNK_DELAY_MS });
         await delayWithJitter(CHUNK_DELAY_MS);
       }
       

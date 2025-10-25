@@ -1,4 +1,5 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,16 +7,17 @@ const corsHeaders = {
 };
 
 Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supabase }) => {
+  const logger = createLogger('auto-send-overdue-invoices');
   const { testClientName } = await req.json().catch(() => ({}));
   
   if (testClientName) {
-    console.log(`🎯 Modo TESTE: Processando apenas cliente "${testClientName}"`);
+    logger.info('Modo TESTE ativado', { testClientName });
   } else {
-    console.log('🤖 Iniciando envio automático de boletos para clientes em FA...');
+    logger.info('Iniciando envio automático de boletos para clientes em FA');
   }
 
     // 1. Buscar títulos vencidos no IXC (como check-due-invoices)
-    console.log('📡 Buscando títulos vencidos no IXC...');
+    logger.info('Buscando títulos vencidos no IXC');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
@@ -39,10 +41,10 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
     }
 
     const titles = titlesResp?.data?.registros || titlesResp?.registros || [];
-    console.log(`📊 Total de títulos vencidos encontrados: ${titles.length}`);
+    logger.info('Títulos vencidos encontrados', { count: titles.length });
 
     if (titles.length === 0) {
-      console.log('⚠️ Nenhum título vencido encontrado');
+      logger.warn('Nenhum título vencido encontrado');
       return new Response(
         JSON.stringify({ 
           success: true,
@@ -74,7 +76,7 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
       clientTitlesMap.get(clientId)!.push(title);
     }
 
-    console.log(`📊 Total de clientes únicos com títulos vencidos: ${clientTitlesMap.size}`);
+    logger.info('Clientes únicos com títulos vencidos', { count: clientTitlesMap.size });
 
     // 3. Para cada cliente, buscar dados completos e verificar status FA
     const clientsToProcess: Array<{id: string, name: string, data: any, overdueTitle: any}> = [];
@@ -93,7 +95,7 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         const customer = clientData?.data?.registros?.[0] || clientData?.registros?.[0];
         
         if (!customer) {
-          console.log(`⚠️ Cliente ${clientId} não encontrado no IXC`);
+          logger.warn('Cliente não encontrado no IXC', { clientId });
           continue;
         }
 
@@ -112,10 +114,15 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
           hasOverdueTitle: true
         });
         
-        console.log(`👤 Cliente ${clientName} | CPF: ${clientCpf} (ID: ${clientId}) - Status: ${customerStatus} - É FA? ${isFAStatus}`);
+        logger.info('Cliente analisado', { 
+          clientName,
+          clientId,
+          status: customerStatus,
+          isFAStatus 
+        });
         
         if (!isFAStatus) {
-          console.log(`⏭️  Pulando ${clientName} - não está em FA`);
+          logger.debug('Cliente não está em FA - pulando', { clientName });
           continue;
         }
 
@@ -127,25 +134,29 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         });
 
       } catch (error) {
-        console.error(`❌ Erro ao buscar dados do cliente ${clientId}:`, error);
+        logger.error('Erro ao buscar dados do cliente', { 
+          clientId,
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
       }
     }
 
-    console.log(`📊 Total de clientes em FA para processar: ${clientsToProcess.length}`);
+    logger.info('Clientes em FA para processar', { count: clientsToProcess.length });
     
     // Log de todos os clientes encontrados se estiver em modo teste
     if (testClientName) {
-      console.log(`\n🔍 DEBUG: Buscando "${testClientName}" entre ${allClientsFound.length} clientes:`);
+      logger.info('Modo DEBUG ativo - buscando cliente específico', { 
+        testClientName,
+        totalClients: allClientsFound.length 
+      });
       const matching = allClientsFound.filter(c => 
         c.name.toLowerCase().includes(testClientName.toLowerCase())
       );
-      console.log(`📋 Clientes que contêm "${testClientName}":`, JSON.stringify(matching, null, 2));
       
       if (matching.length === 0) {
-        console.log(`⚠️ Nenhum cliente encontrado com nome contendo "${testClientName}"`);
-        console.log(`💡 Primeiros 10 clientes encontrados com títulos vencidos:`);
-        allClientsFound.slice(0, 10).forEach(c => {
-          console.log(`  - ${c.name} | CPF: ${c.cpf} | Status: ${c.status}`);
+        logger.warn('Nenhum cliente encontrado com o nome fornecido', { 
+          testClientName,
+          suggestion: 'Primeiros 10 clientes disponíveis'
         });
       }
     }
@@ -157,7 +168,11 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
       finalClientsToProcess = clientsToProcess.filter(client => 
         client.name.toLowerCase().includes(testClientName.toLowerCase())
       );
-      console.log(`🎯 Clientes filtrados para "${testClientName}": ${finalClientsToProcess.length}`);
+      logger.info('Clientes filtrados em modo TESTE', { 
+        testClientName,
+        count: finalClientsToProcess.length 
+      });
+    }
     }
 
     if (finalClientsToProcess.length === 0) {
@@ -187,15 +202,16 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
 
     for (const client of finalClientsToProcess) {
       const { id: clientId, name: clientName, data: customer, overdueTitle } = client;
+      const clientLogger = logger.child({ clientId, clientName });
 
-      console.log(`\n📋 Processando: ${clientName} (ID: ${clientId})`);
+      clientLogger.info('Processando cliente');
 
       try {
         const customerPhone = customer.celular || customer.telefone_celular || customer.fone_celular || customer.whatsapp;
         const customerCpf = customer.cnpj_cpf;
 
         if (!customerPhone) {
-          console.log(`⚠️ Cliente ${clientName} sem telefone cadastrado`);
+          clientLogger.warn('Cliente sem telefone cadastrado');
           results.errors++;
           results.details.push({
             clientId,
@@ -206,7 +222,10 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
           continue;
         }
 
-        console.log(`💰 Título vencido: ${overdueTitle.id} - R$ ${overdueTitle.valor}`);
+        clientLogger.info('Título vencido identificado', { 
+          titleId: overdueTitle.id,
+          valor: overdueTitle.valor 
+        });
 
         // Buscar QRCode PIX para o título
         const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
@@ -238,7 +257,7 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         messageText += `\nApós o pagamento, a normalização é automática. Dúvidas? Estamos à disposição. 😊`;
 
         // Enviar WhatsApp diretamente
-        console.log(`📤 Enviando boleto para ${customerPhone}...`);
+        clientLogger.info('Enviando boleto por WhatsApp', { phone: customerPhone });
         const targetPhone = String(customerPhone).replace(/\D/g, '');
         const { data: sendData, error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
           body: {
@@ -249,7 +268,10 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         });
 
         if (sendError || !sendData?.status) {
-          console.log(`❌ Erro ao enviar para ${clientName}:`, sendError?.message || 'Falha no envio');
+          clientLogger.error('Erro ao enviar WhatsApp', { 
+            error: sendError?.message || 'Falha no envio',
+            phone: targetPhone 
+          });
           results.errors++;
           results.details.push({
             clientId,
@@ -259,7 +281,7 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
             status: 'error'
           });
         } else {
-          console.log(`✅ Boleto enviado com sucesso para ${clientName}`);
+          clientLogger.info('Boleto enviado com sucesso');
           results.sent++;
           results.details.push({
             clientId,
@@ -296,7 +318,9 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         await new Promise(resolve => setTimeout(resolve, 2000));
 
       } catch (error) {
-        console.error(`❌ Erro ao processar cliente ${clientName}:`, error);
+        clientLogger.error('Erro ao processar cliente', { 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
         results.errors++;
         results.details.push({
           clientId,
@@ -307,8 +331,10 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
       }
     }
 
-  console.log('\n✅ Processamento concluído!');
-  console.log(`📊 Resumo: ${results.sent} enviados, ${results.errors} erros`);
+  logger.info('Processamento concluído', { 
+    sent: results.sent,
+    errors: results.errors 
+  });
 
   return {
     success: true,

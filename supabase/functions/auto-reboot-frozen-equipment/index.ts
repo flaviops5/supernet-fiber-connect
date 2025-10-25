@@ -11,10 +11,12 @@
 
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
+import { createLogger } from '../_shared/logger.ts';
 import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
 
 Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { supabase }) => {
-  console.log('🔄 Iniciando verificação de equipamentos travados...');
+  const logger = createLogger('auto-reboot-frozen-equipment');
+  logger.info('Iniciando verificação de equipamentos travados');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
@@ -23,7 +25,7 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
   const now = new Date();
   const hour = now.getHours();
   if (hour >= 1 && hour < 6) {
-    console.log('⏰ Horário de madrugada (1h-6h) - ignorando verificação');
+    logger.info('Horário de madrugada - ignorando verificação', { hour });
     return { 
       skipped: true, 
       reason: 'Horário de madrugada (1h-6h)' 
@@ -31,7 +33,8 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
   }
 
     // 1. Buscar clientes online do IXC
-    console.log('📡 Consultando clientes online no IXC...');
+    const endTimer = logger.time('fetch-online-clients');
+    logger.info('Consultando clientes online no IXC');
     const radiusResponse = await callIxcWithRetry(
       IXC_PROXY_URL,
       'GET',
@@ -45,7 +48,8 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
     }
 
     const onlineUsers: RadiusUser[] = radiusResponse.data.registros;
-    console.log(`👥 ${onlineUsers.length} clientes online encontrados`);
+    endTimer();
+    logger.info('Clientes online encontrados', { count: onlineUsers.length });
 
     // 2. Buscar blacklist
     const { data: blacklist } = await supabase
@@ -80,7 +84,11 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
       const totalBytes = inputBytes + outputBytes;
       const bandwidthKbps = (totalBytes * 8) / (sessionTime * 1024);
 
-      console.log(`🔍 Cliente ${user.login}: ${bandwidthKbps.toFixed(2)} Kbps`);
+      logger.debug('Cliente verificado', { 
+        login: user.login, 
+        bandwidthKbps: bandwidthKbps.toFixed(2),
+        clientId: user.id_cliente 
+      });
 
       // Detectar banda anormalmente baixa
       if (bandwidthKbps < 900 && bandwidthKbps > 0) {
@@ -93,7 +101,10 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
       }
     }
 
-  console.log(`🚨 ${suspectClients.length} clientes com banda suspeita (< 900 Kbps)`);
+  logger.info('Clientes com banda suspeita detectados', { 
+    count: suspectClients.length,
+    threshold: '900 Kbps' 
+  });
 
   if (suspectClients.length === 0) {
     return { 
@@ -108,7 +119,11 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
     // 4. Processar cada cliente suspeito
     for (const suspect of suspectClients) {
       try {
-        console.log(`\n🔍 Analisando cliente ${suspect.login} (${suspect.clientId})...`);
+        const clientLogger = logger.child({ clientId: suspect.clientId, login: suspect.login });
+        clientLogger.info('Analisando cliente suspeito', { 
+          bandwidthKbps: suspect.bandwidthKbps,
+          ip: suspect.ip 
+        });
 
         // 4.1. Verificar se está bloqueado financeiramente
         const clientResponse = await callIxcWithRetry(
@@ -120,14 +135,17 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
         );
 
         if (!clientResponse.ok || !clientResponse.data?.registros?.[0]) {
-          console.log(`⚠️ Cliente ${suspect.clientId} não encontrado no IXC`);
+          clientLogger.warn('Cliente não encontrado no IXC');
           continue;
         }
 
         const clientData: ClientStatus = clientResponse.data.registros[0];
 
         if (clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S') {
-          console.log(`💰 Cliente ${suspect.login} está bloqueado - ignorando`);
+          clientLogger.info('Cliente bloqueado - ignorando', { 
+            bloqueado: clientData.bloqueado,
+            bloqueado_financeiro: clientData.bloqueado_financeiro 
+          });
           results.push({
             clientId: suspect.clientId,
             login: suspect.login,
@@ -146,7 +164,7 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
           .limit(1);
 
         if (recentReboots && recentReboots.length > 0) {
-          console.log(`⏰ Cliente ${suspect.login} já foi reiniciado nas últimas 24h - ignorando`);
+          clientLogger.info('Cooldown ativo - ignorando', { cooldownHours: 24 });
           results.push({
             clientId: suspect.clientId,
             login: suspect.login,
@@ -177,11 +195,11 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
           .single();
 
         if (insertError || !rebootRecord) {
-          console.error(`❌ Erro ao criar registro para ${suspect.login}:`, insertError);
+          clientLogger.error('Erro ao criar registro de reboot', { error: insertError });
           continue;
         }
 
-        console.log(`📝 Registro criado para ${suspect.login} - ID: ${rebootRecord.id}`);
+        clientLogger.info('Registro de reboot criado', { rebootId: rebootRecord.id });
 
         // 4.4. Fazer 3 verificações consecutivas (aguardar 1 minuto entre cada)
         let verificationsLow = 0;
@@ -189,7 +207,10 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
 
         for (let i = 0; i < 3; i++) {
           if (i > 0) {
-            console.log(`⏳ Aguardando 60 segundos antes da verificação ${i + 1}/3...`);
+            clientLogger.info('Aguardando próxima verificação', { 
+              verification: `${i + 1}/3`,
+              delaySeconds: 60 
+            });
             await new Promise(resolve => setTimeout(resolve, 60000)); // 1 minuto
           }
 
@@ -212,13 +233,18 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
 
             verificationResults.push(currentBandwidth);
 
-            console.log(`🔍 Verificação ${i + 1}/3: ${currentBandwidth.toFixed(2)} Kbps`);
+            clientLogger.info('Verificação realizada', { 
+              verification: `${i + 1}/3`,
+              bandwidthKbps: currentBandwidth.toFixed(2) 
+            });
 
             if (currentBandwidth < 900) {
               verificationsLow++;
             }
           } else {
-            console.log(`⚠️ Verificação ${i + 1}/3: Cliente offline ou não encontrado`);
+            clientLogger.warn('Cliente offline ou não encontrado na verificação', { 
+              verification: `${i + 1}/3` 
+            });
           }
         }
 
@@ -236,7 +262,10 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
 
         // 4.5. Se 2 ou mais verificações confirmaram banda baixa, reiniciar
         if (verificationsLow >= 2) {
-          console.log(`🔄 ${verificationsLow}/3 verificações confirmaram banda baixa - iniciando reboot...`);
+          clientLogger.info('Banda baixa confirmada - iniciando reboot', { 
+            verificationsLow,
+            total: 3 
+          });
 
           // Tentar enviar comando de reboot via IXC
           try {
@@ -264,10 +293,12 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
               );
 
               if (rebootResponse.ok) {
-                console.log(`✅ Comando de reboot enviado com sucesso para ${suspect.login}`);
+                clientLogger.info('Comando de reboot enviado', { 
+                  equipmentId 
+                });
 
                 // Aguardar 2 minutos e verificar se banda melhorou
-                console.log('⏳ Aguardando 120 segundos para verificar resultado...');
+                clientLogger.info('Aguardando verificação pós-reboot', { delaySeconds: 120 });
                 await new Promise(resolve => setTimeout(resolve, 120000));
 
                 // Verificar banda após reboot
@@ -316,15 +347,25 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
                   message: success ? 'Reboot bem-sucedido, banda normalizada' : 'Reboot realizado mas banda não melhorou'
                 });
 
-                console.log(success ? `✅ Reboot bem-sucedido! Banda: ${bandwidthAfter.toFixed(2)} Kbps` : `⚠️ Banda não melhorou: ${bandwidthAfter.toFixed(2)} Kbps`);
+                if (success) {
+                  clientLogger.info('Reboot bem-sucedido', { 
+                    bandwidthAfter: bandwidthAfter.toFixed(2) 
+                  });
+                } else {
+                  clientLogger.warn('Banda não melhorou após reboot', { 
+                    bandwidthAfter: bandwidthAfter.toFixed(2) 
+                  });
+                }
               } else {
                 throw new Error(`Falha ao enviar comando de reboot: ${rebootResponse.error}`);
               }
             } else {
               throw new Error('Equipamento não encontrado no IXC');
             }
-          } catch (rebootError: any) {
-            console.error(`❌ Erro ao reiniciar ${suspect.login}:`, rebootError.message);
+          } catch (rebootError: unknown) {
+            clientLogger.error('Erro ao executar reboot', { 
+              error: rebootError instanceof Error ? rebootError.message : 'Unknown error' 
+            });
 
             await supabase
               .from('equipment_reboots')
@@ -360,8 +401,12 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
           });
         }
 
-      } catch (error: any) {
-        console.error(`❌ Erro ao processar cliente ${suspect.login}:`, error.message);
+      } catch (error: unknown) {
+        logger.error('Erro ao processar cliente suspeito', { 
+          clientId: suspect.clientId,
+          login: suspect.login,
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
         results.push({
           clientId: suspect.clientId,
           login: suspect.login,
@@ -371,8 +416,11 @@ Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { sup
       }
     }
 
-  console.log('\n✅ Verificação concluída!');
-  console.log(`📊 Resultados: ${JSON.stringify(results, null, 2)}`);
+  logger.info('Verificação concluída', { 
+    totalChecked: onlineUsers.length,
+    suspects: suspectClients.length,
+    resultsCount: results.length 
+  });
 
   return {
     message: 'Verificação concluída',

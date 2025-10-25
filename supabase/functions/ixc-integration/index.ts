@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parseJSONStrict, getErrorMessage } from '../_shared/error-types.ts';
+import { createLogger } from '../_shared/logger.ts';
 import type { IXCCustomer } from '../_shared/types.ts';
 
 const corsHeaders = {
@@ -33,6 +34,8 @@ function normalizeRegistros(input: unknown): IXCCustomer[] {
 }
 
 serve(async (req) => {
+  const logger = createLogger('ixc-integration');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -40,7 +43,7 @@ serve(async (req) => {
   try {
     // Validar body antes de fazer parse
     const bodyText = await req.text();
-    console.log('Request body received:', bodyText);
+    logger.debug('Request body received', { bodyLength: bodyText.length });
     
     if (!bodyText || bodyText.trim() === '') {
       throw new Error('Request body está vazio');
@@ -50,7 +53,7 @@ serve(async (req) => {
     try {
       parsedBody = parseJSONStrict<{ action?: string; params?: Record<string, unknown> }>(bodyText, 'request body');
     } catch (error) {
-      console.error('Erro ao fazer parse do JSON:', getErrorMessage(error));
+      logger.error('Erro ao fazer parse do JSON', { error: getErrorMessage(error) });
       throw new Error(`JSON inválido no body da requisição: ${getErrorMessage(error)}`);
     }
     
@@ -73,7 +76,7 @@ serve(async (req) => {
 
     const auth = btoa(`${username}:${password}`);
     const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
-    console.log('IXC_API_BASE_URL (raw):', IXC_API_BASE, 'normalized:', cleanBaseUrl);
+    logger.debug('IXC API Base URL configured', { baseUrl });
 
     let result: any = null;
 
@@ -173,9 +176,9 @@ serve(async (req) => {
         throw new Error(`Ação não suportada: ${action}`);
     }
 
-    console.log(`IXC Integration - Action: ${action}`, { 
-      success: true, 
-      resultCount: Array.isArray(result) ? result.length : (result ? 1 : 0)
+    logger.info('IXC Integration action completed', { 
+      action,
+      resultCount: Array.isArray(result) ? result.length : (result ? 1 : 0) 
     });
 
     return new Response(JSON.stringify({ 
@@ -186,7 +189,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Erro na integração IXC:', error);
+    logger.error('Erro na integração IXC', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: (error as any)?.details 
+    });
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     const errorDetails = (error as any)?.details;
     return new Response(JSON.stringify({ 
