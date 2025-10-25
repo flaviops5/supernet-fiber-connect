@@ -5,7 +5,7 @@ import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '.
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
-import { createLogger } from '../_shared/logger.ts';
+import { createLogger } from '../_shared/structured-logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

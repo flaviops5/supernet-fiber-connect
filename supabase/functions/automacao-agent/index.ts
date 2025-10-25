@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
-import { createLogger } from '../_shared/logger.ts';
+import { createLogger } from '../_shared/structured-logger.ts';
 
 Deno.serve(createPublicHandler('automacao-agent', async (req) => {
   const logger = createLogger('automacao-agent', req);
