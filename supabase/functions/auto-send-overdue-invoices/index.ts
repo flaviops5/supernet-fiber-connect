@@ -173,7 +173,6 @@ Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supab
         count: finalClientsToProcess.length 
       });
     }
-    }
 
     if (finalClientsToProcess.length === 0) {
       return new Response(
