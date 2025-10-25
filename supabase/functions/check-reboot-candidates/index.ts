@@ -1,5 +1,6 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
+import { createLogger } from '../_shared/logger.ts';
 import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
 
 // Helper para converter tempo de sessão (aceita segundos ou formato HH:MM:SS)
@@ -19,7 +20,8 @@ function parseSessionSeconds(user: RadiusUser): number {
 }
 
 Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase }) => {
-  console.log('🔍 Verificando clientes com banda baixa...');
+  const logger = createLogger('check-reboot-candidates', req);
+  logger.info('Verificando clientes com banda baixa');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   
@@ -27,7 +29,7 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
   const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
-    console.log('📡 Buscando clientes ONLINE via IXC proxy (filtro direto)...');
+    logger.info('Buscando clientes ONLINE via IXC proxy (filtro direto)');
     
     const bodyOnline = {
       qtype: 'radusuarios.online',
@@ -47,14 +49,16 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
         '/webservice/v1/radusuarios',
         bodyOnline
       );
-      console.log('✅ Clientes online obtidos com sucesso (filtro direto aplicado)');
+      logger.info('Clientes online obtidos com sucesso (filtro direto aplicado)');
     } catch (error: any) {
-      console.error('❌ Erro ao buscar clientes online:', error.message);
+      logger.error('Erro ao buscar clientes online', 
+        error instanceof Error ? error : new Error(error.message)
+      );
       throw new Error(`Falha ao buscar clientes online via proxy: ${error.message}`);
     }
     
   if (!radiusData?.data?.registros) {
-    console.warn('⚠️ IXC retornou resposta válida mas sem registros');
+    logger.warn('IXC retornou resposta válida mas sem registros');
     return {
       candidates: [],
       total: 0,
@@ -67,7 +71,9 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
       ? radiusData.data.registros 
       : Object.values(radiusData.data.registros || {});
     
-    console.log(`👥 ${onlineUsers.length} clientes ONLINE encontrados (já filtrados pela query)`);
+    logger.info('Clientes ONLINE encontrados (já filtrados pela query)', { 
+      count: onlineUsers.length 
+    });
 
     // 2. Buscar blacklist
     const { data: blacklist } = await supabase
@@ -82,7 +88,10 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
     for (const user of onlineUsers) {
       // Query já filtra apenas online='S', mas validar por segurança
       if (user.online !== 'S' && user.online !== 'SS') {
-        console.warn(`⚠️ Cliente ${user.login} retornado com status ${user.online} (esperado S/SS)`);
+        logger.warn('Cliente retornado com status inesperado', { 
+          login: user.login, 
+          status: user.online 
+        });
         continue;
       }
 
@@ -123,7 +132,10 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
             isBlocked = clientData.bloqueado === 'S' || clientData.bloqueado_financeiro === 'S';
           }
         } catch (err) {
-          console.warn(`⚠️ Erro ao buscar dados do cliente ${user.id_cliente}:`, (err as Error).message);
+          logger.warn('Erro ao buscar dados do cliente', { 
+            clientId: user.id_cliente, 
+            error: (err as Error).message 
+          });
         }
 
         // Verificar cooldown (reboot recente)
@@ -148,7 +160,7 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
       }
     }
 
-  console.log(`🚨 ${candidates.length} clientes com banda baixa encontrados`);
+  logger.info('Clientes com banda baixa encontrados', { count: candidates.length });
 
   return {
     candidates,

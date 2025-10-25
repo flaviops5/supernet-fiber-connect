@@ -19,6 +19,7 @@ import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction
 import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,15 +34,16 @@ function generateCorrelationId(): string {
 serve(async (req) => {
   const correlationId = generateCorrelationId();
   const startTime = Date.now();
+  const logger = createLogger('whatsapp-webhook', req);
   
-  console.log(`🎯 [${correlationId}] Webhook endpoint hit`, {
+  logger.info('Webhook endpoint hit', {
     method: req.method,
     url: req.url,
-    timestamp: new Date().toISOString(),
+    correlationId
   });
 
   if (req.method === 'OPTIONS') {
-    console.log(`✅ [${correlationId}] OPTIONS request handled`);
+    logger.debug('OPTIONS request handled', { correlationId });
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -56,10 +58,13 @@ serve(async (req) => {
     if (hmacSecret) {
       const hmacValidation = await validateHMACRequest(req.clone(), hmacSecret);
       if (!hmacValidation.valid) {
-        console.warn(`⚠️ [${correlationId}] HMAC validation failed: ${hmacValidation.error}`);
+        logger.warn('HMAC validation failed', { 
+          correlationId, 
+          error: hmacValidation.error 
+        });
         // Não bloqueia por compatibilidade, apenas loga
       } else {
-        console.log(`✅ [${correlationId}] HMAC validated successfully`);
+        logger.debug('HMAC validated successfully', { correlationId });
       }
     }
 

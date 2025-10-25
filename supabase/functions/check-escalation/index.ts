@@ -1,10 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import { createLogger } from "../_shared/logger.ts";
 import { z } from "https://deno.land/x/zod/mod.ts";
-
-// -------- utils --------
-const log = (level: "info" | "warn" | "error", msg: string, meta: Record<string, unknown> = {}) =>
-  console.log(JSON.stringify({ ts: new Date().toISOString(), fn: "check-escalation", level, msg, ...meta }));
 
 const normalize = (text: string) =>
   (text ?? "")
@@ -36,10 +33,11 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 3, baseDelayMs = 300):
 Deno.serve(createAuthenticatedHandler(
   'check-escalation',
   async (req, { supabase, user }) => {
+    const logger = createLogger('check-escalation', req);
     const raw = await req.json().catch(() => null);
     const body = BodySchema.safeParse(raw);
     if (!body.success) {
-      log("warn", "invalid_body", { issues: body.error.format() });
+      logger.warn('invalid_body', { issues: body.error.format() });
       throw new Error("Invalid request body");
     }
 
@@ -56,8 +54,12 @@ Deno.serve(createAuthenticatedHandler(
         .order("priority", { ascending: true }),
     ]);
 
-    if (settingsRes.error) { log("error", "settings_error", { error: settingsRes.error }); }
-    if (rulesRes.error) { log("error", "rules_error", { error: rulesRes.error }); }
+    if (settingsRes.error) { 
+      logger.error('settings_error', new Error(settingsRes.error.message), { error: settingsRes.error }); 
+    }
+    if (rulesRes.error) { 
+      logger.error('rules_error', new Error(rulesRes.error.message), { error: rulesRes.error }); 
+    }
 
     const settings = settingsRes.data;
     const rules = rulesRes.data ?? [];
@@ -88,7 +90,7 @@ Deno.serve(createAuthenticatedHandler(
         .gt("created_at", new Date(Date.now() - 60_000).toISOString()) // 60s
         .limit(1);
       if (idempo.data && idempo.data.length > 0) {
-        log("info", "skip_idempotent", { conversation_id, to_department: rule.to_department });
+        logger.info('skip_idempotent', { conversation_id, to_department: rule.to_department });
         continue;
       }
 
@@ -102,7 +104,7 @@ Deno.serve(createAuthenticatedHandler(
       }, 3, 300);
 
       if (!availableAgents || availableAgents.length === 0) {
-        log("warn", "no_agents_available", { to_department: rule.to_department });
+        logger.warn('no_agents_available', { to_department: rule.to_department });
         continue;
       }
 
@@ -121,7 +123,10 @@ Deno.serve(createAuthenticatedHandler(
       }).select("id").single();
 
       if (ins.error) {
-        log("error", "insert_history_error", { error: ins.error, conversation_id });
+        logger.error('insert_history_error', new Error(ins.error.message), { 
+          error: ins.error, 
+          conversation_id 
+        });
         continue;
       }
 

@@ -10,6 +10,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +19,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   const startTime = Date.now();
+  const logger = createLogger('telemedicina-agent', req);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +29,7 @@ serve(async (req) => {
     const { messages } = await req.json();
     
     const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    console.log(`🏥 [${correlationId}] telemedicina-agent: Processing request`);
+    logger.info('Processing request', { correlationId });
 
     const systemPrompt = `Você é um assistente especializado em telemedicina da SUPERNET FIBRA.
 
@@ -52,7 +54,7 @@ Se o cliente demonstrar interesse, oriente-o a contratar pelo WhatsApp: 11 99999
 
 Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
 
-    console.log(`🤖 [${correlationId}] Chamando Lovable AI (telemedicina-agent) - streaming`);
+    logger.debug('Chamando Lovable AI - streaming', { correlationId });
     
     // For streaming, we need to use fetch directly but with error handling
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -82,7 +84,10 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [${correlationId}] Lovable AI error:`, response.status, errorText);
+      logger.error('Lovable AI error', new Error(errorText), { 
+        correlationId, 
+        status: response.status 
+      });
       
       if (response.status === 429) {
         return new Response(
@@ -112,7 +117,7 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
       );
     }
 
-    console.log(`✅ [${correlationId}] Streaming iniciado`);
+    logger.info('Streaming iniciado', { correlationId });
     
     // Registrar métrica de sucesso (streaming iniciado)
     recordMetric({
@@ -126,7 +131,9 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
       headers: { ...corsHeaders, "Content-Type": "text/event-stream", "X-Correlation-ID": correlationId },
     });
   } catch (error) {
-    console.error("Chat error:", error);
+    logger.error('Chat error', 
+      error instanceof Error ? error : new Error(String(error))
+    );
     
     // Registrar métrica de erro
     recordMetric({
