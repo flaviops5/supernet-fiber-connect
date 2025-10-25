@@ -369,10 +369,10 @@ export default function AtlasInsightsPage() {
                     <strong>Causa:</strong> {i.probable_cause}
                   </p>
                   <p>
-                    <strong>Eventos ativos:</strong> {i.kpis?.active_events || 0}
+                    <strong>Eventos ativos:</strong> {String((i.kpis as Record<string, unknown>)?.active_events || 0)}
                   </p>
                   <p>
-                    <strong>Erros/min:</strong> {i.kpis?.errors_per_min || 0}
+                    <strong>Erros/min:</strong> {String((i.kpis as Record<string, unknown>)?.errors_per_min || 0)}
                   </p>
                   {i.groups?.length > 0 && (
                     <p>

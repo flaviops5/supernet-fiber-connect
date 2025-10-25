@@ -132,33 +132,33 @@ export default function SystemMetrics() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Database */}
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${getStatusColor(health?.dependencies?.database?.status)}`} />
+                <div className={`w-3 h-3 rounded-full ${getStatusColor((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.database as Record<string, unknown>)?.status as string)}`} />
                 <div>
                   <p className="font-semibold">Database</p>
                   <p className="text-sm text-muted-foreground">
-                    {health?.dependencies?.database?.duration_ms}ms
+                    {String((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.database as Record<string, unknown>)?.duration_ms || 0)}ms
                   </p>
                 </div>
               </div>
 
               {/* IXC */}
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${getStatusColor(health?.dependencies?.ixc?.status)}`} />
+                <div className={`w-3 h-3 rounded-full ${getStatusColor((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.ixc as Record<string, unknown>)?.status as string)}`} />
                 <div>
                   <p className="font-semibold">IXC ERP</p>
                   <p className="text-sm text-muted-foreground">
-                    {health?.dependencies?.ixc?.duration_ms}ms
+                    {String((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.ixc as Record<string, unknown>)?.duration_ms || 0)}ms
                   </p>
                 </div>
               </div>
 
               {/* Circuit Breaker */}
               <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${getStatusColor(health?.dependencies?.circuit_breaker?.status)}`} />
+                <div className={`w-3 h-3 rounded-full ${getStatusColor((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.circuit_breaker as Record<string, unknown>)?.status as string)}`} />
                 <div>
                   <p className="font-semibold">Circuit Breaker</p>
                   <p className="text-sm text-muted-foreground">
-                    {health?.dependencies?.circuit_breaker?.state?.toUpperCase()}
+                    {String((((health as Record<string, unknown>)?.dependencies as Record<string, unknown>)?.circuit_breaker as Record<string, unknown>)?.state || 'UNKNOWN').toUpperCase()}
                   </p>
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default function SystemMetrics() {
               <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{metrics?.summary?.total_requests || 0}</div>
+              <div className="text-3xl font-bold">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.total_requests || 0)}</div>
               <p className="text-xs text-muted-foreground">Últimas 6 horas</p>
             </CardContent>
           </Card>
@@ -183,8 +183,8 @@ export default function SystemMetrics() {
               <CardTitle className="text-sm font-medium">Taxa de Sucesso</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-500">{metrics?.summary?.success_rate || '0%'}</div>
-              <p className="text-xs text-muted-foreground">{metrics?.summary?.successful_requests || 0} sucessos</p>
+              <div className="text-3xl font-bold text-green-500">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.success_rate || '0%')}</div>
+              <p className="text-xs text-muted-foreground">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.successful_requests || 0)} sucessos</p>
             </CardContent>
           </Card>
 
@@ -193,8 +193,8 @@ export default function SystemMetrics() {
               <CardTitle className="text-sm font-medium">Taxa de Erro</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-500">{metrics?.summary?.error_rate || '0%'}</div>
-              <p className="text-xs text-muted-foreground">{metrics?.summary?.failed_requests || 0} falhas</p>
+              <div className="text-3xl font-bold text-red-500">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.error_rate || '0%')}</div>
+              <p className="text-xs text-muted-foreground">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.failed_requests || 0)} falhas</p>
             </CardContent>
           </Card>
 
@@ -206,7 +206,7 @@ export default function SystemMetrics() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{metrics?.summary?.avg_duration_ms || 0}ms</div>
+              <div className="text-3xl font-bold">{String(((metrics as Record<string, unknown>)?.summary as Record<string, unknown>)?.avg_duration_ms || 0)}ms</div>
               <p className="text-xs text-muted-foreground">Tempo de resposta</p>
             </CardContent>
           </Card>
@@ -255,7 +255,7 @@ export default function SystemMetrics() {
         </Card>
 
         {/* Failed Actions (DLQ) */}
-        {metrics?.failed_actions?.pending > 0 && (
+        {Number(((metrics as Record<string, unknown>)?.failed_actions as Record<string, unknown>)?.count || 0) > 0 && (
           <Card className="border-yellow-500/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-yellow-600">
@@ -263,7 +263,7 @@ export default function SystemMetrics() {
                 Ações Pendentes (DLQ)
               </CardTitle>
               <CardDescription>
-                {metrics.failed_actions.pending} ação(ões) aguardando retry
+                {String(((metrics as Record<string, unknown>).failed_actions as Record<string, unknown>).count || 0)} ação(ões) aguardando retry
               </CardDescription>
             </CardHeader>
             <CardContent>

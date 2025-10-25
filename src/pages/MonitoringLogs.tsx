@@ -68,7 +68,10 @@ const MonitoringLogs = () => {
 
       if (error) throw error;
 
-      setLogs(data || []);
+      setLogs((data || []).map(log => ({
+        ...log,
+        context: log.context as Record<string, unknown>
+      })));
 
       // Extrair sources únicos
       const uniqueSources = [...new Set((data || []).map((log) => log.source))];

@@ -170,7 +170,7 @@ export default function FluxoAgente() {
                             {step.next_step_map?.[key] && (
                               <span className="ml-2 text-primary">
                                 → <a href={`#${step.next_step_map[key]}`} className="underline">
-                                  {step.next_step_map[key]}
+                                  {String(step.next_step_map[key])}
                                 </a>
                               </span>
                             )}
@@ -205,7 +205,7 @@ export default function FluxoAgente() {
                     <div className="mt-2 space-y-1">
                       {step.tool_calls.map((tool, idx) => (
                         <Badge key={idx} variant="outline" className="mr-2">
-                          {tool.tool_name || JSON.stringify(tool)}
+                          {String((tool as Record<string, unknown>).tool_name || JSON.stringify(tool))}
                         </Badge>
                       ))}
                     </div>

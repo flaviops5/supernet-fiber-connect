@@ -164,13 +164,13 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-primary">
-                    {clientCount.total_clientes || clientCount.detalhes?.total || 0}
+                    {String(clientCount.total_clientes || ((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.total || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Base completa de clientes
                   </p>
                   <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-                    Última atualização: {new Date().toLocaleString('pt-BR')} • {clientCount.paginas_consultadas} página(s) consultada(s)
+                    Última atualização: {new Date().toLocaleString('pt-BR')} • {String((clientCount as Record<string, unknown>).paginas_consultadas || 0)} página(s) consultada(s)
                   </p>
                 </CardContent>
               </Card>
@@ -182,11 +182,11 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-500">
-                    {clientCount.detalhes?.online || 0}
+                    {String(((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.online || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.online || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
+                    {Number(clientCount.total_clientes || ((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.total || 0) > 0 
+                      ? `${((Number(((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.online || 0) / Number(clientCount.total_clientes || ((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.total || 1)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>
@@ -200,11 +200,11 @@ export default function Monitoramento() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-500">
-                    {clientCount.detalhes?.offline || 0}
+                    {String(((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.offline || 0)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {(clientCount.total_clientes || clientCount.detalhes?.total || 0) > 0 
-                      ? `${(((clientCount.detalhes?.offline || 0) / (clientCount.total_clientes || clientCount.detalhes?.total)) * 100).toFixed(1)}% da base`
+                    {Number(clientCount.total_clientes || ((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.total || 0) > 0 
+                      ? `${((Number(((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.offline || 0) / Number(clientCount.total_clientes || ((clientCount as Record<string, unknown>).detalhes as Record<string, unknown>)?.total || 1)) * 100).toFixed(1)}% da base`
                       : '0% da base'
                     }
                   </p>

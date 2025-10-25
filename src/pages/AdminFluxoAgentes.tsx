@@ -128,10 +128,10 @@ export default function AdminFluxoAgentes() {
   });
 
   const updateStepMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<FlowStep> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const { error } = await supabase
         .from('agent_flow_steps')
-        .update(data)
+        .update(data as never)
         .eq('id', id);
       
       if (error) throw error;
@@ -323,15 +323,18 @@ export default function AdminFluxoAgentes() {
                   </h2>
                   
                   <div className="grid gap-4">
-                    {simulations.map((sim: { 
-                      id: string; 
-                      simulation_name: string; 
-                      total_steps: number; 
-                      estimated_duration_seconds: number; 
-                      quality_score: number; 
-                      conversation_transcript: Array<{ role: string; content: string }>;
-                      metadata?: Record<string, unknown>;
-                    }) => (
+                    {simulations.map((sim) => {
+                      const transcript = Array.isArray(sim.conversation_transcript) 
+                        ? sim.conversation_transcript 
+                        : [];
+                      const issues = Array.isArray(sim.issues_detected) 
+                        ? sim.issues_detected 
+                        : [];
+                      const suggestions = Array.isArray(sim.suggestions) 
+                        ? sim.suggestions 
+                        : [];
+                      
+                      return (
                       <Card key={sim.id} className="p-5">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
@@ -351,52 +354,55 @@ export default function AdminFluxoAgentes() {
                         <div className="space-y-2 mt-4">
                           <details className="group">
                             <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                              Ver Conversa Completa ({sim.conversation_transcript?.length || 0} mensagens)
+                              Ver Conversa Completa ({transcript.length || 0} mensagens)
                             </summary>
                             <div className="mt-3 space-y-2 pl-4 border-l-2 border-primary/20">
-                              {sim.conversation_transcript?.map((msg: any, idx: number) => (
+                              {transcript.map((msg, idx: number) => {
+                                const messageData = msg as Record<string, unknown>;
+                                return (
                                 <div key={idx} className={`p-3 rounded-lg ${
-                                  msg.role === 'user' 
+                                  messageData.role === 'user' 
                                     ? 'bg-muted ml-4' 
                                     : 'bg-primary/10 mr-4'
                                 }`}>
                                   <div className="text-xs font-medium text-muted-foreground mb-1">
-                                    {msg.role === 'user' ? '👤 Cliente' : '🤖 Luan'}
+                                    {messageData.role === 'user' ? '👤 Cliente' : '🤖 Luan'}
                                   </div>
-                                  <div className="text-sm">{msg.message}</div>
+                                  <div className="text-sm">{String(messageData.message || messageData.content || '')}</div>
                                 </div>
-                              ))}
+                              )})}
                             </div>
                           </details>
 
-                          {sim.issues_detected && sim.issues_detected.length > 0 && (
+                          {issues.length > 0 && (
                             <details className="group">
                               <summary className="cursor-pointer text-sm font-medium text-destructive hover:underline">
-                                ⚠️ Problemas Detectados ({sim.issues_detected.length})
+                                ⚠️ Problemas Detectados ({issues.length})
                               </summary>
                               <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
-                                {sim.issues_detected.map((issue: string, idx: number) => (
-                                  <li key={idx}>• {issue}</li>
+                                {issues.map((issue, idx: number) => (
+                                  <li key={idx}>• {String(issue)}</li>
                                 ))}
                               </ul>
                             </details>
                           )}
 
-                          {sim.suggestions && sim.suggestions.length > 0 && (
+                          {suggestions.length > 0 && (
                             <details className="group">
                               <summary className="cursor-pointer text-sm font-medium text-primary hover:underline">
-                                💡 Sugestões de Melhoria ({sim.suggestions.length})
+                                💡 Sugestões de Melhoria ({suggestions.length})
                               </summary>
                               <ul className="mt-2 pl-4 space-y-1 text-sm text-muted-foreground">
-                                {sim.suggestions.map((suggestion: string, idx: number) => (
-                                  <li key={idx}>• {suggestion}</li>
+                                {suggestions.map((suggestion, idx: number) => (
+                                  <li key={idx}>• {String(suggestion)}</li>
                                 ))}
                               </ul>
                             </details>
                           )}
                         </div>
                       </Card>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}

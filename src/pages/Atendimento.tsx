@@ -57,7 +57,7 @@ export default function Atendimento() {
         .upsert({
           user_id: user.id,
           status: 'online' as const,
-          department: agentDepartment as Database['public']['Enums']['department_type'],
+          department: agentDepartment as Database['public']['Enums']['agent_department'],
           last_activity: new Date().toISOString(),
           current_conversations: 0,
           max_conversations: 5

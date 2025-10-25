@@ -1,3 +1,4 @@
+import type { Database } from '@/integrations/supabase/types';
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -170,14 +171,12 @@ export default function PerfilAgente() {
 
       if (profileError) throw profileError;
 
-import type { Database } from '@/integrations/supabase/types';
-
       if (department) {
         const { error: deptError } = await supabase
           .from('agent_department_assignments')
           .upsert({
             user_id: saveUserId,
-            department: department as Database['public']['Enums']['department_type'],
+            department: department as Database['public']['Enums']['agent_department'],
             assigned_by: user.id
           }, {
             onConflict: 'user_id,department'
