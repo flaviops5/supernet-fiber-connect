@@ -5,13 +5,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
+interface MassOutageMetadata {
+  group_type?: string;
+  group_identifier?: string;
+  bairros?: string[];
+}
+
 interface MassOutageEvent {
   id: string;
   region_pattern: string;
   affected_count: number;
   detected_at: string;
   status: string;
-  metadata?: any;
+  metadata?: MassOutageMetadata;
 }
 
 export const MassOutageAlertCard = () => {

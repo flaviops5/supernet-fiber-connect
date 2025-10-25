@@ -27,7 +27,7 @@ interface FlowStep {
   title: string;
   status: 'pending' | 'running' | 'success' | 'error';
   message?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export default function WhatsAppFlowTest() {
@@ -269,9 +269,10 @@ export default function WhatsAppFlowTest() {
 
       toast.success("✅ Teste completo do fluxo concluído!");
 
-    } catch (error: any) {
-      console.error("Erro no teste:", error);
-      toast.error(`❌ Erro: ${error.message}`);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Erro desconhecido');
+      console.error("Erro no teste:", err);
+      toast.error(`❌ Erro: ${err.message}`);
       
       // Marcar último step como erro
       if (steps.length > 0) {

@@ -94,9 +94,10 @@ export const EmailTestSender = () => {
       if (error) throw error;
 
       toast.success('Email de teste enviado com sucesso!');
-    } catch (error: any) {
-      logger.error('Error sending email', error);
-      toast.error(error.message || 'Erro ao enviar email de teste');
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Erro ao enviar email');
+      logger.error('Error sending email', err);
+      toast.error(err.message || 'Erro ao enviar email de teste');
     } finally {
       setSending(false);
     }

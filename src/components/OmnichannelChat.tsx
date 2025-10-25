@@ -277,11 +277,12 @@ const OmnichannelChat: React.FC<OmnichannelChatProps> = ({ conversationId: initi
         setIsLoading(false);
         return;
 
-    } catch (error: any) {
-      logger.error('Error sending message', error);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Erro ao enviar mensagem');
+      logger.error('Error sending message', err);
       toast({
         title: 'Erro ao enviar mensagem',
-        description: error.message || 'Tente novamente',
+        description: err.message || 'Tente novamente',
         variant: 'destructive',
       });
       setMessages(prev => [...prev, {

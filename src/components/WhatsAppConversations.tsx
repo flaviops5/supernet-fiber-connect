@@ -33,7 +33,7 @@ interface Conversation {
   priority: number;
   created_at: string;
   last_message_at?: string;
-  metadata?: any;
+  metadata?: unknown;
 }
 
 export default function WhatsAppConversations() {

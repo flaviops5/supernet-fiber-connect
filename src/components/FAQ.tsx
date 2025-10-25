@@ -3,8 +3,9 @@ import { Phone, MessageCircle, Play, Wifi, Wrench, Router, Network, Signal, Zap,
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { LucideIcon } from 'lucide-react';
 
-const iconMap: { [key: string]: any } = {
+const iconMap: Record<string, LucideIcon> = {
   Network, Wrench, Router, Signal, Zap, Headphones, ShoppingCart, 
   MapPin, CreditCard, Shield, Wifi, Phone, MessageCircle, Play
 };
