@@ -20,6 +20,8 @@ import FlowSubjectManager from '@/components/FlowSubjectManager';
 import AIFlowGenerator from '@/components/AIFlowGenerator';
 import StepConfigDialog from '@/components/StepConfigDialog';
 
+import type { Database } from '@/integrations/supabase/types';
+
 interface FlowStep {
   id: string;
   agent_type: string;
@@ -27,10 +29,10 @@ interface FlowStep {
   step_order: number;
   question: string;
   instruction: string;
-  response_options: any;
-  response_variations: any;
-  tool_calls: any;
-  next_step_map: any;
+  response_options: Record<string, unknown> | null;
+  response_variations: Record<string, unknown> | null;
+  tool_calls: Array<Record<string, unknown>> | null;
+  next_step_map: Record<string, unknown> | null;
   awaits_response: boolean;
   is_active: boolean;
   media_id: string | null;
@@ -72,7 +74,7 @@ export default function AdminFluxoAgentes() {
       const { data, error } = await supabase
         .from('agent_flow_steps')
         .select('*')
-        .eq('agent_type', selectedAgent as any)
+        .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
         .eq('is_active', true)
         .order('step_order');
       
@@ -87,7 +89,7 @@ export default function AdminFluxoAgentes() {
       const { data, error } = await supabase
         .from('agent_flow_subjects')
         .select('*')
-        .eq('agent_type', selectedAgent as any)
+        .eq('agent_type', selectedAgent as Database['public']['Enums']['agent_type'])
         .eq('is_active', true)
         .order('display_order');
       
@@ -126,7 +128,7 @@ export default function AdminFluxoAgentes() {
   });
 
   const updateStepMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<FlowStep> }) => {
       const { error } = await supabase
         .from('agent_flow_steps')
         .update(data)
@@ -163,10 +165,11 @@ export default function AdminFluxoAgentes() {
       
       setShowSimulations(true);
       refetchSimulations();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       toast({ 
         title: 'Erro ao gerar simulações', 
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive' 
       });
     } finally {
@@ -254,7 +257,7 @@ export default function AdminFluxoAgentes() {
                     <SelectValue placeholder="Escolha um assunto para gerar conversas" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subjects?.map((subject: any) => (
+                    {subjects?.map((subject: { id: string; subject_key: string; icon: string; subject_name: string }) => (
                       <SelectItem key={subject.id} value={subject.subject_key}>
                         {subject.icon} {subject.subject_name}
                       </SelectItem>
@@ -320,7 +323,15 @@ export default function AdminFluxoAgentes() {
                   </h2>
                   
                   <div className="grid gap-4">
-                    {simulations.map((sim: any) => (
+                    {simulations.map((sim: { 
+                      id: string; 
+                      simulation_name: string; 
+                      total_steps: number; 
+                      estimated_duration_seconds: number; 
+                      quality_score: number; 
+                      conversation_transcript: Array<{ role: string; content: string }>;
+                      metadata?: Record<string, unknown>;
+                    }) => (
                       <Card key={sim.id} className="p-5">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
@@ -528,8 +539,8 @@ export default function AdminFluxoAgentes() {
                         <div>
                           <span className="font-medium text-sm">🔧 Step Tools:</span>
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {step.tool_calls.map((tool: any, idx: number) => {
-                              const toolName = typeof tool === 'string' ? tool : tool?.tool || tool?.name || JSON.stringify(tool);
+                            {step.tool_calls.map((tool: Record<string, unknown> | string, idx: number) => {
+                              const toolName = typeof tool === 'string' ? tool : (tool?.tool as string) || (tool?.name as string) || JSON.stringify(tool);
                               return (
                                 <Badge key={idx} variant="outline" className="font-mono text-xs">
                                   {toolName}

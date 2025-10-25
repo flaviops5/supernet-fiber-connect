@@ -170,12 +170,14 @@ export default function PerfilAgente() {
 
       if (profileError) throw profileError;
 
+import type { Database } from '@/integrations/supabase/types';
+
       if (department) {
         const { error: deptError } = await supabase
           .from('agent_department_assignments')
           .upsert({
             user_id: saveUserId,
-            department: department as any,
+            department: department as Database['public']['Enums']['department_type'],
             assigned_by: user.id
           }, {
             onConflict: 'user_id,department'

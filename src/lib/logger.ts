@@ -6,7 +6,7 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogMetadata {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Lista de chaves sensíveis que devem ser redacted

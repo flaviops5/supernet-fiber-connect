@@ -28,7 +28,7 @@ export const useRateLimit = () => {
 
       if (error) throw error;
 
-      const result = data as any;
+      const result = data as { allowed: boolean; blocked_until?: string; remaining_attempts?: number };
       return {
         allowed: result.allowed,
         blockedUntil: result.blocked_until ? new Date(result.blocked_until) : undefined,

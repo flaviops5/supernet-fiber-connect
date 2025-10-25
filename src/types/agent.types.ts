@@ -45,7 +45,7 @@ export interface RoutingPayload {
     };
   };
   ixc?: {
-    cliente_full?: any;
+    cliente_full?: Record<string, unknown>;
     radusuario?: {
       status: 'online' | 'offline';
       last_online_minutes?: number;
@@ -53,7 +53,7 @@ export interface RoutingPayload {
       ont_serial?: string;
       config_mismatch?: boolean;
     };
-    contracts?: any[];
+    contracts?: Array<Record<string, unknown>>;
   };
   supabase?: {
     mass_outage_checked: boolean;
@@ -67,8 +67,8 @@ export interface RoutingPayload {
 
 export interface AgentToolCall {
   tool_name: string;
-  parameters: Record<string, any>;
-  result?: any;
+  parameters: Record<string, unknown>;
+  result?: unknown;
   error?: string;
 }
 
@@ -76,7 +76,7 @@ export interface AgentResponse {
   success: boolean;
   message: string;
   agent: AgentRole;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   tool_calls?: AgentToolCall[];
 }
 

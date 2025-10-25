@@ -17,18 +17,18 @@ export interface ClienteDiagnostico {
   };
   status_online?: {
     is_online: boolean;
-    registros: any[];
+    registros: Array<Record<string, unknown>>;
   };
   contratos?: {
     total: number;
-    contratos: any[];
+    contratos: Array<Record<string, unknown>>;
   };
   titulos?: {
     total: number;
     em_aberto: number;
     vencidos: number;
     valor_total_atraso: number;
-    titulos_vencidos: any[];
+    titulos_vencidos: Array<Record<string, unknown>>;
   };
   resumo: {
     clienteEncontrado: boolean;

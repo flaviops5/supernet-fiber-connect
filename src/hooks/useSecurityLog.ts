@@ -22,12 +22,12 @@ export const useSecurityLog = () => {
   const logSecurityEvent = useCallback(async (
     eventType: SecurityEventType,
     description: string,
-    details: Record<string, any> = {},
+    details: Record<string, unknown> = {},
     severity: SeverityLevel = 'info'
   ) => {
     try {
       // Capturar informações do contexto atual
-      let contextDetails: Record<string, any> = {
+      let contextDetails: Record<string, unknown> = {
         ...details,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
@@ -58,7 +58,7 @@ export const useSecurityLog = () => {
       const { error } = await supabase.rpc('log_security_event', {
         event_type: eventType,
         event_description: description,
-        details_param: contextDetails,
+        details_param: contextDetails as never,
         severity_param: severity
       });
 
@@ -74,7 +74,7 @@ export const useSecurityLog = () => {
   const logSuspiciousActivity = useCallback(async (
     activity: string,
     riskLevel: 'low' | 'medium' | 'high' = 'medium',
-    additionalDetails: Record<string, any> = {}
+    additionalDetails: Record<string, unknown> = {}
   ) => {
     const severity: SeverityLevel = riskLevel === 'high' ? 'critical' : 
                                    riskLevel === 'medium' ? 'error' : 'warning';
@@ -129,7 +129,7 @@ export const useSecurityLog = () => {
     fileName: string,
     fileSize: number,
     fileType: string,
-    validationResult: any
+    validationResult: { isValid: boolean; errors?: string[]; warnings?: string[] }
   ) => {
     await logSecurityEvent(
       'file_upload',

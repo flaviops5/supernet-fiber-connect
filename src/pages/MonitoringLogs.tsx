@@ -15,7 +15,7 @@ interface MonitoringLog {
   source: string;
   level: string;
   message: string;
-  context: any; // Supabase Json type
+  context: Record<string, unknown> | null;
   duration_ms: number | null;
   created_at: string;
   created_by: string | null;

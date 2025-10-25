@@ -6,6 +6,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
+import type { Database } from '@/integrations/supabase/types';
+
 interface FlowStep {
   id: string;
   agent_type: string;
@@ -13,10 +15,10 @@ interface FlowStep {
   step_order: number;
   question: string;
   instruction: string;
-  response_options: any;
-  response_variations: any;
-  tool_calls: any[];
-  next_step_map: any;
+  response_options: Record<string, unknown> | null;
+  response_variations: Record<string, unknown> | null;
+  tool_calls: Array<Record<string, unknown>>;
+  next_step_map: Record<string, unknown> | null;
   awaits_response: boolean;
   media_id: string | null;
   media?: {
@@ -50,7 +52,7 @@ export default function FluxoAgente() {
           *,
           media:media_repository(file_url, file_type, title)
         `)
-        .eq('agent_type', agentType as any)
+        .eq('agent_type', agentType as Database['public']['Enums']['agent_type'])
         .eq('is_active', true)
         .order('step_order');
       

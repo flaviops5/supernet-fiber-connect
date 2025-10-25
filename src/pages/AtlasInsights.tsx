@@ -37,18 +37,18 @@ interface Insight {
   id: string;
   severity: "LOW" | "MEDIUM" | "HIGH";
   probable_cause: string;
-  kpis: any;
+  kpis: Record<string, unknown> | null;
   groups: string[];
   recommendation: string;
   created_at: string;
-  notifications: any[];
+  notifications: Array<Record<string, unknown>>;
 }
 
 export default function AtlasInsightsPage() {
   const { role } = useUserRole();
   const { toast } = useToast();
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Array<{ time: string; errors_per_min: number; active_events: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [severity, setSeverity] = useState("all");
@@ -104,7 +104,7 @@ export default function AtlasInsightsPage() {
       return;
     }
 
-    const formatted = data.map((row: any) => ({
+    const formatted = data.map((row: { created_at: string; kpis: { errors_per_min?: number; active_events?: number } }) => ({
       time: new Date(row.created_at).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
@@ -143,10 +143,11 @@ export default function AtlasInsightsPage() {
 
       fetchInsights();
       fetchChartData();
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       toast({
         title: "Erro ao executar análise",
-        description: err.message || String(err),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -24,7 +24,7 @@ export interface ConversationMessage {
     agent_name?: string;
     tool_used?: string;
     attachments?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -42,7 +42,7 @@ export interface Conversation {
   created_at: string;
   last_message_at?: string;
   resolved_at?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AttachmentFile {

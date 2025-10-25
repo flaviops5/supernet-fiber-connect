@@ -21,7 +21,13 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Monitoramento() {
   const [loading, setLoading] = useState(false);
-  const [clientCount, setClientCount] = useState<any>(null);
+  const [clientCount, setClientCount] = useState<{
+    success: boolean;
+    total_clientes?: number;
+    ativos?: number;
+    inativos?: number;
+    bloqueados?: number;
+  } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -41,11 +47,12 @@ export default function Monitoramento() {
       } else {
         throw new Error(data?.error || 'Erro ao contar clientes');
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('Erro ao contar clientes:', error);
       toast({
         title: "Erro ao contar clientes",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -81,11 +88,12 @@ export default function Monitoramento() {
           description: `${ponData}/${totalOffline} clientes offline com dados PON. ${groups.by_pon_port || 0} porta(s) PON identificada(s).`,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('Erro ao testar acesso PON:', error);
       toast({
         title: "Erro no teste",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

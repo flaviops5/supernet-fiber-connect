@@ -7,7 +7,7 @@ interface ActivityLog {
   activity_description: string;
   ip_address?: unknown;
   user_agent?: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   user_id: string;
 }
@@ -19,13 +19,13 @@ export const useActivityLog = () => {
   const logActivity = async (
     activityType: string,
     description: string,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, unknown> = {}
   ) => {
     try {
       await supabase.rpc('log_user_activity', {
         activity_type: activityType,
         activity_description: description,
-        metadata_param: metadata
+        metadata_param: metadata as never
       });
     } catch (error) {
       console.error('Error logging activity:', error);
@@ -42,7 +42,7 @@ export const useActivityLog = () => {
         .limit(limit);
 
       if (error) throw error;
-      setActivities(data || []);
+      setActivities((data || []) as ActivityLog[]);
     } catch (error) {
       console.error('Error loading activities:', error);
       setActivities([]);

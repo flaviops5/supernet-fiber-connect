@@ -7,9 +7,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { SystemRobustnessScore } from '@/components/SystemRobustnessScore';
 import { TechnicalTasksCard } from '@/components/TechnicalTasksCard';
 
+interface HealthData {
+  status: string;
+  timestamp: string;
+  services?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+interface MetricsData {
+  by_agent?: Record<string, {
+    success_count: number;
+    error_count: number;
+    avg_response_time_ms: number;
+  }>;
+  failed_actions?: {
+    count: number;
+    items: Array<{
+      id: string;
+      action_type: string;
+      error_message: string;
+      retry_count: number;
+    }>;
+  };
+  [key: string]: unknown;
+}
+
 export default function SystemMetrics() {
-  const [health, setHealth] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [health, setHealth] = useState<HealthData | null>(null);
+  const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

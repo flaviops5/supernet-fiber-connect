@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import ConversationQueue from '@/components/atendimento/ConversationQueue';
@@ -56,7 +57,7 @@ export default function Atendimento() {
         .upsert({
           user_id: user.id,
           status: 'online' as const,
-          department: agentDepartment as any,
+          department: agentDepartment as Database['public']['Enums']['department_type'],
           last_activity: new Date().toISOString(),
           current_conversations: 0,
           max_conversations: 5
