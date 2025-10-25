@@ -20,7 +20,51 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "@typescript-eslint/no-unused-vars": "off",
+      
+      // Sprint 4 - Code Quality Rules
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_"
+      }],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "@typescript-eslint/consistent-type-imports": ["warn", {
+        prefer: "type-imports"
+      }],
+      
+      // General Code Quality
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "prefer-const": "warn",
+      "no-var": "error",
+      "eqeqeq": ["error", "always"],
+      "no-throw-literal": "error",
+      
+      // Naming Conventions (Sprint 3)
+      "@typescript-eslint/naming-convention": [
+        "warn",
+        {
+          selector: "variable",
+          format: ["camelCase", "UPPER_CASE"],
+          leadingUnderscore: "allow"
+        },
+        {
+          selector: "function",
+          format: ["camelCase"]
+        },
+        {
+          selector: "typeLike",
+          format: ["PascalCase"]
+        },
+        {
+          selector: "interface",
+          format: ["PascalCase"],
+          custom: {
+            regex: "^I[A-Z]",
+            match: false
+          }
+        }
+      ]
     },
   },
 );

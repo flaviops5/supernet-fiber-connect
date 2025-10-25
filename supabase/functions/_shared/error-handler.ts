@@ -2,12 +2,14 @@
  * Standardized Error Handler for Edge Functions
  * Centraliza tratamento de erros com logging estruturado
  * 
- * @deprecated Prefer using error-types.ts for new code
+ * @deprecated Prefer using logger.ts and error-types.ts for new code
+ * This file is kept for backward compatibility only
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { EdgeFunctionError as EdgeFunctionErrorType } from './error-types.ts';
 import { getErrorMessage } from './error-types.ts';
+import { createLogger } from './logger.ts';
 
 // Re-export for backward compatibility
 export type EdgeFunctionError = EdgeFunctionErrorType;
@@ -36,15 +38,17 @@ export const corsHeaders = {
 
 /**
  * Trata erros de forma padronizada e retorna Response
+ * @deprecated Use logger.error() instead
  */
 export function handleEdgeFunctionError(
   error: unknown,
   functionName: string,
   logToSupabase = true
 ): Response {
-  console.error(`❌ [${functionName}] Error:`, error);
+  const logger = createLogger(functionName);
+  logger.error('Function error', { error: getErrorMessage(error) });
 
-  let errorResponse: EdgeFunctionError;
+  let errorResponse: { code: string; message: string; details?: unknown; statusCode: number };
 
   if (error instanceof StandardError) {
     errorResponse = {
