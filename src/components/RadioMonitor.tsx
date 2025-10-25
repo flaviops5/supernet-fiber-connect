@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Radio, TowerControl, Wifi } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
+import { parseError } from "@/types/error.types";
 
 interface RadioEquipment {
   serial: string;
@@ -55,11 +56,12 @@ export function RadioMonitor() {
       } else {
         throw new Error(data?.error || 'Erro ao buscar dados');
       }
-    } catch (error: any) {
-      console.error('Erro ao carregar torres:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao carregar torres:', err);
       toast({
         title: "Erro ao carregar dados",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
       setTowers([]);
@@ -89,11 +91,12 @@ export function RadioMonitor() {
           description: data.message
         });
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = parseError(error);
       sonnerToast.dismiss(loadingToast);
-      console.error('Erro ao testar conectividade:', error);
+      console.error('Erro ao testar conectividade:', err);
       sonnerToast.error('Erro ao testar conectividade', {
-        description: error.message
+        description: err.message
       });
     }
   };

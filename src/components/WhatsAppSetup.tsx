@@ -22,6 +22,7 @@ import { logger } from "@/lib/logger";
 import WhatsAppTester from "./WhatsAppTester";
 import WhatsAppFlowTest from "./WhatsAppFlowTest";
 import { SendPaymentTest } from "./SendPaymentTest";
+import { parseError } from "@/types/error.types";
 
 interface InstanceStatus {
   instanceName: string;
@@ -49,18 +50,23 @@ export default function WhatsAppSetup() {
       const { data, error } = await supabase.functions.invoke('test-evolution-api', {
         body: { instanceName }
       });
+      
+      const dataObj = data as Record<string, unknown>;
+      const dataData = dataObj?.data as Record<string, unknown> | undefined;
+      
       const mapped: InstanceStatus = {
         instanceName,
-        status: String((data as any)?.status ?? (data as any)?.data?.status ?? 'UNKNOWN'),
-        phoneNumber: (data as any)?.config?.phoneNumber,
-        qrCode: (data as any)?.data?.qrCode,
+        status: String(dataObj?.status ?? dataData?.status ?? 'UNKNOWN'),
+        phoneNumber: String(dataObj?.config && typeof dataObj.config === 'object' && 'phoneNumber' in dataObj.config ? (dataObj.config as Record<string, unknown>).phoneNumber : ''),
+        qrCode: String(dataData?.qrCode ?? ''),
       };
 
       setInstanceStatus(mapped);
       toast.success("Status da instância verificado!");
-    } catch (error: any) {
-      console.error("Erro ao verificar status:", error);
-      toast.error(`Erro: ${error.message}`);
+    } catch (error) {
+      const err = parseError(error);
+      console.error("Erro ao verificar status:", err);
+      toast.error(`Erro: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -102,11 +108,12 @@ export default function WhatsAppSetup() {
         console.warn('⚠️ Resposta inesperada:', data);
         throw new Error(data?.error || JSON.stringify(data));
       }
-    } catch (error: any) {
-      console.error("❌ Erro no teste de integração:", error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error("❌ Erro no teste de integração:", err);
       setWebhookConfigured(false);
       
-      let errorMessage = error.message || 'Erro desconhecido';
+      let errorMessage = err.message || 'Erro desconhecido';
       
       // Mensagens de erro mais específicas
       if (errorMessage.includes('JSON')) {

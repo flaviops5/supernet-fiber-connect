@@ -5,10 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, TestTube, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { parseError } from '@/types/error.types';
+import type { JsonObject } from '@/types/common.types';
 
 export function WhatsAppApiTester() {
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<JsonObject | null>(null);
 
   const testApi = async () => {
     setTesting(true);
@@ -28,10 +30,11 @@ export function WhatsAppApiTester() {
       } else {
         toast.error('❌ Erro na API Evolution');
       }
-    } catch (error: any) {
-      console.error('Erro ao testar API:', error);
-      toast.error(`Erro: ${error.message}`);
-      setResult({ success: false, error: error.message });
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao testar API:', err);
+      toast.error(`Erro: ${err.message}`);
+      setResult({ success: false, error: err.message });
     } finally {
       setTesting(false);
     }

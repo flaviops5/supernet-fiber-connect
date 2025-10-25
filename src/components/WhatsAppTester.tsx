@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
+import { parseError } from "@/types/error.types";
+import type { JsonObject } from "@/types/common.types";
 
 export default function WhatsAppTester() {
   const [phone, setPhone] = useState("5561999999999");
   const [message, setMessage] = useState("Olá! Mensagem de teste enviada via Lovable 🚀");
   const [instance, setInstance] = useState("SDR2");
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<JsonObject | null>(null);
 
   const sendTestMessage = async () => {
     if (!phone || !message) {
@@ -37,10 +39,11 @@ export default function WhatsAppTester() {
 
       setResponse(data);
       toast.success("Mensagem enviada com sucesso!");
-    } catch (error: any) {
-      console.error("Erro ao enviar mensagem:", error);
-      toast.error(`Erro: ${error.message}`);
-      setResponse({ error: error.message });
+    } catch (error) {
+      const err = parseError(error);
+      console.error("Erro ao enviar mensagem:", err);
+      toast.error(`Erro: ${err.message}`);
+      setResponse({ error: err.message });
     } finally {
       setLoading(false);
     }
@@ -59,10 +62,11 @@ export default function WhatsAppTester() {
 
       setResponse(data);
       toast.success("Teste concluído! Verifique os resultados abaixo.");
-    } catch (error: any) {
-      console.error("Erro no teste:", error);
-      toast.error(`Erro: ${error.message}`);
-      setResponse({ error: error.message });
+    } catch (error) {
+      const err = parseError(error);
+      console.error("Erro no teste:", err);
+      toast.error(`Erro: ${err.message}`);
+      setResponse({ error: err.message });
     } finally {
       setLoading(false);
     }

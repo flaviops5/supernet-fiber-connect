@@ -5,11 +5,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, PlayCircle } from 'lucide-react';
 import ContractSigning from './ContractSigning';
+import { parseError } from '@/types/error.types';
+
+interface ContractFlowData {
+  appointmentId: string;
+  customerData: {
+    name: string;
+    cpf: string;
+    email: string;
+    phone: string;
+    birthDate: string;
+    address: string;
+    cep: string;
+  };
+  planData: {
+    id: string;
+    name: string;
+    speed: string;
+    price: number;
+  };
+  paymentDay: number;
+  installationDate: string;
+  installationPeriod: string;
+}
 
 export const TestContractFlow = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
-  const [contractData, setContractData] = useState<any>(null);
+  const [contractData, setContractData] = useState<ContractFlowData | null>(null);
 
   const simulateConversation = async () => {
     setIsSimulating(true);
@@ -90,9 +113,10 @@ export const TestContractFlow = () => {
       toast.success('Abrindo modal de contrato...');
       setShowContractModal(true);
 
-    } catch (error: any) {
-      console.error('Erro na simulação:', error);
-      toast.error('Erro na simulação: ' + (error.message || 'Erro desconhecido'));
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro na simulação:', err);
+      toast.error('Erro na simulação: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setIsSimulating(false);
     }

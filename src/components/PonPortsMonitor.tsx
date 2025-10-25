@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { parseError } from '@/types/error.types';
 
 interface PonPort {
   port: string;
@@ -49,11 +50,12 @@ export function PonPortsMonitor() {
       } else {
         throw new Error(data?.error || 'Erro ao carregar portas PON');
       }
-    } catch (error: any) {
-      console.error('Erro ao carregar portas:', error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Erro ao carregar portas:', err);
       toast({
         title: "Erro ao carregar portas PON",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
