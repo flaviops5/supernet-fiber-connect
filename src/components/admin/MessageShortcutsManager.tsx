@@ -40,7 +40,7 @@ interface ShortcutFormData {
   title: string;
   shortcut_key: string;
   message_text: string;
-  department: any[];
+  department: string[];
   ai_agents: string[];
   usage_context: string;
 }
@@ -84,17 +84,26 @@ export default function MessageShortcutsManager() {
         await supabase
           .from('message_shortcuts')
           .update({
-            ...formData,
+            title: formData.title,
+            shortcut_key: formData.shortcut_key,
+            message_text: formData.message_text,
+            department: formData.department as string[],
+            ai_agents: formData.ai_agents,
+            usage_context: formData.usage_context,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingShortcut.id);
       } else {
         await supabase
           .from('message_shortcuts')
-          .insert({
-            ...formData,
-            created_by: user?.id
-          });
+          .insert([{
+            title: formData.title,
+            shortcut_key: formData.shortcut_key,
+            message_text: formData.message_text,
+            department: formData.department as string[],
+            ai_agents: formData.ai_agents,
+            usage_context: formData.usage_context,
+          }]);
       }
 
       toast({

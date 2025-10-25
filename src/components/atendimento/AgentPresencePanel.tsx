@@ -86,11 +86,11 @@ export default function AgentPresencePanel({ currentDepartment, onDepartmentChan
           return {
             ...agent,
             profiles: profile
-          };
+          } as AgentPresence;
         })
       );
       
-      setAgents(agentsWithProfiles as any);
+      setAgents(agentsWithProfiles);
     }
   };
 

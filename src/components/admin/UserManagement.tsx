@@ -7,12 +7,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
+interface UserProfile {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar_url?: string;
+  user_roles: Array<{ role: string }>;
+}
+
+interface AgentAssignment {
+  id: string;
+  user_id: string;
+  department: string;
+  is_universal: boolean;
+}
+
+interface AgentPresenceInfo {
+  user_id: string;
+  status: string;
+  current_conversations: number;
+  max_conversations: number;
+  department: string;
+}
+
 export default function UserManagement() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [presence, setPresence] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<AgentAssignment[]>([]);
+  const [presence, setPresence] = useState<AgentPresenceInfo[]>([]);
 
   useEffect(() => {
     loadUsers();

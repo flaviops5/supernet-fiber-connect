@@ -146,11 +146,22 @@ const VALIDATION_CHECKLIST = [
   { id: 23, item: "✅ Luan pergunta qual contrato está com problema", category: "Luan - Outros" }
 ];
 
+interface IXCClient {
+  id: string;
+  razao: string;
+  cnpj_cpf: string;
+  email?: string;
+  fone1?: string;
+  cidade?: string;
+  bloqueado?: 'S' | 'N';
+  situacao?: string;
+}
+
 export const TestOmnichannelComplete = () => {
   const [checkedItems, setCheckedItems] = useState<number[]>([]);
   const [searchCPF, setSearchCPF] = useState("");
   const [searchingIXC, setSearchingIXC] = useState(false);
-  const [ixcClients, setIxcClients] = useState<any[]>([]);
+  const [ixcClients, setIxcClients] = useState<IXCClient[]>([]);
 
   const toggleCheck = (id: number) => {
     setCheckedItems(prev => 
@@ -193,8 +204,9 @@ export const TestOmnichannelComplete = () => {
         setIxcClients([]);
         toast.info("Nenhum cliente encontrado com este CPF");
       }
-    } catch (error: any) {
-      toast.error("Erro ao buscar cliente: " + error.message);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      toast.error("Erro ao buscar cliente: " + err.message);
       setIxcClients([]);
     } finally {
       setSearchingIXC(false);
@@ -330,7 +342,7 @@ export const TestOmnichannelComplete = () => {
                   <h4 className="font-semibold text-sm">
                     {ixcClients.length} cliente(s) encontrado(s):
                   </h4>
-                  {ixcClients.map((client: any) => (
+                  {ixcClients.map((client) => (
                     <Card key={client.id} className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 space-y-2">

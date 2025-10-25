@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { parseError } from "@/types/error.types";
 import { 
   Wrench, 
   AlertTriangle, 
@@ -16,21 +17,45 @@ import {
 } from "lucide-react";
 import RebootLoader from "@/components/atendimento/RebootLoader";
 
+interface ConversationMessage {
+  id: string;
+  conversation_id: string;
+  sender_type: string;
+  sender_name?: string;
+  content?: string;
+  created_at: string;
+}
+
+interface MassOutageData {
+  region_pattern: string;
+  affected_count: number;
+  status: string;
+}
+
+interface TestResults {
+  success: boolean;
+  conversation_id?: string;
+  messages?: ConversationMessage[];
+  outage_detected?: boolean;
+  outage_data?: MassOutageData | null;
+  error?: string;
+}
+
 export const TestSupportTechAgent = () => {
   const [loading, setLoading] = useState(false);
   const [outageActive, setOutageActive] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
+  const [testResults, setTestResults] = useState<TestResults | null>(null);
   const { toast } = useToast();
 
   // Simples: detectar se última mensagem do Luan tem "reinici" e próxima não tem conclusão
   const messages = testResults?.messages || [];
-  const lastLuanMsg = [...messages].reverse().find((m: any) => 
+  const lastLuanMsg = [...messages].reverse().find((m) => 
     m.sender_type === 'agent' && /Luan/i.test(m.sender_name || '')
   );
   const isRebootMsg = lastLuanMsg && /(reinici|reinício remoto|reboot)/i.test(lastLuanMsg.content || '');
-  const hasCompletion = messages.some((m: any, idx: number) => {
+  const hasCompletion = messages.some((m, idx) => {
     if (!lastLuanMsg) return false;
-    const luanIdx = messages.findIndex((msg: any) => msg.id === lastLuanMsg.id);
+    const luanIdx = messages.findIndex((msg) => msg.id === lastLuanMsg.id);
     return idx > luanIdx && 
            m.sender_type === 'agent' && 
            /(ONLINE|offline|Reboot|religado|falhou|verifique)/i.test(m.content || '');
@@ -53,9 +78,9 @@ export const TestSupportTechAgent = () => {
           table: 'conversation_messages',
           filter: `conversation_id=eq.${testResults.conversation_id}`,
         },
-        (payload: any) => {
-          setTestResults((prev: any) => 
-            prev ? { ...prev, messages: [...prev.messages, payload.new] } : prev
+        (payload) => {
+          setTestResults((prev) => 
+            prev ? { ...prev, messages: [...(prev.messages || []), payload.new as ConversationMessage] } : prev
           );
         }
       )
@@ -80,10 +105,11 @@ export const TestSupportTechAgent = () => {
         title: "✅ Mass Outage Ativado",
         description: "Simulação: Taguatinga e Samambaia - 1542 clientes afetados",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = parseError(error);
       toast({
         title: "❌ Erro ao ativar outage",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -105,10 +131,11 @@ export const TestSupportTechAgent = () => {
         title: "✅ Mass Outage Limpo",
         description: "Todos os eventos foram marcados como resolvidos",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = parseError(error);
       toast({
         title: "❌ Erro ao limpar outage",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -131,7 +158,7 @@ export const TestSupportTechAgent = () => {
 
       if (selError) throw selError;
 
-      let conversation: any;
+      let conversation: { id: string; status: string; current_department: string };
 
       if (existing) {
         await supabase
@@ -191,13 +218,14 @@ export const TestSupportTechAgent = () => {
         title: "✅ Teste Concluído",
         description: `Conversa ${conversation.id} criada e Luan acionado`,
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = parseError(error);
       toast({
         title: "❌ Erro no Teste",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
-      setTestResults({ success: false, error: error.message });
+      setTestResults({ success: false, error: err.message });
     } finally {
       setLoading(false);
     }
@@ -335,7 +363,7 @@ export const TestSupportTechAgent = () => {
                     <CardContent>
                       {testResults.messages.length > 0 ? (
                         <div className="space-y-2">
-                          {testResults.messages.map((msg: any, idx: number) => (
+                          {testResults.messages.map((msg, idx) => (
                             <div key={idx} className="p-3 bg-muted rounded text-xs">
                               <div className="flex items-center gap-2 mb-1">
                                 <Badge variant="outline">{msg.sender_name || 'Sistema'}</Badge>

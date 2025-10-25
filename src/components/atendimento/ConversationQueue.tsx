@@ -80,7 +80,7 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
 
     // Filtrar por departamento do agente
     if (agentDepartment && agentDepartment !== 'todos') {
-      query = query.eq('department', agentDepartment as any);
+      query = query.eq('department', agentDepartment as string);
     }
 
     // Filtrar por status

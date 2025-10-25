@@ -6,10 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, AlertTriangle, Phone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { parseError } from "@/types/error.types";
+
+interface TestResult {
+  ok?: boolean;
+  needsCPF?: boolean;
+  protocol?: string;
+  targetDepartment?: string;
+  [key: string]: unknown;
+}
 
 export const TestCPFValidation = () => {
   const [input, setInput] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -56,11 +65,12 @@ export const TestCPFValidation = () => {
         title: "✅ Teste concluído",
         description: "Veja os resultados abaixo",
       });
-    } catch (error: any) {
-      console.error("Erro no teste:", error);
+    } catch (error) {
+      const err = parseError(error);
+      console.error("Erro no teste:", err);
       toast({
         title: "❌ Erro no teste",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {

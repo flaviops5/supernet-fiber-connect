@@ -27,7 +27,7 @@ export default function DepartmentMetrics() {
         const { data: conversations } = await supabase
           .from('conversations')
           .select('status, created_at, first_response_at')
-          .eq('department', dept as any);
+          .eq('department', dept as string);
 
         const waiting = conversations?.filter(c => c.status === 'waiting').length || 0;
         const active = conversations?.filter(c => c.status === 'active').length || 0;
@@ -50,7 +50,7 @@ export default function DepartmentMetrics() {
         const { data: agents } = await supabase
           .from('agent_presence')
           .select('user_id')
-          .eq('department', dept as any)
+          .eq('department', dept as string)
           .eq('status', 'online');
 
         allStats.push({

@@ -17,7 +17,7 @@ interface TestCase {
   status: TestStatus;
   duration?: number;
   error?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export default function TestSuiteRunner() {
@@ -225,11 +225,12 @@ export default function TestSuiteRunner() {
         status: 'passed',
         duration: Date.now() - startTime,
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       updateTestStatus(test.id, {
         status: 'failed',
         duration: Date.now() - startTime,
-        error: error.message,
+        error: err.message,
       });
     }
   };
@@ -316,7 +317,7 @@ export default function TestSuiteRunner() {
   };
 
   const getStatusBadge = (status: TestStatus) => {
-    const variants = {
+    const variants: Record<TestStatus, 'default' | 'destructive' | 'outline' | 'secondary'> = {
       pending: 'secondary',
       running: 'default',
       passed: 'default',
@@ -324,7 +325,7 @@ export default function TestSuiteRunner() {
       skipped: 'secondary',
     };
     return (
-      <Badge variant={variants[status] as any} className="ml-2">
+      <Badge variant={variants[status]} className="ml-2">
         {status}
       </Badge>
     );

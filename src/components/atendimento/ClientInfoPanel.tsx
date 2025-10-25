@@ -48,7 +48,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
   const [openingTicket, setOpeningTicket] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [paymentInfo, setPaymentInfo] = useState<Record<string, unknown> | null>(null);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);

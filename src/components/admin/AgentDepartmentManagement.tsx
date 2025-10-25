@@ -138,7 +138,7 @@ export default function AgentDepartmentManagement() {
         .from('agent_department_assignments')
         .insert([{
           user_id: selectedAgent,
-          department: selectedDept as any,
+          department: selectedDept as string,
           is_universal: isUniversal
         }]);
 
