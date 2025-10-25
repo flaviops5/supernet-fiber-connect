@@ -11,25 +11,7 @@
 
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
-
-interface RadiusUser {
-  id: string;
-  id_cliente: string;
-  login: string;
-  online: string; // 'S', 'SS', 'N'
-  framedipaddress?: string;
-  acctstarttime?: string;
-  acctinputoctets?: string; // bytes recebidos
-  acctoutputoctets?: string; // bytes enviados
-  acctsessiontime?: string; // tempo da sessão em segundos
-}
-
-interface ClientStatus {
-  id: string;
-  razao: string;
-  bloqueado: string; // 'S' ou 'N'
-  bloqueado_financeiro: string; // 'S' ou 'N'
-}
+import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
 
 Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { supabase }) => {
   console.log('🔄 Iniciando verificação de equipamentos travados...');

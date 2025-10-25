@@ -3,17 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 import { getErrorMessage } from '../_shared/error-types.ts';
+import type { RadiusUser } from '../_shared/types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-interface RadUser {
-  login: string;
-  online: string;
-  id_cliente?: string;
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

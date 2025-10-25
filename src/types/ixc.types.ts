@@ -65,13 +65,13 @@ export interface IXCProxyRequest {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   query?: string;
-  body?: any;
+  body?: unknown;
 }
 
 export interface IXCProxyResponse {
   ok: boolean;
   status: number;
-  data?: any;
+  data?: unknown;
   error?: string;
   duration_ms?: number;
 }

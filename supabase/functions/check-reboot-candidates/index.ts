@@ -1,28 +1,6 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
-
-interface RadiusUser {
-  id: string;
-  id_cliente: string;
-  login: string;
-  online: string;
-  framedipaddress?: string;
-  ip?: string;
-  upload_atual?: string;
-  download_atual?: string;
-  tempo_conexao?: string;
-  // Campos legados (alguns IXC ainda usam)
-  acctinputoctets?: string;
-  acctoutputoctets?: string;
-  acctsessiontime?: string;
-}
-
-interface ClientStatus {
-  id: string;
-  razao: string;
-  bloqueado: string;
-  bloqueado_financeiro: string;
-}
+import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
 
 // Helper para converter tempo de sessão (aceita segundos ou formato HH:MM:SS)
 function parseSessionSeconds(user: RadiusUser): number {

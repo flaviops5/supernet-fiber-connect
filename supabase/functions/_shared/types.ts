@@ -69,15 +69,61 @@ export interface IXCProxyResponse {
 // ERROR TYPES (re-exported from error-types.ts)
 // ============================================
 
-export interface IXCError {
-  type?: 'error';
-  message: string;
-  code?: string;
-  details?: unknown;
+export type { IXCError, EdgeFunctionError, APIError } from './error-types.ts';
+
+// ============================================
+// IXC ENTITY TYPES
+// ============================================
+
+export interface IXCCustomer {
+  id: string;
+  razao: string;
+  nome_fantasia?: string;
+  cnpj_cpf: string;
+  email?: string;
+  telefone_comercial?: string;
+  telefone_celular?: string;
+  fone_celular?: string;
+  whatsapp?: string;
+  endereco?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+  cep?: string;
+  bloqueado?: string;
+  bloqueado_financeiro?: string;
+  status?: string;
+  ativo?: string;
+  acesso_automatico_central?: string;
+  hotsite_acesso?: string;
+  status_prospeccao?: string;
+  ultima_atualizacao?: string;
+  participa_cobranca?: string;
+  cob_envia_email?: string;
+  tipo_assinante?: string;
+  [key: string]: unknown; // Para campos dinâmicos do IXC
 }
 
-export interface EdgeFunctionError extends Error {
-  code?: string;
-  statusCode?: number;
-  details?: unknown;
+export interface RadiusUser {
+  id: string;
+  id_cliente: string;
+  login: string;
+  online: string; // 'S', 'SS', 'N'
+  framedipaddress?: string;
+  ip?: string;
+  acctstarttime?: string;
+  acctinputoctets?: string;
+  acctoutputoctets?: string;
+  acctsessiontime?: string;
+  upload_atual?: string;
+  download_atual?: string;
+  tempo_conexao?: string;
+}
+
+export interface ClientStatus {
+  id: string;
+  razao: string;
+  bloqueado: string;
+  bloqueado_financeiro: string;
 }

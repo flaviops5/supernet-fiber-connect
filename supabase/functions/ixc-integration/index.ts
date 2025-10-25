@@ -1,50 +1,18 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parseJSONStrict, getErrorMessage } from '../_shared/error-types.ts';
-
-interface IXCError extends Error {
-  details?: Record<string, unknown>;
-}
+import type { IXCCustomer } from '../_shared/types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface IXCCustomer {
-  id: string;
-  razao: string;
-  nome_fantasia?: string;
-  cnpj_cpf: string;
-  email?: string;
-  telefone_comercial?: string;
-  telefone_celular?: string;
-  fone_celular?: string;
-  whatsapp?: string;
-  endereco?: string;
-  numero?: string;
-  bairro?: string;
-  cidade?: string;
-  uf?: string;
-  cep?: string;
-  status?: string;
-  // Campos adicionais para status de acesso
-  ativo?: string;
-  acesso_automatico_central?: string;
-  hotsite_acesso?: string;
-  status_prospeccao?: string;
-  ultima_atualizacao?: string;
-  participa_cobranca?: string;
-  cob_envia_email?: string;
-  tipo_assinante?: string;
-  [key: string]: any; // Para permitir campos dinâmicos
-}
-
-function normalizeRegistros(input: any): IXCCustomer[] {
+function normalizeRegistros(input: unknown): IXCCustomer[] {
   if (!input) return [];
   const arr = Array.isArray(input) ? input : (typeof input === 'object' ? Object.values(input) : []);
   // Normaliza chaves divergentes (ex.: fantasia -> nome_fantasia)
-  return arr.map((r: any) => ({
+  return arr.map((r: Record<string, unknown>) => ({
     id: String(r.id ?? ''),
     razao: String(r.razao ?? r.nome ?? ''),
     nome_fantasia: r.nome_fantasia ?? r.fantasia ?? undefined,

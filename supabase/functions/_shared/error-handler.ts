@@ -1,23 +1,23 @@
 /**
  * Standardized Error Handler for Edge Functions
  * Centraliza tratamento de erros com logging estruturado
+ * 
+ * @deprecated Prefer using error-types.ts for new code
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { EdgeFunctionError as EdgeFunctionErrorType } from './error-types.ts';
+import { getErrorMessage } from './error-types.ts';
 
-export interface EdgeFunctionError {
-  code: string;
-  message: string;
-  details?: any;
-  statusCode: number;
-}
+// Re-export for backward compatibility
+export type EdgeFunctionError = EdgeFunctionErrorType;
 
 export class StandardError extends Error {
   code: string;
   statusCode: number;
-  details?: any;
+  details?: unknown;
 
-  constructor(code: string, message: string, statusCode = 500, details?: any) {
+  constructor(code: string, message: string, statusCode = 500, details?: unknown) {
     super(message);
     this.code = code;
     this.statusCode = statusCode;
@@ -134,34 +134,34 @@ export async function withErrorHandler<T>(
 /**
  * Cria erro de validação (400)
  */
-export function ValidationError(message: string, details?: any): StandardError {
+export function ValidationError(message: string, details?: unknown): StandardError {
   return new StandardError('VALIDATION_ERROR', message, 400, details);
 }
 
 /**
  * Cria erro de autenticação (401)
  */
-export function AuthError(message: string, details?: any): StandardError {
+export function AuthError(message: string, details?: unknown): StandardError {
   return new StandardError('AUTH_ERROR', message, 401, details);
 }
 
 /**
  * Cria erro de autorização (403)
  */
-export function ForbiddenError(message: string, details?: any): StandardError {
+export function ForbiddenError(message: string, details?: unknown): StandardError {
   return new StandardError('FORBIDDEN_ERROR', message, 403, details);
 }
 
 /**
  * Cria erro de não encontrado (404)
  */
-export function NotFoundError(message: string, details?: any): StandardError {
+export function NotFoundError(message: string, details?: unknown): StandardError {
   return new StandardError('NOT_FOUND_ERROR', message, 404, details);
 }
 
 /**
  * Cria erro de rate limit (429)
  */
-export function RateLimitError(message: string, details?: any): StandardError {
+export function RateLimitError(message: string, details?: unknown): StandardError {
   return new StandardError('RATE_LIMIT_ERROR', message, 429, details);
 }
