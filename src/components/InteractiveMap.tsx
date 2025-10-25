@@ -63,8 +63,8 @@ const InteractiveMap = ({ selectedLocation }: InteractiveMapProps) => {
         .map((area) => {
           // Extrair planos únicos das relações
           const plansSet = new Set<string>();
-          area.cep_coverage?.forEach((cep: any) => {
-            cep.cep_plans?.forEach((cp: any) => {
+          area.cep_coverage?.forEach((cep: { cep_plans?: Array<{ plans?: { speed?: string } }> }) => {
+            cep.cep_plans?.forEach((cp: { plans?: { speed?: string } }) => {
               if (cp.plans?.speed) {
                 plansSet.add(cp.plans.speed);
               }

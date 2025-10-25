@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Copy } from 'lucide-react';
+import type { Json } from '@/integrations/supabase/types';
 
 interface Conversation {
   id: string;
@@ -30,7 +31,7 @@ interface Conversation {
   department: string;
   status: string;
   tags: string[];
-  metadata: any;
+  metadata: Json;
   assigned_agent_id: string | null;
   first_response_at: string | null;
   created_at: string;
@@ -361,10 +362,10 @@ export default function ClientInfoPanel({ conversationId }: Props) {
             <p className="text-sm font-medium">{conversation.customer_name || 'N/A'}</p>
           </div>
 
-          {conversation.metadata?.pppoe && (
+          {conversation.metadata && typeof conversation.metadata === 'object' && 'pppoe' in conversation.metadata && (
             <div className="flex items-baseline gap-2">
               <p className="text-xs text-muted-foreground">PPPoE:</p>
-              <p className="text-sm font-mono">{conversation.metadata.pppoe}</p>
+              <p className="text-sm font-mono">{String((conversation.metadata as Record<string, unknown>).pppoe)}</p>
             </div>
           )}
 
@@ -401,14 +402,14 @@ export default function ClientInfoPanel({ conversationId }: Props) {
                 variant="outline"
                 className="h-auto py-2 flex flex-col gap-1"
                 onClick={handleGenerateSummary}
-                disabled={generatingSummary || !!conversation?.metadata?.ai_summary}
+                disabled={generatingSummary || (conversation?.metadata && typeof conversation.metadata === 'object' && 'ai_summary' in conversation.metadata)}
               >
                 {generatingSummary ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--orange))]" />
                     <span className="text-xs">Gerando...</span>
                   </>
-                ) : conversation?.metadata?.ai_summary ? (
+                ) : (conversation?.metadata && typeof conversation.metadata === 'object' && 'ai_summary' in conversation.metadata) ? (
                   <>
                     <Sparkles className="h-4 w-4 text-purple-600" />
                     <span className="text-xs">Resumo Gerado</span>
@@ -471,7 +472,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
         </div>
 
         {/* Resumo IA se existir */}
-        {conversation?.metadata?.ai_summary && (
+        {conversation?.metadata && typeof conversation.metadata === 'object' && 'ai_summary' in conversation.metadata && (
           <>
             <Separator />
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -480,7 +481,7 @@ export default function ClientInfoPanel({ conversationId }: Props) {
                 <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">Resumo IA</h4>
               </div>
               <div className="text-sm text-foreground/90 whitespace-pre-wrap">
-                {conversation.metadata.ai_summary}
+                {String((conversation.metadata as Record<string, unknown>).ai_summary)}
               </div>
             </div>
           </>
@@ -531,13 +532,13 @@ export default function ClientInfoPanel({ conversationId }: Props) {
                     </div>
                   )}
 
-                  {hist.metadata?.ai_summary && (
+                  {hist.metadata && typeof hist.metadata === 'object' && 'ai_summary' in hist.metadata && (
                     <div className="mt-2 p-3 bg-muted rounded text-sm">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="h-3 w-3 text-purple-600" />
                         <span className="text-xs font-semibold">Resumo IA:</span>
                       </div>
-                      <p className="text-xs whitespace-pre-wrap">{hist.metadata.ai_summary}</p>
+                      <p className="text-xs whitespace-pre-wrap">{String((hist.metadata as Record<string, unknown>).ai_summary)}</p>
                     </div>
                   )}
                 </div>

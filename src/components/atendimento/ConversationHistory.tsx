@@ -19,7 +19,7 @@ interface Conversation {
   tags: string[];
   created_at: string;
   resolved_at: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
 }
 
 interface Props {
@@ -74,7 +74,7 @@ export default function ConversationHistory({ onSelectConversation }: Props) {
         variant: 'destructive'
       });
     } else {
-      setConversations(data || []);
+      setConversations(data as Conversation[] || []);
     }
     setLoading(false);
   };
@@ -178,7 +178,7 @@ export default function ConversationHistory({ onSelectConversation }: Props) {
                     )}
 
                     {/* AI Summary */}
-                    {conv.metadata?.ai_summary ? (
+                    {conv.metadata && typeof conv.metadata === 'object' && 'ai_summary' in conv.metadata ? (
                       <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
                         <div className="flex items-center gap-2 mb-2">
                           <Sparkles className="h-4 w-4 text-purple-600" />
@@ -190,7 +190,7 @@ export default function ConversationHistory({ onSelectConversation }: Props) {
                           className="text-xs text-foreground/80 whitespace-pre-wrap line-clamp-4"
                           onClick={() => onSelectConversation(conv.id)}
                         >
-                          {conv.metadata.ai_summary}
+                          {String((conv.metadata as Record<string, unknown>).ai_summary)}
                         </div>
                       </div>
                     ) : (

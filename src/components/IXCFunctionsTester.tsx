@@ -128,11 +128,11 @@ export function IXCFunctionsTester() {
             <div className="space-y-2">
               <h4 className="font-semibold text-sm">Resultados Detalhados:</h4>
               <div className="space-y-1">
-                {result.results.map((r: any, idx: number) => (
+                {result.results.map((r: { success: boolean; function: string; data?: unknown; duration_ms?: number; error?: string }, idx: number) => (
                   <div 
                     key={idx}
                     className={`flex items-center justify-between p-3 rounded border text-sm ${
-                      r.success 
+                      r.success
                         ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' 
                         : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
                     }`}
@@ -148,7 +148,7 @@ export function IXCFunctionsTester() {
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {r.duration}ms
+                        {r.duration_ms}ms
                       </span>
                       {!r.success && r.error && (
                         <span className="text-xs text-red-600 dark:text-red-400 max-w-xs truncate">

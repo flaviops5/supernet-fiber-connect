@@ -875,7 +875,7 @@ const DocumentManagement = () => {
 
                 <div>
                   <Label htmlFor="doc-access-level">Nível de Acesso</Label>
-                  <Select value={newDocument.access_level} onValueChange={(value: any) => setNewDocument(prev => ({ ...prev, access_level: value }))}>
+                  <Select value={newDocument.access_level} onValueChange={(value) => setNewDocument(prev => ({ ...prev, access_level: value as typeof newDocument.access_level }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -966,7 +966,7 @@ const DocumentManagement = () => {
               </div>
 
               {/* Sort options */}
-              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue />
                 </SelectTrigger>

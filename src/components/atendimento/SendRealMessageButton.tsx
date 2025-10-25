@@ -51,11 +51,12 @@ export function SendRealMessageButton() {
       setPhone('');
       setMessage('');
       setOpen(false);
-    } catch (error: any) {
-      console.error('Erro ao enviar:', error);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Não foi possível enviar a mensagem');
+      console.error('Erro ao enviar:', err);
       toast({
         title: 'Erro ao enviar',
-        description: error.message || 'Não foi possível enviar a mensagem',
+        description: err.message,
         variant: 'destructive'
       });
     } finally {

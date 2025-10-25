@@ -19,6 +19,8 @@ interface EscalationSettings {
   enabled: boolean;
 }
 
+import type { Json } from '@/integrations/supabase/types';
+
 type Department = 'administrativo' | 'cloe' | 'comercial' | 'financeiro' | 'logistica' | 'routing' | 'tecnico';
 
 interface EscalationRule {
@@ -27,7 +29,7 @@ interface EscalationRule {
   to_department: Department;
   priority: number;
   description: string;
-  conditions: any;
+  conditions: Json;
   enabled: boolean;
   auto_escalate_after_minutes?: number;
 }
