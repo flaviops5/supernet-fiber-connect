@@ -328,6 +328,22 @@ useEffect(() => {
 - ✅ FAQForm e PlanForm têm dependências corretas para reset de formulário
 - ✅ FlowSubjectManager sincroniza corretamente com props
 
+#### ✅ Lote 9 - Monitoramento, Chat e Contratos (8 arquivos - todos bem feitos)
+56. ✅ `PonPortsMonitor.tsx` - Padrão correto (mount only)
+57. ✅ `RadioMonitor.tsx` - Padrão correto (mount only)
+58. ✅ `SMTPSettings.tsx` - Padrão correto (mount only)
+59. ✅ `SalesAgentChat.tsx` - Padrão correto (dependências [messages] para scroll)
+60. ✅ `SendPaymentTest.tsx` - Sem useEffect (correto, apenas event handlers)
+61. ✅ `SignedContractsView.tsx` - Padrão correto (mount only)
+62. ✅ `TelemedicinaChatAgent.tsx` - Padrão correto (dependências [messages] para scroll)
+63. ✅ `Testimonials.tsx` - Padrão correto (dependências [testimonials.length] + cleanup timer)
+
+**Observações:**
+- ✅ Componentes de chat têm scroll automático correto com dependências [messages]
+- ✅ Testimonials tem cleanup adequado para setInterval
+- ✅ SendPaymentTest não precisa de useEffect (apenas manipuladores de eventos)
+- ✅ Todos os componentes de monitoramento seguem mount only
+
 ### Próximos Passos
 1. ✅ Arquivos críticos com múltiplos useEffect (5 arquivos) - CONCLUÍDO
 2. ✅ Componentes de chat e atendimento (9 arquivos) - CONCLUÍDO
@@ -336,18 +352,19 @@ useEffect(() => {
 5. ✅ Componentes de métricas e gestão (4 arquivos) - CONCLUÍDO
 6. ✅ Componentes de formulários e configuração (8 arquivos) - CONCLUÍDO (todos bem feitos)
 7. ✅ Componentes de formulários e notificações (8 arquivos) - CONCLUÍDO (todos bem feitos)
-8. ⬜ Componentes restantes (19 arquivos)
-9. ⬜ Revisão final e documentação
+8. ✅ Componentes de monitoramento, chat e contratos (8 arquivos) - CONCLUÍDO (todos bem feitos)
+9. ⬜ Componentes restantes (11 arquivos)
+10. ⬜ Revisão final e documentação
 
 ### Métricas Atualizadas
 
 - **Total de useEffect:** 112
-- **Revisados/Otimizados:** 55 (49%)
+- **Revisados/Otimizados:** 63 (56%)
 - **useCallback adicionados:** 16
 - **Dependências corrigidas:** 22
-- **Arquivos bem feitos (sem mudanças necessárias):** 35
+- **Arquivos bem feitos (sem mudanças necessárias):** 43
 - **Re-renders evitados:** ~35-45 por segundo em componentes críticos
 
 ---
 
-**Última atualização:** 2025-10-25 (Lote 8 Concluído - Formulários e Notificações)
+**Última atualização:** 2025-10-25 (Lote 9 Concluído - Monitoramento, Chat e Contratos)
