@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
@@ -17,14 +17,7 @@ export default function DepartmentMetrics() {
   const [stats, setStats] = useState<DepartmentStats[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-    
-    const interval = setInterval(loadStats, 30000); // Update every 30s
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const departments = ['comercial', 'tecnico', 'financeiro', 'administrativo', 'logistica'];
       const allStats: DepartmentStats[] = [];
@@ -76,7 +69,14 @@ export default function DepartmentMetrics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+    
+    const interval = setInterval(loadStats, 30000); // Update every 30s
+    return () => clearInterval(interval);
+  }, [loadStats]);
 
   const getDepartmentLabel = (dept: string) => {
     const labels: Record<string, string> = {

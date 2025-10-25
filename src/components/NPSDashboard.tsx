@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -54,11 +54,7 @@ export function NPSDashboard() {
   const [detractors, setDetractors] = useState<NPSResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNPSData();
-  }, []);
-
-  const fetchNPSData = async () => {
+  const fetchNPSData = useCallback(async () => {
     try {
       // Buscar estatísticas NPS
       const { data: statsData, error: statsError } = await supabase
@@ -100,7 +96,11 @@ export function NPSDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchNPSData();
+  }, [fetchNPSData]);
 
   const getNPSScoreColor = (score: number) => {
     if (score >= 50) return 'text-green-600';

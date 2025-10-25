@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,12 +47,7 @@ export function AgentManagement() {
   const [configs, setConfigs] = useState<AgentConfig[]>([]);
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
 
-  useEffect(() => {
-    loadAgentConfigs();
-    loadAgentStats();
-  }, []);
-
-  const loadAgentConfigs = async () => {
+  const loadAgentConfigs = useCallback(async () => {
     const { data, error } = await supabase
       .from('agent_configurations')
       .select('*')
@@ -68,9 +63,9 @@ export function AgentManagement() {
     }
 
     setConfigs(data || []);
-  };
+  }, [toast]);
 
-  const loadAgentStats = async () => {
+  const loadAgentStats = useCallback(async () => {
     const { data, error } = await supabase
       .from('conversations')
       .select('department, status, created_at');
@@ -106,7 +101,12 @@ export function AgentManagement() {
     });
 
     setStats(statsByDept);
-  };
+  }, []);
+
+  useEffect(() => {
+    loadAgentConfigs();
+    loadAgentStats();
+  }, [loadAgentConfigs, loadAgentStats]);
 
   const agents = [
     {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +97,7 @@ const KnowledgeManagement = () => {
     'automacao', 'telemedicina'
   ];
 
-  const loadKnowledgeItems = async () => {
+  const loadKnowledgeItems = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -121,11 +121,11 @@ const KnowledgeManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadKnowledgeItems();
-  }, []);
+  }, [loadKnowledgeItems]);
 
   const getCurrentItems = () => {
     return allItems.filter(item => item.parent_id === currentFolderId);

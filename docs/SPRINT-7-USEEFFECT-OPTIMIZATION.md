@@ -282,23 +282,38 @@ useEffect(() => {
 - 🔧 detectOutages sem useCallback → useCallback adicionado (usado em timers e manual)
 - 🔧 Dependências de useEffect corrigidas (loadHistory, loadEvents, detectOutages)
 
+#### ✅ Lote 6 - Componentes de Métricas e Gestão (4 arquivos)
+36. ✅ `atendimento/DepartmentMetrics.tsx` - useCallback em loadStats (usado em timer)
+37. ✅ `KnowledgeManagement.tsx` - useCallback em loadKnowledgeItems
+38. ✅ `AgentManagement.tsx` - useCallback em loadAgentConfigs e loadAgentStats
+39. ✅ `NPSDashboard.tsx` - useCallback em fetchNPSData
+
+**Problemas Corrigidos:**
+- 🔧 loadStats sem useCallback → useCallback adicionado (usado em setInterval)
+- 🔧 loadKnowledgeItems sem useCallback → useCallback adicionado (usado em múltiplos lugares)
+- 🔧 loadAgentConfigs sem useCallback → useCallback adicionado
+- 🔧 loadAgentStats sem useCallback → useCallback adicionado
+- 🔧 fetchNPSData sem useCallback → useCallback adicionado (usado em handleMarkFollowUpComplete)
+- 🔧 Dependências de useEffect corrigidas para todos os arquivos
+
 ### Próximos Passos
 1. ✅ Arquivos críticos com múltiplos useEffect (5 arquivos) - CONCLUÍDO
 2. ✅ Componentes de chat e atendimento (9 arquivos) - CONCLUÍDO
 3. ✅ Componentes admin (10 arquivos) - CONCLUÍDO (todos bem feitos)
 4. ✅ Componentes de gestão e monitoramento (7 arquivos) - CONCLUÍDO
-5. ⬜ Componentes de formulários e integrações (40 arquivos)
-6. ⬜ Revisão final e documentação
+5. ✅ Componentes de métricas e gestão (4 arquivos) - CONCLUÍDO
+6. ⬜ Componentes de formulários e integrações (35 arquivos restantes)
+7. ⬜ Revisão final e documentação
 
 ### Métricas Atualizadas
 
 - **Total de useEffect:** 112
-- **Revisados/Otimizados:** 35 (31%)
-- **useCallback adicionados:** 11
-- **Dependências corrigidas:** 17
+- **Revisados/Otimizados:** 39 (35%)
+- **useCallback adicionados:** 16
+- **Dependências corrigidas:** 22
 - **Arquivos bem feitos (sem mudanças necessárias):** 19
-- **Re-renders evitados:** ~30-40 por segundo em componentes críticos
+- **Re-renders evitados:** ~35-45 por segundo em componentes críticos
 
 ---
 
-**Última atualização:** 2025-10-25 (Lote 5 Concluído - Gestão e Monitoramento)
+**Última atualização:** 2025-10-25 (Lote 6 Concluído - Métricas e Gestão)
