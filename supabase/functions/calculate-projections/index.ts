@@ -1,8 +1,11 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('calculate-projections');
 
 Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }) => {
 
-    console.log('🔮 Iniciando cálculo de projeções...');
+    logger.info('Iniciando cálculo de projeções');
 
     // Buscar configurações de projeção
     const { data: settings } = await supabase
@@ -14,18 +17,21 @@ Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }
       throw new Error('Configurações de projeção não encontradas');
     }
 
-    console.log('⚙️ Configurações:', settings);
+    logger.info('Configurações carregadas', { 
+      projectionMonths: settings.projection_months,
+      optimisticGrowth: settings.optimistic_revenue_growth 
+    });
 
     // Buscar dados financeiros do IXC
     const { data: financialData, error: ixcError } = await supabase.functions.invoke('ixc-financial-analytics');
     
     if (ixcError) {
-      console.error('❌ Erro ao buscar dados do IXC:', ixcError);
+      logger.error('Erro ao buscar dados do IXC', { error: ixcError });
       throw new Error(`Erro IXC: ${ixcError.message}`);
     }
 
     const analytics = financialData?.data || financialData;
-    console.log('📊 Dados base:', {
+    logger.info('Dados base carregados', {
       mrr: analytics?.mrr,
       churnRate: analytics?.churnRate,
       activeClients: analytics?.activeClients
@@ -125,7 +131,7 @@ Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }
       });
     }
 
-    console.log(`📈 Criando ${projections.length} projeções...`);
+    logger.info('Criando projeções', { count: projections.length });
 
     // Inserir todas as projeções
     const { error: insertError } = await supabase
@@ -133,7 +139,7 @@ Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }
       .insert(projections);
 
     if (insertError) {
-      console.error('❌ Erro ao inserir projeções:', insertError);
+      logger.error('Erro ao inserir projeções', { error: insertError, count: projections.length });
       throw insertError;
     }
 
@@ -151,7 +157,10 @@ Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }
     }
   };
 
-  console.log('✅ Projeções calculadas:', response);
+  logger.info('Projeções calculadas com sucesso', { 
+    count: projections.length, 
+    months: settings.projection_months 
+  });
 
   return response;
 }));

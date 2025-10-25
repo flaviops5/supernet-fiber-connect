@@ -1,4 +1,7 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('ai-text-review');
 
 Deno.serve(createPublicHandler('ai-text-review', async (req, { supabase }) => {
   const { text } = await req.json();
@@ -48,7 +51,7 @@ Texto revisado:`;
 
     if (!openaiResponse.ok) {
       const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', errorText);
+      logger.error('OpenAI API error', { errorText, textLength: text.length });
       throw new Error('Erro ao revisar texto');
     }
 

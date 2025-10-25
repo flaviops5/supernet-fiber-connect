@@ -1,4 +1,7 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('generate-flow-simulations');
 
 interface FlowStep {
   id: string;
@@ -25,7 +28,7 @@ Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supaba
     throw new Error('agentType é obrigatório');
   }
 
-    console.log(`🔄 Buscando steps para agente: ${agentType}`);
+    logger.info('Buscando steps para agente', { agentType });
 
     // 1. Buscar todos os steps do agente
     const { data: steps, error: stepsError } = await supabase
@@ -40,11 +43,11 @@ Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supaba
       throw new Error('Nenhum step encontrado para este agente');
     }
 
-    console.log(`📊 ${steps.length} steps encontrados`);
+    logger.info('Steps encontrados', { count: steps.length });
 
     // 2. Gerar todos os caminhos possíveis
     const allPaths = generateAllPaths(steps);
-    console.log(`🌳 ${allPaths.length} caminhos possíveis gerados`);
+    logger.info('Caminhos possíveis gerados', { count: allPaths.length });
 
     // 3. Limpar simulações antigas deste agente
     await supabase
@@ -58,7 +61,7 @@ Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supaba
 
     for (let i = 0; i < allPaths.length; i++) {
       const path = allPaths[i];
-      console.log(`💬 Gerando conversa ${i + 1}/${allPaths.length}...`);
+      logger.debug('Gerando conversa', { index: i + 1, total: allPaths.length });
 
       try {
         const conversation = await generateConversationWithAI(
@@ -85,7 +88,7 @@ Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supaba
           }
         });
       } catch (error) {
-        console.error(`❌ Erro ao gerar conversa ${i + 1}:`, error);
+        logger.error('Erro ao gerar conversa', { error, index: i + 1 });
       }
     }
 
@@ -96,7 +99,7 @@ Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supaba
 
     if (insertError) throw insertError;
 
-  console.log(`✅ ${simulations.length} simulações salvas com sucesso!`);
+  logger.info('Simulações salvas com sucesso', { count: simulations.length });
 
   return {
     success: true,
@@ -116,7 +119,7 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
     steps[0]
   );
   
-  console.log(`🎯 Primeiro step: ${firstStep.step_key} (order: ${firstStep.step_order})`);
+  logger.debug('Primeiro step', { stepKey: firstStep.step_key, order: firstStep.step_order });
 
   function explorePath(
     currentStepKey: string,
@@ -127,7 +130,7 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
     
     // Se o step não existe, é um fim de caminho (transferência, resolução, etc)
     if (!currentStep) {
-      console.log(`✅ Caminho completo encontrado: ${visitedSteps.length} steps -> ${currentStepKey}`);
+      logger.debug('Caminho completo encontrado', { stepsCount: visitedSteps.length, endStep: currentStepKey });
       paths.push({
         steps: visitedSteps,
         responses: responses
@@ -139,7 +142,7 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
 
     // Se não tem next_step_map ou está vazio, é fim do caminho
     if (!currentStep.next_step_map || Object.keys(currentStep.next_step_map).length === 0) {
-      console.log(`✅ Caminho completo (sem próximos): ${newVisitedSteps.length} steps`);
+      logger.debug('Caminho completo (sem próximos)', { stepsCount: newVisitedSteps.length });
       paths.push({
         steps: newVisitedSteps,
         responses: responses
@@ -149,7 +152,7 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
 
     // Explorar cada opção de resposta
     const nextStepMap = currentStep.next_step_map;
-    console.log(`🔍 Explorando ${currentStepKey}: ${Object.keys(nextStepMap).length} opções`);
+    logger.debug('Explorando step', { stepKey: currentStepKey, optionsCount: Object.keys(nextStepMap).length });
     
     for (const [response, nextStep] of Object.entries(nextStepMap)) {
       // Evitar loops infinitos
@@ -160,13 +163,13 @@ function generateAllPaths(steps: FlowStep[]): ConversationPath[] {
           [...responses, { step: currentStepKey, response }]
         );
       } else {
-        console.log(`⚠️ Loop detectado: ${nextStep} já foi visitado`);
+        logger.debug('Loop detectado', { nextStep, alreadyVisited: true });
       }
     }
   }
 
   explorePath(firstStep.step_key, [], []);
-  console.log(`🎉 Total de caminhos gerados: ${paths.length}`);
+  logger.info('Total de caminhos gerados', { count: paths.length });
   return paths;
 }
 

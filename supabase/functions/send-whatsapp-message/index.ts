@@ -1,11 +1,14 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('send-whatsapp-message');
 
 Deno.serve(createPublicHandler(
   'send-whatsapp-message',
   async (req, { supabase }) => {
     const { phone, message, instanceName = 'SDR2' } = await req.json();
     
-    console.log('📨 Send WhatsApp Message Request:', { phone, instanceName, messageLength: message?.length });
+    logger.info('Send WhatsApp Message Request', { phone, instanceName, messageLength: message?.length });
     
     if (!phone || !message) {
       throw new Error('Phone and message are required');
@@ -14,9 +17,11 @@ Deno.serve(createPublicHandler(
     const apiKey = Deno.env.get('EVOLUTION_API_KEY');
     let baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
 
-    console.log('🔐 Checking credentials...');
-    console.log(`   API Key present: ${!!apiKey} (length: ${apiKey?.length || 0})`);
-    console.log(`   Base URL: ${baseUrl || 'NOT SET'}`);
+    logger.debug('Checking credentials', { 
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      baseUrl: baseUrl || 'NOT SET'
+    });
 
     // Remove trailing slash from baseUrl
     if (baseUrl && baseUrl.endsWith('/')) {
@@ -27,13 +32,13 @@ Deno.serve(createPublicHandler(
       throw new Error('Evolution API credentials not configured');
     }
 
-    console.log(`📱 Sending WhatsApp message to ${phone} via instance ${instanceName}`);
+    logger.info('Sending WhatsApp message', { phone, instanceName });
 
     // Format phone number
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
 
-    console.log(`📞 Formatted phone: ${formattedPhone}`);
+    logger.debug('Formatted phone', { formattedPhone });
 
     // Prepare headers - Evolution API uses 'apikey' header
     const headers = {
@@ -52,22 +57,22 @@ Deno.serve(createPublicHandler(
     });
 
     const responseText = await response.text();
-    console.log(`📡 Evolution API Response (${response.status}):`, responseText);
+    logger.info('Evolution API Response', { status: response.status, responseText });
 
     let responseData;
     try {
       responseData = JSON.parse(responseText);
     } catch (e) {
-      console.error('❌ Failed to parse Evolution API response:', responseText);
+      logger.error('Failed to parse Evolution API response', { responseText });
       throw new Error('Invalid response from Evolution API');
     }
 
     if (!response.ok) {
-      console.error(`❌ Evolution API Error (${response.status}):`, responseData);
+      logger.error('Evolution API Error', { status: response.status, responseData });
       throw new Error(responseData?.message || `Evolution API error: ${response.status}`);
     }
 
-    console.log('✅ WhatsApp message sent successfully');
+    logger.info('WhatsApp message sent successfully');
 
     return {
       success: true,

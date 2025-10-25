@@ -1,5 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('ixc-radio-status');
 
 Deno.serve(createPublicHandler(
   'ixc-radio-status',
@@ -16,7 +19,7 @@ Deno.serve(createPublicHandler(
     const cleanBaseUrl = IXC_API_BASE_URL.replace(/\/adm\.php$/, '');
     const credentials = btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`);
 
-    console.log('📻 Buscando status dos equipamentos rádio...');
+    logger.info('Buscando status dos equipamentos rádio');
 
     // Buscar equipamentos wireless/rádio
     const radioMap = new Map<string, {
@@ -58,7 +61,7 @@ Deno.serve(createPublicHandler(
         sortorder: 'desc',
       });
 
-      console.log(`📡 Consultando página ${page} do endpoint radpop_radio...`);
+      logger.debug('Consultando página radpop_radio', { page });
 
       const radioResponse = await fetch(radioUrl, {
         method: 'POST',
@@ -70,55 +73,41 @@ Deno.serve(createPublicHandler(
         body: radioBody,
       });
 
-      console.log(`📊 Status da resposta: ${radioResponse.status}`);
+      logger.debug('Status da resposta', { status: radioResponse.status });
 
       if (!radioResponse.ok) {
         const errorText = await radioResponse.text();
-        console.error(`❌ Erro ao buscar equipamentos rádio (${radioResponse.status}):`, errorText);
+        logger.error('Erro ao buscar equipamentos rádio', { status: radioResponse.status, errorText });
         break;
       }
 
       const radioData = await radioResponse.json();
-      console.log('📦 Estrutura da resposta:', JSON.stringify(Object.keys(radioData || {})));
+      logger.debug('Estrutura da resposta', { keys: Object.keys(radioData || {}) });
 
       const radioRegistros = Array.isArray(radioData?.registros) 
         ? radioData.registros 
         : (radioData?.registros ? Object.values(radioData.registros) : []);
 
-      console.log(`📋 Registros encontrados: ${radioRegistros.length}`);
+      logger.debug('Registros encontrados', { count: radioRegistros.length });
 
       if (radioRegistros.length > 0) {
-        console.log('🔍 Estrutura do primeiro registro:', JSON.stringify(Object.keys(radioRegistros[0] || {})));
+        logger.debug('Estrutura do primeiro registro', { keys: Object.keys(radioRegistros[0] || {}) });
       }
 
       if (!radioRegistros || radioRegistros.length === 0) {
-        console.log('⚠️ Nenhum registro encontrado nesta página');
+        logger.info('Nenhum registro encontrado nesta página');
         break;
       }
 
       for (const radio of radioRegistros) {
         // Log detalhado do id_pop e outros campos relacionados
-        console.log('🔍 Dados do equipamento:', {
+        logger.debug('Dados do equipamento', {
           id_pop: radio.id_pop,
-          tipo_id_pop: typeof radio.id_pop,
           su_pop: radio.su_pop,
-          pop: radio.pop,
-          torre: radio.torre,
-          setor: radio.setor,
-          descricao: radio.descricao,
           ip: radio.ip,
-          fabricante_modelo: radio.fabricante_modelo,
           temperatura: radio.temperatura,
-          cpu_load: radio.cpu_load,
-          free_memory: radio.free_memory,
-          total_memory: radio.total_memory,
-          uptime: radio.uptime,
-          voltagem: radio.voltagem,
-          firmware: radio.fwversion || radio.current_firmware,
           ativo: radio.ativo,
-          online: radio.online,
-          status: radio.status,
-          su_status: radio.su_status,
+          online: radio.online
         });
         
         // Identificar a torre/POP/setor
@@ -167,7 +156,7 @@ Deno.serve(createPublicHandler(
         });
       }
 
-      console.log(`📊 Total de equipamentos rádio: ${radioRegistros.length}`);
+      logger.info('Equipamentos rádio encontrados', { count: radioRegistros.length });
 
       if (radioRegistros.length < itemsPerPage) {
         break;
@@ -177,7 +166,7 @@ Deno.serve(createPublicHandler(
 
     // Fallback desativado: cliente_equipamento inexistente
     if (radioMap.size === 0) {
-      console.log('⚠️ Nenhum equipamento via radpop_radio e fallback desativado (cliente_equipamento não existe).');
+      logger.warn('Nenhum equipamento encontrado e fallback desativado');
     }
 
     // Converter para array e calcular saúde
@@ -194,7 +183,7 @@ Deno.serve(createPublicHandler(
       };
     }).sort((a, b) => b.total - a.total);
 
-    console.log(`✅ ${towersArray.length} torres/POPs encontradas`);
+    logger.info('Torres/POPs encontradas', { count: towersArray.length });
 
     return {
       success: true,

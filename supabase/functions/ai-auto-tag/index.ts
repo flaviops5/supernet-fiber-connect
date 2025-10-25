@@ -1,4 +1,7 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('ai-auto-tag');
 
 const AVAILABLE_TAGS = [
   'financeiro',
@@ -105,7 +108,7 @@ Mensagem do cliente:
       .eq('id', conversation_id);
 
     if (updateError) {
-      console.error('Error updating tags:', updateError);
+      logger.error('Error updating tags', { error: updateError, conversationId: conversation_id });
     }
 
   // Log the auto-tagging

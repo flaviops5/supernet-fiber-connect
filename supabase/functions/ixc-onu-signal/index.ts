@@ -9,6 +9,9 @@
 
 import { createPublicHandler } from "../_shared/base-handler.ts";
 import { getOnuSignalStatus } from '../_shared/ixc-client.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('ixc-onu-signal');
 
 /**
  * Interpreta valores de potência RX (Recepção)
@@ -109,12 +112,12 @@ function interpretTX(tx: number): { status: string; level: string; message: stri
 Deno.serve(createPublicHandler(
   'ixc-onu-signal',
   async (req, { supabase }) => {
-    console.log('📡 IXC ONU Signal Status - Iniciando consulta...');
+    logger.info('IXC ONU Signal Status - Iniciando consulta');
 
     const { clientId } = await req.json();
 
     if (!clientId) {
-      console.error('❌ clientId não fornecido');
+      logger.error('clientId não fornecido');
       return new Response(
         JSON.stringify({ 
           ok: false, 
@@ -128,7 +131,7 @@ Deno.serve(createPublicHandler(
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const ixcProxyUrl = `${supabaseUrl}/functions/v1/ixc-proxy`;
 
-    console.log(`🔍 Buscando sinal para cliente ID: ${clientId}`);
+    logger.info('Buscando sinal para cliente', { clientId });
 
     const result = await getOnuSignalStatus(ixcProxyUrl, clientId);
 
@@ -188,7 +191,13 @@ Deno.serve(createPublicHandler(
       recommendedAction: action
     };
 
-    console.log('✅ Dados de sinal obtidos e interpretados:', JSON.stringify(signalData, null, 2));
+    logger.info('Dados de sinal obtidos e interpretados', { 
+      clientId,
+      equipmentStatus,
+      isOffline,
+      rxValue,
+      txValue
+    });
 
     return {
       ok: true,

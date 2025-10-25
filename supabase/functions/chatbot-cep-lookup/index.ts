@@ -1,6 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('chatbot-cep-lookup');
 
 interface CepLookupRequest {
   cep?: string;
@@ -11,10 +14,10 @@ interface CepLookupRequest {
 Deno.serve(createPublicHandler(
   'chatbot-cep-lookup',
   async (req, { supabase }) => {
-    console.log('Chatbot CEP lookup request received');
+    logger.info('CEP lookup request received');
     
     const body = await req.json();
-    console.log('Request body:', body);
+    logger.debug('Request body', { action: body.action, hasCep: !!body.cep });
 
     // Extract CEP from message if not provided directly
     let cep = body.cep
@@ -55,7 +58,7 @@ Você pode me informar seu CEP?`,
     };
   }
 
-    console.log('Checking coverage for CEP:', cep)
+    logger.info('Checking coverage for CEP', { cep });
 
     // Search for CEP coverage
     const { data: cepData, error: cepError } = await supabase
@@ -79,8 +82,8 @@ Você pode me informar seu CEP?`,
       .single()
 
     if (cepError || !cepData) {
-      console.log('No coverage found for CEP:', cep);
-      return { 
+      logger.info('No coverage found', { cep });
+      return {
         response: `❌ **Infelizmente não temos cobertura para o CEP ${formatCep(cep)}** na região consultada.
 
 🌟 **Mas temos uma ótima notícia!** Estamos sempre expandindo nossa rede de fibra óptica.
@@ -257,7 +260,7 @@ async function listAvailablePlans(supabase: SupabaseClient, cep?: string) {
 
     return { response };
   } catch (error) {
-    console.error('Erro ao listar planos:', error);
+    logger.error('Erro ao listar planos', { error });
     return { response: 'Desculpe, não consegui listar os planos agora. Tente novamente em instantes.' };
   }
 }

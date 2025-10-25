@@ -1,5 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('check-due-invoices');
 
 interface InvoiceCheckRequest {
   testMode?: boolean;
@@ -11,7 +14,7 @@ Deno.serve(createPublicHandler(
   async (req, { supabase }) => {
     const { testMode = false, testDate } = await req.json() as InvoiceCheckRequest;
     
-    console.log('🔍 Iniciando verificação de faturas...', { testMode, testDate });
+    logger.info('Iniciando verificação de faturas', { testMode, testDate });
 
     // Data de referência (hoje ou data de teste)
     const referenceDate = testDate ? new Date(testDate) : new Date();
@@ -24,7 +27,7 @@ Deno.serve(createPublicHandler(
     const date1DayBefore = new Date(referenceDate);
     date1DayBefore.setDate(date1DayBefore.getDate() + 1);
 
-    console.log('📅 Datas de vencimento alvo:', {
+    logger.info('Datas de vencimento alvo', {
       reference: referenceDate.toISOString().split('T')[0],
       in10Days: date10DaysBefore.toISOString().split('T')[0],
       in1Day: date1DayBefore.toISOString().split('T')[0]
@@ -46,13 +49,13 @@ Deno.serve(createPublicHandler(
     });
 
     if (ixcError) {
-      console.error('❌ Erro ao buscar títulos no IXC:', ixcError);
+      logger.error('Erro ao buscar títulos no IXC', { error: ixcError });
       throw new Error(`Erro IXC: ${ixcError.message}`);
     }
 
     // A resposta vem em { success, data: { registros, total } }
     const titles = ixcResponse?.data?.registros || ixcResponse?.registros || [];
-    console.log(`📊 Total de títulos encontrados: ${titles.length}`);
+    logger.info('Títulos encontrados', { count: titles.length });
 
     const notificationsToCreate = [];
     const results = {
@@ -101,7 +104,11 @@ Deno.serve(createPublicHandler(
           .single();
 
         if (existing) {
-          console.log(`⏭️  Notificação já existe: Título ${title.id}, ${daysBeforeDue} dias (${existing.status})`);
+          logger.debug('Notificação já existe', { 
+            titleId: title.id, 
+            daysBeforeDue, 
+            status: existing.status 
+          });
           results.skipped++;
           continue;
         }
@@ -212,10 +219,13 @@ Deno.serve(createPublicHandler(
           results.created1Day++;
         }
 
-        console.log(`✅ Notificação criada: ${customer?.razao || 'Cliente'} - Vence em ${daysBeforeDue} dias`);
+        logger.info('Notificação criada', { 
+          customer: customer?.razao || 'Cliente', 
+          daysBeforeDue 
+        });
 
       } catch (error) {
-        console.error('❌ Erro ao processar título:', error);
+        logger.error('Erro ao processar título', { error, titleId: title.id });
         results.errors++;
       }
     }
@@ -227,7 +237,7 @@ Deno.serve(createPublicHandler(
         .insert(notificationsToCreate);
 
       if (insertError) {
-        console.error('❌ Erro ao inserir notificações:', insertError);
+        logger.error('Erro ao inserir notificações', { error: insertError, count: notificationsToCreate.length });
         throw insertError;
       }
     }
@@ -243,7 +253,11 @@ Deno.serve(createPublicHandler(
         : `${notificationsToCreate.length} notificações criadas com sucesso`
     };
 
-    console.log('✨ Verificação concluída:', response);
+    logger.info('Verificação concluída', { 
+      notificationsCreated: notificationsToCreate.length,
+      testMode,
+      results 
+    });
 
     return response;
   }

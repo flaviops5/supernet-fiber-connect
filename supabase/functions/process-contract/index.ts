@@ -1,4 +1,7 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('process-contract');
 
 interface ContractRequest {
   customerData: {
@@ -27,7 +30,10 @@ Deno.serve(createPublicHandler(
   async (req, { supabase }) => {
     const { customerData, planData, timestamp }: ContractRequest = await req.json();
 
-    console.log('Processing contract request:', { customerData, planData });
+    logger.info('Processing contract request', { 
+      customerName: customerData.name,
+      planName: planData.name 
+    });
 
     // Buscar plano pelo nome para obter o ID
     const { data: plan } = await supabase
@@ -59,11 +65,11 @@ Deno.serve(createPublicHandler(
     });
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      logger.error('Database error', { error: dbError });
       throw new Error(`Erro ao salvar agendamento: ${dbError.message}`);
     }
 
-    console.log('Contract processed successfully, appointment ID:', appointmentId);
+    logger.info('Contract processed successfully', { appointmentId });
 
     // Enviar email de confirmação
     try {
@@ -96,9 +102,9 @@ Deno.serve(createPublicHandler(
         body: emailPayload
       });
 
-      console.log('Confirmation email sent successfully');
+      logger.info('Confirmation email sent successfully');
     } catch (emailError) {
-      console.error('Error sending confirmation email:', emailError);
+      logger.error('Error sending confirmation email', { error: emailError });
       // Não falha o processo se o email falhar
     }
 

@@ -1,5 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('corporate-ai-chat');
 
 Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) => {
   const { message, conversationId } = await req.json();
@@ -27,7 +30,8 @@ Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) =>
     });
 
     if (!embeddingResponse.ok) {
-      console.error('Embedding API error:', await embeddingResponse.text());
+      const errorText = await embeddingResponse.text();
+      logger.error('Embedding API error', { errorText });
       throw new Error('Failed to generate query embedding');
     }
 
@@ -35,7 +39,7 @@ Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) =>
     const queryEmbedding = embeddingData.data[0].embedding;
 
     // Perform semantic search on knowledge_index
-    console.log('🔍 Performing semantic search...');
+    logger.info('Performing semantic search');
     const { data: knowledgeBase, error: kbError } = await supabase
       .rpc('match_knowledge', {
         query_embedding: queryEmbedding,
@@ -44,17 +48,21 @@ Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) =>
       });
 
     if (kbError) {
-      console.error('❌ Error fetching knowledge base:', kbError);
+      logger.error('Error fetching knowledge base', { error: kbError });
     } else {
-      console.log(`✅ Found ${knowledgeBase?.length || 0} relevant documents`);
+      logger.info('Semantic search completed', { 
+        documentsFound: knowledgeBase?.length || 0 
+      });
       if (knowledgeBase && knowledgeBase.length > 0) {
-        console.log('📄 Top results:', knowledgeBase.map(kb => ({
-          title: kb.title,
-          category: kb.category,
-          similarity: (kb.similarity * 100).toFixed(1) + '%'
-        })));
+        logger.debug('Top results', { 
+          results: knowledgeBase.map(kb => ({
+            title: kb.title,
+            category: kb.category,
+            similarity: (kb.similarity * 100).toFixed(1) + '%'
+          }))
+        });
       } else {
-        console.log('⚠️ No documents found above similarity threshold');
+        logger.warn('No documents found above similarity threshold');
       }
     }
 
@@ -69,7 +77,7 @@ Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) =>
         .limit(10); // Last 10 messages for context
 
       if (msgError) {
-        console.error('Error fetching conversation history:', msgError);
+        logger.error('Error fetching conversation history', { error: msgError, conversationId });
       } else {
         conversationHistory = messages || [];
       }
@@ -96,13 +104,16 @@ Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) =>
         .limit(5);
 
       if (fbError) {
-        console.error('❌ Fallback keyword search error:', fbError);
+        logger.error('Fallback keyword search error', { error: fbError });
       } else if (fallbackDocs && fallbackDocs.length > 0) {
-        console.log(`🔎 Fallback found ${fallbackDocs.length} docs for "${termLike}"`);
+        logger.info('Fallback search found documents', { 
+          count: fallbackDocs.length, 
+          searchTerm: termLike 
+        });
         // Normalize to match expected shape (add similarity ~0.35 to signal low-confidence)
         kbResults = fallbackDocs.map(d => ({ ...d, similarity: 0.35 }));
       } else {
-        console.log('⚠️ Fallback keyword search returned no results');
+        logger.warn('Fallback keyword search returned no results', { searchTerm: termLike });
       }
     }
 
@@ -170,14 +181,18 @@ Responda sempre em português brasileiro de forma clara e objetiva.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
+      logger.error('OpenAI API error', { errorText, status: response.status });
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
 
-  console.log(`AI Chat - User: "${message.substring(0, 50)}..." -> Response: "${aiResponse.substring(0, 50)}..."`);
+  logger.info('AI response generated', { 
+    messageLength: message.length, 
+    responseLength: aiResponse.length,
+    conversationId 
+  });
 
   return { response: aiResponse };
 }));
