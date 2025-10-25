@@ -136,9 +136,9 @@ const { data: step, isLoading } = useQuery({
       // Inicializar tools selecionadas - priorizar step_tools
       const toolsToUse = step.step_tools || step.tool_calls;
       if (Array.isArray(toolsToUse)) {
-        const tools = toolsToUse.map((t: any) => 
+        const tools = toolsToUse.map((t: string | { tool?: string; name?: string }) => 
           typeof t === 'string' ? t : t?.tool || t?.name
-        ).filter(Boolean);
+        ).filter(Boolean) as string[];
         setSelectedTools(tools);
       }
     }
@@ -175,10 +175,11 @@ const { data: step, isLoading } = useQuery({
       toast({ title: '✅ Configurações salvas com sucesso!' });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const err = error instanceof Error ? error : new Error('Erro desconhecido');
       toast({ 
         title: 'Erro ao salvar', 
-        description: error.message,
+        description: err.message,
         variant: 'destructive'
       });
     },

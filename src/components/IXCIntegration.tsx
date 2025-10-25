@@ -848,13 +848,16 @@ const IXCIntegration = () => {
                   });
 
                   toast.success("✅ Teste concluído com sucesso!");
-                } catch (error: any) {
-                  console.error("Erro no teste:", error);
-                  let parsed: any = null;
-                  try { parsed = JSON.parse(error.message); } catch {}
+                } catch (error) {
+                  const err = error instanceof Error ? error : new Error('Erro desconhecido');
+                  console.error("Erro no teste:", err);
+                  let parsed: Record<string, unknown> | null = null;
+                  try { 
+                    parsed = JSON.parse(err.message) as Record<string, unknown>; 
+                  } catch {}
                   setTestResults({
                     success: false,
-                    error: error.message,
+                    error: err.message,
                     errorDetails: parsed,
                   });
                   toast.error("❌ Erro no teste");

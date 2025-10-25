@@ -16,7 +16,15 @@ interface IXCContract {
   download?: string;
   upload?: string;
   tipo?: string;
-  [key: string]: any;
+  [key: string]: string | undefined;
+}
+
+interface IXCPlanListItem {
+  id: string;
+  name: string;
+  download: string;
+  upload: string;
+  price: number;
 }
 
 export const IXCContractsList = () => {
@@ -29,7 +37,7 @@ export const IXCContractsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [localPlans, setLocalPlans] = useState<{ id: string; name: string }[]>([]);
   const [selectedMap, setSelectedMap] = useState<Record<string, string>>({});
-  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<IXCPlanListItem[]>([]);
   const [showAllPlans, setShowAllPlans] = useState(false);
   const { toast } = useToast();
 
@@ -75,11 +83,12 @@ export const IXCContractsList = () => {
       } else {
         throw new Error(data.error || 'Erro ao carregar planos');
       }
-    } catch (error: any) {
-      console.error('Error loading plans:', error);
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error('Erro desconhecido');
+      console.error('Error loading plans:', err);
       toast({
         title: "Erro ao carregar planos",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -105,10 +114,11 @@ export const IXCContractsList = () => {
         throw new Error(data.error || 'Erro ao sincronizar planos');
       }
     } catch (error) {
-      console.error('Error syncing plans:', error);
+      const err = error instanceof Error ? error : new Error('Erro desconhecido');
+      console.error('Error syncing plans:', err);
       toast({
         title: "Erro ao sincronizar planos",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -134,10 +144,11 @@ export const IXCContractsList = () => {
         throw new Error(data.error || 'Erro ao listar planos');
       }
     } catch (error) {
-      console.error('Error listing plans:', error);
+      const err = error instanceof Error ? error : new Error('Erro desconhecido');
+      console.error('Error listing plans:', err);
       toast({
         title: "Erro ao listar planos",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
     } finally {

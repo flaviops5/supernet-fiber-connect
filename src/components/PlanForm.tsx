@@ -36,10 +36,34 @@ const planSchema = z.object({
   displayOrder: z.number().min(0, "Ordem deve ser 0 ou maior")
 });
 
+interface PlanFeature {
+  text: string;
+  icon: string;
+  isLink: boolean;
+  href?: string;
+  order?: number;
+}
+
+interface Plan {
+  id?: string;
+  name: string;
+  description: string;
+  speed: string;
+  price: number;
+  original_price: number;
+  popular: boolean;
+  active: boolean;
+  cta_text: string;
+  display_order: number;
+  features: PlanFeature[];
+  image_url: string;
+  ixc_plan_id: string;
+}
+
 interface PlanFormProps {
   isOpen: boolean;
   onClose: () => void;
-  plan?: any;
+  plan?: Plan;
   onSave: () => void;
 }
 
@@ -55,18 +79,18 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
     ctaText: plan?.cta_text || "Contratar Agora",
     displayOrder: plan?.display_order || 0,
     features: (() => {
-      const raw = plan?.features as any;
+      const raw = plan?.features;
       if (Array.isArray(raw)) {
-        return raw.map((feature: any, index: number) => ({
+        return raw.map((feature, index: number) => ({
           ...feature,
           order: feature.order ?? index
         }));
       }
       if (typeof raw === 'string') {
         try {
-          const parsed = JSON.parse(raw);
+          const parsed = JSON.parse(raw) as PlanFeature[];
           return Array.isArray(parsed)
-            ? parsed.map((feature: any, index: number) => ({ ...feature, order: feature.order ?? index }))
+            ? parsed.map((feature, index: number) => ({ ...feature, order: feature.order ?? index }))
             : [];
         } catch {
           return [];
@@ -192,7 +216,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
 
   const addFeature = () => {
     const newOrder = formData.features.length > 0 
-      ? Math.max(...formData.features.map((f: any) => f.order || 0)) + 1 
+      ? Math.max(...formData.features.map(f => f.order || 0)) + 1 
       : 0;
     
     setFormData({
@@ -210,11 +234,11 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
   const removeFeature = (index: number) => {
     setFormData({
       ...formData,
-      features: formData.features.filter((_: any, i: number) => i !== index)
+      features: formData.features.filter((_, i: number) => i !== index)
     });
   };
 
-  const updateFeature = (index: number, field: string, value: any) => {
+  const updateFeature = (index: number, field: keyof PlanFeature, value: string | boolean) => {
     const newFeatures = [...formData.features];
     newFeatures[index] = { ...newFeatures[index], [field]: value };
     setFormData({ ...formData, features: newFeatures });

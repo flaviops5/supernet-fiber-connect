@@ -15,10 +15,16 @@ interface CepCheckerProps {
   onLocationFound?: (coordinates: [number, number]) => void;
 }
 
+interface CheckResult {
+  available: boolean;
+  region: string;
+  plans: string[];
+}
+
 const CepChecker = ({ onLocationFound }: CepCheckerProps) => {
   const [cep, setCep] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CheckResult | null>(null);
 
   const handleWhatsApp = () => {
     const phone = "5561999999999";
@@ -91,7 +97,8 @@ const CepChecker = ({ onLocationFound }: CepCheckerProps) => {
         });
       } else {
         // Formatar os planos
-        const plans = coverage.cep_plans?.map((cp: any) => 
+        type CepPlan = { plans: { speed: string; price: number } };
+        const plans = (coverage.cep_plans as CepPlan[] | undefined)?.map(cp => 
           `${cp.plans.speed} - R$ ${cp.plans.price.toFixed(2).replace('.', ',')}`
         ) || [];
 

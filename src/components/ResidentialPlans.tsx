@@ -1,19 +1,38 @@
-import { Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi } from 'lucide-react';
+import { Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, DollarSign, Clock, Router, Wifi, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-const iconMap: { [key: string]: any } = {
+
+const iconMap: Record<string, LucideIcon> = {
   Download, Globe, Shield, Gift, MapPin, Camera, Settings, Tv, 
   DollarSign, Clock, Router, Wifi
 };
 
-// Normalize plan.features into an array safely
- type FeatureItem = { text: string; icon?: string; isLink?: boolean; href?: string; order?: number };
- 
- // Auto-detect icon based on feature text
- const detectIconFromText = (text: string): string => {
+// Plan and feature types
+interface PlanFeature {
+  text: string;
+  icon?: string;
+  isLink?: boolean;
+  href?: string;
+  order?: number;
+}
+
+interface ResidentialPlan {
+  id: string;
+  name: string;
+  speed: string;
+  price: number;
+  original_price?: number;
+  description: string;
+  popular: boolean;
+  cta_text?: string;
+  features: PlanFeature[] | string;
+}
+
+// Auto-detect icon based on feature text
+const detectIconFromText = (text: string): string => {
    const lowerText = text.toLowerCase();
    if (lowerText.includes('download') || lowerText.includes('velocidade')) return 'Download';
    if (lowerText.includes('upload')) return 'Download';
@@ -26,7 +45,7 @@ const iconMap: { [key: string]: any } = {
    return 'Download'; // Default icon
  };
  
- const toFeaturesArray = (raw: any): FeatureItem[] => {
+ const toFeaturesArray = (raw: PlanFeature[] | string | unknown): PlanFeature[] => {
    if (Array.isArray(raw)) {
      // Se já é array, verificar se são objetos ou strings
      return raw.map(item => {
@@ -86,10 +105,10 @@ const iconMap: { [key: string]: any } = {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<ResidentialPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleWhatsApp = (plan: any) => {
+  const handleWhatsApp = (plan: ResidentialPlan) => {
     const message = `Olá! Gostaria de contratar o plano *${plan.name}* de *${plan.speed}* por *R$ ${plan.price.toFixed(2).replace('.', ',')}*/mês.`;
     const whatsappUrl = `https://wa.me/5561999475886?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -253,7 +272,7 @@ const iconMap: { [key: string]: any } = {
                     {/* Features List */}
                     <div className="mb-8 flex-1">
                       <ul className="space-y-3">
-                        {toFeaturesArray(plan.features).map((feature: any, featureIndex: number) => {
+                        {toFeaturesArray(plan.features).map((feature, featureIndex: number) => {
                           const IconComponent = iconMap[feature.icon] || Download;
                           return (
                             <li key={featureIndex} className="flex items-center space-x-3">
