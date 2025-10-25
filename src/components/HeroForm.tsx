@@ -24,10 +24,19 @@ const heroSlideSchema = z.object({
   displayOrder: z.number().min(0, "Ordem deve ser 0 ou maior")
 });
 
+interface HeroSettings {
+  id: string;
+  main_title: string;
+  subtitle: string;
+  badge_text: string;
+  cta_text: string;
+  whatsapp_message: string;
+}
+
 interface HeroSettingsFormProps {
   isOpen: boolean;
   onClose: () => void;
-  settings: any;
+  settings: HeroSettings;
   onSave: () => void;
 }
 
@@ -160,10 +169,19 @@ export const HeroSettingsForm = ({ isOpen, onClose, settings, onSave }: HeroSett
   );
 };
 
+interface HeroSlide {
+  id?: string;
+  title: string;
+  description: string;
+  image_url: string;
+  display_order: number;
+  active: boolean;
+}
+
 interface HeroSlideFormProps {
   isOpen: boolean;
   onClose: () => void;
-  slide?: any;
+  slide?: HeroSlide | null;
   onSave: () => void;
 }
 

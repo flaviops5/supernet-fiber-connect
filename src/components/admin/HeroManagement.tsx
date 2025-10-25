@@ -8,12 +8,31 @@ import { HeroSlideForm } from "@/components/HeroForm";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
+interface HeroSettings {
+  id: string;
+  main_title: string;
+  subtitle: string;
+  badge_text: string;
+  cta_text: string;
+  whatsapp_message: string;
+}
+
+interface HeroSlide {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  image_url: string;
+  display_order: number;
+  active: boolean;
+}
+
 export default function HeroManagement() {
-  const [heroSettings, setHeroSettings] = useState<any>(null);
-  const [slides, setSlides] = useState<any[]>([]);
+  const [heroSettings, setHeroSettings] = useState<HeroSettings | null>(null);
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSlideForm, setShowSlideForm] = useState(false);
-  const [editingSlide, setEditingSlide] = useState<any>(null);
+  const [editingSlide, setEditingSlide] = useState<HeroSlide | null>(null);
 
   useEffect(() => {
     loadHeroData();
@@ -44,7 +63,7 @@ export default function HeroManagement() {
     }
   };
 
-  const handleEditSlide = (slide: any) => {
+  const handleEditSlide = (slide: HeroSlide) => {
     setEditingSlide(slide);
     setShowSlideForm(true);
   };

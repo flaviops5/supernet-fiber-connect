@@ -9,11 +9,21 @@ import { AIFAQGenerator } from "@/components/AIFAQGenerator";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  icon: string;
+  video_url?: string | null;
+  display_order: number;
+  active: boolean;
+}
+
 export default function FAQManagement() {
-  const [faqs, setFaqs] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<any>(null);
+  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
 
   useEffect(() => {
     loadFaqs();
@@ -55,7 +65,7 @@ export default function FAQManagement() {
     }
   };
 
-  const handleEdit = (faq: any) => {
+  const handleEdit = (faq: FAQ) => {
     setEditingFaq(faq);
     setShowForm(true);
   };

@@ -23,10 +23,20 @@ const iconOptions = [
   'Download', 'Settings', 'Camera', 'Tv', 'DollarSign', 'Clock', 'Wifi'
 ];
 
+interface FAQ {
+  id?: string;
+  question: string;
+  answer: string;
+  icon: string;
+  video_url?: string | null;
+  display_order: number;
+  active: boolean;
+}
+
 interface FAQFormProps {
   isOpen: boolean;
   onClose: () => void;
-  faq?: any;
+  faq?: FAQ | null;
   onSave: () => void;
 }
 

@@ -192,7 +192,7 @@ export const AddUserForm = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">Função no Sistema</Label>
-                  <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                  <Select value={role} onValueChange={(value) => setRole(value as 'admin' | 'editor' | 'viewer')}>
                     <SelectTrigger disabled={loading}>
                       <SelectValue placeholder="Selecione a função" />
                     </SelectTrigger>
