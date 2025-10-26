@@ -4,6 +4,9 @@ import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import { hybridInterpret, normalizeText, detectFrustration } from "../_shared/ai-response-interpreter.ts";
+import { textReply, jsonReply } from "../_shared/replies.ts";
+import { updateFlowState } from "../_shared/flow-state.ts";
+import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -399,6 +402,47 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       hasHistory,
       historyLength: messageHistory?.length
     });
+
+    // 🔥 HÍBRIDO SEGURO: Buscar flowState para timeout e intent detection
+    const { data: currentConversation } = await supabase
+      .from("conversations")
+      .select("customer_name, metadata, updated_at")
+      .eq("id", conversation_id)
+      .single();
+
+    const flowState = (currentConversation?.metadata as any)?.flow_state;
+    const lastInteraction = currentConversation?.updated_at 
+      ? new Date(currentConversation.updated_at) 
+      : new Date();
+    const minutesWithoutReply = Math.floor(
+      (new Date().getTime() - lastInteraction.getTime()) / 60000
+    );
+
+    // ✅ TIMEOUT PROTOCOL: Cliente sem resposta há 10 minutos
+    if (!isFirstMessage && minutesWithoutReply >= 10) {
+      logger.info("Timeout: Cliente sem resposta há mais de 10 minutos", {
+        minutesWithoutReply,
+        conversation_id
+      });
+
+      const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+
+      await supabase
+        .from("conversations")
+        .update({
+          status: "closed",
+          metadata: {
+            ...(currentConversation?.metadata as any || {}),
+            closed_reason: "timeout",
+            closed_at: new Date().toISOString()
+          }
+        })
+        .eq("id", conversation_id);
+
+      return textReply(
+        `${customerName}, estou finalizando aqui por falta de retorno. Se precisar, é só me chamar novamente! 👋`
+      );
+    }
 
     // Verificar se há pane massiva ativa (contexto em memória)
     let outageActive = massOutageContext.active;
@@ -1505,8 +1549,67 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         // Cliente enviou imagem mas contexto não é claro - usar análise da imagem
         responseMessage = `Vi a imagem que você enviou! 📷\n\n${imageAnalysis}\n\nBaseado nisso, como posso te ajudar?`;
       } else {
-        // Resposta genérica contextualizada
-        responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
+        // 🔥 HÍBRIDO SEGURO: Intent/Mood detection com Feature Flag A/B
+        const isHybridEnabled = Math.random() < 0.1; // 10% rollout
+
+        if (isHybridEnabled && !isFirstMessage) {
+          logger.info("🧠 Camada híbrida ativada - detectando intent e mood");
+          
+          try {
+            // Detectar frustração
+            const frustrationResult = detectFrustration(currentMessage);
+            
+            logger.info("Análise de frustração", {
+              is_frustrated: frustrationResult.isFrustrated,
+              intensity: frustrationResult.intensity,
+              indicators: frustrationResult.indicators
+            });
+
+            // Buscar nome do cliente
+            const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+
+            // Se cliente irritado, ajustar tom
+            if (frustrationResult.isFrustrated && frustrationResult.intensity === 'high') {
+              // Cliente muito irritado - ser mais direto e empático
+              const approvedReply = await getApprovedScenarioReply(
+                supabase,
+                "support-tech",
+                "resposta_cliente_irritado"
+              );
+
+              if (approvedReply && approvedReply.text && approvedReply.id !== "fallback") {
+                responseMessage = approvedReply.text.replace("{name}", customerName);
+                logger.info("Usando resposta aprovada para cliente irritado", {
+                  approved_id: approvedReply.id
+                });
+              } else {
+                responseMessage = `${customerName}, entendo sua frustração. Vamos focar no que resolve agora: me diga exatamente o que está acontecendo e vou priorizar seu atendimento. 🎯`;
+              }
+            } else {
+              // Cliente calmo - usar resposta mais natural
+              responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
+            }
+
+            logger.info("Resposta híbrida gerada", {
+              is_frustrated: frustrationResult.isFrustrated,
+              intensity: frustrationResult.intensity,
+              response_length: responseMessage.length
+            });
+          } catch (hybridError) {
+            logger.error("Erro na camada híbrida - usando fallback", {
+              error: hybridError instanceof Error ? hybridError.message : String(hybridError)
+            });
+            // Fallback para resposta genérica
+            responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
+          }
+        } else {
+          // Resposta genérica contextualizada (comportamento original)
+          responseMessage = "Entendi! Vou te ajudar com isso. 🔧\n\nPode me dar mais detalhes sobre o que está acontecendo? Quanto mais informações você me passar, mais rápido conseguimos resolver!";
+          
+          if (!isFirstMessage) {
+            logger.info("Camada híbrida não ativada - usando fallback rule-based");
+          }
+        }
       }
       
       // Inserir mensagem apenas se não foi inserida no Cenário A
