@@ -1,0 +1,441 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Support Tech Agent - Audit Log Schema",
+  "description": "Schema estruturado para registro de auditoria e telemetria do agente Luan Aquino v2.0.0",
+  "type": "object",
+  "required": [
+    "agent",
+    "conversation_id",
+    "timestamp",
+    "session"
+  ],
+  "properties": {
+    "agent": {
+      "type": "string",
+      "const": "support-tech-agent",
+      "description": "Identificador fixo do agente"
+    },
+    "agent_name": {
+      "type": "string",
+      "const": "Luan Aquino",
+      "description": "Nome de apresentação do agente"
+    },
+    "conversation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID único da conversa"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ISO8601 do evento"
+    },
+    "session": {
+      "type": "object",
+      "required": ["start_time", "entry_conditions"],
+      "properties": {
+        "start_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_seconds": {
+          "type": "number"
+        },
+        "entry_conditions": {
+          "type": "object",
+          "required": ["client_offline", "reboot_attempted", "financial_ok", "no_mass_outage"],
+          "properties": {
+            "client_offline": {
+              "type": "boolean"
+            },
+            "reboot_attempted": {
+              "type": "boolean"
+            },
+            "financial_ok": {
+              "type": "boolean"
+            },
+            "no_mass_outage": {
+              "type": "boolean"
+            },
+            "validation_passed": {
+              "type": "boolean"
+            },
+            "failed_condition": {
+              "type": "string",
+              "enum": ["online", "no_reboot", "financial_blocked", "mass_outage_active", null]
+            }
+          }
+        }
+      }
+    },
+    "client": {
+      "type": "object",
+      "properties": {
+        "cpf": {
+          "type": "string",
+          "pattern": "^\\d{11}$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contract_id": {
+          "type": "number"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "mass_outage": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "boolean"
+        },
+        "event_id": {
+          "type": "string"
+        },
+        "protocol_applied": {
+          "type": "boolean"
+        },
+        "client_informed": {
+          "type": "boolean"
+        },
+        "script_used": {
+          "type": "string"
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["tool", "scenario"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": ["get_onu_signal_status", "test_equipment_connectivity"]
+        },
+        "tx_power": {
+          "type": ["number", "null"]
+        },
+        "rx_power": {
+          "type": ["number", "null"]
+        },
+        "scenario": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D", "ERROR"]
+        },
+        "scenario_description": {
+          "type": "string",
+          "enum": ["SEM_ENERGIA", "TRAVADO", "SINAL_FRACO", "CRITICO", "ERRO_DIAGNOSTICO"]
+        },
+        "retry_count": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "error_message": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "timestamp"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "presentation",
+              "signal_check",
+              "equipment_test",
+              "remote_reboot",
+              "manual_reboot_instruction",
+              "cable_reconnection",
+              "escalation",
+              "transfer",
+              "timeout",
+              "closure"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "details": {
+            "type": "object"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "tools_used": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool_name", "timestamp"],
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "enum": [
+              "get_onu_signal_status",
+              "criar_atendimento_ixc",
+              "test_equipment_connectivity",
+              "ixc_client_lookup",
+              "reboot_client_equipment"
+            ]
+          },
+          "parameters": {
+            "type": "object"
+          },
+          "result": {
+            "type": "object"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "properties": {
+        "escalated": {
+          "type": "boolean"
+        },
+        "destination": {
+          "type": "string",
+          "enum": ["logistica", "especializado", "noc", "humano", null]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "ticket_id": {
+          "type": "string"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["BAIXA", "MEDIA", "ALTA", "URGENTE"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "transfer": {
+      "type": "object",
+      "properties": {
+        "transferred": {
+          "type": "boolean"
+        },
+        "destination_agent": {
+          "type": "string",
+          "enum": [
+            "support-financial-agent",
+            "sales-agent",
+            "telemedicina-agent",
+            "routing-agent",
+            null
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "timeout": {
+      "type": "object",
+      "properties": {
+        "occurred": {
+          "type": "boolean"
+        },
+        "stage": {
+          "type": "string",
+          "enum": ["1:30", "5:00", "15:00", null]
+        },
+        "action_taken": {
+          "type": "string",
+          "enum": ["reminder_sent", "warning_sent", "closed", null]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "required": ["resolved", "method"],
+      "properties": {
+        "resolved": {
+          "type": "boolean"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "remote",
+            "manual_reboot",
+            "cable_reconnection",
+            "escalated",
+            "transferred",
+            "self_recovery",
+            "timeout",
+            null
+          ]
+        },
+        "time_to_resolution_seconds": {
+          "type": "number"
+        },
+        "client_satisfaction": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "final_script_used": {
+          "type": "string"
+        }
+      }
+    },
+    "special_cases": {
+      "type": "object",
+      "properties": {
+        "client_refused_tests": {
+          "type": "boolean"
+        },
+        "client_nervous": {
+          "type": "boolean"
+        },
+        "recurring_issue": {
+          "type": "boolean"
+        },
+        "non_technical_client": {
+          "type": "boolean"
+        },
+        "corporate_client": {
+          "type": "boolean"
+        },
+        "frustration_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "first_call_resolution": {
+          "type": "boolean"
+        },
+        "remote_resolution": {
+          "type": "boolean"
+        },
+        "ticket_opened": {
+          "type": "boolean"
+        },
+        "total_messages_sent": {
+          "type": "number"
+        },
+        "tools_called_count": {
+          "type": "number"
+        },
+        "client_response_time_avg_seconds": {
+          "type": "number"
+        },
+        "agent_response_time_avg_seconds": {
+          "type": "number"
+        }
+      }
+    },
+    "kpi_contribution": {
+      "type": "object",
+      "description": "Contribuição para KPIs do agente",
+      "properties": {
+        "remote_resolution_achieved": {
+          "type": "boolean",
+          "description": "Meta: > 80%"
+        },
+        "ticket_opened": {
+          "type": "boolean",
+          "description": "Meta: < 20%"
+        },
+        "within_time_limit": {
+          "type": "boolean",
+          "description": "Meta: < 15 min"
+        },
+        "nps_score": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Meta: > 4.5/5"
+        },
+        "first_call_resolution": {
+          "type": "boolean",
+          "description": "Meta: > 75%"
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Lista de erros ou violações de protocolo",
+      "items": {
+        "type": "object",
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "enum": [
+              "blamed_client",
+              "repeated_question",
+              "transferred_without_reason",
+              "used_jargon",
+              "revealed_ai_identity",
+              "ignored_mass_outage",
+              "skipped_signal_check",
+              "missing_log"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observações adicionais sobre o atendimento"
+    }
+  }
+}
