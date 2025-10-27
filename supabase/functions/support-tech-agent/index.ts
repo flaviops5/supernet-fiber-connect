@@ -2123,6 +2123,120 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         return textReply(responseMessage);
       }
       
+      // ===== CENÁRIO D: SINAL CRÍTICO (RX <= -28) =====
+      const isCriticalSignal = typeof rxDbm === "number" && rxDbm <= -28;
+
+      if (isCriticalSignal && !flowState?.waiting_step) {
+        logger.info("🔴 SINAL CRÍTICO detectado → Cenário D", {
+          rx: rxDbm,
+          threshold: -28
+        });
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_d_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { rxDbm, threshold: -28 }
+        });
+
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: "scenario_d_open_ticket",
+                ixc_client_id: ixc_client_id
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        responseMessage = 
+          "Aqui é grave 😕\n" +
+          "O sinal óptico da sua fibra está bem abaixo do normal.\n" +
+          "Vou acionar nossa equipe técnica AGORA ⚠️\n\n" +
+          "Só um instante… 🔧";
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
+      // ===== AÇÕES DO TICKET DO CENÁRIO D =====
+      if (flowState?.waiting_step === "scenario_d_open_ticket") {
+        const ixcId = flowState?.ixc_client_id;
+
+        logger.info("Abrindo ticket urgente para Cenário D", { 
+          ixcId, 
+          rxDbm 
+        });
+
+        const { data: ticketData, error: ticketError } =
+          await supabase.functions.invoke("ixc-integration", {
+            body: {
+              action: "criar_atendimento",
+              id_cliente: ixcId,
+              assunto: "Sinal crítico de fibra óptica",
+              descricao: `Sinal RX muito fraco: ${rxDbm} dBm. Necessária intervenção urgente.`,
+              prioridade: "urgente"
+            }
+          });
+
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: null,
+                scenario_completed: "D",
+                ticket_created: !ticketError
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_d_ticket_created",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { 
+            rxDbm,
+            success: !ticketError,
+            ticket_id: ticketData?.id_atendimento
+          }
+        });
+
+        if (!ticketError && ticketData?.id_atendimento) {
+          responseMessage = 
+            `✅ Protocolo IXC: ${ticketData.id_atendimento}\n\n` +
+            "Nossa equipe vai atuar na sua fibra com máxima prioridade! 🚀";
+        } else {
+          responseMessage = 
+            "✅ Atendimento registrado!\n" +
+            "Nossa equipe técnica vai atuar com urgência! 🚀";
+        }
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
       // ===== C1: DETECTAR ENTRADA NO CENÁRIO C (SINAL FRACO) =====
       const isWeakSignal = isWeakFromTxRx(txDbm, rxDbm);
       
