@@ -1,0 +1,92 @@
+name: Code Quality Check
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  eslint:
+    name: ESLint Analysis (Warning Only)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+        continue-on-error: true
+        
+      - name: Annotate code with ESLint results
+        uses: ataylorme/eslint-annotate-action@v3
+        if: always()
+        continue-on-error: true
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          report-json: "eslint_report.json"
+          
+  type-check:
+    name: TypeScript Type Check (Warning Only)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript compiler check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+  build-test:
+    name: Build Test (Warning Only)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Test build
+        run: npm run build
+        continue-on-error: true
+
+  summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: [eslint, type-check, build-test]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "✅ Code quality check completed (warning only mode)"
+          echo "📊 Check the annotations above for any issues found"
+          echo "ℹ️  These warnings won't block your PR - fix them when convenient"
