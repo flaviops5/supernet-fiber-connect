@@ -67,6 +67,15 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
 }
 
 /**
+ * C0: Detectar sinal fraco baseado em TX/RX
+ */
+function isWeakFromTxRx(tx?: number | null, rx?: number | null): boolean {
+  // RX fraco típico entre ~ -27 e -30 dBm
+  if (typeof rx === "number" && rx <= -27 && rx > -32) return true;
+  return false;
+}
+
+/**
  * Sanitizar TODAS as menções incorretas de PON piscando
  */
 function sanitizeRedLightQuestion(text: string): string {
@@ -2049,6 +2058,65 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         }
       }
       
+      // ===== C1: DETECTAR ENTRADA NO CENÁRIO C (SINAL FRACO) =====
+      const lastSignalData = (currentConversation?.metadata as any)?.signal_data;
+      const txDbm = lastSignalData?.tx_dbm ?? lastSignalData?.tx ?? null;
+      const rxDbm = lastSignalData?.rx_dbm ?? lastSignalData?.rx ?? null;
+      const isWeakSignal = isWeakFromTxRx(txDbm, rxDbm);
+      
+      // Detectar entrada no Cenário C (sinal fraco mas não zero)
+      if (isWeakSignal && !flowState?.waiting_step && !isCenarioA && !isCenarioB) {
+        logger.info("🟠 Detectado sinal fraco → Iniciando Cenário C", {
+          tx: txDbm,
+          rx: rxDbm,
+          threshold: "-27 dBm"
+        });
+        
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: "scenario_c_check_instability",
+                ixc_client_id: ixc_client_id
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_c_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { 
+            tx: txDbm, 
+            rx: rxDbm, 
+            threshold_rx_dbm: -27 
+          }
+        });
+
+        responseMessage = "Estou vendo que o sinal da fibra está um pouco fraco 🔍\n\n" +
+          "Isso pode causar instabilidade às vezes.\n\n" +
+          "Você percebe que a conexão cai e volta, ou fica muito lenta em alguns momentos?";
+        
+        // Inserir mensagem e retornar
+        if (responseMessage) {
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          return new Response(JSON.stringify({ message: responseMessage }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+      }
+      
       // 🟠 CENÁRIO C: Fluxo de sinal fraco (TX > 0, RX entre -28 e -24)
       const isCenarioC = scenario === "C" || flowState?.waiting_step?.startsWith("scenario_c");
       const scenarioCStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
@@ -2196,15 +2264,23 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           if (interpretation.intent === "confirmed") {
             const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
             
-            const { data: retest } = await supabase.functions.invoke("test-equipment-connectivity", {
+            const { data: retest, error: rtErr } = await supabase.functions.invoke("test-equipment-connectivity", {
               body: { ixc_client_id: ixcId }
             });
 
+            // C4: Log detalhado do reteste
             await supabase.from("registros_de_monitoramento").insert({
               acao: "scenario_c_optical_retest",
               fluxo: "support-tech",
               conversation_id,
-              detalhes: { connectivity_ok: retest?.ok === true }
+              detalhes: { 
+                ok: retest?.ok === true,
+                status: retest?.status ?? null,
+                latency_ms: retest?.latency_ms ?? null,
+                tx_power: retest?.tx_power ?? null,
+                rx_power: retest?.rx_power ?? null,
+                error: rtErr ? String(rtErr) : null
+              }
             });
 
             if (retest?.ok) {
