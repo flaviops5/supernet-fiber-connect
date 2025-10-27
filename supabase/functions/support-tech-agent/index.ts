@@ -8,6 +8,7 @@ import { textReply, jsonReply } from "../_shared/replies.ts";
 import { updateFlowState } from "../_shared/flow-state.ts";
 import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
 import { logAudit } from "../_shared/audit-logger.ts";
+import { kpiLog } from "../_shared/kpi.ts";
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -1798,6 +1799,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
+            // KPI: Cenário A resolvido (non-blocking)
+            kpiLog({
+              action: "kpi_update",
+              conversation_id,
+              scenario_completed: "A",
+              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+              resolved: true,
+              escalated: false,
+            });
+
             responseMessage = "Perfeito ✅ Pode testar a navegação agora e me dizer se voltou?";
           } else {
             await supabase
@@ -1856,6 +1867,17 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             ticket_id: ticketData?.id_atendimento,
             success: !ticketError 
           }
+        });
+
+        // KPI: Cenário A escalado (non-blocking)
+        kpiLog({
+          action: "kpi_update",
+          conversation_id,
+          scenario_completed: "A",
+          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+          resolved: false,
+          escalated: true,
+          ticket_id: ticketData?.id_atendimento ?? null,
         });
 
         if (!ticketError && ticketData?.id_atendimento) {
@@ -2054,6 +2076,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
+            // KPI: Cenário B resolvido (non-blocking)
+            kpiLog({
+              action: "kpi_update",
+              conversation_id,
+              scenario_completed: "B",
+              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+              resolved: true,
+              escalated: false,
+            });
+
             responseMessage = 
               "Ótimo! 🎉\n\n" +
               "Problema resolvido então! Qualquer coisa é só chamar 👍";
@@ -2115,6 +2147,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
+            // KPI: Cenário B resolvido (non-blocking)
+            kpiLog({
+              action: "kpi_update",
+              conversation_id,
+              scenario_completed: "B",
+              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+              resolved: true,
+              escalated: false,
+            });
+
             responseMessage = "As luzes estão OK ✅ Tente navegar novamente.";
           } else {
             await supabase
@@ -2157,6 +2199,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                   }
                 })
                 .eq("id", conversation_id);
+
+              // KPI: Cenário B resolvido (non-blocking)
+              kpiLog({
+                action: "kpi_update",
+                conversation_id,
+                scenario_completed: "B",
+                hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+                resolved: true,
+                escalated: false,
+              });
 
               responseMessage = "Perfeito ✅ Pode testar a navegação, por favor!";
             } else {
@@ -2407,6 +2459,18 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             success: !ticketError,
             ticket_id: ticketData?.id_atendimento
           }
+        });
+
+        // KPI: Cenário D escalado (non-blocking)
+        kpiLog({
+          action: "kpi_update",
+          conversation_id,
+          scenario_completed: "D",
+          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+          resolved: false,
+          escalated: true,
+          ticket_id: ticketData?.id_atendimento ?? null,
+          rx_dbm: rxDbm ?? null,
         });
 
         if (!ticketError && ticketData?.id_atendimento) {
@@ -2666,6 +2730,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
                 })
                 .eq("id", conversation_id);
 
+              // KPI: Cenário C resolvido (non-blocking)
+              kpiLog({
+                action: "kpi_update",
+                conversation_id,
+                scenario_completed: "C",
+                hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+                resolved: true,
+                escalated: false,
+              });
+
               responseMessage = "Ótimo! ✅\n\nAgora pode testar a navegação e ver se estabilizou, por favor?";
             } else {
               await supabase
@@ -2725,6 +2799,17 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               ticket_id: ticketData?.id_atendimento,
               success: !ticketError 
             }
+          });
+
+          // KPI: Cenário C escalado (non-blocking)
+          kpiLog({
+            action: "kpi_update",
+            conversation_id,
+            scenario_completed: "C",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: false,
+            escalated: true,
+            ticket_id: ticketData?.id_atendimento ?? null,
           });
 
           if (!ticketError && ticketData?.id_atendimento) {
