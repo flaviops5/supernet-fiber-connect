@@ -889,9 +889,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         );
         
         const hasRedLightBlinking = /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec)/i.test(currentMessage) &&
-          /(vermelh[oa]|los|pon|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
+          /(vermelh[oa]|los|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
         
-        const noRedLight = isNegation && /(vermelh[oa]|los|pon|pisca)/i.test(currentMessage);
+        const noRedLight = isNegation && /(vermelh[oa]|los|pisca)/i.test(currentMessage);
         
         const fiberReconnected = /(reconect(ei|ado)|tirei\s*e\s*(re)?coloquei|manipul(ei|ado)|fiz|terminei|test(ei|ado))/i.test(currentMessage) &&
           /(conector|fibra|verde|cabo)/i.test(currentMessage);
@@ -1090,7 +1090,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         else if (flowState === "cenario_a_verificar_luz_vermelha") {
           const redLightInterpretation = await hybridInterpret(currentMessage, {
             regexDetectors: {
-              confirmed: /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec|vermelh|los|pon|pisca)/i,
+              confirmed: /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec|vermelh|los|pisca)/i,
               denied: /(n[ãa]o|nao|nem|verde|normal|fixa)/i
             },
             similarityPhrases: {
@@ -1639,24 +1639,26 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
-            responseMessage = "Obrigado 🙏 Pode me informar como estão as luzes LOS e PON? Piscando ou fixas?";
+            responseMessage = "Obrigado 🙏 Pode me informar como está a luz **LOS (vermelha)**? Piscando ou fixa?";
           }
         }
         
-        // PATCH 6: Interpretação de LEDs
+        // PATCH 6: Interpretação de LEDs (✅ CORRIGIDO: apenas LOS é critério)
         else if (waitingStep === "scenario_b_check_leds") {
           const lower = lastUserMessage.toLowerCase();
-          const losPisc = /(los.*pisc)/.test(lower);
-          const ponPisc = /(pon.*pisc)/.test(lower);
+          // ✅ APENAS LOS é critério de falha - PON é informação complementar
+          const losPisc = /(los.*pisc|vermelh.*pisc|pisc.*vermelh)/i.test(lower);
+          const ponMentioned = /(pon|verde)/i.test(lower); // apenas para log
 
           await supabase.from("registros_de_monitoramento").insert({
-            acao: "check_leds",
+            acao: "check_leds_scenario_b",
             fluxo: "support-tech",
             conversation_id,
-            detalhes: { losPisc, ponPisc }
+            detalhes: { losPisc, ponMentioned }
           });
 
-          if (!losPisc && !ponPisc) {
+          // ✅ Decisão baseada APENAS em LOS
+          if (!losPisc) {
             await supabase
               .from("conversations")
               .update({
@@ -1814,15 +1816,15 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           /(sim|s[ií]|ok|claro|com certeza|t[aá]|tem|j[aá]|est[aáã]|funcion)/i.test(currentMessage) &&
           /(ligad[oa]s?|na tomada|conectad|energia|luz|for[cç]a|corrente|plug(ad)?)/i.test(currentMessage);
         
-        // 🆕 Detecta confirmação de luz vermelha LOS/PON piscando
+        // 🆕 Detecta confirmação de luz vermelha LOS piscando (✅ PON removido)
         const hasRedLightBlinking =
           /(sim|s[ií]|t[aá]|tem|est[aáã]|aparec)/i.test(currentMessage) &&
-          /(vermelh[oa]|los|pon|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
+          /(vermelh[oa]|los|pisca(nd[oa])?|intermitente)/i.test(currentMessage);
         
-        // 🆕 Detecta negação de luz vermelha
+        // 🆕 Detecta negação de luz vermelha LOS (✅ PON removido)
         const noRedLight =
           isNegation &&
-          /(vermelh[oa]|los|pon|pisca)/i.test(currentMessage);
+          /(vermelh[oa]|los|pisca)/i.test(currentMessage);
         
         // Detecta conclusão do reboot: "terminei/já liguei/pronto/ok feito"
         const rebootCompleted =
