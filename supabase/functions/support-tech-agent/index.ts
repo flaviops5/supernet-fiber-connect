@@ -1877,30 +1877,29 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
         const lastUserMessage = message || "";
         
-        // PATCH 2 & 3: Interpretação híbrida com detecção de humor
+        // ✅ PR #4: Interpretação Híbrida no Cenário B
         if (waitingStep === "scenario_b_wait_restart") {
           const hybrid = await hybridInterpret(lastUserMessage, {
-            intents: ["confirmacao", "negacao", "duvida"],
             regexDetectors: {
-              confirmed: /(sim|ok|pronto|feito|ja fiz|reiniciei|desliguei)/i,
-              denied: /(nao|ainda nao|nao fiz)/i
+              confirmed: /(sim|ok|pronto|feito|ja fiz|reiniciei|desliguei|liguei)/i,
+              denied: /(nao|ainda|depois|não consigo)/i
             },
             similarityPhrases: {
-              confirmed: ["já fiz", "pronto", "reiniciei", "desliguei e liguei"],
-              denied: ["não", "ainda não", "não fiz", "não consegui"]
+              confirmed: ["já fiz", "sim reiniciei", "já desliguei", "pronto", "desliguei e liguei"],
+              denied: ["ainda não", "não sei fazer", "não fiz", "não consegui"]
             },
             aiContext: {
               expectedAction: "desligar e ligar o roteador da tomada",
               previousAgentMessage: "Desligue e ligue o roteador da tomada e espere 1 minuto"
             },
-            moodDetection: isHybridEnabled // Só ativa mood se estiver no teste híbrido
+            moodDetection: isHybridEnabled
           });
 
           await logAudit({
-            action: "hybrid_interpretation",
+            action: "scenario_b_user_reply",
             conversation_id,
             detalhes: {
-              intent: hybrid.intent,
+              result: hybrid.result,
               mood: hybrid.mood,
               confidence: hybrid.confidence,
               method: hybrid.method,
@@ -1916,62 +1915,132 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
             method: hybrid.method
           });
 
-          // PATCH 3: Respostas humanizadas com base no humor
-          if (hybrid.result === "confirmou" || hybrid.intent === "confirmacao") {
-            let responseMsg = "Perfeito 👏 Vou rodar um teste técnico aqui 🔧 para adiantar sua solução.";
+          // Cliente CONFIRMOU que reiniciou → testar remotamente ✅
+          if (hybrid.result === "confirmou") {
+            const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id || ixc_client_id;
+
+            let responseMsg = "Perfeito! 👏 Vou rodar um teste técnico aqui 🔧";
             
+            // Humanizar resposta baseado no humor detectado
             if (isHybridEnabled && hybrid.mood) {
               if (hybrid.mood === "irritado") {
                 responseMsg = "Poxa, imagino sua frustração 😕\nMas ótimo que já fez! Vou rodar um teste técnico agora 🔧";
               } else if (hybrid.mood === "confuso") {
-                responseMsg = "Ótimo! 😊 Vou verificar o equipamento remotamente agora 🔧\nÉ rapidinho!";
+                responseMsg = "Ótimo! 😊 Vou verificar o equipamento remotamente 🔧\nÉ rapidinho!";
               } else if (hybrid.mood === "satisfeito") {
-                responseMsg = "Excelente! 👏 Deixa eu rodar um teste técnico aqui pra confirmar 🔧";
+                responseMsg = "Excelente! 👏 Deixa eu rodar um teste técnico pra confirmar 🔧";
               }
             }
 
-            await supabase
-              .from("conversations")
-              .update({
-                metadata: {
-                  ...(currentConversation?.metadata as any || {}),
-                  flow_state: {
-                    ...((currentConversation?.metadata as any)?.flow_state || {}),
-                    waiting_step: "scenario_b_post_test"
-                  }
-                }
-              })
-              .eq("id", conversation_id);
-
-            await supabase.from("registros_de_monitoramento").insert({
-              acao: "confirm_reboot_router_scenario_b",
-              fluxo: "support-tech",
-              conversation_id
-            });
-
-            responseMessage = responseMsg;
-          } else if (hybrid.result === "negou") {
-            responseMessage = "Sem problema! Quando conseguir fazer, me avise. Estou aqui 👍";
-          } else if (isHybridEnabled && hybrid.mood === "confuso") {
-            responseMessage = 
-              "Sem problema! 😊 Vou te explicar melhor:\n\n" +
-              "1. Desligue o roteador da tomada\n" +
-              "2. Espere 60 segundos\n" +
-              "3. Ligue de novo\n\n" +
-              "Me avisa quando terminar ✅";
-          }
-        }
-        
-        // PATCH 5: Teste remoto pós-ação
-        else if (waitingStep === "scenario_b_post_test") {
-          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
-
-          const { data: postData } =
-            await supabase.functions.invoke("test-equipment-connectivity", {
+            // Invocar teste remoto de conectividade
+            const { data: remoteTest } = await supabase.functions.invoke("test-equipment-connectivity", {
               body: { ixc_client_id: ixcId }
             });
 
-          if (postData?.ok === true) {
+            await logAudit({
+              action: "scenario_b_retest",
+              conversation_id,
+              detalhes: remoteTest,
+              supabaseClient: supabase
+            });
+
+            // Equipamento voltou online ✅
+            if (remoteTest?.reachable) {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_b_check_navigation"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = 
+                responseMsg + "\n\n" +
+                "Perfeito! ✅ O equipamento respondeu.\n\n" +
+                "Agora testa navegar rapidinho e me diz se voltou pra você? 🚀";
+            } 
+            // Ainda sem resposta → continuar fluxo óptico ✅
+            else {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_b_check_leds"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = 
+                responseMsg + "\n\n" +
+                "Agradeço! 🙌\n" +
+                "Pode me informar como está a luz **LOS (vermelha)**? Piscando ou fixa?";
+            }
+          } 
+          // Cliente NEGOU que reiniciou → refazer pedido ✅
+          else if (hybrid.result === "negou") {
+            responseMessage = 
+              "Sem problemas! 😊\n" +
+              "Vamos tentar desligar o equipamento da tomada, aguardar 1 minutinho e ligar novamente.\n\n" +
+              "Quando terminar me avisa 👍";
+          } 
+          // Resposta INCERTA ou CONFUSA → pedir clarificação ✅
+          else {
+            let clarificationMsg = "Não entendi bem 😅\n\nVocê já conseguiu desligar e ligar o roteador da tomada?";
+            
+            if (isHybridEnabled && hybrid.mood === "confuso") {
+              clarificationMsg = 
+                "Sem problema! 😊 Vou te explicar melhor:\n\n" +
+                "1. Desligue o roteador da tomada\n" +
+                "2. Espere 60 segundos\n" +
+                "3. Ligue de novo\n\n" +
+                "Me avisa quando terminar ✅";
+            }
+            
+            responseMessage = clarificationMsg;
+          }
+        }
+        
+        // ✅ PR #4: Verificação de navegação após teste remoto bem-sucedido
+        else if (waitingStep === "scenario_b_check_navigation") {
+          const hybrid = await hybridInterpret(lastUserMessage, {
+            regexDetectors: {
+              confirmed: /(sim|voltou|funcionou|ok|normal|resolveu)/i,
+              denied: /(nao|ainda|continua|não voltou|mesmo problema)/i
+            },
+            similarityPhrases: {
+              confirmed: ["sim voltou", "tá funcionando", "resolveu", "tá normal"],
+              denied: ["ainda não", "continua sem", "mesmo problema", "não voltou"]
+            },
+            aiContext: {
+              expectedAction: "confirmar se a internet voltou a funcionar",
+              previousAgentMessage: "Testa navegar e me diz se voltou?"
+            },
+            moodDetection: isHybridEnabled
+          });
+
+          await logAudit({
+            action: "scenario_b_navigation_check",
+            conversation_id,
+            detalhes: {
+              result: hybrid.result,
+              mood: hybrid.mood,
+              confidence: hybrid.confidence,
+              method: hybrid.method
+            },
+            supabaseClient: supabase
+          });
+
+          // Internet voltou! ✅
+          if (hybrid.result === "confirmou") {
             await supabase
               .from("conversations")
               .update({
@@ -1985,8 +2054,12 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
-            responseMessage = "Equipamento respondeu normalmente 🔧\nPode testar a navegação por favor?";
-          } else {
+            responseMessage = 
+              "Ótimo! 🎉\n\n" +
+              "Problema resolvido então! Qualquer coisa é só chamar 👍";
+          } 
+          // Ainda com problema → verificar LEDs
+          else if (hybrid.result === "negou") {
             await supabase
               .from("conversations")
               .update({
@@ -2000,7 +2073,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               })
               .eq("id", conversation_id);
 
-            responseMessage = "Obrigado 🙏 Pode me informar como está a luz **LOS (vermelha)**? Piscando ou fixa?";
+            responseMessage = 
+              "Entendi 😕\n\n" +
+              "Vamos verificar o sinal então.\n" +
+              "Pode me informar como está a luz **LOS (vermelha)**? Piscando ou fixa?";
+          } 
+          // Resposta incerta
+          else {
+            responseMessage = 
+              "Não entendi bem 😅\n\n" +
+              "A internet voltou a funcionar normalmente? Consegue navegar?";
           }
         }
         
