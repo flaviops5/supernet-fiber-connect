@@ -317,6 +317,16 @@ Responda APENAS com um JSON válido seguindo este formato exato:
     });
 
     if (!response.ok) {
+      // Tratar rate limit especificamente
+      if (response.status === 429) {
+        console.warn('⚠️ Rate limit atingido (429), usando fallback');
+        return {
+          intent: 'incerto',
+          confidence: 0,
+          reasoning: 'Rate limit da API, usando modo determinístico'
+        };
+      }
+      
       throw new Error(`AI API error: ${response.status}`);
     }
 
@@ -440,31 +450,51 @@ export async function hybridInterpret(
   if (context.aiContext) {
     console.log("🤖 Usando AI para interpretar resposta ambígua:", message);
     
-    const aiResult = await interpretWithAI(message, {
-      ...context.aiContext,
-      detectMood: context.moodDetection
-    });
-    
-    if (aiResult.intent === 'confirmou' || aiResult.intent === 'negou') {
+    try {
+      // Timeout de 3s para evitar lentidão
+      const aiResult = await Promise.race([
+        interpretWithAI(message, {
+          ...context.aiContext,
+          detectMood: context.moodDetection
+        }),
+        new Promise<InterpretationResult>((_, reject) => 
+          setTimeout(() => reject(new Error('AI timeout')), 3000)
+        )
+      ]);
+      
+      if (aiResult.intent === 'confirmou' || aiResult.intent === 'negou') {
+        return {
+          result: aiResult.intent,
+          intent: aiResult.intent === 'confirmou' ? 'confirmacao' : 'negacao',
+          confidence: aiResult.confidence,
+          method: 'ai',
+          reasoning: aiResult.reasoning,
+          mood: aiResult.mood || mood
+        };
+      }
+      
+      // Não conseguiu determinar
       return {
-        result: aiResult.intent,
-        intent: aiResult.intent === 'confirmou' ? 'confirmacao' : 'negacao',
-        confidence: aiResult.confidence,
+        result: 'incerto',
+        intent: 'incerto',
+        confidence: 0,
         method: 'ai',
         reasoning: aiResult.reasoning,
         mood: aiResult.mood || mood
       };
+    } catch (error) {
+      console.warn('⚠️ AI fallback (timeout ou erro):', error instanceof Error ? error.message : String(error));
+      
+      // Fallback: retornar incerto com mood detectado
+      return {
+        result: 'incerto',
+        intent: 'incerto',
+        confidence: 0,
+        method: 'ai',
+        reasoning: 'Timeout ou erro na AI, usando fallback',
+        mood
+      };
     }
-    
-    // Não conseguiu determinar
-    return {
-      result: 'incerto',
-      intent: 'incerto',
-      confidence: 0,
-      method: 'ai',
-      reasoning: aiResult.reasoning,
-      mood: aiResult.mood || mood
-    };
   }
   
   // Fallback: apenas retorna mood se detectado
