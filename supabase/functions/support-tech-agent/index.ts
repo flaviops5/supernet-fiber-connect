@@ -323,6 +323,43 @@ serve(async (req) => {
       cpf_not_found
     });
 
+    // PATCH 2: Persistir ixc_client_id no flow_state
+    if (ixc_client_id && typeof ixc_client_id === "string" && ixc_client_id.trim().length > 0) {
+      const { data: currentConv } = await supabase
+        .from("conversations")
+        .select("metadata")
+        .eq("id", conversation_id)
+        .single();
+
+      const existingState = (currentConv?.metadata as any)?.flow_state;
+      
+      if (!existingState?.ixc_client_id || existingState?.ixc_client_id !== ixc_client_id) {
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConv?.metadata as any || {}),
+              flow_state: {
+                ...existingState,
+                ixc_client_id
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase
+          .from("registros_de_monitoramento")
+          .insert({
+            acao: "persist_ixc_client_id",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { ixc_client_id }
+          });
+        
+        logger.info("IXC client_id persistido", { ixc_client_id });
+      }
+    }
+
     // Detecção leve de intenção/humor (somente logs, sem alterar fluxo)
     let detectedIntent = "";
     let detectedMood = "neutro";
@@ -613,7 +650,33 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           } else if (rx >= -23 && rx <= -18 && tx >= -1 && tx <= 2) {
             // CENÁRIO B: Sinal normal mas offline (equipamento travado)
             scenario = "B";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nVerifiquei o sinal da ONU e está **dentro dos padrões** (RX: ${rx} dBm / TX: ${tx} dBm).\n\n🔧 Vamos tentar manualmente:\n1️⃣ **DESLIGUE** o roteador da tomada\n2️⃣ **AGUARDE** 60 segundos completos\n3️⃣ **LIGUE** novamente\n\nMe avise quando terminar!`;
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nVerifiquei o sinal da ONU e está **dentro dos padrões** (RX: ${rx} dBm / TX: ${tx} dBm).\n\n🔧 Vamos desligar e ligar o roteador da tomada e aguardar 1 minuto, por favor.`;
+            
+            // PATCH 3: Registrar estado inicial do Cenário B
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(conversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((conversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_wait_restart",
+                    scenario: "B",
+                    ixc_client_id
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            await supabase
+              .from("registros_de_monitoramento")
+              .insert({
+                acao: "ask_power_cycle_router_b0",
+                fluxo: "support-tech",
+                conversation_id
+              });
+            
+            logger.info("Cenário B iniciado - aguardando reinício do roteador");
           } else if (rx >= -28 && rx <= -24) {
             // CENÁRIO C: Sinal fraco
             scenario = "C";
@@ -1495,6 +1558,238 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           }
           
           logger.info("Luan respondeu ao cliente no Cenário A", { flowState });
+        }
+      }
+      
+      // 🔵 CENÁRIO B: Fluxo de equipamento travado (sinal OK)
+      const isCenarioB = scenario === "B" || flowState?.waiting_step?.startsWith("scenario_b");
+      const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
+      
+      if (isCenarioB && waitingStep) {
+        logger.info("Processando Cenário B - Equipamento Travado", { 
+          waitingStep,
+          scenario
+        });
+
+        const lastUserMessage = message || "";
+        
+        // PATCH 4: Confirmação do reinício
+        if (waitingStep === "scenario_b_wait_restart") {
+          const { intent } = detectIntentAndMood(lastUserMessage);
+
+          if (intent === "ja_fiz" || intent === "confirmacao") {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_post_test"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            await supabase.from("registros_de_monitoramento").insert({
+              acao: "confirm_reboot_router_scenario_b",
+              fluxo: "support-tech",
+              conversation_id
+            });
+
+            responseMessage = "Perfeito 👏 Vou rodar um teste técnico aqui 🔧 para adiantar sua solução.";
+          }
+        }
+        
+        // PATCH 5: Teste remoto pós-ação
+        else if (waitingStep === "scenario_b_post_test") {
+          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+
+          const { data: postData } =
+            await supabase.functions.invoke("test-equipment-connectivity", {
+              body: { ixc_client_id: ixcId }
+            });
+
+          if (postData?.ok === true) {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_success"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Equipamento respondeu normalmente 🔧\nPode testar a navegação por favor?";
+          } else {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_check_leds"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Obrigado 🙏 Pode me informar como estão as luzes LOS e PON? Piscando ou fixas?";
+          }
+        }
+        
+        // PATCH 6: Interpretação de LEDs
+        else if (waitingStep === "scenario_b_check_leds") {
+          const lower = lastUserMessage.toLowerCase();
+          const losPisc = /(los.*pisc)/.test(lower);
+          const ponPisc = /(pon.*pisc)/.test(lower);
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "check_leds",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { losPisc, ponPisc }
+          });
+
+          if (!losPisc && !ponPisc) {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_success"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "As luzes estão OK ✅ Tente navegar novamente.";
+          } else {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_b_optical_step"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Vamos reconectar o conector verde com cuidado ✅";
+          }
+        }
+        
+        // PATCH 7: Pós-ótica
+        else if (waitingStep === "scenario_b_optical_step") {
+          const { intent } = detectIntentAndMood(lastUserMessage);
+
+          if (intent === "ja_fiz" || intent === "confirmacao") {
+            const { data: postData2 } =
+              await supabase.functions.invoke("test-equipment-connectivity", {
+                body: { ixc_client_id: (currentConversation?.metadata as any)?.flow_state?.ixc_client_id }
+              });
+
+            if (postData2?.ok === true) {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_b_success"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = "Perfeito ✅ Pode testar a navegação, por favor!";
+            } else {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_b_fail_escalate"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = "Vou abrir um atendimento para resolver isso ✅";
+            }
+          }
+        }
+        
+        // PATCH 8: Ticket final
+        else if (waitingStep === "scenario_b_fail_escalate") {
+          // Executar tools configuradas (criar_atendimento_ixc)
+          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+          
+          if (ixcId) {
+            const toolResults = await executeConfiguredTools(
+              supabase,
+              logger,
+              "scenario_b_fail", // step específico
+              "equipamento_travado", // subject
+              {
+                ixc_client_id: ixcId,
+                customer_name: customerName,
+                ticket_subject: "Falha persistente após testes técnicos",
+                ticket_description: `Cliente ${customerName} com falha persistente. Sinal OK mas equipamento não responde. Testes de conectividade e manipulação óptica sem sucesso.`,
+                ticket_priority: "urgent"
+              }
+            );
+            
+            const protocolText = toolResults.ticket_id 
+              ? `Protocolo: ${toolResults.ticket_id}` 
+              : "Protocolo gerado";
+            
+            responseMessage = `✅ ${protocolText}\nNossa equipe técnica dará sequência 👍`;
+          }
+
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: null
+                }
+              }
+            })
+            .eq("id", conversation_id);
+        }
+        
+        // Inserir mensagem do Cenário B
+        if (responseMessage && typeof responseMessage === "string") {
+          const { error: insertErr } = await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          if (insertErr) {
+            logger.error("Erro ao inserir mensagem do Cenário B", { error: insertErr.message });
+            throw insertErr;
+          }
+          
+          logger.info("Luan respondeu ao cliente no Cenário B", { waitingStep });
         }
       }
       
