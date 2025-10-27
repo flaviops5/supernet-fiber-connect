@@ -114,6 +114,65 @@ function getApprovedQuestionForStep(approvedMessages: any[], stepKey: string): s
   return question;
 }
 
+// >>> PR7: helpers do Cenário B
+async function logB(supabaseClient: any, conversation_id: string, acao: string, detalhes: Record<string, any> = {}) {
+  await supabaseClient.from("registros_de_monitoramento").insert({
+    fluxo: "support-tech",
+    acao,
+    conversation_id,
+    detalhes
+  });
+}
+
+async function setWaitingStep(supabaseClient: any, conversationId: string, meta: any, step: string, extra: Record<string, any> = {}) {
+  await supabaseClient
+    .from("conversations")
+    .update({
+      metadata: {
+        ...(meta || {}),
+        flow_state: {
+          ...((meta?.flow_state) || {}),
+          ...extra,
+          waiting_step: step
+        }
+      }
+    })
+    .eq("id", conversationId);
+}
+
+async function safeTestConnectivity(supabaseClient: any, ixcId: string) {
+  // 1ª tentativa: API refatorada (ixc_client_id)
+  let conn = await supabaseClient.functions.invoke("test-equipment-connectivity", {
+    body: { ixc_client_id: ixcId, timeout: 5000 }
+  });
+
+  // Fallback: busca IP no IXC e testa por IP
+  if (conn?.error || conn?.data?.ok === undefined) {
+    const rad = await supabaseClient.functions.invoke("ixc-integration", {
+      body: { action: "radusuario_ip", id_cliente: ixcId }
+    });
+    const ip = rad?.data?.ip || rad?.data?.framedipaddress;
+    if (ip) {
+      conn = await supabaseClient.functions.invoke("test-equipment-connectivity", {
+        body: { ip, timeout: 5000 }
+      });
+    }
+  }
+  return conn;
+}
+
+function isGoodSignal(signal?: any) {
+  const rx = Number(signal?.rx);
+  return Number.isFinite(rx) && rx > -24; // bom acima de -24 dBm
+}
+
+function isZeroSignal(signal?: any) {
+  const rx = Number(signal?.rx);
+  const tx = Number(signal?.tx);
+  return (tx === 0 || tx === 0.0) && (rx === 0 || rx === 0.0);
+}
+// <<< PR7
+
 /**
  * Detecção leve de intenção e humor via regex (sem dependências externas)
  */
@@ -575,6 +634,39 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         `${customerName}, estou finalizando aqui por falta de retorno. Se precisar, é só me chamar novamente! 👋`
       );
     }
+
+    // >>> PR7: DETECÇÃO AUTOMÁTICA DE ENTRADA NO CENÁRIO B
+    // (coloque logo após a obtenção de signal/flow_state/ixc_client_id)
+    const signal = (currentConversation?.metadata as any)?.signal_data;
+    const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id ?? ixc_client_id;
+    const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
+
+    // Detectar sintomas de problema de navegação
+    const userReportsConnectivityIssue = !isFirstMessage && message && 
+      /(nao carrega|não carrega|nao abre|não abre|lento|trav|parou|sem net|cai|congelou|nao navega|não navega)/i.test(message);
+
+    if (!isFirstMessage && !waitingStep && isGoodSignal(signal) && userReportsConnectivityIssue) {
+      // Teste leve de conectividade para inferir travamento
+      const testConn = await safeTestConnectivity(supabase, ixcId);
+      const reachable = testConn?.data?.ok === true;
+      await logB(supabase, conversation_id, "scenario_b_probe", { signal, reachable });
+
+      // Critério B: sinal bom + comportamento de travamento percebido (sem navegação/instável)
+      if (!reachable) {
+        await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, "scenario_b_power_cycle_request", { ixc_client_id: ixcId });
+        responseMessage = `Vamos fazer o básico que resolve a maioria dos travamentos 👍
+
+1️⃣ Desligue o **roteador** da tomada  
+2️⃣ Aguarde **60 segundos**  
+3️⃣ Ligue novamente e aguarde **1 minuto**
+
+Me avise quando ligar, por favor.  
+(Se já fez agora há pouco, me diga também)`;
+
+        await logB(supabase, conversation_id, "scenario_b_start", { reason: "good_signal_but_unreachable" });
+      }
+    }
+    // <<< PR7
 
     // Verificar se há pane massiva ativa (contexto em memória)
     let outageActive = massOutageContext.active;
@@ -1899,8 +1991,114 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
         const lastUserMessage = message || "";
         
-        // ✅ PR #4: Interpretação Híbrida no Cenário B
-        if (waitingStep === "scenario_b_wait_restart") {
+        // >>> PR7: CENÁRIO B — CONFIRMAÇÃO DO DESLIGA/LIGA (B2)
+        if (waitingStep === "scenario_b_wait_restart" || waitingStep === "scenario_b_power_cycle_request") {
+          const interpret = await hybridInterpret(lastUserMessage || "", {
+            regexDetectors: {
+              confirmed: /(pronto|liguei|já liguei|ok|feito|terminei|reinic|desliguei)/i,
+              denied: /(n[ãa]o|nao fiz|ainda n)/i,
+              already: /(já fiz|fiz isso|tentei antes|mil vezes)/i
+            },
+            similarityPhrases: {
+              confirmed: ["já liguei", "terminei", "pronto"],
+              denied: ["ainda não"],
+              already: ["já fiz isso"]
+            }
+          });
+
+          await logB(supabase, conversation_id, "scenario_b_power_cycle_ack", { intent: interpret?.intent, confidence: interpret?.confidence });
+
+          if (interpret?.intent === "denied") {
+            responseMessage = "Sem problemas! Pode fazer agora, por favor? 😉 Depois me avise aqui.";
+          } else {
+            // Confirmado ou já fez — segue para pós-ação
+            await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, "scenario_b_post_reboot_test", {});
+            responseMessage = "Perfeito! Vou validar aqui rapidinho se estabilizou. ⏳";
+          }
+        }
+        // <<< PR7
+
+        // >>> PR7: CENÁRIO B — TESTE PÓS-AÇÃO E ROTEAMENTO ADAPTATIVO (B3)
+        else if (waitingStep === "scenario_b_post_reboot_test") {
+          // 1) Recoleta de sinal + teste de conectividade
+          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id || ixc_client_id;
+          const testConn = await safeTestConnectivity(supabase, ixcId);
+          const reachable = testConn?.data?.ok === true;
+
+          // (Opcional) Atualiza sinal novamente se existir função utilitária no seu código
+          // const refreshedSignal = await getLatestSignal(ixcId) // se houver
+          const refreshedSignal = signal; // fallback
+          await logB(supabase, conversation_id, "scenario_b_post_reboot_probe", { reachable, signal: refreshedSignal });
+
+          // 2) Decisão adaptativa
+          if (isZeroSignal(refreshedSignal)) {
+            // Virou A: sem energia ou desconectado
+            await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, null, { scenario_redirect: "A" });
+            responseMessage = `Opa, aqui ficou sem sinal óptico (TX/RX zerados).  
+Vou ajustar o fluxo pra resolver isso rapidinho. ✅`;
+          } else {
+            // Checa indícios de LOS por texto do cliente (se respondeu)
+            const lower = (lastUserMessage || "").toLowerCase();
+            const losPisc = /(los.*pisc|vermelh.*pisc|pisc.*vermelh|vermelh.*intermit)/i.test(lower);
+
+            if (losPisc) {
+              // Virou C: mau contato/atenuação
+              await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, "scenario_c_optical", {});
+              responseMessage = `Entendi. A luz vermelha **LOS** piscando indica falha no sinal da fibra.  
+Vamos fazer o ajuste no conector verde rapidinho 👍`;
+            } else if (reachable) {
+              // Sucesso remoto
+              await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, null, { scenario_completed: "B" });
+              responseMessage = `Que ótimo! 👏  
+Só me confirma, você já está conseguindo **navegar normalmente** aí? 👌`;
+              await logB(supabase, conversation_id, "scenario_b_success", { reachable: true });
+              
+              // KPI: Cenário B resolvido
+              kpiLog({
+                action: "kpi_update",
+                conversation_id,
+                scenario_completed: "B",
+                hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+                resolved: true,
+                escalated: false,
+              });
+            } else {
+              // Persistiu travamento: abre atendimento técnico no IXC
+              const ticket = await supabase.functions.invoke("ixc-integration", {
+                body: {
+                  action: "criar_atendimento",
+                  id_cliente: ixcId,
+                  assunto: "Equipamento travado mesmo após reinício (sinal óptico bom)",
+                  descricao: "Cliente com RX > -24 dBm. Reinício manual orientado e teste posterior falhou. Persistem sintomas de travamento.",
+                  prioridade: "alta"
+                }
+              });
+
+              await setWaitingStep(supabase, conversation_id, currentConversation?.metadata, null, { scenario_completed: "B", ticket_created: !ticket?.error, ixc_ticket_id: ticket?.data?.id_atendimento || null });
+              responseMessage = ticket?.data?.id_atendimento
+                ? `Entendido. Registrei um atendimento para você.  
+**Protocolo IXC:** ${ticket.data.id_atendimento}  
+Nossa equipe técnica vai atuar na sua linha. 🔧`
+                : `Registrei o atendimento técnico e nossa equipe vai atuar na sua linha. 🔧`;
+              await logB(supabase, conversation_id, "scenario_b_ticket_created", { success: !ticket?.error, ticket_id: ticket?.data?.id_atendimento || null });
+              
+              // KPI: Cenário B escalado
+              kpiLog({
+                action: "kpi_update",
+                conversation_id,
+                scenario_completed: "B",
+                hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+                resolved: false,
+                escalated: true,
+                ticket_id: ticket?.data?.id_atendimento ?? null,
+              });
+            }
+          }
+        }
+        // <<< PR7
+        
+        // ✅ PR #4 (LEGACY): Manter compatibilidade com código existente
+        else if (waitingStep === "scenario_b_wait_restart_legacy") {
           const hybrid = await hybridInterpret(lastUserMessage, {
             regexDetectors: {
               confirmed: /(sim|ok|pronto|feito|ja fiz|reiniciei|desliguei|liguei)/i,

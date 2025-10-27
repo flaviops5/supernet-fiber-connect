@@ -17,14 +17,17 @@ export const SUPPORT_TECH_CONFIG = {
   maxMessagesInContext: 15, // Precisa de mais contexto para troubleshooting
   enableToolCalling: true,
   
+  // >>> PR7: garantir ferramenta
   // Available tools
   allowedTools: [
     "criar_atendimento_ixc",
-    "test_equipment_connectivity",
+    "test_equipment_connectivity", // manter consistência de nome
     "ixc_client_lookup",
     "reboot_client_equipment", // Reboot manual sob demanda
-    "get_onu_signal_status" // 🆕 Consulta TX/RX para diagnóstico
+    "get_onu_signal_status", // 🆕 Consulta TX/RX para diagnóstico
+    "ixc-integration" // Criar atendimentos IXC
   ],
+  // <<< PR7
   
   // Business rules
   maxRebootAttempts: 3,
