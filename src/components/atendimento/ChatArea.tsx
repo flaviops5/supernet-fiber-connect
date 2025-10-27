@@ -15,6 +15,8 @@ import MessageShortcuts from './MessageShortcuts';
 import AISuggestion from './AISuggestion';
 import TextReview from './TextReview';
 import RebootLoader from './RebootLoader';
+import { MediaGuidedMessage } from './MediaGuidedMessage';
+import { MediaContext } from '@/lib/media-helper';
 
 interface Message {
   id: string;
@@ -23,6 +25,7 @@ interface Message {
   content: string;
   ai_suggestion: boolean;
   created_at: string;
+  media_context?: MediaContext; // PR #6 - Contexto de mídia guiada
 }
 
 interface Props {
@@ -227,37 +230,62 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
       </CardHeader>
 
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-2 ${
-              message.sender_type === 'agent' ? 'justify-end' : 'justify-start'
-            }`}
-          >
+        {messages.map((message) => {
+          // PR #6 - Se mensagem tem contexto de mídia, usar MediaGuidedMessage
+          if (message.media_context && message.sender_type === 'ai') {
+            return (
+              <div key={message.id} className="flex justify-start">
+                <div className="max-w-[80%]">
+                  <MediaGuidedMessage
+                    mediaAsset={{
+                      type: 'image', // Será determinado pelo helper
+                      url: '', // Será determinado pelo helper
+                      fallbackText: message.content
+                    }}
+                    text={message.content}
+                    conversationId={conversationId || ''}
+                    agentName={message.sender_name}
+                    mediaContext={message.media_context}
+                    showFeedback={true}
+                  />
+                </div>
+              </div>
+            );
+          }
+          
+          // Mensagem normal sem mídia guiada
+          return (
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
-                message.sender_type === 'agent'
-                  ? 'bg-primary text-primary-foreground'
-                  : message.sender_type === 'ai'
-                  ? 'bg-purple-500/10 border border-purple-500/20'
-                  : 'bg-muted'
+              key={message.id}
+              className={`flex gap-2 ${
+                message.sender_type === 'agent' ? 'justify-end' : 'justify-start'
               }`}
             >
-              <div className="flex items-center gap-2 mb-1">
-                {message.sender_type === 'ai' && <Bot className="h-3 w-3" />}
-                {message.sender_type === 'customer' && <User className="h-3 w-3" />}
-                <span className="text-xs font-medium">{message.sender_name}</span>
-                {message.ai_suggestion && (
-                  <Badge variant="secondary" className="text-xs">IA</Badge>
-                )}
+              <div
+                className={`max-w-[80%] rounded-lg p-3 ${
+                  message.sender_type === 'agent'
+                    ? 'bg-primary text-primary-foreground'
+                    : message.sender_type === 'ai'
+                    ? 'bg-purple-500/10 border border-purple-500/20'
+                    : 'bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {message.sender_type === 'ai' && <Bot className="h-3 w-3" />}
+                  {message.sender_type === 'customer' && <User className="h-3 w-3" />}
+                  <span className="text-xs font-medium">{message.sender_name}</span>
+                  {message.ai_suggestion && (
+                    <Badge variant="secondary" className="text-xs">IA</Badge>
+                  )}
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {format(new Date(message.created_at), 'HH:mm', { locale: ptBR })}
+                </p>
               </div>
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-              <p className="text-xs opacity-70 mt-1">
-                {format(new Date(message.created_at), 'HH:mm', { locale: ptBR })}
-              </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
 {rebootInProgress && (
           <RebootLoader totalSeconds={60} startedAt={rebootStartedAt} />
         )}

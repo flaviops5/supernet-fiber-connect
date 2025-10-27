@@ -2829,6 +2829,45 @@ export type Database = {
         }
         Relationships: []
       }
+      media_usage_logs: {
+        Row: {
+          agent_name: string
+          conversation_id: string
+          created_at: string
+          displayed_successfully: boolean
+          feedback_at: string | null
+          id: string
+          media_context: string
+          media_type: string
+          media_url: string
+          user_feedback: string | null
+        }
+        Insert: {
+          agent_name: string
+          conversation_id: string
+          created_at?: string
+          displayed_successfully?: boolean
+          feedback_at?: string | null
+          id?: string
+          media_context: string
+          media_type: string
+          media_url: string
+          user_feedback?: string | null
+        }
+        Update: {
+          agent_name?: string
+          conversation_id?: string
+          created_at?: string
+          displayed_successfully?: boolean
+          feedback_at?: string | null
+          id?: string
+          media_context?: string
+          media_type?: string
+          media_url?: string
+          user_feedback?: string | null
+        }
+        Relationships: []
+      }
       message_shortcuts: {
         Row: {
           ai_agents: string[] | null
@@ -4156,6 +4195,19 @@ export type Database = {
           total_logs: number | null
           total_resolvidos: number | null
           uso_hibrido_percent: number | null
+        }
+        Relationships: []
+      }
+      media_effectiveness_metrics: {
+        Row: {
+          agent_name: string | null
+          date: string | null
+          help_rate_percentage: number | null
+          helped_count: number | null
+          media_context: string | null
+          not_helped_count: number | null
+          successful_displays: number | null
+          total_uses: number | null
         }
         Relationships: []
       }

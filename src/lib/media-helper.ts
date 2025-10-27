@@ -96,34 +96,30 @@ export async function checkMediaAvailability(url: string): Promise<boolean> {
 
 /**
  * Registra uso de mídia para métricas
- * Nota: A tabela media_usage_logs será criada via migração SQL
  */
 export async function logMediaUsage(data: MediaLogData): Promise<void> {
   try {
-    // Log localmente até que a tabela seja criada
-    logger.info('Media usage', { 
-      conversation_id: data.conversation_id,
-      agent_name: data.agent_name,
-      media_type: data.media_type,
-      media_context: data.media_context,
-      media_url: data.media_url,
-      displayed_successfully: data.displayed_successfully,
-      user_feedback: data.user_feedback
-    });
-    
-    // TODO: Uncomment after migration
-    // const { error } = await supabase
-    //   .from('media_usage_logs')
-    //   .insert({
-    //     conversation_id: data.conversation_id,
-    //     agent_name: data.agent_name,
-    //     media_type: data.media_type,
-    //     media_context: data.media_context,
-    //     media_url: data.media_url,
-    //     displayed_successfully: data.displayed_successfully,
-    //     user_feedback: data.user_feedback,
-    //     created_at: new Date().toISOString()
-    //   });
+    const { error } = await supabase
+      .from('media_usage_logs')
+      .insert({
+        conversation_id: data.conversation_id,
+        agent_name: data.agent_name,
+        media_type: data.media_type,
+        media_context: data.media_context,
+        media_url: data.media_url,
+        displayed_successfully: data.displayed_successfully,
+        user_feedback: data.user_feedback,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      logger.error('Failed to log media usage', error);
+    } else {
+      logger.info('Media usage logged', { 
+        context: data.media_context, 
+        success: data.displayed_successfully 
+      });
+    }
   } catch (error) {
     logger.error('Exception logging media usage', error);
   }
@@ -131,7 +127,6 @@ export async function logMediaUsage(data: MediaLogData): Promise<void> {
 
 /**
  * Registra feedback do usuário sobre a mídia
- * Nota: A tabela media_usage_logs será criada via migração SQL
  */
 export async function recordMediaFeedback(
   conversationId: string,
@@ -139,25 +134,26 @@ export async function recordMediaFeedback(
   helped: boolean
 ): Promise<void> {
   try {
-    // Log localmente até que a tabela seja criada
-    logger.info('Media feedback recorded', { 
-      conversation_id: conversationId,
-      context: mediaContext, 
-      helped 
-    });
-    
-    // TODO: Uncomment after migration
-    // const { error } = await supabase
-    //   .from('media_usage_logs')
-    //   .update({ 
-    //     user_feedback: helped ? 'helped' : 'not_helped',
-    //     feedback_at: new Date().toISOString()
-    //   })
-    //   .eq('conversation_id', conversationId)
-    //   .eq('media_context', mediaContext)
-    //   .is('user_feedback', null)
-    //   .order('created_at', { ascending: false })
-    //   .limit(1);
+    const { error } = await supabase
+      .from('media_usage_logs')
+      .update({ 
+        user_feedback: helped ? 'helped' : 'not_helped',
+        feedback_at: new Date().toISOString()
+      })
+      .eq('conversation_id', conversationId)
+      .eq('media_context', mediaContext)
+      .is('user_feedback', null)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      logger.error('Failed to record media feedback', error);
+    } else {
+      logger.info('Media feedback recorded', { 
+        context: mediaContext, 
+        helped 
+      });
+    }
   } catch (error) {
     logger.error('Exception recording media feedback', error);
   }
