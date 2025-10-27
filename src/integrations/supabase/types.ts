@@ -3592,6 +3592,36 @@ export type Database = {
         }
         Relationships: []
       }
+      registros_de_monitoramento: {
+        Row: {
+          acao: string
+          conversation_id: string | null
+          created_at: string | null
+          detalhes: Json | null
+          fluxo: string
+          id: string
+          timestamp: string | null
+        }
+        Insert: {
+          acao: string
+          conversation_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          fluxo?: string
+          id?: string
+          timestamp?: string | null
+        }
+        Update: {
+          acao?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          fluxo?: string
+          id?: string
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
       responsaveis_alerta: {
         Row: {
           ativo: boolean
@@ -4088,7 +4118,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_hibrido_vs_deterministico: {
+        Row: {
+          escalados: number | null
+          modo: string | null
+          resolvidos: number | null
+          taxa_escalacao_percent: number | null
+          taxa_resolucao_percent: number | null
+          total_atendimentos: number | null
+        }
+        Relationships: []
+      }
+      dashboard_suporte_kpis: {
+        Row: {
+          dia: string | null
+          total_a: number | null
+          total_b: number | null
+          total_c: number | null
+          total_d: number | null
+          total_escalados: number | null
+          total_hibrido: number | null
+          total_logs: number | null
+          total_resolvidos: number | null
+        }
+        Relationships: []
+      }
+      dashboard_suporte_kpis_summary: {
+        Row: {
+          msr_percent: number | null
+          taxa_escalacao_percent: number | null
+          total_cenario_a: number | null
+          total_cenario_b: number | null
+          total_cenario_c: number | null
+          total_cenario_d: number | null
+          total_escalados: number | null
+          total_hibrido: number | null
+          total_logs: number | null
+          total_resolvidos: number | null
+          uso_hibrido_percent: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
