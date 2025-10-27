@@ -1,0 +1,14 @@
+Placeholder para arquivos de áudio:
+
+- cloe_solicita_cpf_v1.mp3
+- cloe_solicita_cpf_v1.ogg
+- cloe_solicita_cpf_v1.wav
+- luan_los_detectado_v1.mp3
+- luan_los_detectado_v1.ogg
+- luan_los_detectado_v1.wav
+- luan_reconectar_fibra_v1.mp3
+- luan_reconectar_fibra_v1.ogg
+- luan_reconectar_fibra_v1.wav
+
+Nota: Os arquivos de áudio reais devem ser criados com serviços de text-to-speech ou gravação profissional.
+Para implementação inicial, use a API Eleven Labs ou similar para gerar os áudios.

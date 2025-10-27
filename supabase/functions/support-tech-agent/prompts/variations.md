@@ -1,7 +1,24 @@
 # 📝 VARIAÇÕES APROVADAS - SCRIPTS TÉCNICOS
 
 **Sistema de Variações Aprovadas para Luan Aquino**  
-Versão 2.0.0 | Support Tech Agent
+Versão 2.1.0 | Support Tech Agent | PR #6 - Mídia Guiada
+
+---
+
+## 🎯 PR #6 - Regras de Mídia Guiada
+
+**SEMPRE usar mídia ANTES do texto quando disponível:**
+- ✅ "Conector verde - parte onde a fibra entra" (linguagem simples)
+- ✅ "Luz vermelha LOS" (termo conhecido)
+- ❌ Evitar: "conector SC/APC", "PON loss of signal" (termos técnicos)
+
+**Contextos de mídia disponíveis:**
+- `los_detected` - Imagem da luz LOS + áudio explicativo
+- `fiber_reconnect` - Guia visual de reconexão + áudio do Luan
+- `onu_visual` - Vista frontal do ONU com luzes
+- `cpf_request` - Áudio da Cloé solicitando CPF
+
+**Fallback automático:** Se mídia falhar, continuar com texto normal.
 
 ---
 
@@ -9,6 +26,9 @@ Versão 2.0.0 | Support Tech Agent
 
 ### Diagnóstico:
 Cliente sem energia na ONU ou cabo desconectado (LOS).
+
+### 🎬 Mídia: `los_detected`
+**Exibir imagem da luz LOS + áudio explicativo ANTES do texto**
 
 ### Script Inicial:
 
@@ -30,10 +50,15 @@ Enquanto isso, vou monitorar aqui do meu lado.
 
 ### Follow-up 2 - Cliente Confirmou Cabo OK:
 
-```
-Entendi. Nesse caso, pode ser necessário verificar a energia do aparelhinho ou a conexão externa.
+### 🎬 Mídia: `fiber_reconnect`
+**Exibir guia visual de reconexão + áudio do Luan ANTES do texto**
 
-Vou abrir um chamado para o técnico dar uma olhada aí, ok? É rápido!
+```
+Entendi. Nesse caso, vou te mostrar como reconectar o cabo da fibra - é bem simples!
+
+[MÍDIA: Imagem guiada de reconexão]
+
+Consegue seguir essas instruções?
 ```
 
 **Tool Call**: `criar_atendimento_ixc` (urgência: **MEDIA**)
@@ -117,12 +142,17 @@ Vou pedir para um técnico verificar essa conexão aí, ok? É rapidinho!
 
 **Tool Call**: `criar_atendimento_ixc` (urgência: **MEDIA**)
 
-### Follow-up - Tentativa de Estabilização:
+### Follow-up 3 - Tentativa de Estabilização:
+
+### 🎬 Mídia: `fiber_reconnect`
+**Exibir guia visual ANTES do texto**
 
 ```
-Enquanto o técnico não chega, vou tentar estabilizar por aqui.
+Enquanto o técnico não chega, vamos tentar uma coisa:
 
-Pode desconectar e reconectar o cabo que vem da parede no aparelhinho?
+[MÍDIA: Guia de reconexão]
+
+Consegue fazer essa reconexão do cabo?
 ```
 
 **Aguardar resposta do cliente**
