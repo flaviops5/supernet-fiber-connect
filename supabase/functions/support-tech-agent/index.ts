@@ -1561,6 +1561,234 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         }
       }
       
+      // ===== CENÁRIO A APRIMORADO: TX/RX = 0.00 → Energia + LOS =====
+      const txRxZero = (currentConversation?.metadata as any)?.signal_data?.tx === 0.00 &&
+                       (currentConversation?.metadata as any)?.signal_data?.rx === 0.00;
+      
+      // Detectar entrada no Cenário A
+      if (txRxZero && !flowState?.waiting_step && !isCenarioA) {
+        logger.info("🔴 Detectado TX/RX = 0.00 → Iniciando Cenário A Aprimorado");
+        
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: "scenario_a_check_power",
+                ixc_client_id: ixcClientId
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_a_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { signal: "0.00/0.00" }
+        });
+
+        responseMessage = "Vamos fazer uma checagem rápida por aqui ✅\n\nRapidinho, só para garantir:\n\n• A tomada funciona? (mesmo se tiver filtro de linha)\n• A fonte está bem encaixada?\n• O botão Power está ligado?\n• Nenhum cabo frouxo?\n• Não está ligado em uma extensão com defeito?\n\nMe avise quando tudo estiver OK 🙏";
+      }
+      
+      // ===== HANDLERS DO CENÁRIO A APRIMORADO =====
+      const scenarioAStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
+      
+      if (scenarioAStep === "scenario_a_check_power") {
+        const interpretation = await hybridInterpret(lastUserMessage, {
+          regexDetectors: {
+            confirmed: /(sim|s[ií]|ok|j[aá]|fiz|tudo|certinho|ligad|conectad)/i,
+            denied: /(n[ãa]o|sem energia|apagad|desligad)/i
+          },
+          similarityPhrases: {
+            confirmed: ["sim, tudo ok", "já conferi", "tudo certo", "tá ligado"],
+            denied: ["não", "sem luz", "apagado", "desligado"]
+          }
+        });
+
+        if (interpretation.intent === "confirmed") {
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: "scenario_a_check_los"
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_a_power_confirmed",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { confidence: interpretation.confidence }
+          });
+
+          responseMessage = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";
+        }
+      }
+      
+      else if (scenarioAStep === "scenario_a_check_los") {
+        const lower = lastUserMessage.toLowerCase();
+        const losPisc = /(los.*pisc|vermelh.*pisc|pisc.*vermelh|vermelh.*intermit)/i.test(lower);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_a_check_los",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { losPisc }
+        });
+
+        if (losPisc) {
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: "scenario_a_optical"
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          responseMessage = "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVamos reconectar o conector verde com cuidado:\n• Segure pela base\n• Não force\n• Não dobre o cabo\n\nDepois me avise quando terminar 🙌";
+        } else {
+          // Energia OK + sem LOS → reconectar fibra preventivamente
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: "scenario_a_optical"
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          responseMessage = "Vamos conferir o conector verde para garantir a fibra ✅\n\nReconecte com cuidado e me avise quando terminar.";
+        }
+      }
+      
+      else if (scenarioAStep === "scenario_a_optical") {
+        const interpretation = await hybridInterpret(lastUserMessage, {
+          regexDetectors: {
+            confirmed: /(fiz|reconect|terminei|pronto|ok)/i
+          },
+          similarityPhrases: {
+            confirmed: ["já fiz", "reconectei", "terminei", "pronto"]
+          }
+        });
+
+        if (interpretation.intent === "confirmed") {
+          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+          
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_a_fiber_reconnected",
+            fluxo: "support-tech",
+            conversation_id
+          });
+
+          const { data: afterOptic } = await supabase.functions.invoke("test-equipment-connectivity", {
+            body: { ixc_client_id: ixcId }
+          });
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_a_post_optical_test",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { connectivity_ok: afterOptic?.ok === true }
+          });
+
+          if (afterOptic?.ok === true) {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_a_success"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Perfeito ✅ Pode testar a navegação agora e me dizer se voltou?";
+          } else {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_a_fail_escalate"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Ainda sem conexão? Vou abrir um atendimento para seguir 🚀";
+          }
+        }
+      }
+      
+      else if (scenarioAStep === "scenario_a_fail_escalate") {
+        const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+        
+        logger.info("Criando ticket IXC - Cenário A persistente", { ixc_client_id: ixcId });
+
+        const { data: ticketData, error: ticketError } = await supabase.functions.invoke("ixc-integration", {
+          body: {
+            action: "criar_atendimento",
+            id_cliente: ixcId,
+            assunto: "Falha persistente após diagnóstico completo",
+            descricao: `Cliente ${customerName} sem conexão. Cenário A concluído: energia OK, fibra reconectada, mas equipamento não responde. TX/RX = 0.00.`,
+            prioridade: "alta"
+          }
+        });
+
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: null,
+                scenario_completed: "A",
+                ticket_created: !ticketError
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_a_ticket_created",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { 
+            ticket_id: ticketData?.id_atendimento,
+            success: !ticketError 
+          }
+        });
+
+        if (!ticketError && ticketData?.id_atendimento) {
+          responseMessage = `✅ Protocolo IXC: ${ticketData.id_atendimento}\n\nNossa equipe técnica já vai agir 🚀`;
+        } else {
+          responseMessage = "✅ Atendimento registrado!\n\nNossa equipe técnica já vai agir 🚀";
+        }
+      }
+
       // 🔵 CENÁRIO B: Fluxo de equipamento travado (sinal OK)
       const isCenarioB = scenario === "B" || flowState?.waiting_step?.startsWith("scenario_b");
       const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
