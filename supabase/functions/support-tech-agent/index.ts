@@ -2058,10 +2058,72 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         }
       }
       
-      // ===== C1: DETECTAR ENTRADA NO CENÁRIO C (SINAL FRACO) =====
+      // ===== PREPARAR DADOS DE SINAL PARA CENÁRIOS =====
       const lastSignalData = (currentConversation?.metadata as any)?.signal_data;
       const txDbm = lastSignalData?.tx_dbm ?? lastSignalData?.tx ?? null;
       const rxDbm = lastSignalData?.rx_dbm ?? lastSignalData?.rx ?? null;
+      
+      // ===== B1: DETECTAR ENTRADA NO CENÁRIO B (SINAL BOM + PROBLEMA DE NAVEGAÇÃO) =====
+      const signalGood = typeof rxDbm === "number" && rxDbm > -24 && typeof txDbm === "number" && txDbm > 0;
+      const userReportsConnectivityIssue = /(nao carrega|não carrega|nao abre|não abre|lento|nao funciona|não funciona|trav|parou|sem net|cai|nao navega|não navega|congelou|travou|não está navegando|nao esta navegando)/i
+        .test((lastUserMessage ?? "").toLowerCase());
+
+      if (signalGood && userReportsConnectivityIssue && !flowState?.waiting_step && !isCenarioA) {
+        logger.info("🟢 Detectado sinal bom + problema de navegação → Iniciando Cenário B", {
+          tx: txDbm,
+          rx: rxDbm,
+          user_message: lastUserMessage
+        });
+        
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: "scenario_b_wait_restart",
+                ixc_client_id: ixc_client_id
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_b_auto_trigger",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: {
+            rxDbm,
+            txDbm,
+            user_message: lastUserMessage,
+            trigger_reason: "signal_good_but_connectivity_issue"
+          }
+        });
+
+        const responseMessage = 
+          "Vejo que o sinal está bom, mas você está com problema de navegação 🔍\n\n" +
+          "Vamos tentar resolvê-lo rapidinho ✅\n\n" +
+          "Desligue e ligue o roteador da tomada e espere 1 minuto 👍\n" +
+          "Me avise quando estiver pronto!";
+
+        const { error: insertErr } = await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        if (insertErr) {
+          logger.error("Erro ao inserir mensagem do Cenário B", { error: insertErr.message });
+          throw insertErr;
+        }
+        
+        return textReply(responseMessage);
+      }
+      
+      // ===== C1: DETECTAR ENTRADA NO CENÁRIO C (SINAL FRACO) =====
       const isWeakSignal = isWeakFromTxRx(txDbm, rxDbm);
       
       // Detectar entrada no Cenário C (sinal fraco mas não zero)
