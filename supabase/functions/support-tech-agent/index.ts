@@ -677,11 +677,37 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               });
             
             logger.info("Cenário B iniciado - aguardando reinício do roteador");
-          } else if (rx >= -28 && rx <= -24) {
-            // CENÁRIO C: Sinal fraco
+          } else if (rx >= -28 && rx <= -24 && tx > 0) {
+            // CENÁRIO C: Sinal fraco - Iniciar verificação de instabilidade
             scenario = "C";
-            const cenarioCMessage = getApprovedQuestionForStep(approvedMessages, 'cenario_c_sinal_fraco');
-            scenarioMessage = cenarioCMessage || `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nDetectei que o sinal da fibra está **FRACO** (RX: ${rx} dBm).\n\n🔍 Verifique se a **luz LOS (vermelha)** está **PISCANDO** (intermitente).\n\nObs.: a **luz PON** normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a **luz LOS** piscando? 🔴`;
+            
+            // Registrar estado inicial do Cenário C
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(conversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((conversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_c_check_instability",
+                    scenario: "C",
+                    ixc_client_id,
+                    signal_data: { tx, rx }
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            await supabase.from("registros_de_monitoramento").insert({
+              acao: "scenario_c_detected",
+              fluxo: "support-tech",
+              conversation_id,
+              detalhes: { signal: "weak", tx, rx }
+            });
+
+            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\n🔍 Estou vendo que o sinal da fibra está um pouco fraco (RX: ${rx} dBm).\n\nIsso pode causar instabilidade às vezes.\n\nVocê está percebendo que a conexão cai e volta, ou fica muito lenta em alguns momentos?`;
+            
+            logger.info("Cenário C iniciado - verificando instabilidade", { tx, rx });
           } else {
             // CENÁRIO D: Sinal crítico
             scenario = "D";
@@ -2020,6 +2046,265 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           }
           
           logger.info("Luan respondeu ao cliente no Cenário B", { waitingStep });
+        }
+      }
+      
+      // 🟠 CENÁRIO C: Fluxo de sinal fraco (TX > 0, RX entre -28 e -24)
+      const isCenarioC = scenario === "C" || flowState?.waiting_step?.startsWith("scenario_c");
+      const scenarioCStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
+      
+      if (isCenarioC && scenarioCStep) {
+        logger.info("Processando Cenário C - Sinal Fraco", { 
+          waitingStep: scenarioCStep,
+          scenario
+        });
+
+        const lastUserMessage = message || "";
+        
+        // ===== Confirmação de instabilidade =====
+        if (scenarioCStep === "scenario_c_check_instability") {
+          const interpretation = await hybridInterpret(lastUserMessage, {
+            regexDetectors: {
+              confirmed: /(sim|s[ií]|cai|oscil|instavel|lent|trava|intermitent)/i,
+              denied: /(n[ãa]o|nao|nem|normal|est[aá]vel)/i
+            },
+            similarityPhrases: {
+              confirmed: [
+                "sim, cai e volta",
+                "fica caindo",
+                "muito instável",
+                "oscilando bastante",
+                "internet cai toda hora"
+              ],
+              denied: [
+                "não",
+                "está normal",
+                "não percebi isso",
+                "tá estável"
+              ]
+            }
+          });
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_c_instability_response",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { 
+              intent: interpretation.intent,
+              confidence: interpretation.confidence 
+            }
+          });
+
+          if (interpretation.intent === "confirmed") {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_c_check_los"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Obrigado! 🙌\n\nAgora me diz:\n\n🚨 A luz **LOS** (vermelha) está **piscando**?\n\n(piscando = falha na fibra)";
+          } else if (interpretation.intent === "denied") {
+            // Sem instabilidade percebida → limpar waiting_step
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: null
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            await supabase.from("registros_de_monitoramento").insert({
+              acao: "scenario_c_instability_denied",
+              fluxo: "support-tech",
+              conversation_id,
+              detalhes: { message: "Cliente negou instabilidade" }
+            });
+
+            responseMessage = "Entendi. Vou continuar monitorando o sinal.\n\nSe perceber qualquer oscilação, me avisa 👍";
+          }
+        }
+        
+        // ===== Checagem de LOS =====
+        else if (scenarioCStep === "scenario_c_check_los") {
+          const lower = lastUserMessage.toLowerCase();
+          const losPisc = /(los.*pisc|vermelh.*pisc|pisc.*vermelh|vermelh.*intermit)/i.test(lower);
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_c_check_los",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { losPisc }
+          });
+
+          if (losPisc) {
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_c_optical"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Perfeito, isso me ajuda ✅\n\nVamos reconectar o conector verde da fibra com cuidado\ne ver se estabiliza 👍\n\nMe avise quando terminar!";
+          } else {
+            // Sem LOS piscando mas com sinal fraco → reconectar preventivamente
+            await supabase
+              .from("conversations")
+              .update({
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    waiting_step: "scenario_c_optical"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            responseMessage = "Entendi 👍\n\nMesmo sem LOS piscando, pode haver mau contato.\n\nVamos reconectar o conector verde para garantir ✅";
+          }
+        }
+        
+        // ===== Teste pós reconexão =====
+        else if (scenarioCStep === "scenario_c_optical") {
+          const interpretation = await hybridInterpret(lastUserMessage, {
+            regexDetectors: {
+              confirmed: /(fiz|reconect|terminei|pronto|ok)/i
+            },
+            similarityPhrases: {
+              confirmed: ["já fiz", "reconectei", "terminei", "pronto"]
+            }
+          });
+
+          if (interpretation.intent === "confirmed") {
+            const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+            
+            const { data: retest } = await supabase.functions.invoke("test-equipment-connectivity", {
+              body: { ixc_client_id: ixcId }
+            });
+
+            await supabase.from("registros_de_monitoramento").insert({
+              acao: "scenario_c_optical_retest",
+              fluxo: "support-tech",
+              conversation_id,
+              detalhes: { connectivity_ok: retest?.ok === true }
+            });
+
+            if (retest?.ok) {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_c_success"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = "Ótimo! ✅\n\nAgora pode testar a navegação e ver se estabilizou, por favor?";
+            } else {
+              await supabase
+                .from("conversations")
+                .update({
+                  metadata: {
+                    ...(currentConversation?.metadata as any || {}),
+                    flow_state: {
+                      ...((currentConversation?.metadata as any)?.flow_state || {}),
+                      waiting_step: "scenario_c_ticket"
+                    }
+                  }
+                })
+                .eq("id", conversation_id);
+
+              responseMessage = "Ainda instável? Vou pedir para nossa equipe técnica verificar melhor 🔧";
+            }
+          }
+        }
+        
+        // ===== Ticket Final =====
+        else if (scenarioCStep === "scenario_c_ticket") {
+          const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+          
+          logger.info("Criando ticket IXC - Cenário C persistente", { ixc_client_id: ixcId });
+
+          const { data: ticketData, error: ticketError } = await supabase.functions.invoke("ixc-integration", {
+            body: {
+              action: "criar_atendimento",
+              id_cliente: ixcId,
+              assunto: "Sinal fraco persistente",
+              descricao: `Cliente ${customerName} com instabilidade. Cenário C: sinal fraco (RX entre -28 e -24 dBm) persistente após reconexão óptica. Requer verificação técnica.`,
+              prioridade: "media"
+            }
+          });
+
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: null,
+                  scenario_completed: "C",
+                  ticket_created: !ticketError
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_c_ticket_created",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { 
+              ticket_id: ticketData?.id_atendimento,
+              success: !ticketError 
+            }
+          });
+
+          if (!ticketError && ticketData?.id_atendimento) {
+            responseMessage = `✅ Protocolo IXC: ${ticketData.id_atendimento}\n\nNossa equipe técnica vai atuar na sua linha 🚀`;
+          } else {
+            responseMessage = "✅ Atendimento registrado!\n\nNossa equipe técnica vai atuar na sua linha 🚀";
+          }
+        }
+        
+        // Inserir mensagem do Cenário C
+        if (responseMessage && typeof responseMessage === "string") {
+          const { error: insertErr } = await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          if (insertErr) {
+            logger.error("Erro ao inserir mensagem do Cenário C", { error: insertErr.message });
+            throw insertErr;
+          }
+          
+          logger.info("Luan respondeu ao cliente no Cenário C", { waitingStep: scenarioCStep });
         }
       }
       
