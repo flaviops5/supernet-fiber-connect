@@ -3,10 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
-import { hybridInterpret, normalizeText, detectFrustration } from "../_shared/ai-response-interpreter.ts";
+import { hybridInterpret, normalizeText, detectFrustration, detectMood } from "../_shared/ai-response-interpreter.ts";
 import { textReply, jsonReply } from "../_shared/replies.ts";
 import { updateFlowState } from "../_shared/flow-state.ts";
 import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
+import { logAudit } from "../_shared/audit-logger.ts";
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -368,6 +369,46 @@ serve(async (req) => {
         logger.info("IXC client_id persistido", { ixc_client_id });
       }
     }
+
+    // ===== PATCH 1: Feature Flag - 50% Hybrid Mode A/B Test =====
+    const { data: currentConv } = await supabase
+      .from("conversations")
+      .select("metadata")
+      .eq("id", conversation_id)
+      .single();
+
+    const existingFlowState = (currentConv?.metadata as any)?.flow_state || {};
+    const isHybridEnabled = (existingFlowState?.hybrid_mode_active !== undefined)
+      ? existingFlowState.hybrid_mode_active
+      : Math.random() < 0.5; // 50% dos atendimentos
+
+    await supabase
+      .from("conversations")
+      .update({
+        metadata: {
+          ...(currentConv?.metadata as any || {}),
+          flow_state: {
+            ...existingFlowState,
+            hybrid_mode_active: isHybridEnabled
+          }
+        }
+      })
+      .eq("id", conversation_id);
+
+    await logAudit({
+      action: "hybrid_test_assignment",
+      conversation_id,
+      detalhes: {
+        hybrid_mode: isHybridEnabled ? "hybrid" : "deterministic",
+        assigned_at: new Date().toISOString()
+      },
+      supabaseClient: supabase
+    });
+
+    logger.info("Modo híbrido definido", { 
+      isHybridEnabled,
+      test_group: isHybridEnabled ? "hybrid" : "deterministic"
+    });
 
     // Detecção leve de intenção/humor (somente logs, sem alterar fluxo)
     let detectedIntent = "";
@@ -1836,11 +1877,59 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
         const lastUserMessage = message || "";
         
-        // PATCH 4: Confirmação do reinício
+        // PATCH 2 & 3: Interpretação híbrida com detecção de humor
         if (waitingStep === "scenario_b_wait_restart") {
-          const { intent } = detectIntentAndMood(lastUserMessage);
+          const hybrid = await hybridInterpret(lastUserMessage, {
+            intents: ["confirmacao", "negacao", "duvida"],
+            regexDetectors: {
+              confirmed: /(sim|ok|pronto|feito|ja fiz|reiniciei|desliguei)/i,
+              denied: /(nao|ainda nao|nao fiz)/i
+            },
+            similarityPhrases: {
+              confirmed: ["já fiz", "pronto", "reiniciei", "desliguei e liguei"],
+              denied: ["não", "ainda não", "não fiz", "não consegui"]
+            },
+            aiContext: {
+              expectedAction: "desligar e ligar o roteador da tomada",
+              previousAgentMessage: "Desligue e ligue o roteador da tomada e espere 1 minuto"
+            },
+            moodDetection: isHybridEnabled // Só ativa mood se estiver no teste híbrido
+          });
 
-          if (intent === "ja_fiz" || intent === "confirmacao") {
+          await logAudit({
+            action: "hybrid_interpretation",
+            conversation_id,
+            detalhes: {
+              intent: hybrid.intent,
+              mood: hybrid.mood,
+              confidence: hybrid.confidence,
+              method: hybrid.method,
+              hybrid_enabled: isHybridEnabled
+            },
+            supabaseClient: supabase
+          });
+
+          logger.info("Interpretação híbrida - Cenário B", {
+            result: hybrid.result,
+            mood: hybrid.mood,
+            confidence: hybrid.confidence,
+            method: hybrid.method
+          });
+
+          // PATCH 3: Respostas humanizadas com base no humor
+          if (hybrid.result === "confirmou" || hybrid.intent === "confirmacao") {
+            let responseMsg = "Perfeito 👏 Vou rodar um teste técnico aqui 🔧 para adiantar sua solução.";
+            
+            if (isHybridEnabled && hybrid.mood) {
+              if (hybrid.mood === "irritado") {
+                responseMsg = "Poxa, imagino sua frustração 😕\nMas ótimo que já fez! Vou rodar um teste técnico agora 🔧";
+              } else if (hybrid.mood === "confuso") {
+                responseMsg = "Ótimo! 😊 Vou verificar o equipamento remotamente agora 🔧\nÉ rapidinho!";
+              } else if (hybrid.mood === "satisfeito") {
+                responseMsg = "Excelente! 👏 Deixa eu rodar um teste técnico aqui pra confirmar 🔧";
+              }
+            }
+
             await supabase
               .from("conversations")
               .update({
@@ -1860,7 +1949,16 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
               conversation_id
             });
 
-            responseMessage = "Perfeito 👏 Vou rodar um teste técnico aqui 🔧 para adiantar sua solução.";
+            responseMessage = responseMsg;
+          } else if (hybrid.result === "negou") {
+            responseMessage = "Sem problema! Quando conseguir fazer, me avise. Estou aqui 👍";
+          } else if (isHybridEnabled && hybrid.mood === "confuso") {
+            responseMessage = 
+              "Sem problema! 😊 Vou te explicar melhor:\n\n" +
+              "1. Desligue o roteador da tomada\n" +
+              "2. Espere 60 segundos\n" +
+              "3. Ligue de novo\n\n" +
+              "Me avisa quando terminar ✅";
           }
         }
         
@@ -2101,7 +2199,20 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           }
         });
 
-        const responseMessage = 
+        await logAudit({
+          action: "kpi_update",
+          conversation_id,
+          detalhes: {
+            scenario: "B",
+            trigger: "auto",
+            hybrid_mode: isHybridEnabled,
+            signal_quality: "good",
+            timestamp: new Date().toISOString()
+          },
+          supabaseClient: supabase
+        });
+
+        const responseMessage =
           "Vejo que o sinal está bom, mas você está com problema de navegação 🔍\n\n" +
           "Vamos tentar resolvê-lo rapidinho ✅\n\n" +
           "Desligue e ligue o roteador da tomada e espere 1 minuto 👍\n" +

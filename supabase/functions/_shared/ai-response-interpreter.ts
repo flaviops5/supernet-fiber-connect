@@ -7,6 +7,59 @@ interface InterpretationResult {
   intent: 'confirmou' | 'negou' | 'incerto' | 'fora_contexto';
   confidence: number; // 0-1
   reasoning: string;
+  mood?: 'neutro' | 'confuso' | 'irritado' | 'satisfeito';
+}
+
+type MoodType = 'neutro' | 'confuso' | 'irritado' | 'satisfeito';
+
+/**
+ * Detecta humor/estado emocional do cliente
+ */
+export function detectMood(message: string): MoodType {
+  const frustration = detectFrustration(message);
+  
+  if (frustration.isFrustrated) {
+    return 'irritado';
+  }
+  
+  const normalized = normalizeText(message);
+  
+  // Padrões de confusão
+  const confusionPatterns = [
+    /nao\s+entendi/i,
+    /como\s+(faz|fazer|funciona)/i,
+    /pode\s+explicar/i,
+    /o\s+que\s+e/i,
+    /^\?+$/,
+    /^\s*hein/i,
+    /^\s*como\s+assim/i
+  ];
+  
+  for (const pattern of confusionPatterns) {
+    if (pattern.test(normalized)) {
+      return 'confuso';
+    }
+  }
+  
+  // Padrões de satisfação
+  const satisfactionPatterns = [
+    /obrigad(o|a)/i,
+    /valeu/i,
+    /perfeito/i,
+    /otimo/i,
+    /excelente/i,
+    /resolveu/i,
+    /funcionou/i,
+    /consegui/i
+  ];
+  
+  for (const pattern of satisfactionPatterns) {
+    if (pattern.test(normalized)) {
+      return 'satisfeito';
+    }
+  }
+  
+  return 'neutro';
 }
 
 /**
@@ -207,6 +260,7 @@ export async function interpretWithAI(
   context: {
     expectedAction: string; // "verificar energia", "manipular fibra", etc
     previousAgentMessage: string;
+    detectMood?: boolean;
   }
 ): Promise<InterpretationResult> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -214,6 +268,10 @@ export async function interpretWithAI(
   if (!LOVABLE_API_KEY) {
     throw new Error('LOVABLE_API_KEY not configured');
   }
+
+  const moodInstruction = context.detectMood ? `
+- Detecte também o humor do cliente: "neutro", "confuso", "irritado" ou "satisfeito"
+- Adicione campo "mood" no JSON de resposta` : '';
 
   const prompt = `Você é um assistente que interpreta respostas de clientes em um chat de suporte técnico.
 
@@ -223,7 +281,7 @@ CONTEXTO:
 - Resposta do cliente: "${clientMessage}"
 
 TAREFA:
-Analise se o cliente confirmou que executou a ação, negou, ou a resposta está incerta/fora de contexto.
+Analise se o cliente confirmou que executou a ação, negou, ou a resposta está incerta/fora de contexto.${moodInstruction}
 
 EXEMPLOS:
 - Cliente disse "voltou" após manipular fibra → CONFIRMOU (confiança: 0.9)
@@ -235,7 +293,7 @@ Responda APENAS com um JSON válido seguindo este formato exato:
 {
   "intent": "confirmou" | "negou" | "incerto" | "fora_contexto",
   "confidence": 0.0-1.0,
-  "reasoning": "breve explicação da interpretação"
+  "reasoning": "breve explicação da interpretação"${context.detectMood ? ',\n  "mood": "neutro" | "confuso" | "irritado" | "satisfeito"' : ''}
 }`;
 
   try {
@@ -318,64 +376,103 @@ export async function hybridInterpret(
 }> {
   const normalized = normalizeText(message);
   
+  // ETAPA 0: Detectar humor se solicitado
+  let mood: MoodType | undefined;
+  if (context.moodDetection) {
+    mood = detectMood(message);
+  }
+  
   // ETAPA 1: Tentar Regex (mais rápido)
-  if (context.regexDetectors.confirmed.test(message)) {
+  if (context.regexDetectors?.confirmed?.test(message)) {
     return {
       result: 'confirmou',
+      intent: 'confirmacao',
       confidence: 1.0,
-      method: 'regex'
+      method: 'regex',
+      mood
     };
   }
   
-  if (context.regexDetectors.denied.test(message)) {
+  if (context.regexDetectors?.denied?.test(message)) {
     return {
       result: 'negou',
+      intent: 'negacao',
       confidence: 1.0,
-      method: 'regex'
+      method: 'regex',
+      mood
     };
   }
   
   // ETAPA 2: Tentar Similaridade Textual
-  const confirmedSimilarity = detectBySimilarity(message, context.similarityPhrases.confirmed);
-  const deniedSimilarity = detectBySimilarity(message, context.similarityPhrases.denied);
-  
-  if (confirmedSimilarity.match && confirmedSimilarity.confidence > 0.75) {
-    return {
-      result: 'confirmou',
-      confidence: confirmedSimilarity.confidence,
-      method: 'similarity',
-      reasoning: `Similar a: "${confirmedSimilarity.bestMatch}"`
-    };
+  if (context.similarityPhrases) {
+    const confirmedSimilarity = context.similarityPhrases.confirmed 
+      ? detectBySimilarity(message, context.similarityPhrases.confirmed)
+      : { match: false, confidence: 0 };
+    
+    const deniedSimilarity = context.similarityPhrases.denied
+      ? detectBySimilarity(message, context.similarityPhrases.denied)
+      : { match: false, confidence: 0 };
+    
+    if (confirmedSimilarity.match && confirmedSimilarity.confidence > 0.75) {
+      return {
+        result: 'confirmou',
+        intent: 'confirmacao',
+        confidence: confirmedSimilarity.confidence,
+        method: 'similarity',
+        reasoning: `Similar a: "${confirmedSimilarity.bestMatch}"`,
+        mood
+      };
+    }
+    
+    if (deniedSimilarity.match && deniedSimilarity.confidence > 0.75) {
+      return {
+        result: 'negou',
+        intent: 'negacao',
+        confidence: deniedSimilarity.confidence,
+        method: 'similarity',
+        reasoning: `Similar a: "${deniedSimilarity.bestMatch}"`,
+        mood
+      };
+    }
   }
   
-  if (deniedSimilarity.match && deniedSimilarity.confidence > 0.75) {
+  // ETAPA 3: Usar AI para casos ambíguos (se contexto fornecido)
+  if (context.aiContext) {
+    console.log("🤖 Usando AI para interpretar resposta ambígua:", message);
+    
+    const aiResult = await interpretWithAI(message, {
+      ...context.aiContext,
+      detectMood: context.moodDetection
+    });
+    
+    if (aiResult.intent === 'confirmou' || aiResult.intent === 'negou') {
+      return {
+        result: aiResult.intent,
+        intent: aiResult.intent === 'confirmou' ? 'confirmacao' : 'negacao',
+        confidence: aiResult.confidence,
+        method: 'ai',
+        reasoning: aiResult.reasoning,
+        mood: aiResult.mood || mood
+      };
+    }
+    
+    // Não conseguiu determinar
     return {
-      result: 'negou',
-      confidence: deniedSimilarity.confidence,
-      method: 'similarity',
-      reasoning: `Similar a: "${deniedSimilarity.bestMatch}"`
-    };
-  }
-  
-  // ETAPA 3: Usar AI para casos ambíguos
-  console.log("🤖 Usando AI para interpretar resposta ambígua:", message);
-  
-  const aiResult = await interpretWithAI(message, context.aiContext);
-  
-  if (aiResult.intent === 'confirmou' || aiResult.intent === 'negou') {
-    return {
-      result: aiResult.intent,
-      confidence: aiResult.confidence,
+      result: 'incerto',
+      intent: 'incerto',
+      confidence: 0,
       method: 'ai',
-      reasoning: aiResult.reasoning
+      reasoning: aiResult.reasoning,
+      mood: aiResult.mood || mood
     };
   }
   
-  // Não conseguiu determinar
+  // Fallback: apenas retorna mood se detectado
   return {
     result: 'incerto',
+    intent: 'incerto',
     confidence: 0,
-    method: 'ai',
-    reasoning: aiResult.reasoning
+    method: 'mood',
+    mood
   };
 }
