@@ -104,6 +104,36 @@ function getApprovedQuestionForStep(approvedMessages: any[], stepKey: string): s
 }
 
 /**
+ * Detecção leve de intenção e humor via regex (sem dependências externas)
+ */
+function detectIntentAndMood(msg: string): { intent: string; mood: string } {
+  const text = (msg || "").toLowerCase()
+    .normalize("NFD").replace(/\p{Diacritic}/gu, ""); // remove acentos
+  
+  const intent =
+    /^(ja (fiz|tentei)|fiz isso|reiniciei|reiniciei o roteador|ja reiniciei|ja desliguei|ja liguei|ja reconectei)/.test(text) ? "ja_fiz" :
+    /(sim|ok|feito|pronto|consegui|deu certo)(!|\.)?$/.test(text) ? "confirmacao" :
+    /(repete|nao entendi|como assim|pode explicar|poderia explicar|duvida)/.test(text) ? "duvida" :
+    /(de novo isso|sempre isso|ja falei|nao aguento|absurdo|ridiculo|pessimo|horrivel|estou irritado|irritante)/.test(text) ? "repetir" :
+    "";
+  
+  const mood =
+    /(raiva|irritado|irritante|absurdo|ridiculo|pessimo|horrivel|nao aguento|isso de novo)/.test(text)
+      ? "irritado" : "neutro";
+  
+  return { intent, mood };
+}
+
+/**
+ * Opcional (para uso futuro): compõe mensagem reconhecendo esforço
+ */
+function withEffortAck(intent: string, base: string): string {
+  return (intent === "ja_fiz" || intent === "confirmacao" || intent === "repetir")
+    ? `Perfeito, já validou essa parte 👏 ${base}`
+    : base;
+}
+
+/**
  * Busca e executa tools configuradas para um step/subject específico
  * @param supabase - Cliente Supabase
  * @param logger - Logger estruturado
@@ -292,6 +322,20 @@ serve(async (req) => {
       client_is_offline,
       cpf_not_found
     });
+
+    // Detecção leve de intenção/humor (somente logs, sem alterar fluxo)
+    let detectedIntent = "";
+    let detectedMood = "neutro";
+    if (message && typeof message === "string" && message.trim() !== "") {
+      try {
+        const detected = detectIntentAndMood(message);
+        detectedIntent = detected.intent;
+        detectedMood = detected.mood;
+        logger.info("Intent/mood detectado", { intent: detectedIntent, mood: detectedMood });
+      } catch (_) {
+        // Não bloquear fluxo se detecção falhar
+      }
+    }
 
     // 📷 PROCESSAR IMAGENS COM VISÃO AI
     let imageAnalysis = "";
