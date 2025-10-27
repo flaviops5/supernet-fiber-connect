@@ -1979,6 +1979,148 @@ Me avise quando ligar, por favor.
         }
       }
 
+      // >>> PR #8 v3 — CENÁRIO D: RX CRÍTICO (≤ -28 dBm) COM URGÊNCIA ===
+      // Ordem de prioridade: A → D → C → B
+      const massOutageActive = massOutageContext.active;
+      const signal = (currentConversation?.metadata as any)?.signal_data;
+      
+      // D0: DETECÇÃO AUTOMÁTICA DE SINAL CRÍTICO
+      if (
+        !massOutageActive &&
+        !flowState?.waiting_step &&
+        signal &&
+        Number.isFinite(Number(signal?.rx)) &&
+        Number(signal?.rx) <= -28 // RX crítico
+      ) {
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                waiting_step: "scenario_d_open_ticket",
+                ixc_client_id: ixcClientId,
+                scenario_started: "D"
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await logAudit({
+          action: "scenario_d_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: { 
+            rx: Number(signal?.rx), 
+            tx: Number(signal?.tx) 
+          },
+          supabaseClient: supabase
+        });
+
+        kpiLog({
+          action: "scenario_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          scenario_completed: "D",
+          rx_dbm: Number(signal?.rx),
+          tx_dbm: Number(signal?.tx),
+        }).catch(() => {}); // Non-blocking
+
+        responseMessage = await textReply(
+          `Sinal óptico **muito baixo** 😕  
+Vou abrir um atendimento **com prioridade máxima** agora mesmo! ⏳🔧`
+        );
+      }
+
+      // D1: ABRIR TICKET URGENTE E FINALIZAR
+      if (waitingStep === "scenario_d_open_ticket") {
+        const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id;
+        
+        if (!ixcId) {
+          logger.warn("Cenário D: ixc_client_id não encontrado, não é possível criar ticket");
+          
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: null,
+                  scenario_completed: "D",
+                  ticket_created: false
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          responseMessage = await textReply(
+            `✅ Atendimento URGENTE registrado!  
+Nossa equipe técnica já está atuando com prioridade máxima ⚡`
+          );
+        } else {
+          const { data, error } = await supabase.functions.invoke("ixc-integration", {
+            body: {
+              action: "criar_atendimento",
+              id_cliente: ixcId,
+              assunto: "Sinal crítico RX",
+              descricao: `Sinal crítico RX <= -28 dBm. Necessária visita técnica urgente.`,
+              prioridade: "alta" // ✅ compatível com IXC
+            }
+          });
+
+          await supabase
+            .from("conversations")
+            .update({
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  waiting_step: null,
+                  scenario_completed: "D",
+                  ticket_created: !error,
+                  ixc_ticket_id: data?.id_atendimento || null
+                }
+              }
+            })
+            .eq("id", conversation_id);
+
+          await logAudit({
+            action: "scenario_d_ticket_created",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: { 
+              ticket_id: data?.id_atendimento, 
+              success: !error 
+            },
+            supabaseClient: supabase
+          });
+
+          kpiLog({
+            action: "ticket_created",
+            fluxo: "support-tech",
+            conversation_id,
+            scenario_completed: "D",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: false,
+            escalated: true,
+            ticket_id: data?.id_atendimento ?? null,
+            rx_dbm: Number(signal?.rx),
+            tx_dbm: Number(signal?.tx),
+          }).catch(() => {}); // Non-blocking
+
+          responseMessage = await textReply(
+            data?.id_atendimento
+              ? `Prontinho! ✅ Protocolo IXC: **${data.id_atendimento}**  
+Nossa equipe técnica vai te atender com urgência máxima 🚀`
+              : `✅ Atendimento registrado!  
+Nossa equipe técnica já está a caminho de uma solução ⚡`
+          );
+        }
+      }
+      // <<< PR #8 v3 CENÁRIO D COMPLETO ===
+
       // 🔵 CENÁRIO B: Fluxo de equipamento travado (sinal OK)
       const isCenarioB = scenario === "B" || flowState?.waiting_step?.startsWith("scenario_b");
       const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
