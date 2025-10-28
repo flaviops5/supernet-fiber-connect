@@ -9,6 +9,9 @@ import { updateFlowState } from "../_shared/flow-state.ts";
 import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
 import { logAudit } from "../_shared/audit-logger.ts";
 import { kpiLog } from "../_shared/kpi.ts";
+// >>> PR10A - Geolocalização
+import { ensureGeo, withGeo } from "../_shared/geo.ts";
+// <<< PR10A
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -430,14 +433,30 @@ serve(async (req) => {
       }
     }
 
-    // ===== PATCH 1: Feature Flag - 50% Hybrid Mode A/B Test =====
+    // >>> PR10A - Captura geolocalização
     const { data: currentConv } = await supabase
       .from("conversations")
-      .select("metadata")
+      .select("metadata, customer_phone")
       .eq("id", conversation_id)
       .single();
 
-    const existingFlowState = (currentConv?.metadata as any)?.flow_state || {};
+    let flowState = (currentConv?.metadata as any)?.flow_state || {};
+    
+    if (ixc_client_id) {
+      const geoData = await ensureGeo(
+        supabase,
+        { conversation_id, flowState },
+        ixc_client_id,
+        currentConv?.customer_phone
+      );
+      flowState = { ...flowState, geo: geoData };
+      logger.info("Geolocalização capturada", { cidade: geoData.cidade, source: geoData.source });
+    }
+    // <<< PR10A
+
+    // ===== PATCH 1: Feature Flag - 50% Hybrid Mode A/B Test =====
+
+    const existingFlowState = flowState;
     const isHybridEnabled = (existingFlowState?.hybrid_mode_active !== undefined)
       ? existingFlowState.hybrid_mode_active
       : Math.random() < 0.5; // 50% dos atendimentos
@@ -1756,7 +1775,7 @@ Me avise quando ligar, por favor.
           acao: "scenario_a_detected",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { signal: "0.00/0.00" }
+          detalhes: withGeo({ signal: "0.00/0.00" }, flowState)
         });
 
         responseMessage = "Vamos fazer uma checagem rápida por aqui ✅\n\nRapidinho, só para garantir:\n\n• A tomada funciona? (mesmo se tiver filtro de linha)\n• A fonte está bem encaixada?\n• O botão Power está ligado?\n• Nenhum cabo frouxo?\n• Não está ligado em uma extensão com defeito?\n\nMe avise quando tudo estiver OK 🙏";
@@ -1795,7 +1814,7 @@ Me avise quando ligar, por favor.
             acao: "scenario_a_power_confirmed",
             fluxo: "support-tech",
             conversation_id,
-            detalhes: { confidence: interpretation.confidence }
+            detalhes: withGeo({ confidence: interpretation.confidence }, flowState)
           });
 
           responseMessage = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";

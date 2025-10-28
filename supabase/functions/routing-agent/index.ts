@@ -7,6 +7,9 @@ import { createLogger } from "../_shared/structured-logger.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import type { JsonValue, JsonObject } from "../_shared/error-types.ts";
 import type { LovableAIResponse, AgentRequest } from "../_shared/agent-types.ts";
+// >>> PR10A - Geolocalização
+import { ensureGeo, withGeo } from "../_shared/geo.ts";
+// <<< PR10A
 import {
   getClientRoutingStatus,
   determineTargetDepartment,
@@ -140,6 +143,34 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         conversation_id: conversationId,
         metadata: { protocol, department: targetDepartment },
       });
+      
+      // >>> PR10A - Captura geo após confirmar cliente
+      const { data: currentConv } = await supabase
+        .from("conversations")
+        .select("metadata, customer_phone")
+        .eq("id", conversationId)
+        .single();
+      
+      let flowState = (currentConv?.metadata as any)?.flow_state || {};
+      
+      const geoData = await ensureGeo(
+        supabase,
+        { conversation_id: conversationId, flowState },
+        clientStatus.id,
+        currentConv?.customer_phone
+      );
+      
+      flowState = { ...flowState, geo: geoData };
+      
+      await supabase.from("registros_de_monitoramento").insert({
+        acao: "routing_initial",
+        fluxo: "routing-agent",
+        conversation_id: conversationId,
+        detalhes: withGeo({ target_department: targetDepartment }, flowState)
+      });
+      
+      logger.info("Geolocalização capturada no routing", { cidade: geoData.cidade, source: geoData.source });
+      // <<< PR10A
     }
 
     // 🔔 Mensagem de confirmação após CPF validado

@@ -4214,6 +4214,17 @@ export type Database = {
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
+      calc_support_kpis_by_region_last_7_days: {
+        Args: never
+        Returns: {
+          bairro: string
+          cidade: string
+          rx_critico_count: number
+          tickets_count: number
+          total_count: number
+          ts: string
+        }[]
+      }
       calc_support_kpis_last_7_days: {
         Args: never
         Returns: {
