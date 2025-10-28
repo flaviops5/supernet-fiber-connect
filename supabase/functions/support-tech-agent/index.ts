@@ -2483,6 +2483,294 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         return textReply(responseMessage);
       }
 
+      // ===== B1: DETECTAR ENTRADA NO CENÁRIO B (SINAL BOM, MAS CLIENTE RECLAMA) =====
+      const scenarioBKeywords = [
+        "não carrega", "não abre", "lento", "travou", "travando", "trava",
+        "demora", "não funciona", "ruim", "péssimo", "horrível",
+        "vídeo não carrega", "netflix", "youtube", "streaming"
+      ];
+      
+      const msg = (message || "").toLowerCase();
+      const hasScenarioBKeyword = scenarioBKeywords.some(kw => msg.includes(kw));
+      
+      const scenarioBSignal = onu_signal || flowState?.last_signal;
+      const isSignalGood = scenarioBSignal && 
+        Number(scenarioBSignal?.tx) < 2 && Number(scenarioBSignal?.tx) > -5 &&
+        Number(scenarioBSignal?.rx) > -24;
+      
+      if (
+        !massOutageActive &&
+        !flowState?.waiting_step &&
+        isSignalGood &&
+        hasScenarioBKeyword &&
+        !flowState?.scenario_started &&
+        !flowState?.scenario_started?.startsWith("A")
+      ) {
+        const geoData = await ensureGeo(
+          supabase,
+          { conversation_id, flowState },
+          ixc_client_id,
+          currentConversation?.customer_phone
+        );
+        
+        const newState = await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          {
+            waiting_step: "scenario_b_confirm_reboot",
+            scenario_started: "B",
+            ixc_client_id
+          }
+        );
+        
+        await logAudit({
+          fluxo: "support-tech",
+          acao: "scenario_b_detected",
+          conversation_id,
+          detalhes: {
+            rx_dbm: Number(scenarioBSignal?.rx),
+            tx_dbm: Number(scenarioBSignal?.tx),
+            rx_weak: false,
+            cidade: geoData.cidade,
+            bairro: geoData.bairro
+          },
+          supabaseClient: supabase
+        });
+        
+        kpiLog({
+          action: "scenario_b_detected",
+          fluxo: "support-tech",
+          conversation_id,
+          extras: { scenario: "B" }
+        }).catch(() => {});
+        
+        responseMessage = 
+          `Entendi 👍\n\n` +
+          `Parece que o sinal está bom, mas algo travou no equipamento.\n\n` +
+          `Pode fazer um teste rapidinho comigo? Vamos **reiniciar o roteador** da internet 🔌\n\n` +
+          `Depois teste abrindo um site ou aplicativo e me confirma se voltou?`;
+        
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        logger.info("Cenário B detectado - sinal bom mas cliente reclama", {
+          tx: scenarioBSignal?.tx,
+          rx: scenarioBSignal?.rx
+        });
+        
+        return textReply(responseMessage);
+      }
+      
+      // ===== B2: CONFIRMAÇÃO DO REBOOT (CENÁRIO B) =====
+      if (flowState?.waiting_step === "scenario_b_confirm_reboot") {
+        const lastUserMessage = message || "";
+        
+        const interpret = await hybridInterpret(lastUserMessage, {
+          regexDetectors: {
+            refused: /(n[ãa]o quero|desiste|desisto|p[áa]ra|chama humano|atendente|falar com algu[ée]m)/i,
+            confirmed: /(ok|sim|vou|voltou|j[áa] fiz|pronto|feito|reiniciei|deu certo)/i
+          }
+        });
+        
+        if (interpret.intent === "refused") {
+          await logAudit({
+            fluxo: "support-tech",
+            acao: "scenario_b_refused",
+            conversation_id,
+            detalhes: { message: lastUserMessage },
+            supabaseClient: supabase
+          });
+          
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            { 
+              waiting_step: null,
+              needs_human: true,
+              scenario_completed: "B_refused"
+            }
+          );
+          
+          responseMessage = 
+            `Sem problemas! 👍\n\n` +
+            `Vou transferir você para um atendente humano que vai te ajudar melhor.`;
+          
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          return textReply(responseMessage);
+        }
+        
+        if (interpret.intent === "confirmed" || /voltou|funcionou|resolveu|deu certo/i.test(lastUserMessage)) {
+          const geoData = await ensureGeo(
+            supabase,
+            { conversation_id, flowState },
+            ixc_client_id,
+            currentConversation?.customer_phone
+          );
+          
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            {
+              waiting_step: null,
+              scenario_completed: "B",
+              resolved_remote: true
+            }
+          );
+          
+          await logAudit({
+            fluxo: "support-tech",
+            acao: "scenario_b_resolved",
+            conversation_id,
+            detalhes: {
+              resolved_remote: true,
+              cidade: geoData.cidade,
+              bairro: geoData.bairro
+            },
+            supabaseClient: supabase
+          });
+          
+          kpiLog({
+            action: "scenario_b_resolved",
+            fluxo: "support-tech",
+            conversation_id,
+            scenario_completed: "B",
+            resolved_remote: true
+          }).catch(() => {});
+          
+          responseMessage = 
+            `✅ Ótimo!\n\n` +
+            `Ficou funcionando certinho agora? 🎉\n\n` +
+            `Pode testar abrindo um site, Netflix ou YouTube pra confirmar!`;
+          
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+          
+          return textReply(responseMessage);
+        }
+        
+        // Se não resolveu ou não confirmou claramente
+        await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          { waiting_step: "scenario_b_create_ticket" }
+        );
+        
+        responseMessage = 
+          `Hmm… ainda não voltou? 😕\n\n` +
+          `Vou pedir ajuda da nossa equipe técnica então 👇`;
+        
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        return textReply(responseMessage);
+      }
+      
+      // ===== B3: CRIAR TICKET (CENÁRIO B) =====
+      if (flowState?.waiting_step === "scenario_b_create_ticket") {
+        const ixcId = flowState?.ixc_client_id;
+        
+        if (!ixcId || typeof ixcId !== "string" || ixcId.trim().length === 0) {
+          logger.error("IXC client_id ausente no Cenário B - ticket", { flowState });
+          
+          responseMessage = 
+            `✅ Atendimento registrado!\n\n` +
+            `Nossa equipe técnica já está cuidando disso 👷`;
+        } else {
+          logger.info("Criando ticket IXC - Cenário B", { ixc_client_id: ixcId });
+          
+          const { data: ticketData, error: ticketError } = await supabase.functions.invoke("ixc-integration", {
+            body: {
+              action: "criar_atendimento",
+              id_cliente: ixcId,
+              assunto: "Conexão lenta/travada - Sinal OK",
+              descricao: `Cliente reporta lentidão ou travamento mesmo com sinal óptico adequado. Cenário B: necessária verificação técnica do equipamento.`,
+              prioridade: "media"
+            }
+          });
+          
+          const geoData = await ensureGeo(
+            supabase,
+            { conversation_id, flowState },
+            ixcId,
+            currentConversation?.customer_phone
+          );
+          
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            {
+              waiting_step: null,
+              scenario_completed: "B",
+              ticket_created: true,
+              ixc_ticket_id: ticketData?.id_atendimento
+            }
+          );
+          
+          await logAudit({
+            fluxo: "support-tech",
+            acao: "scenario_b_ticket_created",
+            conversation_id,
+            detalhes: {
+              ticket_id: ticketData?.id_atendimento,
+              cidade: geoData.cidade,
+              bairro: geoData.bairro
+            },
+            supabaseClient: supabase
+          });
+          
+          kpiLog({
+            action: "scenario_b_completed",
+            fluxo: "support-tech",
+            conversation_id,
+            scenario_completed: "B",
+            ticket_id: ticketData?.id_atendimento,
+            escalated: true
+          }).catch(() => {});
+          
+          if (!ticketError && ticketData?.id_atendimento) {
+            responseMessage = 
+              `✅ Protocolo IXC: **${ticketData.id_atendimento}**\n\n` +
+              `Nossa equipe técnica vai te atender em instantes! 🚀`;
+          } else {
+            responseMessage = 
+              `✅ Atendimento registrado!\n\n` +
+              `Nossa equipe já está cuidando disso 👷`;
+          }
+        }
+        
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        return textReply(responseMessage);
+      }
+
       // ===== C1: DETECTAR ENTRADA NO CENÁRIO C (SINAL FRACO) =====
       const isWeakSignal = isWeakFromTxRx(txDbm, rxDbm);
       
