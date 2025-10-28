@@ -167,6 +167,36 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_flow_states: {
+        Row: {
+          context_warnings: number | null
+          conversation_id: string
+          created_at: string | null
+          last_agent_question: string | null
+          scenario_started: string | null
+          updated_at: string | null
+          waiting_step: string | null
+        }
+        Insert: {
+          context_warnings?: number | null
+          conversation_id: string
+          created_at?: string | null
+          last_agent_question?: string | null
+          scenario_started?: string | null
+          updated_at?: string | null
+          waiting_step?: string | null
+        }
+        Update: {
+          context_warnings?: number | null
+          conversation_id?: string
+          created_at?: string | null
+          last_agent_question?: string | null
+          scenario_started?: string | null
+          updated_at?: string | null
+          waiting_step?: string | null
+        }
+        Relationships: []
+      }
       agent_flow_steps: {
         Row: {
           agent_type: Database["public"]["Enums"]["agent_type"]
