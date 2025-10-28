@@ -2483,6 +2483,102 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         return textReply(responseMessage);
       }
 
+      // >>> PR #12A - DETECÇÃO DE FRUSTRAÇÃO PROGRESSIVA ✅
+      const lastUserMessage = message || "";
+      const msg = lastUserMessage.toLowerCase();
+      
+      // Verificar se já foi transferido para humano
+      if (flowState?.transferred_to_human) {
+        return textReply("Um atendente humano já está cuidando do seu caso! 🙏");
+      }
+
+      const frustrationRegex = /(voc[eê] (n[aã]o|nem)|isso [aíe] um absurdo|que inferno|que saco|pelo amor de deus|cansei|rid[ií]culo|n[aã]o aguento|estou esperando|não funciona nunca|desisto|fala com humano|quero pessoa)/i;
+
+      let frustrationDetected = false;
+
+      // Regras extras de "irritação progressiva"
+      if ((flowState?.irritation_score || 0) >= 3) {
+        frustrationDetected = true;
+      }
+
+      if (frustrationRegex.test(msg)) {
+        frustrationDetected = true;
+      }
+
+      // Aumenta pontuação em cada sinal de frustração
+      if (frustrationDetected) {
+        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          irritation_score: (flowState?.irritation_score || 0) + 1
+        });
+
+        await logAudit({
+          fluxo: "support-tech",
+          acao: "irritation_detected",
+          conversation_id,
+          detalhes: withGeo({
+            msg: lastUserMessage,
+            irritation_score: (flowState?.irritation_score || 0) + 1
+          }, flowState),
+          supabaseClient: supabaseAdmin
+        });
+      }
+      // <<< PR #12A ✅
+
+      // >>> PR #12B - ESCALAÇÃO SEGURA PARA HUMANO ✅
+      if ((flowState?.irritation_score || 0) >= 4) {
+        const clientName = currentConversation?.customer_name?.split(' ')[0] || "amigo";
+
+        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          waiting_step: null,
+          scenario_completed: "HUMANO",
+          transferred_to_human: true
+        });
+
+        // Atualizar status da conversation para aguardando humano
+        await supabaseAdmin
+          .from("conversations")
+          .update({
+            status: "awaiting_human",
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...((currentConversation?.metadata as any)?.flow_state || {}),
+                transferred_to_human: true,
+                transfer_reason: "client_frustration",
+                irritation_score: flowState?.irritation_score
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        await logAudit({
+          fluxo: "support-tech",
+          acao: "transferred_human_frustration",
+          conversation_id,
+          detalhes: withGeo({
+            score: flowState?.irritation_score,
+            client_name: clientName
+          }, flowState),
+          supabaseClient: supabaseAdmin
+        });
+
+        // KPI: Transferência por frustração
+        kpiLog({
+          action: "kpi_update",
+          conversation_id,
+          scenario_completed: "HUMANO",
+          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+          resolved: false,
+          escalated: true,
+          transfer_reason: "frustration"
+        }).catch(() => {}); // Non-blocking
+
+        return textReply(
+          `Poxa 😞\n\nEu realmente sinto muito pelo transtorno, ${clientName}.\n\nVou pedir para um atendente humano continuar e resolver isso com você!\n\nSó um instante, por favor 🙏`
+        );
+      }
+      // <<< PR #12B ✅
+
       // ===== B1: DETECTAR ENTRADA NO CENÁRIO B (SINAL BOM, MAS CLIENTE RECLAMA) =====
       const scenarioBKeywords = [
         "não carrega", "não abre", "lento", "travou", "travando", "trava",
