@@ -3,16 +3,77 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map } from "lucide-react";
+import { Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map, ShieldAlert } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { KPIRow, KPIMetrics, KPIRegionRow, KPIRegionAgg } from "@/types/kpi.types";
 import SupportHeatmap from "@/components/geo/SupportHeatmap";
 import RegionAlerts from "@/components/alerts/RegionAlerts";
 import { toCoord } from "@/components/geo/city-centroids";
 
+type CriticalRegion = {
+  cidade: string;
+  qtd: number;
+  tickets: number;
+  rx_critico: number;
+};
+
+async function fetchCriticalRegions(): Promise<CriticalRegion[]> {
+  const { data, error } = await supabase.rpc("calc_support_kpis_by_region_last_7_days");
+
+  if (error) {
+    console.error("Erro KPIs por região:", error);
+    return [];
+  }
+
+  return (data as any[])
+    .map((row) => ({
+      cidade: row.cidade ?? "Desconhecido",
+      qtd: Number(row.total_count),
+      tickets: Number(row.tickets_count),
+      rx_critico: Number(row.rx_critico_count),
+    }))
+    .sort((a, b) =>
+      b.rx_critico - a.rx_critico ||
+      b.tickets - a.tickets ||
+      b.qtd - a.qtd
+    )
+    .slice(0, 5);
+}
+
+async function handleEscalateRegion(r: CriticalRegion) {
+  try {
+    // Log direto no Supabase para auditoria
+    await supabase.from("registros_de_monitoramento").insert({
+      acao: "region_escalated",
+      fluxo: "support-tech",
+      conversation_id: "dashboard",
+      detalhes: {
+        cidade: r.cidade,
+        tickets: r.tickets,
+        rx_critico: r.rx_critico,
+        total: r.qtd,
+      },
+    });
+
+    toast({
+      title: "✅ Equipe técnica alertada",
+      description: `Região: ${r.cidade}\nTickets: ${r.tickets} | RX crítico: ${r.rx_critico}`,
+    });
+  } catch (err) {
+    console.error("Erro ao escalar região:", err);
+    toast({
+      title: "❌ Erro ao alertar equipe",
+      description: "Tente novamente em alguns instantes.",
+      variant: "destructive",
+    });
+  }
+}
+
 export default function KPISupportDashboard() {
   const [rows, setRows] = useState<KPIRow[]>([]);
   const [regionRows, setRegionRows] = useState<KPIRegionRow[]>([]);
+  const [criticalRegions, setCriticalRegions] = useState<CriticalRegion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +101,13 @@ export default function KPISupportDashboard() {
 
   useEffect(() => {
     fetchData();
-    const id = setInterval(fetchData, 60_000); // auto-refresh 60s
+    fetchCriticalRegions().then(setCriticalRegions);
+    
+    const id = setInterval(() => {
+      fetchData();
+      fetchCriticalRegions().then(setCriticalRegions);
+    }, 60_000); // auto-refresh 60s
+    
     return () => clearInterval(id);
   }, []);
 
@@ -191,6 +258,40 @@ export default function KPISupportDashboard() {
       </div>
 
       <RegionAlerts regions={regionAgg} />
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <ShieldAlert className="h-5 w-5" />
+            Regiões Mais Críticas — Ação Necessária 🚨
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {criticalRegions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Nenhuma região crítica no momento
+            </p>
+          ) : (
+            criticalRegions.map((r, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 border-b last:border-none hover:bg-accent/50 transition-colors rounded">
+                <div className="space-y-0.5">
+                  <p className="font-medium text-sm">{r.cidade}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.rx_critico} RX Crítico · {r.tickets} Tickets · {r.qtd} Total
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleEscalateRegion(r)}
+                  className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                >
+                  👷 Ação Técnica
+                </button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
