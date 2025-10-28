@@ -9,7 +9,7 @@ export const useUserRole = () => {
       if (!user) return { role: "viewer" as const };
 
       // Prefer RPC to avoid RLS recursion and minimize queries
-      const checkRole = async (r: "admin" | "editor" | "viewer") => {
+      const checkRole = async (r: "admin" | "editor" | "viewer" | "gestor") => {
         const { data, error } = await supabase.rpc("has_role", {
           _user_id: user.id,
           _role: r,
@@ -18,9 +18,10 @@ export const useUserRole = () => {
         return data === true;
       };
 
-      // Try admin -> editor -> viewer
+      // Try admin -> gestor -> editor -> viewer
       try {
         if (await checkRole("admin")) return { role: "admin" as const };
+        if (await checkRole("gestor")) return { role: "gestor" as const };
         if (await checkRole("editor")) return { role: "editor" as const };
         return { role: "viewer" as const };
       } catch (e) {
@@ -30,7 +31,7 @@ export const useUserRole = () => {
           .select("role")
           .eq("user_id", user.id)
           .maybeSingle();
-        return { role: (data?.role as "admin" | "editor" | "viewer") || "viewer" };
+        return { role: (data?.role as "admin" | "editor" | "viewer" | "gestor") || "viewer" };
       }
     },
     retry: 2,

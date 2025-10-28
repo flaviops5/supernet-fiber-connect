@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { TestimonialsProvider } from "./contexts/TestimonialsContext";
 import Index from "./pages/Index";
 import Contact from "./pages/Contact";
@@ -30,6 +31,8 @@ import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
 import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
 import FluxoAgente from "./pages/FluxoAgente";
+import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
+import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
@@ -44,8 +47,9 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <TestimonialsProvider>
-      <TooltipProvider>
-        <Toaster />
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <TooltipProvider>
+          <Toaster />
         
         <BrowserRouter>
           <Routes>
@@ -55,6 +59,14 @@ const App = () => {
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
             <Route path="/admin/testes" element={<AdminTestes />} />
             <Route path="/admin/prompts" element={<AdminPrompts />} />
+            <Route 
+              path="/admin/kpi-dashboard" 
+              element={
+                <AuthGuard requiredRoles={["admin", "gestor"]}>
+                  <KPISupportDashboard />
+                </AuthGuard>
+              } 
+            />
             {/* Redirects for consolidated documentation */}
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
@@ -107,7 +119,8 @@ const App = () => {
             } />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </TestimonialsProvider>
   </QueryClientProvider>
   );

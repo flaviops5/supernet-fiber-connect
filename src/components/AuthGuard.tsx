@@ -9,11 +9,11 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  requiredRoles?: ('admin' | 'editor' | 'viewer')[];
+  requiredRoles?: ('admin' | 'editor' | 'viewer' | 'gestor')[];
 }
 
 interface UserRole {
-  role: 'admin' | 'editor' | 'viewer';
+  role: 'admin' | 'editor' | 'viewer' | 'gestor';
 }
 
 export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: AuthGuardProps) => {

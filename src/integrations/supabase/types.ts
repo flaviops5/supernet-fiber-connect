@@ -4214,6 +4214,15 @@ export type Database = {
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
+      calc_support_kpis_last_7_days: {
+        Args: never
+        Returns: {
+          resolved_remote_count: number
+          tickets_count: number
+          total_count: number
+          ts: string
+        }[]
+      }
       calculate_nps_category: { Args: { score: number }; Returns: string }
       check_rate_limit: {
         Args: {
@@ -4410,7 +4419,7 @@ export type Database = {
         | "clicked"
         | "replied"
       task_status: "pending" | "running" | "completed" | "failed" | "skipped"
-      user_role: "admin" | "editor" | "viewer"
+      user_role: "admin" | "editor" | "viewer" | "gestor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4606,7 +4615,7 @@ export const Constants = {
         "replied",
       ],
       task_status: ["pending", "running", "completed", "failed", "skipped"],
-      user_role: ["admin", "editor", "viewer"],
+      user_role: ["admin", "editor", "viewer", "gestor"],
     },
   },
 } as const

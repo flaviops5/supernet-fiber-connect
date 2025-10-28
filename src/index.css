@@ -86,6 +86,13 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Chart Colors */
+    --chart-1: 226 43% 50%; /* primary */
+    --chart-2: 142 76% 36%; /* success/green */
+    --chart-3: 25 90% 54%; /* orange */
+    --chart-4: 8 92% 55%; /* red-accent */
+    --chart-5: 38 92% 50%; /* warning */
   }
 
   .dark {
@@ -124,6 +131,13 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Chart Colors (Dark Mode) */
+    --chart-1: 210 40% 98%; /* light primary */
+    --chart-2: 142 70% 45%; /* brighter success */
+    --chart-3: 25 90% 60%; /* brighter orange */
+    --chart-4: 8 92% 60%; /* brighter red */
+    --chart-5: 38 92% 55%; /* brighter warning */
   }
 }
 
