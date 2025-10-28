@@ -4,7 +4,7 @@ import { createLogger } from "../_shared/structured-logger.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import { hybridInterpret, normalizeText, detectFrustration, detectMood } from "../_shared/ai-response-interpreter.ts";
-import { textReply, jsonReply } from "../_shared/replies.ts";
+import { textReply, jsonReply, textReplyWithContext } from "../_shared/replies.ts";
 import { updateFlowState } from "../_shared/flow-state.ts";
 import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
 import { logAudit } from "../_shared/audit-logger.ts";
@@ -750,7 +750,11 @@ Me avise quando ligar, por favor.
           const attemptNumber = cpfRetryCount + 1;
           logger.info(`Luan: CPF não encontrado - tentativa ${attemptNumber}/3`);
           
-          responseMessage = `${customerName}, não encontrei esse CPF no nosso sistema. 🔍\n\nPode confirmar o CPF para mim? Digite apenas os números, por favor.\n\n(Tentativa ${attemptNumber} de 3)`;
+          responseMessage = await textReplyWithContext(
+            supabase,
+            { conversation_id, flowState },
+            `${customerName}, não encontrei esse CPF no nosso sistema. 🔍\n\nPode confirmar o CPF para mim? Digite apenas os números, por favor.\n\n(Tentativa ${attemptNumber} de 3)`
+          ).then(r => r.json()).then(j => j.reply);
           
           // Incrementar contador de retry
           await supabase
@@ -795,7 +799,11 @@ Me avise quando ligar, por favor.
           if (tx === 0 && rx === 0) {
             // CENÁRIO A: Sem sinal - iniciar fluxo de energia
             scenario = "A";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, me diga: **as luzes do seu equipamento estão acesas?**`;
+            scenarioMessage = await textReplyWithContext(
+              supabase,
+              { conversation_id, flowState },
+              `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, me diga: **as luzes do seu equipamento estão acesas?**`
+            ).then(r => r.json()).then(j => j.reply);
             
             // Registrar estado inicial do Cenário A
             await supabase
@@ -881,7 +889,11 @@ Me avise quando ligar, por favor.
         } else if (client_is_offline) {
           // Cliente offline sem tentativa de reboot (fallback)
           logger.info("Luan: Cliente offline detectado - iniciando troubleshooting");
-          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**`;
+          responseMessage = await textReplyWithContext(
+            supabase,
+            { conversation_id, flowState },
+            `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vi que você está offline. Vamos resolver isso agora!\n\nPara começar, me diga: **as luzes do seu equipamento estão acesas?**`
+          ).then(r => r.json()).then(j => j.reply);
           
           // Registrar estado inicial
           await supabase
@@ -897,7 +909,11 @@ Me avise quando ligar, por favor.
             
         } else {
           // Mensagem genérica para outros casos
-          responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`;
+          responseMessage = await textReplyWithContext(
+            supabase,
+            { conversation_id, flowState },
+            `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\nEntendo que ficar sem internet é frustrante. Vou te ajudar a resolver isso agora!\n\nVamos começar: **qual problema você está enfrentando?**`
+          ).then(r => r.json()).then(j => j.reply);
         }
       }
 
@@ -1534,7 +1550,12 @@ Me avise quando ligar, por favor.
             if (isOnlineNow) {
               // Cliente voltou online → Perguntar se consegue navegar
               const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_navegacao');
-              responseMessage = approvedQuestion || `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
+              const questionText = approvedQuestion || `Ótimo! Você já está **online** novamente! 🎉\n\nConsegue navegar na internet normalmente?`;
+              responseMessage = await textReplyWithContext(
+                supabase,
+                { conversation_id, flowState },
+                questionText
+              ).then(r => r.json()).then(j => j.reply);
               
               await logger.info("🎯 Usando texto aprovado para verificar_navegacao", {
                 conversation_id,
@@ -1608,7 +1629,11 @@ Me avise quando ligar, por favor.
               );
             }
             
-            responseMessage = `Tudo bem. Se a luz continua vermelha, pode ser um problema mais complexo. 🔴\n\nVocê consegue tirar uma **foto da parte de trás do equipamento** mostrando onde o cabo fino (fibra) está conectado e me enviar?\n\nEnquanto isso, já vou abrir um chamado técnico prioritário. Pode ser necessário o deslocamento de um técnico.`;
+            responseMessage = await textReplyWithContext(
+              supabase,
+              { conversation_id, flowState },
+              `Tudo bem. Se a luz continua vermelha, pode ser um problema mais complexo. 🔴\n\nVocê consegue tirar uma **foto da parte de trás do equipamento** mostrando onde o cabo fino (fibra) está conectado e me enviar?\n\nEnquanto isso, já vou abrir um chamado técnico prioritário. Pode ser necessário o deslocamento de um técnico.`
+            ).then(r => r.json()).then(j => j.reply);
             
             await supabase
               .from("conversations")
@@ -1624,7 +1649,11 @@ Me avise quando ligar, por favor.
               })
               .eq("id", conversation_id);
           } else {
-            responseMessage = `Desculpe, não entendi. 🤔\n\nA luz **parou de piscar** e ficou **VERDE FIXA**?\n\nOu continua **VERMELHA**?`;
+            responseMessage = await textReplyWithContext(
+              supabase,
+              { conversation_id, flowState },
+              `Desculpe, não entendi. 🤔\n\nA luz **parou de piscar** e ficou **VERDE FIXA**?\n\nOu continua **VERMELHA**?`
+            ).then(r => r.json()).then(j => j.reply);
           }
         }
         
@@ -1715,7 +1744,11 @@ Me avise quando ligar, por favor.
           } else {
             // Incerto → Explicação detalhada
             const newAttempts = clarificationAttempts + 1;
-            responseMessage = `Desculpe, não entendi se a internet está funcionando. 🤔\n\nPor favor, tente abrir um site (como Google ou YouTube) e me diga:\n- **"sim"** se você CONSEGUE navegar e abrir sites\n- **"não"** se NÃO CONSEGUE acessar a internet`;
+            responseMessage = await textReplyWithContext(
+              supabase,
+              { conversation_id, flowState },
+              `Desculpe, não entendi se a internet está funcionando. 🤔\n\nPor favor, tente abrir um site (como Google ou YouTube) e me diga:\n- **"sim"** se você CONSEGUE navegar e abrir sites\n- **"não"** se NÃO CONSEGUE acessar a internet`
+            ).then(r => r.json()).then(j => j.reply);
             
             await supabase
               .from("conversations")
@@ -2693,7 +2726,9 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         
         // Após 3 loops, pedir mais detalhes
         if (loopCount >= 3) {
-          return textReply(
+          return textReplyWithContext(
+            supabase,
+            { conversation_id, flowState },
             `Oi! Estou aqui 👋\n\nPara eu te ajudar, preciso saber:\n\n1️⃣ A internet está **lenta** ou **sem sinal**?\n2️⃣ Está funcionando **agora**?\n\nMe conta aí! 💬`
           );
         }
@@ -2886,6 +2921,12 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           `Pode fazer um teste rapidinho comigo? Vamos **reiniciar o roteador** da internet 🔌\n\n` +
           `Depois teste abrindo um site ou aplicativo e me confirma se voltou?`;
         
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          responseMessage
+        ).then(r => r.json()).then(j => j.reply);
+        
         // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
         await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
           last_agent_question: "Já reiniciou o roteador e testou se voltou?"
@@ -2990,10 +3031,16 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             resolved_remote: true
           }).catch(() => {});
           
-          responseMessage = 
+          const questionText = 
             `✅ Ótimo!\n\n` +
             `Ficou funcionando certinho agora? 🎉\n\n` +
             `Pode testar abrindo um site, Netflix ou YouTube pra confirmar!`;
+          
+          responseMessage = await textReplyWithContext(
+            supabaseAdmin,
+            { conversation_id, flowState },
+            questionText
+          ).then(r => r.json()).then(j => j.reply);
           
           await supabase.from("conversation_messages").insert({
             conversation_id,
@@ -3013,9 +3060,15 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           { waiting_step: "scenario_b_create_ticket" }
         );
         
-        responseMessage = 
+        const questionText = 
           `Hmm… ainda não voltou? 😕\n\n` +
           `Vou pedir ajuda da nossa equipe técnica então 👇`;
+        
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          questionText
+        ).then(r => r.json()).then(j => j.reply);
         
         await supabase.from("conversation_messages").insert({
           conversation_id,
@@ -3148,9 +3201,15 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           }, flowState)
         });
 
-        responseMessage = "Estou vendo que o sinal da fibra está um pouco fraco 🔍\n\n" +
+        const questionText = "Estou vendo que o sinal da fibra está um pouco fraco 🔍\n\n" +
           "Isso pode causar instabilidade às vezes.\n\n" +
           "Você percebe que a conexão cai e volta, ou fica muito lenta em alguns momentos?";
+        
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          questionText
+        ).then(r => r.json()).then(j => j.reply);
         
         // Inserir mensagem e retornar
         if (responseMessage) {
@@ -3228,7 +3287,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
               })
               .eq("id", conversation_id);
 
-            responseMessage = "Obrigado! 🙌\n\nAgora me diz:\n\n🚨 A luz **LOS** (vermelha) está **piscando**?\n\n(piscando = falha na fibra)";
+            responseMessage = await textReplyWithContext(
+              supabaseAdmin,
+              { conversation_id, flowState },
+              "Obrigado! 🙌\n\nAgora me diz:\n\n🚨 A luz **LOS** (vermelha) está **piscando**?\n\n(piscando = falha na fibra)"
+            ).then(r => r.json()).then(j => j.reply);
           } else if (interpretation.intent === "denied") {
             // Sem instabilidade percebida → limpar waiting_step
             await supabase
@@ -3358,7 +3421,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
                 escalated: false,
               });
 
-              responseMessage = "Ótimo! ✅\n\nAgora pode testar a navegação e ver se estabilizou, por favor?";
+              responseMessage = await textReplyWithContext(
+                supabaseAdmin,
+                { conversation_id, flowState },
+                "Ótimo! ✅\n\nAgora pode testar a navegação e ver se estabilizou, por favor?"
+              ).then(r => r.json()).then(j => j.reply);
             } else {
               await supabase
                 .from("conversations")
@@ -3373,7 +3440,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
                 })
                 .eq("id", conversation_id);
 
-              responseMessage = "Ainda instável? Vou pedir para nossa equipe técnica verificar melhor 🔧";
+              responseMessage = await textReplyWithContext(
+                supabaseAdmin,
+                { conversation_id, flowState },
+                "Ainda instável? Vou pedir para nossa equipe técnica verificar melhor 🔧"
+              ).then(r => r.json()).then(j => j.reply);
             }
           }
         }
