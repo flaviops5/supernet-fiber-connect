@@ -27,12 +27,17 @@ export async function textReplyWithContext(
   ctx: { conversation_id: string; flowState?: any },
   message: string
 ): Promise<Response> {
-  // Salvar última pergunta se contém "?"
-  if (message.includes("?")) {
-    await updateFlowState(supabaseAdmin, ctx, {
-      last_agent_question: message
-    });
+  // >>> PR #15 vFINAL ✅ - Salvar última pergunta com try/catch
+  try {
+    if (message.includes("?")) {
+      await updateFlowState(supabaseAdmin, ctx, {
+        last_agent_question: message
+      });
+    }
+  } catch (error) {
+    console.error("❌ Erro salvando last_agent_question:", error);
   }
+  // <<< PR #15 ✅
 
   return textReply(message);
 }
