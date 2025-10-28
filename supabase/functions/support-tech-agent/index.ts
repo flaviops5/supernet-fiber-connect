@@ -1818,6 +1818,11 @@ Me avise quando ligar, por favor.
           });
 
           responseMessage = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";
+          
+          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            last_agent_question: "A luz LOS (vermelha) está piscando?"
+          });
         }
       }
       
@@ -1847,6 +1852,11 @@ Me avise quando ligar, por favor.
             .eq("id", conversation_id);
 
           responseMessage = "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVamos reconectar o conector verde com cuidado:\n• Segure pela base\n• Não force\n• Não dobre o cabo\n\nDepois me avise quando terminar 🙌";
+          
+          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            last_agent_question: "Já reconectou o cabo da fibra?"
+          });
         } else {
           // Energia OK + sem LOS → reconectar fibra preventivamente
           await supabase
@@ -1863,6 +1873,11 @@ Me avise quando ligar, por favor.
             .eq("id", conversation_id);
 
           responseMessage = "Vamos conferir o conector verde para garantir a fibra ✅\n\nReconecte com cuidado e me avise quando terminar.";
+          
+          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            last_agent_question: "Já reconectou o cabo da fibra?"
+          });
         }
       }
       
@@ -1921,6 +1936,11 @@ Me avise quando ligar, por favor.
             });
 
             responseMessage = "Perfeito ✅ Pode testar a navegação agora e me dizer se voltou?";
+            
+            // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+              last_agent_question: "A internet voltou a funcionar?"
+            });
           } else {
             await supabase
               .from("conversations")
@@ -2685,6 +2705,120 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
       }
       // <<< PR #12 FASE 2 ✅
 
+      // >>> PR #13 — ANTI-FUGA DE FLUXO ✅
+      const activeStep = flowState?.waiting_step;
+      const lastUserMessage = message || "";
+
+      // Se há um diagnóstico em andamento e cliente muda de assunto
+      if (activeStep && flowState?.scenario_started) {
+
+        // Palavras que indicam cooperação técnica
+        const cooperationWords = /(sim|já|ok|pronto|fiz|reconect|deslig|reinic|test|voltou|funciona|piscando|energia|los|verde|luz|roteador|modem)/i;
+        
+        // Palavras que indicam mudança de assunto (financeiro/comercial)
+        const unrelatedTopic = /(boleto|contrato|plano|preço|valor|quanto.*custa|instala[cç][aã]o|cancel|mudar|financeiro|vendas|upgrade|downgrade|fatura|pagamento)/i;
+
+        // Cliente mudou de assunto?
+        if (!cooperationWords.test(lastUserMessage) && unrelatedTopic.test(lastUserMessage)) {
+
+          const warnings = (flowState?.context_warnings || 0) + 1;
+
+          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            context_warnings: warnings
+          });
+
+          // 1️⃣ Primeira tentativa: gentilmente redirecionar
+          if (warnings === 1) {
+            responseMessage = await textReply(
+              `Já te ajudo com isso 👌\n\nMas antes preciso **finalizar este teste** aqui.\n\nPode me confirmar o que pedi na última mensagem? 😊`
+            );
+            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
+          }
+
+          // 2️⃣ Segunda tentativa: reforço com contexto
+          if (warnings === 2) {
+            const lastQuestion = flowState?.last_agent_question || "o que pedi antes";
+            responseMessage = await textReply(
+              `Prometo que vamos falar disso! 🤝\n\nMas só consigo continuar se você me responder:\n\n👉 ${lastQuestion}`
+            );
+            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
+          }
+
+          // 3️⃣ Terceira vez: transferência humana
+          if (warnings >= 3) {
+            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+              waiting_step: null,
+              transferred_to_human: true
+            });
+
+            // Atualizar status da conversation
+            await supabaseAdmin
+              .from("conversations")
+              .update({
+                status: "awaiting_human",
+                metadata: {
+                  ...(currentConversation?.metadata as any || {}),
+                  flow_state: {
+                    ...((currentConversation?.metadata as any)?.flow_state || {}),
+                    transferred_to_human: true,
+                    transfer_reason: "context_escape"
+                  }
+                }
+              })
+              .eq("id", conversation_id);
+
+            await logAudit({
+              fluxo: "support-tech",
+              acao: "context_escape_transfer",
+              conversation_id,
+              detalhes: withGeo({
+                activeStep,
+                scenarioStarted: flowState?.scenario_started,
+                warnings
+              }, flowState),
+              supabaseClient: supabaseAdmin
+            });
+
+            // KPI: Transferência por fuga de contexto
+            kpiLog({
+              action: "kpi_update",
+              conversation_id,
+              scenario_completed: "HUMANO",
+              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+              resolved: false,
+              escalated: true,
+              extras: { transfer_reason: "context_escape" }
+            }).catch(() => {}); // Non-blocking
+
+            responseMessage = await textReply(
+              `Vou te transferir para um atendente humano, ok? 👨‍💼`
+            );
+            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
+          }
+        } else {
+          // ✅ CORREÇÃO #2: Mensagem válida - resetar contador e registrar cooperação
+          const previousWarnings = flowState?.context_warnings || 0;
+          
+          if (previousWarnings > 0) {
+            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+              context_warnings: 0
+            });
+
+            // KPI: Cliente voltou a cooperar
+            kpiLog({
+              action: "context_cooperation",
+              conversation_id,
+              resolved: null,
+              extras: {
+                active_flow: activeStep,
+                previous_warnings: previousWarnings
+              }
+            }).catch(() => {}); // Non-blocking
+          }
+        }
+      }
+      // <<< PR #13 ✅
+
       // ===== B1: DETECTAR ENTRADA NO CENÁRIO B (SINAL BOM, MAS CLIENTE RECLAMA) =====
       const scenarioBKeywords = [
         "não carrega", "não abre", "lento", "travou", "travando", "trava",
@@ -2751,6 +2885,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           `Parece que o sinal está bom, mas algo travou no equipamento.\n\n` +
           `Pode fazer um teste rapidinho comigo? Vamos **reiniciar o roteador** da internet 🔌\n\n` +
           `Depois teste abrindo um site ou aplicativo e me confirma se voltou?`;
+        
+        // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          last_agent_question: "Já reiniciou o roteador e testou se voltou?"
+        });
         
         await supabase.from("conversation_messages").insert({
           conversation_id,
