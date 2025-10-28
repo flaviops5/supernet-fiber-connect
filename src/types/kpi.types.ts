@@ -16,4 +16,24 @@ export interface KPIMetrics {
     resolved: number;
   }>;
 }
+
+// >>> PR10B
+export type KPIRegionRow = {
+  ts: string;
+  cidade: string | null;
+  bairro: string | null;
+  total_count: number;
+  tickets_count: number;
+  rx_critico_count: number;
+};
+
+export type KPIRegionAgg = {
+  key: string; // cidade|bairro
+  cidade: string;
+  bairro: string | null;
+  totalCount: number;
+  tickets: number;
+  rxCrit: number;
+};
+// <<< PR10B
 // <<< PR9 v3

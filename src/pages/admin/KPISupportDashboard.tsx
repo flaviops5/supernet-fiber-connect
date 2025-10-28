@@ -1,246 +1,232 @@
-// >>> PR9 v3: KPI Dashboard - 100% functional with all improvements
-import { useEffect, useState, useMemo, useCallback } from "react";
+// >>> PR10B: KPISupportDashboard (com Heatmap + Alerts + AutoRefresh)
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PageHeader } from "@/components/admin/PageHeader";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  CartesianGrid,
-  Legend 
-} from "recharts";
-import { 
-  Activity, 
-  CheckCircle2, 
-  Ticket, 
-  Calendar,
-  Loader2,
-  RefreshCw,
-  AlertCircle 
-} from "lucide-react";
-import type { KPIRow, KPIMetrics } from "@/types/kpi.types";
-import { Button } from "@/components/ui/button";
-
-const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+import { Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { KPIRow, KPIMetrics, KPIRegionRow, KPIRegionAgg } from "@/types/kpi.types";
+import SupportHeatmap from "@/components/geo/SupportHeatmap";
+import RegionAlerts from "@/components/alerts/RegionAlerts";
+import { toCoord } from "@/components/geo/city-centroids";
 
 export default function KPISupportDashboard() {
   const [rows, setRows] = useState<KPIRow[]>([]);
+  const [regionRows, setRegionRows] = useState<KPIRegionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { data, error: rpcError } = await supabase.rpc("calc_support_kpis_last_7_days" as any);
-      
-      if (rpcError) throw rpcError;
-      
-      setRows((data as unknown as KPIRow[]) || []);
-      setLastUpdate(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar dados");
-    } finally {
+  async function fetchData() {
+    setLoading(true);
+    setError(null);
+
+    const [{ data: series, error: e1 }, { data: regions, error: e2 }] = await Promise.all([
+      supabase.rpc("calc_support_kpis_last_7_days"),
+      supabase.rpc("calc_support_kpis_by_region_last_7_days"),
+    ]);
+
+    if (e1 || e2) {
+      const msg = e1?.message || e2?.message || "Erro ao carregar KPIs";
+      console.error("Error fetching KPIs:", e1 || e2);
+      setError(msg);
       setLoading(false);
+      return;
     }
-  }, []);
+
+    setRows((series as KPIRow[]) || []);
+    setRegionRows((regions as KPIRegionRow[]) || []);
+    setLoading(false);
+  }
 
   useEffect(() => {
     fetchData();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, AUTO_REFRESH_INTERVAL);
-    
-    return () => clearInterval(interval);
-  }, [fetchData]);
+    const id = setInterval(fetchData, 60_000); // auto-refresh 60s
+    return () => clearInterval(id);
+  }, []);
 
   const kpis = useMemo<KPIMetrics>(() => {
-    if (rows.length === 0) {
-      return { total: 0, remoteRate: 0, tickets: 0, timeSeries: [] };
-    }
-
-    const total = rows.reduce((sum, r) => sum + r.total_count, 0);
-    const resolved = rows.reduce((sum, r) => sum + r.resolved_remote_count, 0);
-    const tickets = rows.reduce((sum, r) => sum + r.tickets_count, 0);
-    const remoteRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+    const total = rows.reduce((acc, r) => acc + Number(r.total_count), 0);
+    const remote = rows.reduce((acc, r) => acc + Number(r.resolved_remote_count), 0);
+    const tickets = rows.reduce((acc, r) => acc + Number(r.tickets_count), 0);
 
     const timeSeries = rows.map(r => ({
-      date: new Date(r.ts).toLocaleDateString("pt-BR", { 
-        day: "2-digit", 
-        month: "2-digit" 
-      }),
-      total: r.total_count,
-      resolved: r.resolved_remote_count,
+      date: r.ts,
+      total: Number(r.total_count),
+      resolved: Number(r.resolved_remote_count),
     }));
 
-    return { total, remoteRate, tickets, timeSeries };
+    return {
+      total: total || 0,
+      remoteRate: total > 0 ? Math.round((remote / total) * 100) : 0,
+      tickets: tickets || 0,
+      timeSeries,
+    };
   }, [rows]);
 
-  return (
-    <div className="space-y-6 p-6">
-      <PageHeader
-        title="Dashboard KPIs — Suporte Técnico"
-        description="Métricas de atendimento e resolução remota (últimos 7 dias)"
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchData}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Atualizar
-            </Button>
-            <ThemeToggle />
-          </>
-        }
-      />
+  const regionAgg = useMemo<KPIRegionAgg[]>(() => {
+    const map: Record<string, KPIRegionAgg> = {};
+    for (const r of regionRows) {
+      const cidade = (r.cidade || "Desconhecido").trim();
+      const bairro = r.bairro?.trim() || null;
+      const key = `${cidade}|${bairro ?? ""}`;
+      if (!map[key]) {
+        map[key] = { key, cidade, bairro, totalCount: 0, tickets: 0, rxCrit: 0 };
+      }
+      map[key].totalCount += Number(r.total_count || 0);
+      map[key].tickets += Number(r.tickets_count || 0);
+      map[key].rxCrit += Number(r.rx_critico_count || 0);
+    }
+    const result: KPIRegionAgg[] = Object.values(map);
+    return result.sort((a, b) => (b.rxCrit - a.rxCrit) || (b.tickets - a.tickets) || (b.totalCount - a.totalCount));
+  }, [regionRows]);
 
-      {error && (
+  const heatPoints = useMemo(() => {
+    // Converte cidade → lat/lng; severidade baseada em rxCrit e tickets
+    return regionAgg
+      .map((r) => {
+        const coord = toCoord(r.cidade);
+        if (!coord) return null;
+        const sevBase = Math.min(1, (r.rxCrit / 8) + (r.tickets / 12) + (r.totalCount / 80) * 0.2);
+        return {
+          lat: coord.lat,
+          lng: coord.lng,
+          label: r.bairro ? `${r.cidade} — ${r.bairro}` : r.cidade,
+          total: r.totalCount,
+          tickets: r.tickets,
+          rxCrit: r.rxCrit,
+          severity: Math.max(0, Math.min(1, sevBase)),
+        };
+      })
+      .filter(Boolean) as any[];
+  }, [regionAgg]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground">Carregando KPIs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      )}
+      </div>
+    );
+  }
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Dashboard de KPIs — Suporte Técnico</h1>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard
+          icon={<BarChart3 className="h-5 w-5" />}
           label="Total de Atendimentos"
-          value={loading ? "—" : kpis.total.toLocaleString()}
-          icon={Activity}
-          trend="neutral"
+          value={kpis.total}
+          subtitle="últimos 7 dias"
         />
         <MetricCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
           label="Resolução Remota"
-          value={loading ? "—" : `${kpis.remoteRate}%`}
-          icon={CheckCircle2}
-          trend={kpis.remoteRate >= 70 ? "up" : kpis.remoteRate >= 50 ? "neutral" : "down"}
+          value={`${kpis.remoteRate}%`}
+          subtitle="sem visita técnica"
+          trend={kpis.remoteRate >= 70 ? "positive" : "neutral"}
         />
         <MetricCard
+          icon={<Ticket className="h-5 w-5" />}
           label="Tickets Abertos"
-          value={loading ? "—" : kpis.tickets.toLocaleString()}
-          icon={Ticket}
-          trend="neutral"
-        />
-        <MetricCard
-          label="Período"
-          value="7 dias"
-          icon={Calendar}
-          trend="neutral"
+          value={kpis.tickets}
+          subtitle="requer visita"
+          trend={kpis.tickets > 10 ? "negative" : "neutral"}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Evolução de Atendimentos</span>
-            <span className="text-xs text-muted-foreground font-normal">
-              Última atualização: {lastUpdate.toLocaleTimeString("pt-BR")}
-            </span>
-          </CardTitle>
+          <CardTitle>Volume de Atendimentos — Últimos 7 Dias</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="h-[300px] flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={kpis.timeSeries}>
-                  <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis 
-                    dataKey="date" 
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <YAxis 
-                    className="text-xs"
-                    tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                    labelStyle={{ color: "hsl(var(--foreground))" }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: "20px" }}
-                    iconType="line"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    name="Total de Atendimentos"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#colorTotal)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="resolved"
-                    name="Resolvidos Remotamente"
-                    stroke="hsl(var(--chart-2))"
-                    strokeWidth={2}
-                    fill="url(#colorResolved)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={kpis.timeSeries}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                />
+                <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#colorCount)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center gap-2">
+        <Map className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">Heatmap por Região (últimos 7 dias)</h2>
+      </div>
+
+      <SupportHeatmap points={heatPoints} />
+
+      <div className="flex items-center gap-2 mt-6">
+        <h2 className="text-xl font-semibold">Alertas Inteligentes (Top regiões)</h2>
+      </div>
+
+      <RegionAlerts regions={regionAgg} />
     </div>
   );
 }
 
-interface MetricCardProps {
+type MetricCardProps = {
+  icon: React.ReactNode;
   label: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
-  trend?: "up" | "down" | "neutral";
-}
+  subtitle?: string;
+  trend?: "positive" | "negative" | "neutral";
+};
 
-function MetricCard({ label, value, icon: Icon, trend = "neutral" }: MetricCardProps) {
-  const iconColor = trend === "up" 
-    ? "text-chart-2" 
-    : trend === "down" 
-    ? "text-destructive" 
-    : "text-primary";
+function MetricCard({ icon, label, value, subtitle, trend = "neutral" }: MetricCardProps) {
+  const trendColors = {
+    positive: "text-green-600 dark:text-green-400",
+    negative: "text-red-600 dark:text-red-400",
+    neutral: "text-muted-foreground",
+  };
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-x-4">
+          <div className="flex-1 space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            <div className="flex items-baseline space-x-2">
+              <p className="text-3xl font-bold">{value}</p>
+            </div>
+            {subtitle && <p className={`text-xs ${trendColors[trend]}`}>{subtitle}</p>}
           </div>
-          <Icon className={`h-8 w-8 ${iconColor}`} />
+          <div className="flex-shrink-0 text-muted-foreground">
+            {icon}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-// <<< PR9 v3
+// <<< PR10B
