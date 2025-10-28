@@ -797,13 +797,8 @@ Me avise quando ligar, por favor.
           let scenarioMessage = "";
 
           if (tx === 0 && rx === 0) {
-            // CENÁRIO A: Sem sinal - iniciar fluxo de energia
+            // >>> PR #14 — MediaGuided Energia/ONU
             scenario = "A";
-            scenarioMessage = await textReplyWithContext(
-              supabase,
-              { conversation_id, flowState },
-              `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Por favor, me diga: **as luzes do seu equipamento estão acesas?**`
-            ).then(r => r.json()).then(j => j.reply);
             
             // Registrar estado inicial do Cenário A
             await supabase
@@ -816,7 +811,17 @@ Me avise quando ligar, por favor.
                 }
               })
               .eq("id", conversation_id);
-              
+            
+            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+              last_agent_question: "As luzes do seu equipamento estão acesas?"
+            });
+            
+            return new Response(JSON.stringify({
+              reply: `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`,
+              media_context: "onu_visual"
+            }), { headers: corsHeaders });
+            // <<< PR #14 ✅
+               
           } else if (rx >= -23 && rx <= -18 && tx >= -1 && tx <= 2) {
             // CENÁRIO B: Sinal normal mas offline (equipamento travado)
             scenario = "B";
@@ -1850,12 +1855,16 @@ Me avise quando ligar, por favor.
             detalhes: withGeo({ confidence: interpretation.confidence }, flowState)
           });
 
-          responseMessage = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";
-          
-          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          // >>> PR #14 — MediaGuided LOS
           await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
             last_agent_question: "A luz LOS (vermelha) está piscando?"
           });
+
+          return new Response(JSON.stringify({
+            reply: "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍",
+            media_context: "los_detected"
+          }), { headers: corsHeaders });
+          // <<< PR #14 ✅
         }
       }
       
@@ -1884,12 +1893,16 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          responseMessage = "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVamos reconectar o conector verde com cuidado:\n• Segure pela base\n• Não force\n• Não dobre o cabo\n\nDepois me avise quando terminar 🙌";
-          
-          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          // >>> PR #14 — MediaGuided Fibra
           await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
             last_agent_question: "Já reconectou o cabo da fibra?"
           });
+
+          return new Response(JSON.stringify({
+            reply: "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVeja como reconectar o conector verde com cuidado 👇",
+            media_context: "fiber_reconnect"
+          }), { headers: corsHeaders });
+          // <<< PR #14 ✅
         } else {
           // Energia OK + sem LOS → reconectar fibra preventivamente
           await supabase
@@ -1905,12 +1918,16 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          responseMessage = "Vamos conferir o conector verde para garantir a fibra ✅\n\nReconecte com cuidado e me avise quando terminar.";
-          
-          // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
+          // >>> PR #14 — MediaGuided Fibra
           await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
             last_agent_question: "Já reconectou o cabo da fibra?"
           });
+
+          return new Response(JSON.stringify({
+            reply: "Vamos conferir o conector verde para garantir a fibra ✅\n\nVeja como reconectar com cuidado 👇",
+            media_context: "fiber_reconnect"
+          }), { headers: corsHeaders });
+          // <<< PR #14 ✅
         }
       }
       
