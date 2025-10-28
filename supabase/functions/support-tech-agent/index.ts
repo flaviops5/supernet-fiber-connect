@@ -2579,6 +2579,112 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
       }
       // <<< PR #12B ✅
 
+      // >>> PR #12 FASE 2 - DETECÇÃO DE LOOP DE MENSAGENS REPETIDAS ✅
+      const previousMessages = flowState?.recent_messages || [];
+      const normalized = lastUserMessage.trim().toLowerCase().replace(/[!?.,]/g, '');
+      
+      // Regex de mensagens de baixa informação
+      const lowInfo = /^(oi+|eai+|\?|al[oô]|al[oô]\?|tem algu[eé]m\??|responde|socorro|boa tarde|bom dia|boa noite|ol[aá])$/i;
+      const isLowInfo = lowInfo.test(normalized);
+      
+      // Verificar se as últimas 2 mensagens são iguais à atual
+      const isRepeated = previousMessages.length >= 2 && 
+                        previousMessages.slice(-2).every(m => m === normalized);
+      
+      // Sempre atualizar histórico de mensagens recentes (últimas 5)
+      await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        recent_messages: [...previousMessages.slice(-4), normalized]
+      });
+      
+      // Se é loop, incrementar contador
+      if (isLowInfo || isRepeated) {
+        const loopCount = (flowState?.loop_count || 0) + 1;
+        
+        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          loop_count: loopCount
+        });
+        
+        await logAudit({
+          fluxo: "support-tech",
+          acao: "loop_detected",
+          conversation_id,
+          detalhes: withGeo({
+            loop_count: loopCount,
+            message: normalized,
+            is_low_info: isLowInfo,
+            is_repeated: isRepeated
+          }, flowState),
+          supabaseClient: supabaseAdmin
+        });
+        
+        // Após 5 loops, transferir para humano
+        if (loopCount >= 5) {
+          const clientName = currentConversation?.customer_name?.split(' ')[0] || "amigo";
+          
+          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            waiting_step: null,
+            scenario_completed: "HUMANO",
+            transferred_to_human: true
+          });
+          
+          // Atualizar status da conversation
+          await supabaseAdmin
+            .from("conversations")
+            .update({
+              status: "awaiting_human",
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                flow_state: {
+                  ...((currentConversation?.metadata as any)?.flow_state || {}),
+                  transferred_to_human: true,
+                  transfer_reason: "message_loop",
+                  loop_count: loopCount
+                }
+              }
+            })
+            .eq("id", conversation_id);
+          
+          await logAudit({
+            fluxo: "support-tech",
+            acao: "transferred_human_loop",
+            conversation_id,
+            detalhes: withGeo({
+              loop_count: loopCount,
+              client_name: clientName
+            }, flowState),
+            supabaseClient: supabaseAdmin
+          });
+          
+          // KPI: Transferência por loop
+          kpiLog({
+            action: "kpi_update",
+            conversation_id,
+            scenario_completed: "HUMANO",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: false,
+            escalated: true,
+            transfer_reason: "message_loop"
+          }).catch(() => {}); // Non-blocking
+          
+          return textReply(
+            `Oi ${clientName}! 👋\n\nVejo que está com dificuldade de explicar o problema.\n\nVou chamar um atendente humano para te ajudar melhor! 🙋\n\nSó um instante, por favor...`
+          );
+        }
+        
+        // Após 3 loops, pedir mais detalhes
+        if (loopCount >= 3) {
+          return textReply(
+            `Oi! Estou aqui 👋\n\nPara eu te ajudar, preciso saber:\n\n1️⃣ A internet está **lenta** ou **sem sinal**?\n2️⃣ Está funcionando **agora**?\n\nMe conta aí! 💬`
+          );
+        }
+      } else {
+        // Mensagem válida - resetar contador de loop
+        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          loop_count: 0
+        });
+      }
+      // <<< PR #12 FASE 2 ✅
+
       // ===== B1: DETECTAR ENTRADA NO CENÁRIO B (SINAL BOM, MAS CLIENTE RECLAMA) =====
       const scenarioBKeywords = [
         "não carrega", "não abre", "lento", "travou", "travando", "trava",
