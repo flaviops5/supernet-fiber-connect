@@ -68,12 +68,12 @@ export async function ensureGeo(
   // ✅ 3. Buscar no IXC (fallback)
   if (ixc_client_id) {
     try {
-      const { data: ixcResp, error } = await supabaseAdmin.functions.invoke('ixc-integration', {
-        body: { action: 'getCustomer', params: { id: ixc_client_id } }
+      const { data: ixcResp, error } = await supabaseAdmin.functions.invoke('ixc-proxy', {
+        body: { endpoint: '/webservice/v1/cliente', qsParams: { id: ixc_client_id } }
       });
 
-      if (!error && ixcResp?.success && ixcResp.data) {
-        const cliente = Array.isArray(ixcResp.data) ? ixcResp.data[0] : ixcResp.data;
+      if (!error && ixcResp?.registros) {
+        const cliente = Array.isArray(ixcResp.registros) ? ixcResp.registros[0] : ixcResp.registros;
         const cidade = cliente?.cidade || null;
         const bairro = cliente?.bairro || null;
 

@@ -864,7 +864,7 @@ Me avise quando ligar, por favor.
               acao: "scenario_c_detected",
               fluxo: "support-tech",
               conversation_id,
-              detalhes: { signal: "weak", tx, rx }
+              detalhes: withGeo({ signal: "weak", tx, rx }, flowState)
             });
 
             scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\n🔍 Estou vendo que o sinal da fibra está um pouco fraco (RX: ${rx} dBm).\n\nIsso pode causar instabilidade às vezes.\n\nVocê está percebendo que a conexão cai e volta, ou fica muito lenta em alguns momentos?`;
@@ -1829,7 +1829,7 @@ Me avise quando ligar, por favor.
           acao: "scenario_a_check_los",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { losPisc }
+          detalhes: withGeo({ losPisc }, flowState)
         });
 
         if (losPisc) {
@@ -1893,7 +1893,7 @@ Me avise quando ligar, por favor.
             acao: "scenario_a_post_optical_test",
             fluxo: "support-tech",
             conversation_id,
-            detalhes: { connectivity_ok: afterOptic?.ok === true }
+            detalhes: withGeo({ connectivity_ok: afterOptic?.ok === true }, flowState)
           });
 
           if (afterOptic?.ok === true) {
@@ -1974,10 +1974,10 @@ Me avise quando ligar, por favor.
           acao: "scenario_a_ticket_created",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { 
+          detalhes: withGeo({ 
             ticket_id: ticketData?.id_atendimento,
             success: !ticketError 
-          }
+          }, flowState)
         });
 
         // KPI: Cenário A escalado (non-blocking)
@@ -2370,7 +2370,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           acao: "scenario_d_detected",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { rxDbm, threshold: -28 }
+          detalhes: withGeo({ rxDbm, threshold: -28 }, flowState)
         });
 
         await supabase
@@ -2443,11 +2443,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           acao: "scenario_d_ticket_created",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { 
+          detalhes: withGeo({ 
             rxDbm,
             success: !ticketError,
             ticket_id: ticketData?.id_atendimento
-          }
+          }, flowState)
         });
 
         // KPI: Cenário D escalado (non-blocking)
@@ -2512,11 +2512,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           acao: "scenario_c_detected",
           fluxo: "support-tech",
           conversation_id,
-          detalhes: { 
+          detalhes: withGeo({ 
             tx: txDbm, 
             rx: rxDbm, 
             threshold_rx_dbm: -27 
-          }
+          }, flowState)
         });
 
         responseMessage = "Estou vendo que o sinal da fibra está um pouco fraco 🔍\n\n" +
@@ -2784,10 +2784,10 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             acao: "scenario_c_ticket_created",
             fluxo: "support-tech",
             conversation_id,
-            detalhes: { 
+            detalhes: withGeo({ 
               ticket_id: ticketData?.id_atendimento,
               success: !ticketError 
-            }
+            }, flowState)
           });
 
           // KPI: Cenário C escalado (non-blocking)
