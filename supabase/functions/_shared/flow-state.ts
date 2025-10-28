@@ -5,29 +5,31 @@
 export async function updateFlowState(
   supabaseAdmin: any,
   ctx: { conversation_id: string; flowState?: any },
-  patch: Record<string, unknown>
+  newState: Record<string, any>
 ) {
-  const { conversation_id } = ctx;
+  const conversation_id = ctx.conversation_id;
 
-  const now = new Date();
-  const lastInteraction = ctx.flowState?.last_interaction
-    ? new Date(ctx.flowState.last_interaction)
-    : now;
+  const currentFlowState = ctx.flowState || {};
 
-  const minutesWithoutReply = Math.floor(
-    (now.getTime() - lastInteraction.getTime()) / 60000
-  );
-
-  const newState = {
-    ...patch,
-    last_interaction: now.toISOString(),
-    minutesWithoutReply,
+  const mergedState = {
+    ...currentFlowState,
+    ...newState,
+    updated_at: new Date().toISOString()
   };
 
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from("agent_flow_states")
-    .update(newState)
-    .eq("conversation_id", conversation_id);
+    .upsert({
+      conversation_id,
+      ...mergedState
+    });
 
-  return newState;
+  if (error) {
+    console.error("❌ updateFlowState failed", error);
+  }
+
+  // 🔄 Atualiza o estado em memória imediatamente
+  ctx.flowState = mergedState;
+
+  return mergedState;
 }
