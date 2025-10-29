@@ -812,15 +812,18 @@ Me avise quando ligar, por favor.
               })
               .eq("id", conversation_id);
             
+            const fullMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`;
+            
             await textReplyWithContext(
               supabaseAdmin,
               conversation_id,
-              "As luzes do seu equipamento estão acesas?",
-              { scenario: "A" }
+              fullMessage,
+              { scenario: "A", waiting_step: "scenario_a_check_power" },
+              "onu_visual"
             );
             
             return new Response(JSON.stringify({
-              reply: `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`,
+              reply: fullMessage,
               media_context: "onu_visual"
             }), { headers: corsHeaders });
             // <<< PR #14 ✅
@@ -1865,7 +1868,8 @@ Me avise quando ligar, por favor.
             supabaseAdmin,
             conversation_id,
             replyText,
-            { media_context: "los_detected" }
+            { waiting_step: "scenario_a_check_los" },
+            "los_detected"
           );
           
           return new Response(JSON.stringify({
@@ -1908,7 +1912,8 @@ Me avise quando ligar, por favor.
             supabaseAdmin,
             conversation_id,
             replyTextLos,
-            { media_context: "fiber_reconnect" }
+            { waiting_step: "scenario_a_optical" },
+            "fiber_reconnect"
           );
           
           return new Response(JSON.stringify({

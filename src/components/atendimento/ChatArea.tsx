@@ -25,7 +25,7 @@ interface Message {
   content: string;
   ai_suggestion: boolean;
   created_at: string;
-  media_context?: MediaContext; // PR #6 - Contexto de mídia guiada
+  media_context?: MediaContext | string | null; // PR #14 - Contexto de mídia guiada
 }
 
 interface Props {

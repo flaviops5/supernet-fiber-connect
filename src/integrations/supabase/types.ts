@@ -1316,6 +1316,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           id: string
+          media_context: string | null
           metadata: Json | null
           sender_id: string | null
           sender_name: string
@@ -1328,6 +1329,7 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           id?: string
+          media_context?: string | null
           metadata?: Json | null
           sender_id?: string | null
           sender_name: string
@@ -1340,6 +1342,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           id?: string
+          media_context?: string | null
           metadata?: Json | null
           sender_id?: string | null
           sender_name?: string

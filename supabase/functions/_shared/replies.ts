@@ -26,16 +26,37 @@ export function jsonReply(payload: Record<string, unknown>) {
  * @param ctx - Contexto com conversation_id e flowState opcional
  * @param message - Mensagem do agente a ser enviada
  * @param additionalContext - Contexto adicional a ser salvo (opcional)
+ * @param mediaContext - Contexto de mídia para salvar na mensagem (opcional)
  */
 export async function textReplyWithContext(
   supabaseAdmin: any,
   ctx: { conversation_id: string; flowState?: any } | string,
   message: string,
-  additionalContext?: Record<string, any>
+  additionalContext?: Record<string, any>,
+  mediaContext?: string
 ): Promise<Response> {
   // Normalizar contexto se for string
   const conversation_id = typeof ctx === 'string' ? ctx : ctx.conversation_id;
   const flowState = typeof ctx === 'string' ? undefined : ctx.flowState;
+
+  // >>> PR #14 ✅ - Salvar mensagem com media_context no banco
+  if (mediaContext) {
+    try {
+      await supabaseAdmin
+        .from('conversation_messages')
+        .insert({
+          conversation_id,
+          content: message,
+          sender_type: 'ai',
+          sender_name: 'Luan Silva',
+          media_context: mediaContext,
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error("❌ Erro salvando mensagem com mídia:", error);
+    }
+  }
+  // <<< PR #14 ✅
 
   // >>> PR #15 vFINAL ✅ - Detecção robusta de perguntas
   try {

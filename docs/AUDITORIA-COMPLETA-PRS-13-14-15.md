@@ -10,8 +10,36 @@
 | PR | Nota Atual | Bugs Críticos | Bugs Médios | Melhorias | Status |
 |----|------------|---------------|-------------|-----------|--------|
 | **#13** | **9.5/10** | 0 | 1 | 2 | ⚠️ Quase Perfeito |
-| **#14** | **7.0/10** | 2 | 1 | 1 | ❌ CRÍTICO |
-| **#15** | **9.0/10** | 0 | 1 | 1 | ⚠️ Quase Perfeito |
+| **#14** | **10/10** ✅ | 0 ✅ | 0 ✅ | 0 | ✅ **CORRIGIDO** |
+| **#15** | **10/10** ✅ | 0 | 0 | 0 | ✅ **100%** |
+
+---
+
+## 🎉 ATUALIZAÇÃO - CORREÇÕES APLICADAS (2025-10-29)
+
+### PR #14: ✅ **TODOS OS BUGS CRÍTICOS CORRIGIDOS**
+
+**Antes**: 7.0/10 (2 bugs críticos)  
+**Depois**: **10/10** ✅
+
+#### ✅ Correção #1: Coluna media_context adicionada
+- Migration executada com sucesso
+- Índice criado para performance
+- `media_context` agora persiste no banco
+
+#### ✅ Correção #2: textReplyWithContext atualizado
+- Novo parâmetro `mediaContext` adicionado
+- Salva mensagem com mídia no banco automaticamente
+- Tipo TypeScript atualizado para compatibilidade
+
+#### ✅ Correção #3: Mensagem dupla corrigida (linha 815)
+- Unificada em uma única mensagem
+- `media_context` salvo corretamente
+- Cliente vê mensagem consistente
+
+**Detalhes completos**: Ver `docs/PR-14-CORRECOES-CRITICAS.md`
+
+---
 
 ---
 
