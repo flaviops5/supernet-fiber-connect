@@ -12,6 +12,9 @@ import { kpiLog } from "../_shared/kpi.ts";
 // >>> PR10A - Geolocalização
 import { ensureGeo, withGeo } from "../_shared/geo.ts";
 // <<< PR10A
+// >>> PR26 - Scenario E: WAN/Wi-Fi diagnostics
+import { isOpticalGood, isLikelyWanDown, isLikelyWifiIssue } from "../_shared/wan-diagnostics.ts";
+// <<< PR26
 // >>> PR19 - Aging + ONU + Retests
 import { markAgingEvent } from "../_shared/aging.ts";
 import { trackOnuSnapshot } from "../_shared/onu-tracker.ts";
@@ -4089,6 +4092,276 @@ Me responde com:
           logger.info("Luan respondeu ao cliente no Cenário C", { waitingStep: scenarioCStep });
         }
       }
+
+      // ===== PR #26 - CENÁRIO E: ROTEADOR / PORTA WAN / WI-FI =====
+      // Detectar caso em que ONU e sinal óptico estão OK mas internet não funciona
+      // Possíveis causas: Wi-Fi, porta WAN sem link, PPPoE down
+      if (!massOutageActive && !flowState?.waiting_step && isOpticalGood(onu_signal)) {
+        const routerProbe = (currentConversation?.metadata as any)?.probes?.router;
+        const netProbe = (currentConversation?.metadata as any)?.probes?.internet;
+        const lastUserText = (message || "").toString();
+
+        const wanSuspect = isLikelyWanDown(routerProbe, netProbe);
+        const wifiSuspect = isLikelyWifiIssue(lastUserText);
+
+        if (wanSuspect || wifiSuspect) {
+          logger.info("🟠 PR#26: Detectado Scenario E (WAN/Wi-Fi)", { 
+            wanSuspect, 
+            wifiSuspect 
+          });
+
+          const geoData = await ensureGeo(
+            supabase,
+            { conversation_id, flowState },
+            ixc_client_id,
+            currentConversation?.customer_phone
+          );
+
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            {
+              waiting_step: "scenario_e_check_wifi_led",
+              scenario_started: "E",
+              ixc_client_id,
+              wan_suspect: !!wanSuspect,
+              wifi_suspect: !!wifiSuspect
+            }
+          );
+
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_e_detected",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: withGeo({ 
+              wan_suspect: !!wanSuspect, 
+              wifi_suspect: !!wifiSuspect 
+            }, flowState)
+          });
+
+          responseMessage = await textReplyWithContext(
+            supabaseAdmin,
+            { conversation_id, flowState },
+            "Vamos checar rapidinho o **Wi-Fi do roteador** e o cabo que liga a **porta WAN** (a porta que vai pra caixa da fibra)."
+          ).then(r => r.json()).then(j => j.reply);
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+
+          return textReply(responseMessage);
+        }
+      }
+
+      // ===== E1: CHECAR WI-FI E LED =====
+      if (flowState?.waiting_step === "scenario_e_check_wifi_led") {
+        await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          { waiting_step: "scenario_e_check_wan_cable" }
+        );
+
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          "Seu **celular conecta** na rede Wi-Fi mas **não navega**, ou **nem conecta**?\n\n" +
+          "E as luzes do **Wi-Fi** no roteador estão **acesas**?\n\n" +
+          "Me diga como está, por favor."
+        ).then(r => r.json()).then(j => j.reply);
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
+      // ===== E2: VERIFICAR CABO WAN =====
+      if (flowState?.waiting_step === "scenario_e_check_wan_cable") {
+        await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          { waiting_step: "scenario_e_reseat_wan" }
+        );
+
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          "Agora vamos conferir o **cabo da porta WAN** (a que liga o roteador à **caixinha da fibra**):\n\n" +
+          "1) Verifique se está **bem encaixado** em ambas as pontas (roteador e caixinha da fibra)\n" +
+          "2) Retire e **reconecte** com firmeza (até encaixar bem)\n" +
+          "3) Olhe se a luz/ícone de **Internet/WAN** do roteador acende\n\n" +
+          "⚠️ Importante: **não** troque esse cabo para uma porta LAN — LAN é para rede interna e **não funciona** como WAN."
+        ).then(r => r.json()).then(j => j.reply);
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
+      // ===== E3: RESEAT FEITO → CONFIRMAR INTERNET =====
+      if (flowState?.waiting_step === "scenario_e_reseat_wan") {
+        await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          { waiting_step: "scenario_e_router_reboot" }
+        );
+
+        responseMessage = await textReplyWithContext(
+          supabaseAdmin,
+          { conversation_id, flowState },
+          "Obrigado! Agora vamos **reiniciar apenas o roteador Wi-Fi** (não a caixinha da fibra):\n\n" +
+          "• Desligue o **roteador** da tomada\n" +
+          "• Aguarde **60 segundos**\n" +
+          "• Ligue novamente e aguarde **1 minuto**\n\n" +
+          "Depois teste a navegação e me avise."
+        ).then(r => r.json()).then(j => j.reply);
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
+      // ===== E4: PÓS-REBOOT: DECIDIR TICKET =====
+      if (flowState?.waiting_step === "scenario_e_router_reboot") {
+        const ixcId = flowState?.ixc_client_id;
+
+        // Opcional: re-executar probes
+        const { data: probe } = await supabase.functions.invoke("test-equipment-connectivity", {
+          body: { ixc_client_id: ixcId }
+        });
+
+        const internetOk = probe?.ok === true;
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_e_post_reboot_probe",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: withGeo({ internet_ok: !!internetOk }, flowState)
+        });
+
+        if (internetOk) {
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            { waiting_step: null, scenario_completed: "E" }
+          );
+
+          // KPI: Cenário E resolvido
+          kpiLog({
+            action: "kpi_update",
+            conversation_id,
+            scenario_completed: "E",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: true,
+            escalated: false,
+          });
+
+          responseMessage = await textReplyWithContext(
+            supabaseAdmin,
+            { conversation_id, flowState },
+            "Perfeito! ✅\n\nParece que estabilizou. Se voltar a falhar, me avisa!"
+          ).then(r => r.json()).then(j => j.reply);
+        } else {
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            { waiting_step: "scenario_e_ticket" }
+          );
+
+          responseMessage = await textReplyWithContext(
+            supabaseAdmin,
+            { conversation_id, flowState },
+            "Ainda sem navegação? Vou abrir um atendimento técnico para verificar **porta WAN, cabo ou configuração**."
+          ).then(r => r.json()).then(j => j.reply);
+        }
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+
+      // ===== E5: TICKET FINAL =====
+      if (flowState?.waiting_step === "scenario_e_ticket") {
+        const ixcId = flowState?.ixc_client_id;
+
+        const { data, error } = await supabase.functions.invoke("ixc-integration", {
+          body: {
+            action: "criar_atendimento",
+            id_cliente: ixcId,
+            assunto: "Sem internet com ONU OK — suspeita de WAN/roteador",
+            descricao: "ONU e sinal OK. Roteador responde localmente mas sem internet. Verificar porta WAN, cabo ou config WAN/PPPoE.",
+            prioridade: "alta"
+          }
+        });
+
+        const ticketId = data?.id_atendimento || null;
+
+        await supabase.from("registros_de_monitoramento").insert({
+          acao: "scenario_e_ticket_created",
+          fluxo: "support-tech",
+          conversation_id,
+          detalhes: withGeo({ ticket_id: ticketId, success: !error }, flowState)
+        });
+
+        await updateFlowState(
+          supabase,
+          { conversation_id, flowState },
+          { waiting_step: null, scenario_completed: "E", ixc_ticket_id: ticketId }
+        );
+
+        // KPI: Cenário E escalado
+        kpiLog({
+          action: "kpi_update",
+          conversation_id,
+          scenario_completed: "E",
+          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+          resolved: false,
+          escalated: true,
+          ticket_id: ticketId ?? null,
+        });
+
+        responseMessage = ticketId
+          ? `✅ Protocolo IXC: **${ticketId}**. Nossa equipe vai verificar a porta WAN/cabo/config do roteador.`
+          : "✅ Atendimento registrado! Nossa equipe vai verificar a porta WAN/cabo/config do roteador.";
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+
+        return textReply(responseMessage);
+      }
+      // <<< PR #26 - FIM CENÁRIO E
       
       // 🟡 FLUXOS GENÉRICOS (quando não está em um cenário específico)
       else if (conversationContext.includes("sem internet") || conversationContext.includes("offline")) {

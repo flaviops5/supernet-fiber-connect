@@ -201,6 +201,39 @@ Você vai receber uma notificação por SMS/WhatsApp, ok?
 
 ---
 
+## 🟠 CENÁRIO E: ROTEADOR / PORTA WAN / WI-FI (PR #26)
+
+### Diagnóstico:
+ONU e sinal óptico OK (RX > -24 dBm), mas cliente sem internet. Possíveis causas: Wi-Fi, porta WAN sem link, PPPoE down.
+
+### scenario_e_check_wifi_led
+```
+Seu **celular conecta** na rede Wi-Fi mas **não navega**, ou **nem conecta**?
+As luzes do **Wi-Fi** no roteador estão **acesas**?
+```
+
+### scenario_e_check_wan_cable
+```
+Vamos conferir o **cabo da porta WAN** (que liga o roteador à caixinha da fibra).
+Retire e **reconecte** com firmeza nas duas pontas.
+⚠️ **Não** troque para a porta LAN — LAN é rede interna, não dá internet.
+```
+
+### scenario_e_router_reboot
+```
+Reinicie apenas o **roteador Wi-Fi**: desligue da tomada, aguarde **60s** e ligue novamente.
+Depois de **1 minuto**, teste a navegação e me avise.
+```
+
+### scenario_e_ticket
+```
+Ainda sem navegação. Vou abrir atendimento para verificar **porta WAN**, **cabo** ou **configuração de Internet** do roteador.
+```
+
+**Tool Call**: `criar_atendimento_ixc` (prioridade: **ALTA**)
+
+---
+
 ## ⏱️ SCRIPTS DE TIMEOUT
 
 ### TIMEOUT_1 (1:30 sem resposta):
