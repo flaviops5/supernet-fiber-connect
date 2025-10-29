@@ -4,6 +4,7 @@ import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
+import { TestMediaGuidedFlow } from "@/components/tests/TestMediaGuidedFlow";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -51,6 +52,14 @@ const AdminTestes = () => {
 
           <TabsContent value="simulations" className="space-y-6">
             <div>
+              <h3 className="text-lg font-semibold mb-4">🖼️ Teste E2E - Mídia Guiada (PR #14)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Teste completo do sistema de mídia guiada: persistência, imagens, logging e feedback
+              </p>
+              <TestMediaGuidedFlow />
+            </div>
+
+            <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">🧪 Chat Omnichannel - Cloe + Luan</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Teste completo do fluxo: Cloe (routing) + Luan (técnico) com cenários de TX/RX, mass outage e diagnósticos

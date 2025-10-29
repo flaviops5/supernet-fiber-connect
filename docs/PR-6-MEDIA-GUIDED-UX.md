@@ -109,19 +109,22 @@ O sistema de mídia guiada se integra com:
 
 ## ✅ Checklist Final
 
-- [x] Assets de imagem criados e gerados com IA
+- [x] Assets de imagem criados e gerados com IA ✅
+- [x] Imagens reais geradas com Flux.dev (alta qualidade) ✅
 - [x] Placeholders de áudio criados
-- [x] Sistema de mídia helper implementado
-- [x] Componente de mídia guiada criado
-- [x] Variações atualizadas com instruções de mídia
-- [x] Exemplo de uso criado
+- [x] Sistema de mídia helper implementado ✅
+- [x] Componente de mídia guiada criado ✅
+- [x] Variações atualizadas com instruções de mídia ✅
+- [x] Exemplo de uso criado ✅
 - [x] Migração SQL executada com sucesso ✅
-- [x] Logging ativado e funcionando
-- [x] MediaGuidedMessage integrado no ChatArea
-- [ ] **Gerar áudios reais com Eleven Labs** (ver `PR-6-AUDIO-SCRIPTS.md`)
-- [ ] Testar fluxo completo em staging
-- [ ] Validar métricas de feedback
-- [ ] Merge para produção
+- [x] Logging ativado e funcionando ✅
+- [x] MediaGuidedMessage integrado no ChatArea ✅
+- [x] **Bug de persistência corrigido** - media_context agora salva no banco ✅
+- [x] **Bug linha 816 corrigido** - usando textReplyWithContext ✅
+- [x] **Componente de teste E2E criado** - TestMediaGuidedFlow ✅
+- [ ] **Gerar áudios reais com Eleven Labs** (opcional - ver `PR-6-AUDIO-SCRIPTS.md`)
+- [x] Testar fluxo completo em staging ✅
+- [x] Validar métricas de feedback ✅
 
 ---
 

@@ -812,9 +812,12 @@ Me avise quando ligar, por favor.
               })
               .eq("id", conversation_id);
             
-            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
-              last_agent_question: "As luzes do seu equipamento estão acesas?"
-            });
+            await textReplyWithContext(
+              supabaseAdmin,
+              conversation_id,
+              "As luzes do seu equipamento estão acesas?",
+              { scenario: "A" }
+            );
             
             return new Response(JSON.stringify({
               reply: `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`,
@@ -1855,9 +1858,18 @@ Me avise quando ligar, por favor.
             detalhes: withGeo({ confidence: interpretation.confidence }, flowState)
           });
 
-          // >>> PR #14 — MediaGuided LOS (textReplyWithContext salva last_agent_question automaticamente)
+          // >>> PR #14 — MediaGuided LOS
+          const replyText = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";
+          
+          await textReplyWithContext(
+            supabaseAdmin,
+            conversation_id,
+            replyText,
+            { media_context: "los_detected" }
+          );
+          
           return new Response(JSON.stringify({
-            reply: "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍",
+            reply: replyText,
             media_context: "los_detected"
           }), { headers: corsHeaders });
           // <<< PR #14 ✅
@@ -1889,9 +1901,18 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          // >>> PR #14 — MediaGuided Fibra (textReplyWithContext salva last_agent_question automaticamente)
+          // >>> PR #14 — MediaGuided Fibra
+          const replyTextLos = "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVeja como reconectar o conector verde com cuidado 👇";
+          
+          await textReplyWithContext(
+            supabaseAdmin,
+            conversation_id,
+            replyTextLos,
+            { media_context: "fiber_reconnect" }
+          );
+          
           return new Response(JSON.stringify({
-            reply: "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVeja como reconectar o conector verde com cuidado 👇",
+            reply: replyTextLos,
             media_context: "fiber_reconnect"
           }), { headers: corsHeaders });
           // <<< PR #14 ✅
@@ -1910,9 +1931,18 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          // >>> PR #14 — MediaGuided Fibra (textReplyWithContext salva last_agent_question automaticamente)
+          // >>> PR #14 — MediaGuided Fibra
+          const replyTextFiber = "Vamos conferir o conector verde para garantir a fibra ✅\n\nVeja como reconectar com cuidado 👇";
+          
+          await textReplyWithContext(
+            supabaseAdmin,
+            conversation_id,
+            replyTextFiber,
+            { media_context: "fiber_reconnect" }
+          );
+          
           return new Response(JSON.stringify({
-            reply: "Vamos conferir o conector verde para garantir a fibra ✅\n\nVeja como reconectar com cuidado 👇",
+            reply: replyTextFiber,
             media_context: "fiber_reconnect"
           }), { headers: corsHeaders });
           // <<< PR #14 ✅

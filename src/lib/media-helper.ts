@@ -37,19 +37,19 @@ interface MediaLogData {
 export const MEDIA_ASSETS: Record<MediaContext, MediaAsset> = {
   los_detected: {
     type: 'image',
-    url: '/assets/support-tech-media/los-blinking-placeholder.png',
+    url: '/assets/support-tech-media/los-blinking.png',
     alt: 'Luz vermelha LOS piscando no aparelho',
     fallbackText: 'A luz vermelha chamada "LOS" está piscando no seu aparelho. Ela fica na parte da frente, ao lado das outras luzes.'
   },
   fiber_reconnect: {
     type: 'image',
-    url: '/assets/support-tech-media/reconnect-fiber-placeholder.png',
+    url: '/assets/support-tech-media/reconnect-fiber.png',
     alt: 'Como reconectar o cabo de fibra',
     fallbackText: 'Localize o conector verde (parte onde a fibra entra no aparelho). Retire-o delicadamente e conecte novamente até ouvir um clique.'
   },
   onu_visual: {
     type: 'image',
-    url: '/assets/support-tech-media/onu-front-simple.png',
+    url: '/assets/support-tech-media/onu-front-visual.png',
     alt: 'Visão frontal do aparelho com luzes indicadoras',
     fallbackText: 'Na frente do seu aparelho, você verá algumas luzes. A luz "LOS" é a que indica o sinal da fibra.'
   },
