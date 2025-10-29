@@ -4448,6 +4448,31 @@ export type Database = {
         }
         Relationships: []
       }
+      support_critical_clusters: {
+        Row: {
+          cidade: string | null
+          first_seen_at: string | null
+          incidents: number | null
+          last_seen_at: string | null
+        }
+        Relationships: []
+      }
+      support_loops: {
+        Row: {
+          conversation_id: string | null
+          last_event: string | null
+          loop_count: number | null
+        }
+        Relationships: []
+      }
+      support_power_loss_clusters: {
+        Row: {
+          cidade: string | null
+          last_event: string | null
+          loss_count: number | null
+        }
+        Relationships: []
+      }
       top_escape_steps: {
         Row: {
           avg_duration_minutes: number | null

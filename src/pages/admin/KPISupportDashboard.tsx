@@ -2,6 +2,7 @@
 // >>> PR19: Aging + ONU + Retests (M1 ✅ Error Handling, M2 ✅ Memo)
 // >>> PR21: Ação Proativa Regional via WhatsApp
 // >>> PR22: Lista de Clientes Afetados
+// >>> PR23: Alertas Inteligentes Automáticos
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map, ShieldAlert, 
-  Clock, Radio, RefreshCw, Users 
+  Clock, Radio, RefreshCw, Users, AlertTriangle, Zap, Repeat 
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -97,6 +98,11 @@ export default function KPISupportDashboard() {
   // PR22: Contador de clientes afetados
   const [affectedCustomersCount, setAffectedCustomersCount] = useState<number>(0);
 
+  // PR23: Alertas inteligentes
+  const [clusters, setClusters] = useState<any[]>([]);
+  const [loops, setLoops] = useState<any[]>([]);
+  const [powerLoss, setPowerLoss] = useState<any[]>([]);
+
   // PR19 ✅: Fetch métricas avançadas
   const fetchExtra = useCallback(async () => {
     try {
@@ -175,17 +181,40 @@ export default function KPISupportDashboard() {
     }
   }
 
+  // PR23: Fetch alertas inteligentes
+  async function fetchSmartAlerts() {
+    try {
+      const [
+        { data: c1, error: e1 },
+        { data: c2, error: e2 },
+        { data: c3, error: e3 }
+      ] = await Promise.all([
+        supabase.from("support_critical_clusters").select("*"),
+        supabase.from("support_loops").select("*"),
+        supabase.from("support_power_loss_clusters").select("*")
+      ]);
+
+      if (!e1 && c1) setClusters(c1);
+      if (!e2 && c2) setLoops(c2);
+      if (!e3 && c3) setPowerLoss(c3);
+    } catch (err) {
+      console.error("Erro ao buscar alertas inteligentes:", err);
+    }
+  }
+
   useEffect(() => {
     fetchData();
     fetchCriticalRegions().then(setCriticalRegions);
     fetchExtra();
     fetchAffectedCustomersCount();
+    fetchSmartAlerts(); // PR23
     
     const id = setInterval(() => {
       fetchData();
       fetchCriticalRegions().then(setCriticalRegions);
       fetchExtra();
       fetchAffectedCustomersCount();
+      fetchSmartAlerts(); // PR23
     }, 60_000); // auto-refresh 60s
     
     return () => clearInterval(id);
@@ -393,6 +422,36 @@ export default function KPISupportDashboard() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* PR23: Banner de alertas inteligentes */}
+      {(clusters.length > 0 || loops.length > 0 || powerLoss.length > 0) && (
+        <div className="space-y-3">
+          {clusters.map((c, idx) => (
+            <Alert key={`cluster-${idx}`} className="bg-red-600 text-white border-red-700">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Instabilidade CRÍTICA em {c.cidade}! ({c.incidents} clientes afetados)
+              </AlertDescription>
+            </Alert>
+          ))}
+          {powerLoss.map((c, idx) => (
+            <Alert key={`power-${idx}`} className="bg-yellow-500 text-black border-yellow-600">
+              <Zap className="h-4 w-4" />
+              <AlertDescription>
+                Apagão de energia detectado em {c.cidade}! ({c.loss_count} ONUs desligadas)
+              </AlertDescription>
+            </Alert>
+          ))}
+          {loops.length > 0 && (
+            <Alert className="bg-orange-500 text-white border-orange-600">
+              <Repeat className="h-4 w-4" />
+              <AlertDescription>
+                {loops.length} {loops.length === 1 ? 'cliente' : 'clientes'} em possível LOOP de suporte
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard
