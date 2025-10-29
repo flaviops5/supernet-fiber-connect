@@ -194,11 +194,26 @@ export default function KPISupportDashboard() {
         supabase.from("support_power_loss_clusters").select("*")
       ]);
 
+      if (e1 || e2 || e3) {
+        const errors = [e1, e2, e3].filter(Boolean);
+        console.error("Erro ao buscar alertas inteligentes:", errors);
+        toast({
+          title: "⚠️ Erro ao carregar alertas",
+          description: "Não foi possível carregar alguns alertas inteligentes.",
+          variant: "destructive",
+        });
+      }
+
       if (!e1 && c1) setClusters(c1);
       if (!e2 && c2) setLoops(c2);
       if (!e3 && c3) setPowerLoss(c3);
     } catch (err) {
       console.error("Erro ao buscar alertas inteligentes:", err);
+      toast({
+        title: "❌ Erro ao carregar alertas",
+        description: "Falha ao buscar alertas inteligentes. Tente novamente.",
+        variant: "destructive",
+      });
     }
   }
 
@@ -442,14 +457,14 @@ export default function KPISupportDashboard() {
               </AlertDescription>
             </Alert>
           ))}
-          {loops.length > 0 && (
-            <Alert className="bg-orange-500 text-white border-orange-600">
+          {loops.map((loop, idx) => (
+            <Alert key={`loop-${idx}`} className="bg-orange-500 text-white border-orange-600">
               <Repeat className="h-4 w-4" />
               <AlertDescription>
-                {loops.length} {loops.length === 1 ? 'cliente' : 'clientes'} em possível LOOP de suporte
+                {loop.cidade ? `${loop.cidade}: ` : ''}Cliente em possível LOOP de suporte ({loop.loop_count} interações)
               </AlertDescription>
             </Alert>
-          )}
+          ))}
         </div>
       )}
 

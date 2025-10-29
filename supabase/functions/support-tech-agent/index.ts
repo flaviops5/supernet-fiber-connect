@@ -2869,14 +2869,6 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           detalhes: withGeo({ rxDbm, threshold: -28 }, flowState)
         });
 
-        // PR23: Log dying gasp para detecção de apagões
-        await supabase.from("registros_de_monitoramento").insert({
-          acao: "dying_gasp_detected",
-          fluxo: "support-tech",
-          conversation_id,
-          detalhes: withGeo({ fonte: "telemetria", rxDbm, threshold: -28 }, flowState)
-        });
-
         await supabase
           .from("conversations")
           .update({

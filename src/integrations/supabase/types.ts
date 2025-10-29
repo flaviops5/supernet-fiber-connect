@@ -4459,6 +4459,7 @@ export type Database = {
       }
       support_loops: {
         Row: {
+          cidade: string | null
           conversation_id: string | null
           last_event: string | null
           loop_count: number | null
