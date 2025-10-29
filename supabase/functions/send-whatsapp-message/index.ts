@@ -31,15 +31,15 @@ serve(async (req) => {
       );
     }
 
-    // Obter credenciais da Evolution API
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+    // Obter credenciais da Evolution API (nomes corretos conforme documentação)
+    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
-    const evolutionInstance = Deno.env.get('EVOLUTION_INSTANCE_NAME');
+    const evolutionInstance = 'SDR2'; // Hardcoded conforme padrão do sistema
 
-    if (!evolutionApiUrl || !evolutionApiKey || !evolutionInstance) {
+    if (!evolutionApiUrl || !evolutionApiKey) {
       console.error('❌ Evolution API não configurada');
       return new Response(
-        JSON.stringify({ error: 'Evolution API not configured' }),
+        JSON.stringify({ error: 'Evolution API not configured (missing EVOLUTION_API_BASE_URL or EVOLUTION_API_KEY)' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
