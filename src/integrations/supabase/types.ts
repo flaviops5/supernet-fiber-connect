@@ -4190,6 +4190,17 @@ export type Database = {
       }
     }
     Views: {
+      context_escape_analysis: {
+        Row: {
+          avg_time_to_escape_minutes: number | null
+          escape_rate_percent: number | null
+          escape_transfers: number | null
+          other_transfers: number | null
+          total_transfers: number | null
+          transfer_date: string | null
+        }
+        Relationships: []
+      }
       dashboard_hibrido_vs_deterministico: {
         Row: {
           escalados: number | null
@@ -4241,6 +4252,16 @@ export type Database = {
           not_helped_count: number | null
           successful_displays: number | null
           total_uses: number | null
+        }
+        Relationships: []
+      }
+      top_escape_steps: {
+        Row: {
+          avg_duration_minutes: number | null
+          escape_count: number | null
+          last_occurrence: string | null
+          scenario: string | null
+          step_name: string | null
         }
         Relationships: []
       }

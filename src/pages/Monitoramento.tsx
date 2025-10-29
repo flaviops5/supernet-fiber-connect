@@ -16,6 +16,7 @@ import { RebootSettings } from '@/components/monitoring/RebootSettings';
 import { RebootStats } from '@/components/monitoring/RebootStats';
 import { RebootCandidates } from '@/components/monitoring/RebootCandidates';
 import { ClientStats } from '@/components/monitoring/ClientStats';
+import ContextEscapeAnalytics from '@/components/monitoring/ContextEscapeAnalytics';
 import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -126,7 +127,7 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status
@@ -135,9 +136,13 @@ export default function Monitoramento() {
                 <RefreshCw className="h-4 w-4" />
                 Auto Reboot
               </TabsTrigger>
+              <TabsTrigger value="context-escape" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Fuga Contexto
+              </TabsTrigger>
               <TabsTrigger value="outages" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Quedas em Massa
+                Quedas
               </TabsTrigger>
               <TabsTrigger value="pon" className="gap-2">
                 <Network className="h-4 w-4" />
@@ -238,6 +243,10 @@ export default function Monitoramento() {
                   <RebootSettings />
                 </TabsContent>
               </Tabs>
+            </TabsContent>
+
+            <TabsContent value="context-escape" className="space-y-6">
+              <ContextEscapeAnalytics />
             </TabsContent>
 
             <TabsContent value="pon">
