@@ -4311,19 +4311,15 @@ Me responde com:
             { waiting_step: null, scenario_completed: "E" }
           );
 
-          // 🔧 Bug #7 Fix: Adicionar await e try/catch
-          try {
-            await kpiLog({
-              action: "kpi_update",
-              conversation_id,
-              scenario_completed: "E",
-              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
-              resolved: true,
-              escalated: false,
-            });
-          } catch (kpiError) {
-            logger.warn("⚠️ PR#26: Erro ao registrar KPI", { error: String(kpiError) });
-          }
+          // PR#27: kpiLog agora é void (fire-and-forget)
+          kpiLog({
+            action: "kpi_update",
+            conversation_id,
+            scenario_completed: "E",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: true,
+            escalated: false,
+          });
 
           // 🔧 Bug #4 Fix: Usar string direta
           responseMessage = "Perfeito! ✅\n\nParece que estabilizou. Se voltar a falhar, me avisa!";
@@ -4384,20 +4380,16 @@ Me responde com:
           { waiting_step: null, scenario_completed: "E", ixc_ticket_id: ticketId }
         );
 
-        // 🔧 Bug #7 Fix: Adicionar await e try/catch
-        try {
-          await kpiLog({
-            action: "kpi_update",
-            conversation_id,
-            scenario_completed: "E",
-            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
-            resolved: false,
-            escalated: true,
-            ticket_id: ticketId ?? null,
-          });
-        } catch (kpiError) {
-          logger.warn("⚠️ PR#26: Erro ao registrar KPI", { error: String(kpiError) });
-        }
+        // PR#27: kpiLog agora é void (fire-and-forget)
+        kpiLog({
+          action: "kpi_update",
+          conversation_id,
+          scenario_completed: "E",
+          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+          resolved: false,
+          escalated: true,
+          ticket_id: ticketId ?? null,
+        });
 
         responseMessage = ticketId
           ? `✅ Protocolo IXC: **${ticketId}**. Nossa equipe vai verificar a porta WAN/cabo/config do roteador.`
