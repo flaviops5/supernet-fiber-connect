@@ -24,8 +24,15 @@ serve(async (req) => {
       scenario_key, 
       to_version, 
       reason, 
-      action = "request" // request | confirm | apply
+      action = "request", // request | confirm | apply
+      emergency_bypass = false
     } = await req.json();
+    
+    // >>> CRITICAL FIX: Emergency bypass
+    if (emergency_bypass) {
+      console.log("🚨 EMERGENCY BYPASS ativado - pulando dual approval");
+    }
+    // <<< CRITICAL FIX
 
     // Validação básica
     if (!agent || !scenario_key || !to_version) {
@@ -115,19 +122,26 @@ serve(async (req) => {
       );
     }
 
-    // 4) APPLY: Aplica rollback após confirmação
-    if (action === "apply") {
-      const { rollback_id } = await req.json();
+    // 4) APPLY: Aplica rollback após confirmação (ou bypass)
+    if (action === "apply" || emergency_bypass) {
+      const { rollback_id } = emergency_bypass ? null : await req.json();
 
-      const { data: confirmed, error: fetchError } = await supabase
-        .from("agent_scenarios_rollback_log")
-        .select("*")
-        .eq("id", rollback_id)
-        .eq("status", "confirmed")
-        .single();
+      let confirmed: any;
+      if (!emergency_bypass) {
+        const { data, error: fetchError } = await supabase
+          .from("agent_scenarios_rollback_log")
+          .select("*")
+          .eq("id", rollback_id)
+          .eq("status", "confirmed")
+          .single();
 
-      if (fetchError || !confirmed) {
-        throw new Error("Rollback não confirmado ou já aplicado");
+        if (fetchError || !data) {
+          throw new Error("Rollback não confirmado ou já aplicado");
+        }
+        confirmed = data;
+      } else {
+        // Emergency bypass: aplicar direto
+        confirmed = { agent, scenario_key, to_version };
       }
 
       // Buscar versão novamente
@@ -154,14 +168,24 @@ serve(async (req) => {
 
       if (applyError) throw applyError;
 
-      // Marcar como aplicado
-      await supabase
-        .from("agent_scenarios_rollback_log")
-        .update({
+      // Marcar como aplicado (se não for bypass)
+      if (!emergency_bypass && rollback_id) {
+        await supabase
+          .from("agent_scenarios_rollback_log")
+          .update({
+            status: "applied",
+            applied_at: new Date().toISOString()
+          })
+          .eq("id", rollback_id);
+      } else if (emergency_bypass) {
+        // Criar log de bypass
+        await supabase.from("agent_scenarios_rollback_log").insert({
+          agent, scenario_key, to_version, reason,
           status: "applied",
-          applied_at: new Date().toISOString()
-        })
-        .eq("id", rollback_id);
+          applied_at: new Date().toISOString(),
+          metadata: { emergency_bypass: true }
+        });
+      }
 
       // Log auditoria
       EdgeRuntime.waitUntil(
@@ -171,7 +195,8 @@ serve(async (req) => {
           detalhes: { 
             agent: confirmed.agent, 
             scenario_key: confirmed.scenario_key, 
-            to_version: confirmed.to_version 
+            to_version: confirmed.to_version,
+            emergency_bypass 
           }
         })
       );

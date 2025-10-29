@@ -8,12 +8,34 @@ Empacotar entrega v1.0.0 com changelog formal, tag Git, checklist de deploy e **
 ## 📋 Checklist Pré-Release
 
 ### 1. Database & Migrations
-- [ ] `PR27_async_safety.sql` aplicada
-- [ ] `PR28_agent_global_policies.sql` aplicada
-- [ ] `PR29_audit_rollback.sql` aplicada
-- [ ] Verificar RLS habilitado em todas as novas tabelas
+- [ ] **CRÍTICO**: Backup completo do DB ANTES de qualquer migration
+  ```bash
+  # Via Supabase Dashboard:
+  # Settings → Database → Backups → Create Backup
+  # Nome sugerido: "pre-v1.0.0-[YYYY-MM-DD-HH:mm]"
+  
+  # Ou via CLI:
+  supabase db dump -f backup_pre_v1.0.0_$(date +%Y%m%d_%H%M%S).sql
+  ```
+- [ ] `20251029205216_a21dc880-35c0-481b-8b8f-9c4835e102fd.sql` aplicada (PR28/29)
+- [ ] `20251029210000_critical_fixes.sql` aplicada (locks, thresholds)
+- [ ] Verificar RLS habilitado em todas as novas tabelas:
+  ```sql
+  SELECT schemaname, tablename, rowsecurity 
+  FROM pg_tables 
+  WHERE schemaname = 'public' 
+    AND tablename IN (
+      'agent_global_policies', 
+      'agent_scenarios_versions', 
+      'agent_current_configs',
+      'agent_scenarios_rollback_log',
+      'cron_execution_locks',
+      'monitoring_thresholds'
+    );
+  -- Todas devem ter rowsecurity = true
+  ```
 - [ ] Testar `has_role()` function em staging
-- [ ] Backup completo do DB (snapshot Supabase)
+- [ ] Testar funções `try_acquire_cron_lock()` e `release_cron_lock()`
 
 ### 2. Edge Functions
 - [ ] `luan-auto-upgrade` deployada

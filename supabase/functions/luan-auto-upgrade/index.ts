@@ -27,6 +27,23 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // >>> CRITICAL FIX: Prevenir execução simultânea
+    const { data: lockAcquired } = await supabase.rpc('try_acquire_cron_lock', {
+      p_job_name: 'luan-auto-upgrade',
+      p_ttl_minutes: 5
+    });
+
+    if (!lockAcquired) {
+      console.log("⏸️ Auto-upgrade já em execução, aguardando...");
+      return new Response(
+        JSON.stringify({ ok: false, reason: 'already_running' }),
+        { headers: { ...corsHeaders, "content-type": "application/json" } }
+      );
+    }
+
+    try {
+      // <<< CRITICAL FIX
+
     // 1) Buscar KPIs dos últimos 7 dias
     const { data, error } = await supabase.rpc("calc_support_kpis_last_7_days");
     if (error) throw error;
@@ -101,6 +118,11 @@ serve(async (req) => {
       JSON.stringify({ ok: true, policy }), 
       { headers: { ...corsHeaders, "content-type": "application/json" } }
     );
+
+    } finally {
+      // Liberar lock sempre
+      await supabase.rpc('release_cron_lock', { p_job_name: 'luan-auto-upgrade' });
+    }
 
   } catch (e) {
     console.error("❌ Erro auto-upgrade:", e);
