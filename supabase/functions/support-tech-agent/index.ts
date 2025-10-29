@@ -164,6 +164,84 @@ async function safeTestConnectivity(supabaseClient: any, ixcId: string) {
   return conn;
 }
 
+/**
+ * PR#17 - Diagnósticos paralelos com timeout e error handling
+ * Executa signal check e connectivity test simultaneamente
+ */
+async function runParallelDiagnostics(
+  ixc_client_id: string,
+  conversation_id: string,
+  supabase: any,
+  logger: any
+): Promise<{
+  signalResult: PromiseSettledResult<any>;
+  connectivityResult: PromiseSettledResult<any>;
+  elapsed: number;
+}> {
+  const start = Date.now();
+  
+  // Helper: adiciona timeout a uma promise
+  const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms)
+      )
+    ]);
+  };
+
+  logger.info("🔄 PR#17: Iniciando diagnósticos paralelos", { ixc_client_id });
+
+  // Executar ambos em paralelo com timeouts independentes
+  const [signalResult, connectivityResult] = await Promise.allSettled([
+    withTimeout(
+      supabase.functions.invoke("ixc-onu-signal", {
+        body: { ixc_client_id }
+      }),
+      8000, // 8s para signal (IXC pode ser lento)
+      "ixc-onu-signal"
+    ),
+    withTimeout(
+      supabase.functions.invoke("test-equipment-connectivity", {
+        body: { ixc_client_id, timeout: 5000 }
+      }),
+      6000, // 6s para connectivity (já tem timeout interno de 5s)
+      "test-equipment-connectivity"
+    )
+  ]);
+
+  const elapsed = Date.now() - start;
+
+  // Log detalhado para auditoria
+  await logAudit({
+    acao: "parallel_diag_finished",
+    fluxo: "support-tech",
+    conversation_id,
+    detalhes: {
+      elapsed_ms: elapsed,
+      signal_status: signalResult.status,
+      signal_ok: signalResult.status === "fulfilled",
+      signal_error: signalResult.status === "rejected" 
+        ? (signalResult.reason?.message || String(signalResult.reason))
+        : null,
+      connectivity_status: connectivityResult.status,
+      connectivity_ok: connectivityResult.status === "fulfilled",
+      connectivity_error: connectivityResult.status === "rejected"
+        ? (connectivityResult.reason?.message || String(connectivityResult.reason))
+        : null
+    },
+    supabaseClient: supabase
+  });
+
+  logger.info("✅ PR#17: Diagnósticos paralelos concluídos", {
+    elapsed,
+    signal_ok: signalResult.status === "fulfilled",
+    connectivity_ok: connectivityResult.status === "fulfilled"
+  });
+
+  return { signalResult, connectivityResult, elapsed };
+}
+
 function isGoodSignal(signal?: any) {
   const rx = Number(signal?.rx);
   return Number.isFinite(rx) && rx > -24; // bom acima de -24 dBm
@@ -781,11 +859,127 @@ Me avise quando ligar, por favor.
             .eq("id", conversation_id);
         }
 
+      // =============================================================================
+      // PR#17 - FAST-PATH: Detecção rápida para clientes com bom sinal + conectividade
+      // =============================================================================
+      
+      // Guard 1: Verificar se usuário não está em outro fluxo ativo
+      const currentStep = flowState?.waiting_step;
+      const isInActiveFlow = currentStep && 
+        !['initial', 'cpf_validation', 'awaiting_response'].includes(currentStep);
+
+      let fastPathActivated = false;
+
+      if (!isInActiveFlow && ixc_client_id) {
+        try {
+          logger.info('🔄 PR#17: Avaliando fast-path', { ixc_client_id });
+          
+          // Executar diagnósticos paralelos
+          const { signalResult, connectivityResult, elapsed } = 
+            await runParallelDiagnostics(ixc_client_id, conversation_id, supabase, logger);
+
+          // Processar resultados
+          const signal = signalResult.status === "fulfilled" 
+            ? signalResult.value?.data 
+            : null;
+          
+          const isConnectivityAlive = 
+            connectivityResult.status === "fulfilled" && 
+            connectivityResult.value?.data?.ok === true;
+
+          // Validação robusta do RX (evitar NaN e valores inválidos)
+          let rxValue: number | null = null;
+          if (signal?.rx != null) {
+            const parsed = Number(signal.rx);
+            if (!isNaN(parsed)) {
+              rxValue = parsed;
+            }
+          }
+
+          const isGoodSignal = rxValue !== null && rxValue > -24;
+
+          logger.info("📊 PR#17: Heurística avaliada", {
+            rx_value: rxValue,
+            is_good_signal: isGoodSignal,
+            is_connectivity_alive: isConnectivityAlive,
+            elapsed_ms: elapsed
+          });
+
+          // Heurística: RX bom + Conectividade OK = Fast-Path
+          if (isConnectivityAlive && isGoodSignal) {
+            logger.info("⚡ PR#17: FAST-PATH ATIVADO!", { rx: rxValue });
+            fastPathActivated = true;
+
+            // Auditoria
+            await logAudit({
+              acao: "fast_path_enabled",
+              fluxo: "support-tech",
+              conversation_id,
+              detalhes: {
+                reason: "signal_and_connectivity_good",
+                elapsed_ms: elapsed,
+                rx_value: rxValue,
+                connectivity_ok: true
+              },
+              supabaseClient: supabase
+            });
+
+            // KPI tracking (fire-and-forget)
+            kpiLog({
+              action: "fast_path_enabled",
+              fluxo: "support-tech",
+              conversation_id,
+              extras: {
+                signal_rx: rxValue,
+                elapsed_ms: elapsed,
+                pr17_enabled: true
+              }
+            });
+
+            // Resposta rápida com contexto
+            responseMessage = `Perfeito! 🙌  
+Seu equipamento está **online** e com **bom sinal** 📶  
+Vamos apenas confirmar 1 coisinha rápido aqui…`;
+
+            await updateFlowState(
+              supabase,
+              { conversation_id, flowState },
+              { waiting_step: "fast_path_check_experience" }
+            );
+
+            await supabase.from("conversation_messages").insert({
+              conversation_id,
+              sender_type: "agent",
+              sender_name: "Luan Silva",
+              content: responseMessage,
+              ai_suggestion: false
+            });
+
+            logger.info("PR#17: Fast-path ativado - aguardando confirmação do cliente");
+            
+            return new Response(
+              JSON.stringify({ reply: responseMessage }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          } else {
+            logger.info("⏩ PR#17: Fast-path não aplicável", {
+              rx: rxValue,
+              connectivity: isConnectivityAlive
+            });
+          }
+        } catch (error) {
+          logger.error("❌ PR#17: Erro no fast-path - continuando fluxo normal", { error });
+          // Em caso de erro, continuar com fluxo normal (fail-safe)
+        }
+      } else if (isInActiveFlow) {
+        logger.info('⏭️ PR#17: Fast-path skip - usuário já em fluxo', { currentStep });
+      }
+
       // Mensagem inicial seguindo o prompt do sistema
-        if (outageActive && outageRegion) {
+        if (!fastPathActivated && outageActive && outageRegion) {
           // Caso especial: Pane massiva
           responseMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico da SUPERNET. 👋\n\n⚠️ **ATENÇÃO**: Detectamos uma instabilidade geral na região de ${outageRegion} afetando ${outageCount} clientes.\n\nNossa equipe técnica já está trabalhando para normalizar o serviço. Você não está sozinho nessa! Vou te manter informado sobre o andamento.`;
-        } else if (reboot_attempted && onu_signal) {
+        } else if (!fastPathActivated && reboot_attempted && onu_signal) {
           // Cloé já tentou reboot - começar diagnóstico TX/RX
           const tx = onu_signal.tx_power || 0;
           const rx = onu_signal.rx_power || 0;
@@ -2961,6 +3155,135 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         });
         
         return textReply(responseMessage);
+      }
+      
+      // =============================================================================
+      // PR#17 - Handler do FAST-PATH CHECK EXPERIENCE
+      // =============================================================================
+      if (flowState?.waiting_step === "fast_path_check_experience") {
+        logger.info("🔄 PR#17: Processando resposta do fast-path");
+
+        // Interpretar resposta do cliente
+        const interpretation = await hybridInterpret(
+          normalizedMessage,
+          "Está funcionando bem ou tem algum problema?"
+        );
+
+        if (interpretation.intent === "negou" || interpretation.intent === "problema") {
+          // Cliente confirmou que TEM problema
+          logger.info("⚠️ PR#17: Cliente confirmou problema - escalando");
+
+          // Auditoria
+          await logAudit({
+            acao: "fast_path_problem_confirmed",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: {
+              user_message: normalizedMessage,
+              interpretation: interpretation.intent
+            },
+            supabaseClient: supabase
+          });
+
+          // Redirecionar para fluxo diagnóstico completo (Cenário B/C)
+          responseMessage = `Entendi. Vamos fazer um diagnóstico completo para identificar o problema. 🔍`;
+
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            { waiting_step: "diagnosing_full", scenario: null }
+          );
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+
+          return textReply(responseMessage);
+          
+        } else if (interpretation.intent === "confirmou" || interpretation.intent === "funcionando") {
+          // Cliente confirmou que está OK
+          logger.info("✅ PR#17: Cliente confirmou funcionamento - caso resolvido");
+
+          // KPI de sucesso
+          kpiLog({
+            action: "fast_path_resolved",
+            fluxo: "support-tech",
+            conversation_id,
+            resolved: true,
+            scenario_completed: "FAST",
+            extras: {
+              pr17_success: true,
+              resolution_time_estimate: "< 60s"
+            }
+          });
+
+          // Auditoria
+          await logAudit({
+            acao: "fast_path_resolved",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: {
+              user_message: normalizedMessage,
+              interpretation: interpretation.intent,
+              resolved: true
+            },
+            supabaseClient: supabase
+          });
+
+          responseMessage = `Ótimo! 🎉  
+Fico feliz que está tudo funcionando.
+
+Qualquer coisa, pode me chamar! 👋`;
+
+          await updateFlowState(
+            supabase,
+            { conversation_id, flowState },
+            { resolved: true, waiting_step: null }
+          );
+
+          // Fechar conversa
+          await supabase
+            .from("conversations")
+            .update({
+              status: "closed",
+              resolved_at: new Date().toISOString()
+            })
+            .eq("id", conversation_id);
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+
+          return textReply(responseMessage);
+          
+        } else {
+          // Resposta ambígua - pedir esclarecimento
+          logger.warn("❓ PR#17: Resposta ambígua no fast-path");
+
+          responseMessage = `Desculpe, não entendi bem. 🤔  
+Me responde com:  
+- **"Está funcionando"** se tudo OK  
+- **"Tem problema"** se algo não funciona`;
+
+          await supabase.from("conversation_messages").insert({
+            conversation_id,
+            sender_type: "agent",
+            sender_name: "Luan Silva",
+            content: responseMessage,
+            ai_suggestion: false
+          });
+
+          // Mantém no mesmo step
+          return textReply(responseMessage);
+        }
       }
       
       // ===== B2: CONFIRMAÇÃO DO REBOOT (CENÁRIO B) =====
