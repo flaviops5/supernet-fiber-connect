@@ -4461,12 +4461,30 @@ export type Database = {
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
-      calc_onu_instability_top_14d: {
-        Args: { limit_n?: number }
+      calc_onu_instability_top_14d:
+        | {
+            Args: never
+            Returns: {
+              events_weak_critical: number
+              ixc_client_id: string
+              last_serial: string
+            }[]
+          }
+        | {
+            Args: { limit_n?: number }
+            Returns: {
+              events_weak_critical: number
+              ixc_client_id: string
+              last_serial: string
+            }[]
+          }
+      calc_retest_effectiveness_7d: {
+        Args: never
         Returns: {
-          events_weak_critical: number
-          ixc_client_id: string
-          last_serial: string
+          ok_after: number
+          step: string
+          success_rate_pct: number
+          total: number
         }[]
       }
       calc_support_aging_p50_p90_14d: {

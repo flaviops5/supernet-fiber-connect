@@ -97,11 +97,46 @@ export default function KPISupportDashboard() {
   // PR22: Contador de clientes afetados
   const [affectedCustomersCount, setAffectedCustomersCount] = useState<number>(0);
 
-  // M1 ✅: Error handling robusto
+  // PR19 ✅: Fetch métricas avançadas
   const fetchExtra = useCallback(async () => {
     try {
-      // Temporariamente desabilitado até types serem atualizados
-      console.log('PR19 metrics: aguardando atualização de types após migration');
+      const [
+        { data: aging, error: e1 },
+        { data: onu, error: e2 },
+        { data: retests, error: e3 }
+      ] = await Promise.all([
+        supabase.rpc("calc_support_aging_p50_p90_14d"),
+        supabase.rpc("calc_onu_instability_top_14d"),
+        supabase.rpc("calc_retest_effectiveness_7d")
+      ]);
+
+      if (e1 || e2 || e3) {
+        console.error('❌ PR19 metrics error:', { e1, e2, e3 });
+        return;
+      }
+
+      // Atualizar estados
+      if (aging && Array.isArray(aging) && aging.length > 0) {
+        setAgingSummary({
+          conversations: Number(aging[0].conversations || 0),
+          p50_seconds: Number(aging[0].p50_seconds || 0),
+          p90_seconds: Number(aging[0].p90_seconds || 0)
+        });
+      }
+
+      setOnuTop((onu || []).map((row: any) => ({
+        ixc_client_id: row.ixc_client_id,
+        last_serial: row.last_serial || '-',
+        events_weak_critical: Number(row.events_weak_critical || 0)
+      })));
+
+      setRetests((retests || []).map((row: any) => ({
+        step: row.step || 'geral',
+        total: Number(row.total || 0),
+        ok_after: Number(row.ok_after || 0),
+        success_rate_pct: Number(row.success_rate_pct || 0)
+      })));
+
     } catch (e) {
       console.error('❌ fetchExtra failed:', e);
     }

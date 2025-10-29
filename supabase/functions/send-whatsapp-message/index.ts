@@ -1,84 +1,110 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
-import { createLogger } from '../_shared/logger.ts';
+// PR #21 - Edge Function para envio de mensagens WhatsApp via Evolution API
 
-const logger = createLogger('send-whatsapp-message');
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-Deno.serve(createPublicHandler(
-  'send-whatsapp-message',
-  async (req, { supabase }) => {
-    const { phone, message, instanceName = 'SDR2' } = await req.json();
-    
-    logger.info('Send WhatsApp Message Request', { phone, instanceName, messageLength: message?.length });
-    
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface SendMessagePayload {
+  phone: string;
+  message: string;
+}
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const payload: SendMessagePayload = await req.json();
+    const { phone, message } = payload;
+
+    // Validação de entrada
     if (!phone || !message) {
-      throw new Error('Phone and message are required');
+      console.error('❌ Payload inválido:', { phone: !!phone, message: !!message });
+      return new Response(
+        JSON.stringify({ error: 'Phone and message are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const apiKey = Deno.env.get('EVOLUTION_API_KEY');
-    let baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+    // Obter credenciais da Evolution API
+    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+    const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const evolutionInstance = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
-    logger.debug('Checking credentials', { 
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-      baseUrl: baseUrl || 'NOT SET'
-    });
-
-    // Remove trailing slash from baseUrl
-    if (baseUrl && baseUrl.endsWith('/')) {
-      baseUrl = baseUrl.slice(0, -1);
+    if (!evolutionApiUrl || !evolutionApiKey || !evolutionInstance) {
+      console.error('❌ Evolution API não configurada');
+      return new Response(
+        JSON.stringify({ error: 'Evolution API not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (!apiKey || !baseUrl) {
-      throw new Error('Evolution API credentials not configured');
-    }
-
-    logger.info('Sending WhatsApp message', { phone, instanceName });
-
-    // Format phone number
+    // Formatar número de telefone (remover caracteres não numéricos)
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
 
-    logger.debug('Formatted phone', { formattedPhone });
-
-    // Prepare headers - Evolution API uses 'apikey' header
-    const headers = {
-      'apikey': apiKey,
-      'Content-Type': 'application/json',
-    };
-
-    // Send message via Evolution API
-    const response = await fetch(`${baseUrl}/message/sendText/${instanceName}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        number: formattedPhone,
-        text: message,
-      }),
+    console.log('📤 Enviando mensagem WhatsApp:', {
+      phone: formattedPhone,
+      messageLength: message.length,
+      instance: evolutionInstance
     });
 
-    const responseText = await response.text();
-    logger.info('Evolution API Response', { status: response.status, responseText });
+    // Enviar mensagem via Evolution API
+    const evolutionResponse = await fetch(`${evolutionApiUrl}/message/sendText/${evolutionInstance}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': evolutionApiKey
+      },
+      body: JSON.stringify({
+        number: formattedPhone,
+        text: message
+      })
+    });
 
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      logger.error('Failed to parse Evolution API response', { responseText });
-      throw new Error('Invalid response from Evolution API');
+    if (!evolutionResponse.ok) {
+      const errorText = await evolutionResponse.text();
+      console.error('❌ Evolution API error:', {
+        status: evolutionResponse.status,
+        error: errorText
+      });
+      throw new Error(`Evolution API error: ${evolutionResponse.status} - ${errorText}`);
     }
 
-    if (!response.ok) {
-      logger.error('Evolution API Error', { status: response.status, responseData });
-      throw new Error(responseData?.message || `Evolution API error: ${response.status}`);
-    }
-
-    logger.info('WhatsApp message sent successfully');
-
-    return {
-      success: true,
-      data: responseData,
+    const evolutionData = await evolutionResponse.json();
+    console.log('✅ Mensagem enviada com sucesso:', {
       phone: formattedPhone,
-      instanceName,
-    };
+      messageId: evolutionData.key?.id
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        phone: formattedPhone,
+        messageId: evolutionData.key?.id
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error) {
+    console.error('❌ Erro ao enviar mensagem:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Internal server error',
+        success: false 
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
-));
+});
