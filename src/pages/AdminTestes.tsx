@@ -5,6 +5,7 @@ import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelCompl
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
 import { TestMediaGuidedFlow } from "@/components/tests/TestMediaGuidedFlow";
+import { TestTextReplyContext } from "@/components/tests/TestTextReplyContext";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
@@ -52,6 +53,14 @@ const AdminTestes = () => {
 
           <TabsContent value="simulations" className="space-y-6">
             <div>
+              <h3 className="text-lg font-semibold mb-4">💬 Teste E2E - textReplyWithContext (PR #15)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Teste do sistema de salvamento automático de perguntas e contexto
+              </p>
+              <TestTextReplyContext />
+            </div>
+
+            <div className="border-t pt-6">
               <h3 className="text-lg font-semibold mb-4">🖼️ Teste E2E - Mídia Guiada (PR #14)</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Teste completo do sistema de mídia guiada: persistência, imagens, logging e feedback
