@@ -2344,6 +2344,33 @@ export type Database = {
         }
         Relationships: []
       }
+      geo_regions: {
+        Row: {
+          bairro: string | null
+          cidade: string
+          created_at: string | null
+          id: string
+          lat: number
+          lng: number
+        }
+        Insert: {
+          bairro?: string | null
+          cidade: string
+          created_at?: string | null
+          id?: string
+          lat: number
+          lng: number
+        }
+        Update: {
+          bairro?: string | null
+          cidade?: string
+          created_at?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+        }
+        Relationships: []
+      }
       hero_settings: {
         Row: {
           badge_text: string
@@ -3304,6 +3331,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      official_media_assets: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          kind: string
+          locale: string | null
+          storage_path: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          kind: string
+          locale?: string | null
+          storage_path: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          kind?: string
+          locale?: string | null
+          storage_path?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       onu_tracking_events: {
         Row: {
@@ -4432,6 +4495,19 @@ export type Database = {
           day: string | null
           resolved_events: number | null
           ticket_events: number | null
+        }
+        Relationships: []
+      }
+      kpi_regions_last_24h: {
+        Row: {
+          bairro: string | null
+          cidade: string | null
+          critical_rx: number | null
+          last_event: string | null
+          lat: number | null
+          lng: number | null
+          tickets: number | null
+          total_incidents: number | null
         }
         Relationships: []
       }

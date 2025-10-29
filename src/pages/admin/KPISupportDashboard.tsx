@@ -18,6 +18,7 @@ import { KPIRow, KPIMetrics, KPIRegionRow, KPIRegionAgg } from "@/types/kpi.type
 import { AgingSummary, OnuInstability, RetestEffectiveness } from "@/types/pr19.types";
 import SupportHeatmap from "@/components/geo/SupportHeatmap";
 import RegionAlerts from "@/components/alerts/RegionAlerts";
+import { RegionsMap } from "@/components/admin/RegionsMap";
 import { toCoord } from "@/components/geo/city-centroids";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActionModal } from "@/components/regions/ActionModal";
@@ -545,6 +546,13 @@ export default function KPISupportDashboard() {
       </div>
 
       <SupportHeatmap points={heatPoints} />
+
+      <div className="flex items-center gap-2 mt-6">
+        <Map className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">Mapa — Incidentes por Região (24h)</h2>
+      </div>
+
+      <RegionsMap />
 
       <div className="flex items-center gap-2 mt-6">
         <h2 className="text-xl font-semibold">Alertas Inteligentes (Top regiões)</h2>
