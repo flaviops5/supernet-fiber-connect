@@ -4578,6 +4578,17 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_customers_by_region_last_outage: {
+        Args: never
+        Returns: {
+          bairro: string
+          cidade: string
+          cpf: string
+          ixc_client_id: string
+          last_event: string
+          nome: string
+        }[]
+      }
       get_impacted_customers_by_region: {
         Args: { region_bairro?: string; region_cidade: string }
         Returns: {

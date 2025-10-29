@@ -1,6 +1,7 @@
 // >>> PR10B: KPISupportDashboard (com Heatmap + Alerts + AutoRefresh)
 // >>> PR19: Aging + ONU + Retests (M1 ✅ Error Handling, M2 ✅ Memo)
 // >>> PR21: Ação Proativa Regional via WhatsApp
+// >>> PR22: Lista de Clientes Afetados
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map, ShieldAlert, 
-  Clock, Radio, RefreshCw 
+  Clock, Radio, RefreshCw, Users 
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -19,6 +20,9 @@ import RegionAlerts from "@/components/alerts/RegionAlerts";
 import { toCoord } from "@/components/geo/city-centroids";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActionModal } from "@/components/regions/ActionModal";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { ClientsByRegionTable } from "@/components/admin/ClientsByRegionTable";
 
 type CriticalRegion = {
   cidade: string;
@@ -89,6 +93,9 @@ export default function KPISupportDashboard() {
 
   // PR21: Modal de ação proativa
   const [selectedRegion, setSelectedRegion] = useState<CriticalRegion | null>(null);
+  
+  // PR22: Contador de clientes afetados
+  const [affectedCustomersCount, setAffectedCustomersCount] = useState<number>(0);
 
   // M1 ✅: Error handling robusto
   const fetchExtra = useCallback(async () => {
@@ -122,15 +129,28 @@ export default function KPISupportDashboard() {
     setLoading(false);
   }
 
+  // PR22: Fetch affected customers count
+  async function fetchAffectedCustomersCount() {
+    try {
+      const { data, error } = await supabase.rpc("get_customers_by_region_last_outage");
+      if (error) throw error;
+      setAffectedCustomersCount((data || []).length);
+    } catch (err) {
+      console.error("Erro ao buscar contagem de clientes afetados:", err);
+    }
+  }
+
   useEffect(() => {
     fetchData();
     fetchCriticalRegions().then(setCriticalRegions);
     fetchExtra();
+    fetchAffectedCustomersCount();
     
     const id = setInterval(() => {
       fetchData();
       fetchCriticalRegions().then(setCriticalRegions);
       fetchExtra();
+      fetchAffectedCustomersCount();
     }, 60_000); // auto-refresh 60s
     
     return () => clearInterval(id);
@@ -318,6 +338,25 @@ export default function KPISupportDashboard() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard de KPIs — Suporte Técnico</h1>
+        
+        {/* PR22: Botão de Clientes Afetados */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-accent transition-colors">
+              <Users className="h-4 w-4" />
+              Clientes Afetados
+              {affectedCustomersCount > 0 && (
+                <Badge variant="destructive">{affectedCustomersCount}</Badge>
+              )}
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>Clientes Afetados Recentemente</DialogTitle>
+            </DialogHeader>
+            <ClientsByRegionTable />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
