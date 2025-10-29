@@ -95,6 +95,30 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_current_configs: {
+        Row: {
+          agent: string
+          configs_json: Json
+          payload_json: Json
+          scenario_key: string
+          updated_at: string
+        }
+        Insert: {
+          agent: string
+          configs_json?: Json
+          payload_json?: Json
+          scenario_key: string
+          updated_at?: string
+        }
+        Update: {
+          agent?: string
+          configs_json?: Json
+          payload_json?: Json
+          scenario_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_department_assignments: {
         Row: {
           assigned_by: string | null
@@ -322,6 +346,24 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_global_policies: {
+        Row: {
+          agent: string
+          policy_json: Json
+          updated_at: string
+        }
+        Insert: {
+          agent: string
+          policy_json: Json
+          updated_at?: string
+        }
+        Update: {
+          agent?: string
+          policy_json?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_metrics: {
         Row: {
           action_type: string
@@ -394,6 +436,84 @@ export type Database = {
           status?: Database["public"]["Enums"]["agent_status"]
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      agent_scenarios_rollback_log: {
+        Row: {
+          agent: string
+          applied_at: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          from_version: number | null
+          id: string
+          reason: string | null
+          requested_by: string | null
+          scenario_key: string
+          status: string
+          to_version: number | null
+        }
+        Insert: {
+          agent: string
+          applied_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          from_version?: number | null
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          scenario_key: string
+          status?: string
+          to_version?: number | null
+        }
+        Update: {
+          agent?: string
+          applied_at?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          from_version?: number | null
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          scenario_key?: string
+          status?: string
+          to_version?: number | null
+        }
+        Relationships: []
+      }
+      agent_scenarios_versions: {
+        Row: {
+          agent: string
+          configs: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          payload: Json
+          scenario_key: string
+          version: number
+        }
+        Insert: {
+          agent: string
+          configs?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload: Json
+          scenario_key: string
+          version: number
+        }
+        Update: {
+          agent?: string
+          configs?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json
+          scenario_key?: string
+          version?: number
         }
         Relationships: []
       }
