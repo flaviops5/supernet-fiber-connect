@@ -164,7 +164,17 @@ export default function KPISupportDashboard() {
     return result.sort((a, b) => (b.rxCrit - a.rxCrit) || (b.tickets - a.tickets) || (b.totalCount - a.totalCount));
   }, [regionRows]);
 
-  const heatPoints = useMemo(() => {
+  type HeatPoint = {
+    lat: number;
+    lng: number;
+    label: string;
+    total: number;
+    tickets: number;
+    rxCrit: number;
+    severity: number;
+  };
+
+  const heatPoints = useMemo<HeatPoint[]>(() => {
     return regionAgg
       .map((r) => {
         const coord = toCoord(r.cidade);
@@ -180,7 +190,7 @@ export default function KPISupportDashboard() {
           severity: Math.max(0, Math.min(1, sevBase)),
         };
       })
-      .filter(Boolean) as any[];
+      .filter((point): point is HeatPoint => point !== null);
   }, [regionAgg]);
 
   // M2 ✅: Memo para tabelas (evita re-renders desnecessários)

@@ -5,7 +5,7 @@ export interface AgingEvent {
   conversation_id: string;
   fluxo: string;
   step: string;
-  meta: Record<string, any>;
+  meta: Record<string, unknown>; // Sprint 10: unknown is safer than any for metadata
   created_at: string;
 }
 

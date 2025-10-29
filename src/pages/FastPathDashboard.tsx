@@ -52,6 +52,7 @@ function MetricCard({ title, value, trend, icon, alert }: MetricCardProps) {
 export default function FastPathDashboard() {
   const [stats, setStats] = useState<FastPathStats[]>([]);
   const [todayStats, setTodayStats] = useState<FastPathStats | null>(null);
+  // Using any here because system_alerts has dynamic metadata (JSON type from Supabase)
   const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
