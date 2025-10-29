@@ -19,17 +19,17 @@ export function jsonReply(payload: Record<string, unknown>) {
 }
 
 /**
- * PR #15: Helper para salvar last_agent_question automaticamente
- * Usado quando o agente faz uma pergunta que requer resposta do usuário
+ * PR #15 vFINAL ✅: Helper robusto para salvar last_agent_question
+ * Detecta perguntas de forma inteligente e salva automaticamente
  */
 export async function textReplyWithContext(
   supabaseAdmin: any,
   ctx: { conversation_id: string; flowState?: any },
   message: string
 ): Promise<Response> {
-  // >>> PR #15 vFINAL ✅ - Salvar última pergunta com try/catch
+  // >>> PR #15 vFINAL ✅ - Detecção robusta de perguntas
   try {
-    if (message.includes("?")) {
+    if (isQuestion(message)) {
       await updateFlowState(supabaseAdmin, ctx, {
         last_agent_question: message
       });
@@ -40,4 +40,34 @@ export async function textReplyWithContext(
   // <<< PR #15 ✅
 
   return textReply(message);
+}
+
+/**
+ * PR #15: Detecta se uma mensagem é uma pergunta de forma robusta
+ * - Ignora URLs com "?"
+ * - Verifica interrogação no final de frases
+ * - Detecta palavras-chave de perguntas
+ */
+function isQuestion(message: string): boolean {
+  if (!message || typeof message !== 'string') return false;
+
+  // Remove URLs para não confundir com "?"
+  const cleanMessage = message.replace(/https?:\/\/[^\s]+/g, '');
+  
+  // Verifica se tem "?" no final de alguma frase
+  const hasQuestionMark = /\?[\s\n]*(?:[^.!?]*)?$/.test(cleanMessage);
+  
+  // Palavras-chave que indicam perguntas (case insensitive)
+  const questionKeywords = [
+    'pode', 'consegue', 'você', 'confirma', 'confirme',
+    'está', 'funciona', 'testou', 'verificou', 'viu',
+    'qual', 'como', 'quando', 'onde', 'quem', 'por que'
+  ];
+  
+  const lowerMessage = cleanMessage.toLowerCase();
+  const hasQuestionKeyword = questionKeywords.some(kw => 
+    lowerMessage.includes(kw) && cleanMessage.includes('?')
+  );
+
+  return hasQuestionMark || hasQuestionKeyword;
 }
