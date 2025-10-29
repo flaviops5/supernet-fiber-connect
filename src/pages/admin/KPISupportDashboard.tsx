@@ -25,26 +25,21 @@ type CriticalRegion = {
 };
 
 async function fetchCriticalRegions(): Promise<CriticalRegion[]> {
-  const { data, error } = await supabase.rpc("calc_support_kpis_by_region_last_7_days");
+  const { data, error } = await supabase.rpc("get_top5_critical_regions");
 
   if (error) {
-    console.error("Erro KPIs por região:", error);
+    console.error("Erro ao buscar top 5 regiões críticas:", error);
     return [];
   }
 
-  return (data as any[])
-    .map((row) => ({
-      cidade: row.cidade ?? "Desconhecido",
-      qtd: Number(row.total_count),
-      tickets: Number(row.tickets_count),
-      rx_critico: Number(row.rx_critico_count),
-    }))
-    .sort((a, b) =>
-      b.rx_critico - a.rx_critico ||
-      b.tickets - a.tickets ||
-      b.qtd - a.qtd
-    )
-    .slice(0, 5);
+  if (!data) return [];
+
+  return data.map((row) => ({
+    cidade: row.cidade ?? "Desconhecido",
+    qtd: Number(row.tickets_count + row.rx_critico_count),
+    tickets: Number(row.tickets_count),
+    rx_critico: Number(row.rx_critico_count),
+  }));
 }
 
 async function handleEscalateRegion(r: CriticalRegion) {
