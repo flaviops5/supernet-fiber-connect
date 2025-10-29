@@ -4578,6 +4578,14 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_impacted_customers_by_region: {
+        Args: { region_bairro?: string; region_cidade: string }
+        Returns: {
+          customer_name: string
+          customer_phone: string
+          last_event: string
+        }[]
+      }
       get_migration_stats: {
         Args: never
         Returns: {

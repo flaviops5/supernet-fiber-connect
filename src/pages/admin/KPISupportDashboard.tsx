@@ -1,9 +1,11 @@
 // >>> PR10B: KPISupportDashboard (com Heatmap + Alerts + AutoRefresh)
 // >>> PR19: Aging + ONU + Retests (M1 ✅ Error Handling, M2 ✅ Memo)
+// >>> PR21: Ação Proativa Regional via WhatsApp
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { 
   Loader2, AlertCircle, BarChart3, CheckCircle2, Ticket, Map, ShieldAlert, 
   Clock, Radio, RefreshCw 
@@ -16,9 +18,11 @@ import SupportHeatmap from "@/components/geo/SupportHeatmap";
 import RegionAlerts from "@/components/alerts/RegionAlerts";
 import { toCoord } from "@/components/geo/city-centroids";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ActionModal } from "@/components/regions/ActionModal";
 
 type CriticalRegion = {
   cidade: string;
+  bairro: string | null;
   qtd: number;
   tickets: number;
   rx_critico: number;
@@ -36,6 +40,7 @@ async function fetchCriticalRegions(): Promise<CriticalRegion[]> {
 
   return data.map((row) => ({
     cidade: row.cidade ?? "Desconhecido",
+    bairro: row.bairro ?? null,
     qtd: Number(row.tickets_count + row.rx_critico_count),
     tickets: Number(row.tickets_count),
     rx_critico: Number(row.rx_critico_count),
@@ -81,6 +86,9 @@ export default function KPISupportDashboard() {
   const [agingSummary, setAgingSummary] = useState<AgingSummary | null>(null);
   const [onuTop, setOnuTop] = useState<OnuInstability[]>([]);
   const [retests, setRetests] = useState<RetestEffectiveness[]>([]);
+
+  // PR21: Modal de ação proativa
+  const [selectedRegion, setSelectedRegion] = useState<CriticalRegion | null>(null);
 
   // M1 ✅: Error handling robusto
   const fetchExtra = useCallback(async () => {
@@ -412,18 +420,22 @@ export default function KPISupportDashboard() {
             criticalRegions.map((r, idx) => (
               <div key={idx} className="flex items-center justify-between p-3 border-b last:border-none hover:bg-accent/50 transition-colors rounded">
                 <div className="space-y-0.5">
-                  <p className="font-medium text-sm">{r.cidade}</p>
+                  <p className="font-medium text-sm">
+                    {r.cidade}
+                    {r.bairro && <span className="text-muted-foreground"> ({r.bairro})</span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {r.rx_critico} RX Crítico · {r.tickets} Tickets · {r.qtd} Total
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handleEscalateRegion(r)}
-                  className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setSelectedRegion(r)}
                 >
-                  👷 Ação Técnica
-                </button>
+                  🚨 Agir
+                </Button>
               </div>
             ))
           )}
@@ -435,6 +447,13 @@ export default function KPISupportDashboard() {
 
       {/* PR19: Retests Table */}
       {retestsTable}
+
+      {/* PR21: Modal de Ação Proativa */}
+      <ActionModal
+        open={!!selectedRegion}
+        onClose={() => setSelectedRegion(null)}
+        region={selectedRegion}
+      />
     </div>
   );
 }
