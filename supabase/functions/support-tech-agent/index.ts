@@ -2624,24 +2624,14 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
           waiting_step: null,
           scenario_completed: "HUMANO",
-          transferred_to_human: true
+          transferred_to_human: true,
+          transfer_reason: "client_frustration"
         });
 
-        // Atualizar status da conversation para aguardando humano
+        // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
         await supabaseAdmin
           .from("conversations")
-          .update({
-            status: "awaiting_human",
-            metadata: {
-              ...(currentConversation?.metadata as any || {}),
-              flow_state: {
-                ...((currentConversation?.metadata as any)?.flow_state || {}),
-                transferred_to_human: true,
-                transfer_reason: "client_frustration",
-                irritation_score: flowState?.irritation_score
-              }
-            }
-          })
+          .update({ status: "awaiting_human" })
           .eq("id", conversation_id);
 
         await logAudit({
@@ -2717,24 +2707,15 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
             waiting_step: null,
             scenario_completed: "HUMANO",
-            transferred_to_human: true
+            transferred_to_human: true,
+            transfer_reason: "message_loop",
+            loop_count: loopCount
           });
           
-          // Atualizar status da conversation
+          // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
           await supabaseAdmin
             .from("conversations")
-            .update({
-              status: "awaiting_human",
-              metadata: {
-                ...(currentConversation?.metadata as any || {}),
-                flow_state: {
-                  ...((currentConversation?.metadata as any)?.flow_state || {}),
-                  transferred_to_human: true,
-                  transfer_reason: "message_loop",
-                  loop_count: loopCount
-                }
-              }
-            })
+            .update({ status: "awaiting_human" })
             .eq("id", conversation_id);
           
           await logAudit({
@@ -2825,23 +2806,14 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           if (warnings >= 3) {
             await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
               waiting_step: null,
-              transferred_to_human: true
+              transferred_to_human: true,
+              transfer_reason: "context_escape"
             });
 
-            // Atualizar status da conversation
+            // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
             await supabaseAdmin
               .from("conversations")
-              .update({
-                status: "awaiting_human",
-                metadata: {
-                  ...(currentConversation?.metadata as any || {}),
-                  flow_state: {
-                    ...((currentConversation?.metadata as any)?.flow_state || {}),
-                    transferred_to_human: true,
-                    transfer_reason: "context_escape"
-                  }
-                }
-              })
+              .update({ status: "awaiting_human" })
               .eq("id", conversation_id);
 
             await logAudit({
