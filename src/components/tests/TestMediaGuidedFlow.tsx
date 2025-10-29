@@ -196,16 +196,17 @@ export function TestMediaGuidedFlow() {
 
       toast.success("✅ Todos os testes passaram!");
 
-    } catch (error: any) {
+    } catch (error) {
       const lastTest = results[results.length - 1];
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
       if (lastTest?.status === 'pending') {
         addResult({
           test: lastTest.test,
           status: 'error',
-          message: error.message
+          message
         });
       }
-      toast.error("❌ Falha nos testes: " + error.message);
+      toast.error("❌ Falha nos testes: " + message);
     } finally {
       setTesting(false);
     }

@@ -71,8 +71,12 @@ export default function ContextEscapeAnalytics() {
 
       // Calcular estatísticas
       if (analyticsData && analyticsData.length > 0) {
-        const totalEscapes = analyticsData.reduce((sum: number, day: any) => sum + (day.escape_transfers || 0), 0);
-        const avgRate = analyticsData.reduce((sum: number, day: any) => sum + (day.escape_rate_percent || 0), 0) / analyticsData.length;
+        interface AnalyticsDay {
+          escape_transfers?: number;
+          escape_rate_percent?: number;
+        }
+        const totalEscapes = analyticsData.reduce((sum: number, day: AnalyticsDay) => sum + (day.escape_transfers || 0), 0);
+        const avgRate = analyticsData.reduce((sum: number, day: AnalyticsDay) => sum + (day.escape_rate_percent || 0), 0) / analyticsData.length;
         
         setStats({
           totalEscapes,

@@ -268,11 +268,16 @@ export default function SystemMetrics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {metrics.failed_actions.items.slice(0, 5).map((action: any) => (
+                {metrics.failed_actions.items.slice(0, 5).map((action: {
+                  id: string;
+                  action_type: string;
+                  error_message: string;
+                  retry_count: number;
+                }) => (
                   <div key={action.id} className="flex items-center justify-between p-3 bg-muted rounded">
                     <div>
                       <p className="font-medium">{action.action_type}</p>
-                      <p className="text-sm text-muted-foreground">{action.agent_name} • CPF: {action.client_cpf}</p>
+                      <p className="text-sm text-muted-foreground">{action.error_message}</p>
                     </div>
                     <Badge variant="outline">{action.retry_count}/3 tentativas</Badge>
                   </div>

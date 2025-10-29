@@ -200,10 +200,15 @@ Deno.serve(async (req) => {
     const blacklistIds = new Set(blacklist?.map(b => b.ixc_client_id) || []);
 
     // Identificar clientes com banda baixa
+    interface RadiusOnlineUser {
+      id_cliente: string;
+      rx_bytes_sec?: string;
+      tx_bytes_sec?: string;
+    }
     const suspects = onlineUsers
-      .filter((user: any) => {
-        const downloadKbps = parseFloat(user.rx_bytes_sec || 0) / 1024;
-        const uploadKbps = parseFloat(user.tx_bytes_sec || 0) / 1024;
+      .filter((user: RadiusOnlineUser) => {
+        const downloadKbps = parseFloat(user.rx_bytes_sec || '0') / 1024;
+        const uploadKbps = parseFloat(user.tx_bytes_sec || '0') / 1024;
         return (downloadKbps + uploadKbps) < 900 && 
                !blacklistIds.has(user.id_cliente);
       });
@@ -273,11 +278,11 @@ Deno.serve(async (req) => {
         );
 
         const currentUsers = await checkResponse.json();
-        const currentUser = currentUsers.find((u: any) => u.id_cliente === suspect.id_cliente);
+        const currentUser = currentUsers.find((u: RadiusOnlineUser) => u.id_cliente === suspect.id_cliente);
 
         if (currentUser) {
-          const downloadKbps = parseFloat(currentUser.rx_bytes_sec || 0) / 1024;
-          const uploadKbps = parseFloat(currentUser.tx_bytes_sec || 0) / 1024;
+          const downloadKbps = parseFloat(currentUser.rx_bytes_sec || '0') / 1024;
+          const uploadKbps = parseFloat(currentUser.tx_bytes_sec || '0') / 1024;
           if ((downloadKbps + uploadKbps) < 900) {
             consecutiveLow++;
           }
@@ -309,10 +314,10 @@ Deno.serve(async (req) => {
         );
 
         const afterUsers = await afterResponse.json();
-        const afterUser = afterUsers.find((u: any) => u.id_cliente === suspect.id_cliente);
+        const afterUser = afterUsers.find((u: RadiusOnlineUser) => u.id_cliente === suspect.id_cliente);
         
         const bandwidthAfter = afterUser 
-          ? (parseFloat(afterUser.rx_bytes_sec || 0) + parseFloat(afterUser.tx_bytes_sec || 0)) / 1024
+          ? (parseFloat(afterUser.rx_bytes_sec || '0') + parseFloat(afterUser.tx_bytes_sec || '0')) / 1024
           : 0;
 
         await supabase
