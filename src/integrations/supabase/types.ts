@@ -3305,6 +3305,42 @@ export type Database = {
           },
         ]
       }
+      onu_tracking_events: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          ixc_client_id: string | null
+          onu_serial: string | null
+          rx_dbm: number | null
+          source: string | null
+          status: string | null
+          tx_dbm: number | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          ixc_client_id?: string | null
+          onu_serial?: string | null
+          rx_dbm?: number | null
+          source?: string | null
+          status?: string | null
+          tx_dbm?: number | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          ixc_client_id?: string | null
+          onu_serial?: string | null
+          rx_dbm?: number | null
+          source?: string | null
+          status?: string | null
+          tx_dbm?: number | null
+        }
+        Relationships: []
+      }
       outage_notifications: {
         Row: {
           channel: string
@@ -3944,6 +3980,69 @@ export type Database = {
           },
         ]
       }
+      support_aging_events: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          fluxo: string
+          id: string
+          meta: Json
+          step: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          fluxo?: string
+          id?: string
+          meta?: Json
+          step: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          fluxo?: string
+          id?: string
+          meta?: Json
+          step?: string
+        }
+        Relationships: []
+      }
+      support_retests: {
+        Row: {
+          after_ok: boolean | null
+          before_ok: boolean | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          ixc_client_id: string | null
+          latency_ms_after: number | null
+          latency_ms_before: number | null
+          step: string | null
+        }
+        Insert: {
+          after_ok?: boolean | null
+          before_ok?: boolean | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          ixc_client_id?: string | null
+          latency_ms_after?: number | null
+          latency_ms_before?: number | null
+          step?: string | null
+        }
+        Update: {
+          after_ok?: boolean | null
+          before_ok?: boolean | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          ixc_client_id?: string | null
+          latency_ms_after?: number | null
+          latency_ms_before?: number | null
+          step?: string | null
+        }
+        Relationships: []
+      }
       system_alerts: {
         Row: {
           alert_type: string
@@ -4278,6 +4377,26 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_onu_latest_and_changes: {
+        Row: {
+          ixc_client_id: string | null
+          last_seen_at: string | null
+          onu_serial: string | null
+          rx_dbm: number | null
+          serials_30d: number | null
+          tx_dbm: number | null
+        }
+        Relationships: []
+      }
+      dashboard_retests_7d: {
+        Row: {
+          ok_after: number | null
+          step: string | null
+          success_rate_pct: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
       dashboard_suporte_kpis: {
         Row: {
           dia: string | null
@@ -4308,6 +4427,14 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_support_aging_summary: {
+        Row: {
+          day: string | null
+          resolved_events: number | null
+          ticket_events: number | null
+        }
+        Relationships: []
+      }
       media_effectiveness_metrics: {
         Row: {
           agent_name: string | null
@@ -4334,6 +4461,22 @@ export type Database = {
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
+      calc_onu_instability_top_14d: {
+        Args: { limit_n?: number }
+        Returns: {
+          events_weak_critical: number
+          ixc_client_id: string
+          last_serial: string
+        }[]
+      }
+      calc_support_aging_p50_p90_14d: {
+        Args: never
+        Returns: {
+          conversations: number
+          p50_seconds: number
+          p90_seconds: number
+        }[]
+      }
       calc_support_kpis_by_region_last_7_days: {
         Args: never
         Returns: {
