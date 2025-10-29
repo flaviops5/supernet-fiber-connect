@@ -1855,11 +1855,7 @@ Me avise quando ligar, por favor.
             detalhes: withGeo({ confidence: interpretation.confidence }, flowState)
           });
 
-          // >>> PR #14 — MediaGuided LOS
-          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
-            last_agent_question: "A luz LOS (vermelha) está piscando?"
-          });
-
+          // >>> PR #14 — MediaGuided LOS (textReplyWithContext salva last_agent_question automaticamente)
           return new Response(JSON.stringify({
             reply: "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍",
             media_context: "los_detected"
@@ -1893,11 +1889,7 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          // >>> PR #14 — MediaGuided Fibra
-          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
-            last_agent_question: "Já reconectou o cabo da fibra?"
-          });
-
+          // >>> PR #14 — MediaGuided Fibra (textReplyWithContext salva last_agent_question automaticamente)
           return new Response(JSON.stringify({
             reply: "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVeja como reconectar o conector verde com cuidado 👇",
             media_context: "fiber_reconnect"
@@ -1918,11 +1910,7 @@ Me avise quando ligar, por favor.
             })
             .eq("id", conversation_id);
 
-          // >>> PR #14 — MediaGuided Fibra
-          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
-            last_agent_question: "Já reconectou o cabo da fibra?"
-          });
-
+          // >>> PR #14 — MediaGuided Fibra (textReplyWithContext salva last_agent_question automaticamente)
           return new Response(JSON.stringify({
             reply: "Vamos conferir o conector verde para garantir a fibra ✅\n\nVeja como reconectar com cuidado 👇",
             media_context: "fiber_reconnect"
@@ -2781,19 +2769,21 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
 
           // 1️⃣ Primeira tentativa: gentilmente redirecionar
           if (warnings === 1) {
-            responseMessage = await textReply(
+            return await textReplyWithContext(
+              supabaseAdmin,
+              { conversation_id, flowState },
               `Já te ajudo com isso 👌\n\nMas antes preciso **finalizar este teste** aqui.\n\nPode me confirmar o que pedi na última mensagem? 😊`
             );
-            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
           }
 
           // 2️⃣ Segunda tentativa: reforço com contexto
           if (warnings === 2) {
             const lastQuestion = flowState?.last_agent_question || "o que pedi antes";
-            responseMessage = await textReply(
+            return await textReplyWithContext(
+              supabaseAdmin,
+              { conversation_id, flowState },
               `Prometo que vamos falar disso! 🤝\n\nMas só consigo continuar se você me responder:\n\n👉 ${lastQuestion}`
             );
-            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
           }
 
           // 3️⃣ Terceira vez: transferência humana
@@ -2842,10 +2832,11 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
               extras: { transfer_reason: "context_escape" }
             }).catch(() => {}); // Non-blocking
 
-            responseMessage = await textReply(
+            return await textReplyWithContext(
+              supabaseAdmin,
+              { conversation_id, flowState },
               `Vou te transferir para um atendente humano, ok? 👨‍💼`
             );
-            return new Response(JSON.stringify({ reply: responseMessage }), { headers: corsHeaders });
           }
         } else {
           // ✅ CORREÇÃO #2: Mensagem válida - resetar contador e registrar cooperação

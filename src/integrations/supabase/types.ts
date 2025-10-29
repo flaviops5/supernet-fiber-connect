@@ -174,6 +174,7 @@ export type Database = {
           created_at: string | null
           last_agent_question: string | null
           scenario_started: string | null
+          transferred_to_human: boolean | null
           updated_at: string | null
           waiting_step: string | null
         }
@@ -183,6 +184,7 @@ export type Database = {
           created_at?: string | null
           last_agent_question?: string | null
           scenario_started?: string | null
+          transferred_to_human?: boolean | null
           updated_at?: string | null
           waiting_step?: string | null
         }
@@ -192,6 +194,7 @@ export type Database = {
           created_at?: string | null
           last_agent_question?: string | null
           scenario_started?: string | null
+          transferred_to_human?: boolean | null
           updated_at?: string | null
           waiting_step?: string | null
         }
