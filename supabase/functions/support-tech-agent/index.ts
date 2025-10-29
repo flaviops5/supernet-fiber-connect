@@ -4096,9 +4096,46 @@ Me responde com:
       // ===== PR #26 - CENÁRIO E: ROTEADOR / PORTA WAN / WI-FI =====
       // Detectar caso em que ONU e sinal óptico estão OK mas internet não funciona
       // Possíveis causas: Wi-Fi, porta WAN sem link, PPPoE down
-      if (!massOutageActive && !flowState?.waiting_step && isOpticalGood(onu_signal)) {
-        const routerProbe = (currentConversation?.metadata as any)?.probes?.router;
-        const netProbe = (currentConversation?.metadata as any)?.probes?.internet;
+      // 🔧 Bug #1 Fix: Removido !flowState?.waiting_step para permitir detecção inicial
+      // 🔧 Bug #2 Fix: Validação de onu_signal antes de isOpticalGood
+      if (!massOutageActive && onu_signal && typeof onu_signal === "object" && isOpticalGood(onu_signal)) {
+        // 🔧 Bug #3 Fix: Executar probes antes de usar
+        let routerProbe: any = null;
+        let netProbe: any = null;
+        
+        // Tentar usar dados existentes primeiro, senão executar novos probes
+        const existingRouterProbe = (currentConversation?.metadata as any)?.probes?.router;
+        const existingNetProbe = (currentConversation?.metadata as any)?.probes?.internet;
+        
+        if (!existingRouterProbe || !existingNetProbe) {
+          logger.info("🔍 PR#26: Executando connectivity probe para Scenario E");
+          
+          try {
+            const { data: connectivityData, error: connectivityError } = await supabase.functions.invoke(
+              "test-equipment-connectivity", 
+              { body: { ixc_client_id, timeout: 5000 } }
+            );
+            
+            if (!connectivityError && connectivityData) {
+              routerProbe = {
+                reachable: connectivityData.ok === true,
+                latency_ms: connectivityData.latency_ms,
+                http_status: connectivityData.http_status
+              };
+              netProbe = {
+                dns_ok: connectivityData.dns_ok,
+                http_ok: connectivityData.http_ok,
+                last_speedtest_ok: connectivityData.last_speedtest_ok
+              };
+            }
+          } catch (probeError) {
+            logger.warn("⚠️ PR#26: Erro ao executar connectivity probe", { error: String(probeError) });
+          }
+        } else {
+          routerProbe = existingRouterProbe;
+          netProbe = existingNetProbe;
+        }
+        
         const lastUserText = (message || "").toString();
 
         const wanSuspect = isLikelyWanDown(routerProbe, netProbe);
@@ -4107,7 +4144,9 @@ Me responde com:
         if (wanSuspect || wifiSuspect) {
           logger.info("🟠 PR#26: Detectado Scenario E (WAN/Wi-Fi)", { 
             wanSuspect, 
-            wifiSuspect 
+            wifiSuspect,
+            hasRouterProbe: !!routerProbe,
+            hasNetProbe: !!netProbe
           });
 
           const geoData = await ensureGeo(
@@ -4139,11 +4178,8 @@ Me responde com:
             }, flowState)
           });
 
-          responseMessage = await textReplyWithContext(
-            supabaseAdmin,
-            { conversation_id, flowState },
-            "Vamos checar rapidinho o **Wi-Fi do roteador** e o cabo que liga a **porta WAN** (a porta que vai pra caixa da fibra)."
-          ).then(r => r.json()).then(j => j.reply);
+          // 🔧 Bug #4 Fix: Usar textReply diretamente
+          responseMessage = "Vamos checar rapidinho o **Wi-Fi do roteador** e o cabo que liga a **porta WAN** (a porta que vai pra caixa da fibra).";
 
           await supabase.from("conversation_messages").insert({
             conversation_id,
@@ -4165,13 +4201,10 @@ Me responde com:
           { waiting_step: "scenario_e_check_wan_cable" }
         );
 
-        responseMessage = await textReplyWithContext(
-          supabaseAdmin,
-          { conversation_id, flowState },
-          "Seu **celular conecta** na rede Wi-Fi mas **não navega**, ou **nem conecta**?\n\n" +
+        // 🔧 Bug #4 Fix: Usar string direta
+        responseMessage = "Seu **celular conecta** na rede Wi-Fi mas **não navega**, ou **nem conecta**?\n\n" +
           "E as luzes do **Wi-Fi** no roteador estão **acesas**?\n\n" +
-          "Me diga como está, por favor."
-        ).then(r => r.json()).then(j => j.reply);
+          "Me diga como está, por favor.";
 
         await supabase.from("conversation_messages").insert({
           conversation_id,
@@ -4192,15 +4225,12 @@ Me responde com:
           { waiting_step: "scenario_e_reseat_wan" }
         );
 
-        responseMessage = await textReplyWithContext(
-          supabaseAdmin,
-          { conversation_id, flowState },
-          "Agora vamos conferir o **cabo da porta WAN** (a que liga o roteador à **caixinha da fibra**):\n\n" +
+        // 🔧 Bug #4 Fix: Usar string direta
+        responseMessage = "Agora vamos conferir o **cabo da porta WAN** (a que liga o roteador à **caixinha da fibra**):\n\n" +
           "1) Verifique se está **bem encaixado** em ambas as pontas (roteador e caixinha da fibra)\n" +
           "2) Retire e **reconecte** com firmeza (até encaixar bem)\n" +
           "3) Olhe se a luz/ícone de **Internet/WAN** do roteador acende\n\n" +
-          "⚠️ Importante: **não** troque esse cabo para uma porta LAN — LAN é para rede interna e **não funciona** como WAN."
-        ).then(r => r.json()).then(j => j.reply);
+          "⚠️ Importante: **não** troque esse cabo para uma porta LAN — LAN é para rede interna e **não funciona** como WAN.";
 
         await supabase.from("conversation_messages").insert({
           conversation_id,
@@ -4221,15 +4251,12 @@ Me responde com:
           { waiting_step: "scenario_e_router_reboot" }
         );
 
-        responseMessage = await textReplyWithContext(
-          supabaseAdmin,
-          { conversation_id, flowState },
-          "Obrigado! Agora vamos **reiniciar apenas o roteador Wi-Fi** (não a caixinha da fibra):\n\n" +
+        // 🔧 Bug #4 Fix: Usar string direta
+        responseMessage = "Obrigado! Agora vamos **reiniciar apenas o roteador Wi-Fi** (não a caixinha da fibra):\n\n" +
           "• Desligue o **roteador** da tomada\n" +
           "• Aguarde **60 segundos**\n" +
           "• Ligue novamente e aguarde **1 minuto**\n\n" +
-          "Depois teste a navegação e me avise."
-        ).then(r => r.json()).then(j => j.reply);
+          "Depois teste a navegação e me avise.";
 
         await supabase.from("conversation_messages").insert({
           conversation_id,
@@ -4244,14 +4271,31 @@ Me responde com:
 
       // ===== E4: PÓS-REBOOT: DECIDIR TICKET =====
       if (flowState?.waiting_step === "scenario_e_router_reboot") {
-        const ixcId = flowState?.ixc_client_id;
+        // 🔧 Bug #6 Fix: Validar ixc_client_id
+        const ixcId = flowState?.ixc_client_id || ixc_client_id;
+        
+        if (!ixcId) {
+          logger.error("❌ PR#26: ixc_client_id não encontrado no flowState", { conversation_id });
+          return textReply("Ops, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
+        }
 
-        // Opcional: re-executar probes
-        const { data: probe } = await supabase.functions.invoke("test-equipment-connectivity", {
-          body: { ixc_client_id: ixcId }
-        });
-
-        const internetOk = probe?.ok === true;
+        // 🔧 Bug #5 Fix: Tratamento de erro para connectivity probe
+        let internetOk = false;
+        
+        try {
+          const { data: probe, error: probeError } = await supabase.functions.invoke(
+            "test-equipment-connectivity", 
+            { body: { ixc_client_id: ixcId } }
+          );
+          
+          if (probeError) {
+            logger.warn("⚠️ PR#26: Erro ao executar connectivity probe", { error: String(probeError) });
+          } else {
+            internetOk = probe?.ok === true;
+          }
+        } catch (probeException) {
+          logger.error("❌ PR#26: Exceção ao executar connectivity probe", { error: String(probeException) });
+        }
 
         await supabase.from("registros_de_monitoramento").insert({
           acao: "scenario_e_post_reboot_probe",
@@ -4267,21 +4311,22 @@ Me responde com:
             { waiting_step: null, scenario_completed: "E" }
           );
 
-          // KPI: Cenário E resolvido
-          kpiLog({
-            action: "kpi_update",
-            conversation_id,
-            scenario_completed: "E",
-            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
-            resolved: true,
-            escalated: false,
-          });
+          // 🔧 Bug #7 Fix: Adicionar await e try/catch
+          try {
+            await kpiLog({
+              action: "kpi_update",
+              conversation_id,
+              scenario_completed: "E",
+              hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+              resolved: true,
+              escalated: false,
+            });
+          } catch (kpiError) {
+            logger.warn("⚠️ PR#26: Erro ao registrar KPI", { error: String(kpiError) });
+          }
 
-          responseMessage = await textReplyWithContext(
-            supabaseAdmin,
-            { conversation_id, flowState },
-            "Perfeito! ✅\n\nParece que estabilizou. Se voltar a falhar, me avisa!"
-          ).then(r => r.json()).then(j => j.reply);
+          // 🔧 Bug #4 Fix: Usar string direta
+          responseMessage = "Perfeito! ✅\n\nParece que estabilizou. Se voltar a falhar, me avisa!";
         } else {
           await updateFlowState(
             supabase,
@@ -4289,11 +4334,8 @@ Me responde com:
             { waiting_step: "scenario_e_ticket" }
           );
 
-          responseMessage = await textReplyWithContext(
-            supabaseAdmin,
-            { conversation_id, flowState },
-            "Ainda sem navegação? Vou abrir um atendimento técnico para verificar **porta WAN, cabo ou configuração**."
-          ).then(r => r.json()).then(j => j.reply);
+          // 🔧 Bug #4 Fix: Usar string direta
+          responseMessage = "Ainda sem navegação? Vou abrir um atendimento técnico para verificar **porta WAN, cabo ou configuração**.";
         }
 
         await supabase.from("conversation_messages").insert({
@@ -4309,7 +4351,13 @@ Me responde com:
 
       // ===== E5: TICKET FINAL =====
       if (flowState?.waiting_step === "scenario_e_ticket") {
-        const ixcId = flowState?.ixc_client_id;
+        // 🔧 Bug #6 Fix: Validar ixc_client_id
+        const ixcId = flowState?.ixc_client_id || ixc_client_id;
+        
+        if (!ixcId) {
+          logger.error("❌ PR#26: ixc_client_id não encontrado no flowState", { conversation_id });
+          return textReply("Ops, ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
+        }
 
         const { data, error } = await supabase.functions.invoke("ixc-integration", {
           body: {
@@ -4336,16 +4384,20 @@ Me responde com:
           { waiting_step: null, scenario_completed: "E", ixc_ticket_id: ticketId }
         );
 
-        // KPI: Cenário E escalado
-        kpiLog({
-          action: "kpi_update",
-          conversation_id,
-          scenario_completed: "E",
-          hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
-          resolved: false,
-          escalated: true,
-          ticket_id: ticketId ?? null,
-        });
+        // 🔧 Bug #7 Fix: Adicionar await e try/catch
+        try {
+          await kpiLog({
+            action: "kpi_update",
+            conversation_id,
+            scenario_completed: "E",
+            hybrid_mode: (currentConversation?.metadata as any)?.flow_state?.hybrid_mode_active ? "ON" : "OFF",
+            resolved: false,
+            escalated: true,
+            ticket_id: ticketId ?? null,
+          });
+        } catch (kpiError) {
+          logger.warn("⚠️ PR#26: Erro ao registrar KPI", { error: String(kpiError) });
+        }
 
         responseMessage = ticketId
           ? `✅ Protocolo IXC: **${ticketId}**. Nossa equipe vai verificar a porta WAN/cabo/config do roteador.`
