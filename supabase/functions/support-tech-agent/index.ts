@@ -247,6 +247,147 @@ function isGoodSignal(signal?: any) {
   return Number.isFinite(rx) && rx > -24; // bom acima de -24 dBm
 }
 
+/**
+ * GAP #2: Feature Flag - Verificar se fast-path está habilitado
+ * Suporta rollout gradual baseado em hash do conversation_id
+ */
+async function isFastPathEnabled(supabase: any, conversation_id: string): Promise<boolean> {
+  try {
+    const { data: flag, error } = await supabase
+      .from('feature_flags')
+      .select('enabled, rollout_percentage')
+      .eq('flag_key', 'pr17_fast_path')
+      .single();
+
+    if (error || !flag) return true; // Default: ativado se não encontrar flag
+
+    if (!flag.enabled) return false;
+
+    // Rollout gradual baseado em hash do conversation_id
+    if (flag.rollout_percentage < 100) {
+      const hash = conversation_id.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      const percentage = Math.abs(hash) % 100;
+      return percentage < flag.rollout_percentage;
+    }
+
+    return true;
+  } catch (err) {
+    // Em caso de erro, ativar por padrão (fail-open)
+    return true;
+  }
+}
+
+/**
+ * GAP #5: Circuit Breaker - Proteção contra cascata de falhas
+ */
+class FastPathCircuitBreaker {
+  private static instance: FastPathCircuitBreaker;
+  private failures = 0;
+  private threshold = 5; // 5 falhas consecutivas
+  private resetTimeout = 300000; // 5 minutos
+  private state: 'closed' | 'open' | 'half-open' = 'closed';
+  private lastFailure: number | null = null;
+
+  static getInstance(): FastPathCircuitBreaker {
+    if (!FastPathCircuitBreaker.instance) {
+      FastPathCircuitBreaker.instance = new FastPathCircuitBreaker();
+    }
+    return FastPathCircuitBreaker.instance;
+  }
+
+  async execute<T>(fn: () => Promise<T>, supabase: any, logger: any): Promise<T | null> {
+    // Estado OPEN: não executar, retornar null imediatamente
+    if (this.state === 'open') {
+      if (this.lastFailure && Date.now() - this.lastFailure > this.resetTimeout) {
+        this.state = 'half-open';
+        logger.info('🔄 Circuit breaker: Tentando recuperação (half-open)');
+      } else {
+        logger.warn('⚠️ Circuit breaker: OPEN - fast-path desabilitado');
+        return null;
+      }
+    }
+
+    try {
+      const result = await fn();
+      
+      // Sucesso: resetar contador
+      if (this.state === 'half-open') {
+        this.state = 'closed';
+        this.failures = 0;
+        logger.info('✅ Circuit breaker: Recuperado (closed)');
+      }
+      
+      return result;
+    } catch (error) {
+      this.failures++;
+      this.lastFailure = Date.now();
+
+      if (this.failures >= this.threshold) {
+        this.state = 'open';
+        
+        // Notificar admins
+        try {
+          await supabase.from('system_alerts').insert({
+            alert_type: 'fast_path_circuit_open',
+            severity: 'high',
+            message: `Fast-path desabilitado automaticamente após ${this.failures} falhas`,
+            metadata: { error: String(error) }
+          });
+        } catch (alertError) {
+          logger.error('Erro ao criar alerta de circuit breaker', alertError);
+        }
+
+        logger.error('🚨 Circuit breaker: OPEN - desabilitando fast-path', { 
+          failures: this.failures 
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  getState(): string {
+    return this.state;
+  }
+}
+
+/**
+ * GAP #4: Edge Cases - Verificar estabilidade do sinal
+ * Analisa últimas leituras para detectar RX instável
+ */
+async function hasStableSignal(supabase: any, ixc_client_id: string): Promise<boolean> {
+  try {
+    const { data: recentReadings } = await supabase
+      .from('registros_de_monitoramento')
+      .select('detalhes')
+      .eq('acao', 'parallel_diag_finished')
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (!recentReadings || recentReadings.length < 2) return true;
+
+    const rxValues = recentReadings
+      .map((r: any) => Number(r.detalhes?.signal_rx))
+      .filter((v: number) => !isNaN(v));
+
+    if (rxValues.length < 2) return true;
+
+    // Calcular variância
+    const mean = rxValues.reduce((a: number, b: number) => a + b, 0) / rxValues.length;
+    const variance = Math.sqrt(
+      rxValues.reduce((sum: number, val: number) => sum + Math.pow(val - mean, 2), 0) / rxValues.length
+    );
+
+    return variance < 2; // Variação < 2 dBm = estável
+  } catch (error) {
+    // Em caso de erro, assumir estável
+    return true;
+  }
+}
+
 function isZeroSignal(signal?: any) {
   const rx = Number(signal?.rx);
   const tx = Number(signal?.tx);
@@ -874,98 +1015,134 @@ Me avise quando ligar, por favor.
         try {
           logger.info('🔄 PR#17: Avaliando fast-path', { ixc_client_id });
           
-          // Executar diagnósticos paralelos
-          const { signalResult, connectivityResult, elapsed } = 
-            await runParallelDiagnostics(ixc_client_id, conversation_id, supabase, logger);
+          // GAP #2: Verificar feature flag antes de executar
+          const fastPathEnabled = await isFastPathEnabled(supabase, conversation_id);
+          if (!fastPathEnabled) {
+            logger.info('⏭️ PR#17: Fast-path desabilitado via feature flag');
+          } else {
+            // GAP #5: Usar circuit breaker para proteção
+            const circuitBreaker = FastPathCircuitBreaker.getInstance();
+            const circuitState = circuitBreaker.getState();
+            
+            if (circuitState === 'open') {
+              logger.warn('⚠️ PR#17: Circuit breaker OPEN - pulando fast-path');
+            } else {
+              // GAP #4: Verificar estabilidade do sinal
+              const isStable = await hasStableSignal(supabase, ixc_client_id);
+              if (!isStable) {
+                logger.info('⚠️ PR#17: RX instável detectado - pulando fast-path');
+                await logAudit({
+                  acao: "fast_path_skipped",
+                  fluxo: "support-tech",
+                  conversation_id,
+                  detalhes: { reason: "unstable_signal" },
+                  supabaseClient: supabase
+                });
+              } else {
+                // Executar diagnósticos paralelos com circuit breaker
+                const diagnosticResult = await circuitBreaker.execute(
+                  () => runParallelDiagnostics(ixc_client_id, conversation_id, supabase, logger),
+                  supabase,
+                  logger
+                );
 
-          // Processar resultados
-          const signal = signalResult.status === "fulfilled" 
-            ? signalResult.value?.data 
-            : null;
-          
-          const isConnectivityAlive = 
-            connectivityResult.status === "fulfilled" && 
-            connectivityResult.value?.data?.ok === true;
+                if (!diagnosticResult) {
+                  logger.warn('⚠️ PR#17: Circuit breaker impediu execução');
+                } else {
+                  const { signalResult, connectivityResult, elapsed } = diagnosticResult;
 
-          // Validação robusta do RX (evitar NaN e valores inválidos)
-          let rxValue: number | null = null;
-          if (signal?.rx != null) {
-            const parsed = Number(signal.rx);
-            if (!isNaN(parsed)) {
-              rxValue = parsed;
-            }
-          }
+                  // Processar resultados
+                  const signal = signalResult.status === "fulfilled" 
+                    ? signalResult.value?.data 
+                    : null;
+                  
+                  const isConnectivityAlive = 
+                    connectivityResult.status === "fulfilled" && 
+                    connectivityResult.value?.data?.ok === true;
 
-          const isGoodSignal = rxValue !== null && rxValue > -24;
+                  // Validação robusta do RX (evitar NaN e valores inválidos)
+                  let rxValue: number | null = null;
+                  if (signal?.rx != null) {
+                    const parsed = Number(signal.rx);
+                    if (!isNaN(parsed)) {
+                      rxValue = parsed;
+                    }
+                  }
 
-          logger.info("📊 PR#17: Heurística avaliada", {
-            rx_value: rxValue,
-            is_good_signal: isGoodSignal,
-            is_connectivity_alive: isConnectivityAlive,
-            elapsed_ms: elapsed
-          });
+                  const isGoodSignal = rxValue !== null && rxValue > -24;
 
-          // Heurística: RX bom + Conectividade OK = Fast-Path
-          if (isConnectivityAlive && isGoodSignal) {
-            logger.info("⚡ PR#17: FAST-PATH ATIVADO!", { rx: rxValue });
-            fastPathActivated = true;
+                  logger.info("📊 PR#17: Heurística avaliada", {
+                    rx_value: rxValue,
+                    is_good_signal: isGoodSignal,
+                    is_connectivity_alive: isConnectivityAlive,
+                    elapsed_ms: elapsed
+                  });
 
-            // Auditoria
-            await logAudit({
-              acao: "fast_path_enabled",
-              fluxo: "support-tech",
-              conversation_id,
-              detalhes: {
-                reason: "signal_and_connectivity_good",
-                elapsed_ms: elapsed,
-                rx_value: rxValue,
-                connectivity_ok: true
-              },
-              supabaseClient: supabase
-            });
+                  // Heurística: RX bom + Conectividade OK = Fast-Path
+                  if (isConnectivityAlive && isGoodSignal) {
+                    logger.info("⚡ PR#17: FAST-PATH ATIVADO!", { rx: rxValue });
+                    fastPathActivated = true;
 
-            // KPI tracking (fire-and-forget)
-            kpiLog({
-              action: "fast_path_enabled",
-              fluxo: "support-tech",
-              conversation_id,
-              extras: {
-                signal_rx: rxValue,
-                elapsed_ms: elapsed,
-                pr17_enabled: true
-              }
-            });
+                    // Auditoria
+                    await logAudit({
+                      acao: "fast_path_enabled",
+                      fluxo: "support-tech",
+                      conversation_id,
+                      detalhes: {
+                        reason: "signal_and_connectivity_good",
+                        elapsed_ms: elapsed,
+                        rx_value: rxValue,
+                        connectivity_ok: true
+                      },
+                      supabaseClient: supabase
+                    });
 
-            // Resposta rápida com contexto
-            responseMessage = `Perfeito! 🙌  
+                    // KPI tracking (fire-and-forget)
+                    kpiLog({
+                      action: "fast_path_enabled",
+                      fluxo: "support-tech",
+                      conversation_id,
+                      extras: {
+                        signal_rx: rxValue,
+                        elapsed_ms: elapsed,
+                        pr17_enabled: true
+                      }
+                    });
+
+                    // Resposta rápida com contexto
+                    responseMessage = `Perfeito! 🙌  
 Seu equipamento está **online** e com **bom sinal** 📶  
 Vamos apenas confirmar 1 coisinha rápido aqui…`;
 
-            await updateFlowState(
-              supabase,
-              { conversation_id, flowState },
-              { waiting_step: "fast_path_check_experience" }
-            );
+                    await updateFlowState(
+                      supabase,
+                      { conversation_id, flowState },
+                      { waiting_step: "fast_path_check_experience" }
+                    );
 
-            await supabase.from("conversation_messages").insert({
-              conversation_id,
-              sender_type: "agent",
-              sender_name: "Luan Silva",
-              content: responseMessage,
-              ai_suggestion: false
-            });
+                    await supabase.from("conversation_messages").insert({
+                      conversation_id,
+                      sender_type: "agent",
+                      sender_name: "Luan Silva",
+                      content: responseMessage,
+                      ai_suggestion: false
+                    });
 
-            logger.info("PR#17: Fast-path ativado - aguardando confirmação do cliente");
-            
-            return new Response(
-              JSON.stringify({ reply: responseMessage }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          } else {
-            logger.info("⏩ PR#17: Fast-path não aplicável", {
-              rx: rxValue,
-              connectivity: isConnectivityAlive
-            });
+                    logger.info("PR#17: Fast-path ativado - aguardando confirmação do cliente");
+                    
+                    return new Response(
+                      JSON.stringify({ reply: responseMessage }),
+                      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                    );
+                  } else {
+                    logger.info("⏩ PR#17: Fast-path não aplicável", {
+                      rx: rxValue,
+                      connectivity: isConnectivityAlive
+                    });
+                  }
+                }
+              }
+            }
           }
         } catch (error) {
           logger.error("❌ PR#17: Erro no fast-path - continuando fluxo normal", { error });
