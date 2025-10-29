@@ -12,6 +12,11 @@ import { kpiLog } from "../_shared/kpi.ts";
 // >>> PR10A - Geolocalização
 import { ensureGeo, withGeo } from "../_shared/geo.ts";
 // <<< PR10A
+// >>> PR19 - Aging + ONU + Retests
+import { markAgingEvent } from "../_shared/aging.ts";
+import { trackOnuSnapshot } from "../_shared/onu-tracker.ts";
+import { logRetest } from "../_shared/retests.ts";
+// <<< PR19
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -613,6 +618,13 @@ serve(async (req) => {
       has_onu_signal: !!onu_signal,
       client_is_offline,
       cpf_not_found
+    });
+
+    // PR19 ✅: Marcar início do atendimento
+    markAgingEvent(supabase, {
+      conversation_id,
+      step: 'start',
+      meta: { agent: 'support-tech', ixc_client_id }
     });
 
     // PATCH 2: Persistir ixc_client_id no flow_state
@@ -2510,6 +2522,26 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           tx_dbm: Number(signal?.tx),
         }).catch(() => {}); // Non-blocking
 
+        // PR19 ✅: Registrar sinal crítico + marcar aging
+        const rx = Number(signal?.rx);
+        const tx = Number(signal?.tx);
+        
+        trackOnuSnapshot(supabase, {
+          conversation_id,
+          ixc_client_id: ixcClientId,
+          onu_serial: signal?.serial || signal?.onu_serial || null,
+          rx_dbm: Number.isFinite(rx) ? rx : null,
+          tx_dbm: Number.isFinite(tx) ? tx : null,
+          status: 'critical',
+          source: 'signal_tool'
+        });
+
+        markAgingEvent(supabase, {
+          conversation_id,
+          step: 'scenario_d_start',
+          meta: { scenario: 'D', reason: 'critical_signal', rx, tx }
+        });
+
         responseMessage = await textReply(
           `Sinal óptico **muito baixo** 😕  
 Vou abrir um atendimento **com prioridade máxima** agora mesmo! ⏳🔧`
@@ -3546,6 +3578,13 @@ Me responde com:
             resolved_remote: true
           }).catch(() => {});
           
+          // PR19 ✅: Marcar resolução
+          markAgingEvent(supabase, {
+            conversation_id,
+            step: 'resolved',
+            meta: { method: 'remote', scenario: 'B' }
+          });
+          
           const questionText = 
             `✅ Ótimo!\n\n` +
             `Ficou funcionando certinho agora? 🎉\n\n` +
@@ -3910,6 +3949,15 @@ Me responde com:
                 rx_power: retest?.rx_power ?? null,
                 error: rtErr ? String(rtErr) : null
               }
+            });
+
+            // PR19 ✅: Log retest após reconexão óptica
+            logRetest(supabase, {
+              conversation_id,
+              ixc_client_id: ixcId,
+              step: 'post_optical',
+              after_ok: retest?.ok === true,
+              latency_ms_after: retest?.latency_ms
             });
 
             if (retest?.ok) {
