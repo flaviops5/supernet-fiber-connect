@@ -284,34 +284,27 @@ Logs mostram sanitização funcionando:
 - [ ] Capturar baseline de performance
 - [ ] Gerar relatório de issues
 
-**Progresso:** 85% completo (bloqueado por configuração)
+**Progresso:** 90% completo (aguardando 1 ação manual)
 
 ---
 
 ## 🎯 Próximos Passos
 
-### Imediato (BLOQUEADORES)
-1. ❌ **Configurar ENCRYPTION_KEY no Database:**
-   ```sql
-   -- Opção 1: Via SQL (requer superuser)
-   ALTER DATABASE postgres SET app.encryption_key = 'valor_do_secret';
-   
-   -- Opção 2: Via Supabase Vault (preferencial)
-   -- Necessário configurar manualmente no dashboard
-   ```
+### Ação Manual Obrigatória
+1. **CRÍTICO:** Configurar `ENCRYPTION_KEY` no Database PostgreSQL
+   - 📄 Instruções completas em: `auditoria/INSTRUCOES-ENCRYPTION-KEY.md`
+   - Via Dashboard: Project Settings → Database → Custom Postgres Config
+   - Adicionar: `app.encryption_key = '[VALOR_DO_SECRET]'`
+   - Validar com: `SELECT decrypt_text(encrypt_text('teste123'));`
 
-2. ⚠️ **Executar test-runner com autenticação:**
-   ```bash
-   curl -X POST \
-     https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner \
-     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I"
-   ```
+### Após Configuração Manual
+2. **ALTO:** Investigar falhas nas Edge Functions de diagnóstico
+   - Test-runner executou com sucesso (200 OK)
+   - Mas 100% dos testes falharam (4/4 Edge Functions retornaram non-2xx)
+   - Verificar logs de: `run-diagnostic-a`, `run-diagnostic-b`, `run-diagnostic-c`, `run-diagnostic-d`
 
-### Curto Prazo (após resolver bloqueadores)
-1. Validar funções de criptografia funcionando
-2. Capturar baseline de performance (test-runner)
-3. Completar Fase 2
-4. Iniciar Fase 3 (PRs #1-10)
+3. **MÉDIO:** Continuar para Fase 3 (auditoria dos 32 PRs)
+   - Ou resolver issues de Edge Functions primeiro
 
 ---
 
@@ -319,18 +312,19 @@ Logs mostram sanitização funcionando:
 
 | Métrica | Status | Meta | Atingido? |
 |---------|--------|------|-----------|
-| Erros Críticos | 1 | 0 | ❌ |
+| Erros Críticos | 1 (manual) | 0 | 🔄 |
 | Erros Alto | 0 | < 3 | ✅ |
 | RLS Issues | 0 | 0 | ✅ |
 | ENCRYPTION_KEY (Edge) | Configurado | Sim | ✅ |
-| ENCRYPTION_KEY (DB) | ❌ Não configurado | Sim | ❌ |
+| ENCRYPTION_KEY (DB) | 🔄 Instruções criadas | Sim | 🔄 |
 | Funções Criptografia | Criadas | Funcionais | ⚠️ |
-| Test-runner | Bloqueado | Funcionando | ❌ |
+| Test-runner Auth | ✅ Funciona | Funcionando | ✅ |
+| Testes Passando | 0/4 (0%) | > 80% | ❌ |
 | Logs Sanitizados | Ativo | Sim | ✅ |
 | Edge Functions Online | ~20 | > 18 | ✅ |
 | Postgres Saudável | Sim | Sim | ✅ |
 
-**Score de Saúde:** 70/100 🟡 (bloqueado por configuração)
+**Score de Saúde:** 🟡 75/100 (aguardando config manual + debug de Edge Functions)
 
 ---
 
@@ -348,44 +342,52 @@ Logs mostram sanitização funcionando:
 
 ## 🚨 Resumo de Bloqueadores
 
-### Bloqueador Crítico #1: ENCRYPTION_KEY no Database
-**Impacto:** Views de descriptografia não funcionam, compliance LGPD comprometido
+### **🔴 Bloqueador Crítico #1: ENCRYPTION_KEY não disponível no Database**
 
-**O que foi feito:**
-- ✅ Funções `encrypt_text()` e `decrypt_text()` criadas
-- ✅ SECURITY DEFINER aplicado corretamente
-- ✅ Tratamento de erros implementado
+**Status:** 🔄 INSTRUÇÕES CRIADAS (ação manual necessária)
 
-**O que está faltando:**
-- ❌ Configurar `app.encryption_key` no Database
-- ❌ Secret só existe para Edge Functions, não para Postgres
+**Descrição:**  
+O secret `ENCRYPTION_KEY` está configurado para Edge Functions mas não está acessível para o PostgreSQL.
 
-**Como resolver:**
-```sql
--- Executar como superuser no SQL Editor
-ALTER DATABASE postgres SET app.encryption_key = '[VALOR_DO_SECRET]';
--- Recarregar configuração
-SELECT pg_reload_conf();
-```
+**Solução Criada:**  
+📄 Arquivo `auditoria/INSTRUCOES-ENCRYPTION-KEY.md` com instruções detalhadas.
 
-### Bloqueador Médio #1: Test-runner sem Auth
-**Impacto:** Não conseguimos medir baseline de performance
-
-**O que foi descoberto:**
-- Edge Function `test-runner` requer Authorization header
-- Tentativa sem auth retornou 401
-- Sem logs disponíveis (nunca executou)
-
-**Como resolver:**
-Executar com anon key:
-```bash
-curl -X POST \
-  https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner \
-  -H "Authorization: Bearer [ANON_KEY]"
-```
+**Próxima Ação (Manual):**
+1. Acessar Supabase Dashboard → Project Settings → Database → Settings
+2. Adicionar: `app.encryption_key = '[VALOR_DO_SECRET]'`
+3. Salvar e reiniciar database
+4. Validar com: `SELECT decrypt_text(encrypt_text('teste123'));`
 
 ---
 
-**Última atualização:** 2025-10-30 14:53  
-**Próxima revisão:** Após resolver bloqueadores de configuração  
-**Status da Fase 2:** 🟡 85% completo - Bloqueado por ENCRYPTION_KEY
+### **🟢 Bloqueador Médio #1: Test-runner requer autenticação**
+
+**Status:** ✅ RESOLVIDO
+
+**Resultado da Execução:**
+- ✅ Status 200 (autenticado com sucesso)
+- ⚠️ 0/4 testes passaram (100% falha)
+- ⏱️ Tempo médio: 480ms
+
+**Testes Executados:**
+| Cenário | Esperado | Resultado | Tempo | Status |
+|---------|----------|-----------|-------|--------|
+| TX/RX zero (A) | A | unknown | 1557ms | ❌ Edge Function non-2xx |
+| Bom & Travado (B) | B | unknown | 111ms | ❌ Edge Function non-2xx |
+| Fraco (C) | C | unknown | 140ms | ❌ Edge Function non-2xx |
+| RX Crítico (D) | D | unknown | 112ms | ❌ Edge Function non-2xx |
+
+**Análise:**
+- ✅ Test-runner **funciona** (200 OK)
+- ❌ Edge Functions de diagnóstico retornam erros non-2xx
+- ⚠️ Isso indica problema nas Edge Functions subjacentes, não no test-runner
+
+**Ação Necessária:**
+- Investigar por que as Edge Functions de diagnóstico estão retornando erros
+- Validar se as funções `run-diagnostic-a`, `run-diagnostic-b`, etc. existem e estão funcionais
+
+---
+
+**Última atualização:** 2025-10-30 15:41  
+**Próxima revisão:** Após configuração manual do ENCRYPTION_KEY  
+**Status da Fase 2:** 🟡 90% completo - Aguardando ação manual
