@@ -188,3 +188,6 @@ verify_jwt = true
 
 [functions.generate-ai-faq]
 verify_jwt = true
+
+[functions.test-runner]
+verify_jwt = false

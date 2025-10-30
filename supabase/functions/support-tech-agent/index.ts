@@ -2649,11 +2649,11 @@ Nossa equipe técnica já está a caminho de uma solução ⚡`
           scenario
         });
 
-        const lastUserMessage = message || "";
+        const userMsgCenarioB = message || "";
         
         // >>> PR7: CENÁRIO B — CONFIRMAÇÃO DO DESLIGA/LIGA (B2)
         if (waitingStep === "scenario_b_wait_restart" || waitingStep === "scenario_b_power_cycle_request") {
-          const interpret = await hybridInterpret(lastUserMessage || "", {
+          const interpret = await hybridInterpret(userMsgCenarioB || "", {
             regexDetectors: {
               confirmed: /(pronto|liguei|já liguei|ok|feito|terminei|reinic|desliguei)/i,
               denied: /(n[ãa]o|nao fiz|ainda n)/i,
@@ -2983,8 +2983,8 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
       }
 
       // >>> PR #12A - DETECÇÃO DE FRUSTRAÇÃO PROGRESSIVA ✅
-      const lastUserMessage = message || "";
-      const msg = lastUserMessage.toLowerCase();
+      const userMsgFrustration = message || "";
+      const msg = userMsgFrustration.toLowerCase();
       
       // Verificar se já foi transferido para humano
       if (flowState?.transferred_to_human) {
@@ -3169,7 +3169,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
 
       // >>> PR #13 — ANTI-FUGA DE FLUXO ✅
       const activeStep = flowState?.waiting_step;
-      const lastUserMessage = message || "";
+      const userMsgAntiEscape = message || "";
 
       // Se há um diagnóstico em andamento e cliente muda de assunto
       if (activeStep && flowState?.scenario_started) {
@@ -3500,9 +3500,9 @@ Me responde com:
       
       // ===== B2: CONFIRMAÇÃO DO REBOOT (CENÁRIO B) =====
       if (flowState?.waiting_step === "scenario_b_confirm_reboot") {
-        const lastUserMessage = message || "";
+        const userMsgRebootConfirm = message || "";
         
-        const interpret = await hybridInterpret(lastUserMessage, {
+        const interpret = await hybridInterpret(userMsgRebootConfirm, {
           regexDetectors: {
             refused: /(n[ãa]o quero|desiste|desisto|p[áa]ra|chama humano|atendente|falar com algu[ée]m)/i,
             confirmed: /(ok|sim|vou|voltou|j[áa] fiz|pronto|feito|reiniciei|deu certo)/i
@@ -3794,11 +3794,11 @@ Me responde com:
           scenario
         });
 
-        const lastUserMessage = message || "";
+        const userMsgCenarioC = message || "";
         
         // ===== Confirmação de instabilidade =====
         if (scenarioCStep === "scenario_c_check_instability") {
-          const interpretation = await hybridInterpret(lastUserMessage, {
+          const interpretation = await hybridInterpret(userMsgCenarioC, {
             regexDetectors: {
               confirmed: /(sim|s[ií]|cai|oscil|instavel|lent|trava|intermitent)/i,
               denied: /(n[ãa]o|nao|nem|normal|est[aá]vel)/i
