@@ -1,0 +1,7 @@
+# Pasta para resultados individuais de auditoria
+
+Cada PR terá seu arquivo de verificação aqui:
+- pr01-verificado.md
+- pr02-verificado.md
+- ...
+- pr32-verificado.md
