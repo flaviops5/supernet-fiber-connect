@@ -22,10 +22,34 @@ import { checkRateLimit, formatBlockedTime } from "./rate-limiter.ts";
 import { recordMetric } from "./metrics-helper.ts";
 import type { JsonValue } from "./error-types.ts";
 
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hmac-signature, x-timestamp',
-};
+/**
+ * CORS Headers - Restritivo em produção, permissivo em dev
+ */
+function getCorsHeaders(): Record<string, string> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+  const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+  
+  // Domínios permitidos
+  const allowedOrigins = [
+    `https://${projectRef}.supabase.co`,
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+  ];
+  
+  // Em produção, usar lista de origens permitidas
+  // Em dev/test, permitir todas
+  const isDev = Deno.env.get('ENVIRONMENT') !== 'production';
+  
+  return {
+    'Access-Control-Allow-Origin': isDev ? '*' : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hmac-signature, x-timestamp',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
+export const corsHeaders = getCorsHeaders();
 
 export interface AuthUser {
   id: string;

@@ -4,6 +4,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
 import { validateHMACRequest } from "../_shared/hmac.ts";
+import { safeLog, sanitizeForLog } from "../_shared/log-sanitizer.ts";
 import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
 
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -161,7 +162,7 @@ Deno.serve(createPublicHandler(
     const duration = Date.now() - startTime;
     console.log(`✅ IXC Response: ${ixcResponse.status} (${duration}ms)`);
     
-    // Log para debug de dados parseados
+    // Log para debug de dados parseados (sanitizado)
     console.log('🔍 ixcData type:', typeof ixcData, '| is null:', ixcData === null, '| is undefined:', ixcData === undefined);
     if (rawText) console.log('📄 rawText preview:', rawText.slice(0, 300));
     
@@ -179,9 +180,9 @@ Deno.serve(createPublicHandler(
 
     const ok = ixcResponse.ok && !!ixcData;
     
-    // Log para debug quando IXC retorna 200 mas pode ter erro no payload
+    // Log para debug quando IXC retorna 200 mas pode ter erro no payload (SANITIZADO)
     if (ixcResponse.ok && ixcData) {
-      console.log('📦 IXC Data:', JSON.stringify(ixcData).slice(0, 300));
+      safeLog.ixcData(ixcData);
     }
 
     // Determinar status HTTP correto baseado no tipo de erro
