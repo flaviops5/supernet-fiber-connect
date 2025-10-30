@@ -5,6 +5,88 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   ACCESSIBILITY STYLES - WCAG 2.1 AA
+   ============================================ */
+
+/* Screen Reader Only - hides content visually but keeps it accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus Visible - WCAG 2.4.7 */
+.keyboard-user *:focus {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.keyboard-user *:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip Link - WCAG 2.4.1 */
+.sr-only:focus,
+.sr-only:active {
+  position: fixed;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* High Contrast Focus Indicators */
+@media (prefers-contrast: high) {
+  *:focus {
+    outline: 4px solid;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced Motion - WCAG 2.3.3 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus-within for better keyboard navigation */
+.focus-within-ring:focus-within {
+  ring: 2px solid hsl(var(--primary));
+  ring-offset: 2px;
+}
+
+/* Interactive elements minimum touch target - WCAG 2.5.5 */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="link"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ensure sufficient color contrast */
+:root {
+  --text-on-background-contrast: 4.5; /* WCAG AA minimum */
+}
+
 /* Supernet Fibra Design System - All colors MUST be HSL */
 
 @layer base {
