@@ -28,6 +28,7 @@ import {
   Settings,
   LogOut,
   Bot,
+  Rocket,
   Monitor,
   HelpCircle,
   FolderOpen,
@@ -172,6 +173,11 @@ const agentsItems = [
     title: "Métricas do Sistema",
     url: "/system-metrics",
     icon: Activity,
+  },
+  {
+    title: "Preparação Produção",
+    url: "/admin/production-readiness",
+    icon: Rocket,
   },
 ];
 

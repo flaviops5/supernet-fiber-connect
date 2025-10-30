@@ -27,6 +27,7 @@ import AdminEscalation from "./pages/AdminEscalation";
 import AdminTestes from "./pages/AdminTestes";
 import MonitoringLogs from "./pages/MonitoringLogs";
 import AtlasInsights from "./pages/AtlasInsights";
+import ProductionReadiness from "./pages/ProductionReadiness";
 import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
 import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
@@ -80,6 +81,7 @@ const App = () => {
             <Route path="/teste_fonte_queimada" element={<Navigate to="/admin/testes" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
+            <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
           <Route path="/atendimento" element={<Atendimento />} />
           <Route path="/perfil-agente" element={<PerfilAgente />} />
           <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
