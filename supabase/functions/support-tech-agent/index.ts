@@ -3282,8 +3282,8 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         "vídeo não carrega", "netflix", "youtube", "streaming"
       ];
       
-      const msg = (message || "").toLowerCase();
-      const hasScenarioBKeyword = scenarioBKeywords.some(kw => msg.includes(kw));
+      const msgScenarioB = (message || "").toLowerCase();
+      const hasScenarioBKeyword = scenarioBKeywords.some(kw => msgScenarioB.includes(kw));
       
       const scenarioBSignal = onu_signal || flowState?.last_signal;
       const isSignalGood = scenarioBSignal && 
