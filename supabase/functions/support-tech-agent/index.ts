@@ -668,20 +668,20 @@ serve(async (req) => {
     }
 
     // >>> PR10A - Captura geolocalização
-    const { data: currentConv } = await supabase
+    const { data: convWithPhone } = await supabase
       .from("conversations")
       .select("metadata, customer_phone")
       .eq("id", conversation_id)
       .single();
 
-    let flowState = (currentConv?.metadata as any)?.flow_state || {};
+    let flowState = (convWithPhone?.metadata as any)?.flow_state || {};
     
     if (ixc_client_id) {
       const geoData = await ensureGeo(
         supabase,
         { conversation_id, flowState },
         ixc_client_id,
-        currentConv?.customer_phone
+        convWithPhone?.customer_phone
       );
       flowState = { ...flowState, geo: geoData };
       logger.info("Geolocalização capturada", { cidade: geoData.cidade, source: geoData.source });
@@ -699,7 +699,7 @@ serve(async (req) => {
       .from("conversations")
       .update({
         metadata: {
-          ...(currentConv?.metadata as any || {}),
+          ...(convWithPhone?.metadata as any || {}),
           flow_state: {
             ...existingFlowState,
             hybrid_mode_active: isHybridEnabled
@@ -854,7 +854,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       .eq("id", conversation_id)
       .single();
 
-    const flowState = (currentConversation?.metadata as any)?.flow_state;
+    const currentFlowState = (currentConversation?.metadata as any)?.flow_state;
     const lastInteraction = currentConversation?.updated_at 
       ? new Date(currentConversation.updated_at) 
       : new Date();
@@ -1339,12 +1339,12 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         .eq("id", conversation_id)
         .single();
 
-      const flowState = (currentConversation?.metadata as any)?.flow_state;
+      const continueFlowState = (currentConversation?.metadata as any)?.flow_state;
       const scenario = (currentConversation?.metadata as any)?.scenario;
 
       // Carregar exemplos aprovados de energia se estiver no cenário A
       let approvedExamples = "";
-      if (scenario === "A" || flowState?.includes("energia")) {
+      if (scenario === "A" || continueFlowState?.includes("energia")) {
         approvedExamples = await getApprovedSimulations(supabase, "energia");
         logger.info("Exemplos de energia carregados", { 
           hasExamples: approvedExamples.length > 0,
