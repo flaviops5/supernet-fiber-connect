@@ -107,7 +107,7 @@ export default function Apresentacao() {
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center space-y-6 animate-fade-in">
-            <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
+            <Badge className="mb-4 bg-primary/20 text-primary-foreground border-primary/30 hover:bg-primary/30">
               Sistema de Gestão Inteligente
             </Badge>
             <h1 className="text-5xl md:text-6xl font-bold leading-tight">
@@ -121,7 +121,7 @@ export default function Apresentacao() {
                 <Mail className="h-5 w-5" />
                 Agendar Demonstração
               </Button>
-              <Button size="lg" variant="outline" className="gap-2 bg-white/10 border-white/30 hover:bg-white/20 text-white">
+              <Button size="lg" variant="outline" className="gap-2 bg-primary-foreground/10 border-primary-foreground/30 hover:bg-primary-foreground/20 text-primary-foreground">
                 <Phone className="h-5 w-5" />
                 Falar com Especialista
               </Button>
@@ -404,7 +404,7 @@ export default function Apresentacao() {
               Agendar Demonstração
               <ArrowRight className="h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 text-lg bg-white/10 border-white/30 hover:bg-white/20 text-white">
+            <Button size="lg" variant="outline" className="gap-2 text-lg bg-primary-foreground/10 border-primary-foreground/30 hover:bg-primary-foreground/20 text-primary-foreground">
               <Phone className="h-5 w-5" />
               (00) 0000-0000
             </Button>
