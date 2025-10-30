@@ -1,65 +1,96 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
+import { withTimeout } from '../_shared/async-utils.ts';
 
 Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
   console.log('🏥 Running comprehensive health check...');
 
-    // 1. Database Connection
-    const { data: dbCheck, error: dbError } = await supabase
-      .from('company_settings')
-      .select('id')
-      .limit(1);
+    // 1. Database Connection (with 2s timeout)
+    const { data: dbCheck, error: dbError } = await withTimeout(
+      supabase.from('company_settings').select('id').limit(1),
+      2000,
+      'db-check'
+    ).catch(() => ({ data: null, error: { message: 'Timeout' } }));
 
-    // 2. Circuit Breaker Status
-    const { data: cbMetrics } = await supabase
-      .from('ixc_metrics')
-      .select('*')
-      .eq('metric_name', 'circuit_breaker_state')
-      .order('created_at', { ascending: false })
-      .limit(1);
+    // 2. Circuit Breaker Status (with 1s timeout)
+    const { data: cbMetrics } = await withTimeout(
+      supabase
+        .from('ixc_metrics')
+        .select('*')
+        .eq('metric_name', 'circuit_breaker_state')
+        .order('created_at', { ascending: false })
+        .limit(1),
+      1000,
+      'circuit-breaker-check'
+    ).catch(() => ({ data: null }));
 
     const circuitBreakerStatus = cbMetrics?.[0]?.metric_value || 'CLOSED';
 
-    // 3. Agent Availability
-    const { data: onlineAgents, count: agentCount } = await supabase
-      .from('agent_presence')
-      .select('*', { count: 'exact' })
-      .eq('status', 'online');
+    // 3. Agent Availability (with 1s timeout)
+    const { data: onlineAgents, count: agentCount } = await withTimeout(
+      supabase
+        .from('agent_presence')
+        .select('*', { count: 'exact' })
+        .eq('status', 'online'),
+      1000,
+      'agent-check'
+    ).catch(() => ({ data: null, count: 0 }));
 
-    // 4. Pending Conversations
-    const { data: pendingConvs, count: pendingCount } = await supabase
-      .from('conversations')
-      .select('*', { count: 'exact' })
-      .eq('status', 'waiting');
+    // 4. Pending Conversations (with 1s timeout)
+    const { data: pendingConvs, count: pendingCount } = await withTimeout(
+      supabase
+        .from('conversations')
+        .select('*', { count: 'exact' })
+        .eq('status', 'waiting'),
+      1000,
+      'conversation-check'
+    ).catch(() => ({ data: null, count: 0 }));
 
-    // 5. DLQ Size
-    const { data: dlqActions, count: dlqCount } = await supabase
-      .from('action_log')
-      .select('*', { count: 'exact' })
-      .contains('result', { success: false });
+    // 5. DLQ Size (with 1s timeout)
+    const { data: dlqActions, count: dlqCount } = await withTimeout(
+      supabase
+        .from('action_log')
+        .select('*', { count: 'exact' })
+        .contains('result', { success: false }),
+      1000,
+      'dlq-check'
+    ).catch(() => ({ data: null, count: 0 }));
 
-    // 6. Active Mass Outages
-    const { data: activeOutages, count: outageCount } = await supabase
-      .from('mass_outage_events')
-      .select('*', { count: 'exact' })
-      .eq('status', 'active');
+    // 6. Active Mass Outages (with 1s timeout)
+    const { data: activeOutages, count: outageCount } = await withTimeout(
+      supabase
+        .from('mass_outage_events')
+        .select('*', { count: 'exact' })
+        .eq('status', 'active'),
+      1000,
+      'outage-check'
+    ).catch(() => ({ data: null, count: 0 }));
 
-    // 7. Evolution API Status
+    // 7. Evolution API Status (with 2s timeout)
     let evolutionStatus = 'unknown';
     try {
       const evolutionBaseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
       const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
       
-      const response = await fetch(`${evolutionBaseUrl}/instance/fetchInstances`, {
-        method: 'GET',
-        headers: {
-          'apikey': evolutionApiKey!,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      evolutionStatus = response.ok ? 'healthy' : 'error';
-    } catch {
-      evolutionStatus = 'error';
+      if (!evolutionBaseUrl || !evolutionApiKey) {
+        evolutionStatus = 'error';
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const response = await fetch(`${evolutionBaseUrl}/instance/fetchInstances`, {
+          method: 'GET',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        evolutionStatus = response.ok ? 'healthy' : 'error';
+      }
+    } catch (error) {
+      evolutionStatus = error.name === 'AbortError' ? 'timeout' : 'error';
     }
 
     const checks = {
