@@ -289,6 +289,7 @@ const Auth = () => {
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Input
+                      data-testid="email-input"
                       type="email"
                       placeholder="Email ou Código ou CPF"
                       value={email}
@@ -300,6 +301,7 @@ const Auth = () => {
                   
                   <div className="space-y-2 relative">
                     <Input
+                      data-testid="password-input"
                       type={showPassword ? "text" : "password"}
                       placeholder="Senha"
                       value={password}
@@ -317,6 +319,7 @@ const Auth = () => {
                   </div>
 
                   <Button
+                    data-testid="login-button"
                     type="submit"
                     className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
                     disabled={loading}
