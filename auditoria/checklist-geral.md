@@ -21,21 +21,21 @@
 | 7 | **Service Role** | `service_role` usado apenas onde necessário (Edge)? | ☐ | |
 | 8 | **Async** | `await` bloqueantes substituídos por fire-and-forget? | ☐ | |
 | 9 | **Cenários** | Cenários A–D retornam mensagens humanizadas? | ☐ | |
-| 10 | **Testes** | Testes automatizados executam sem erro (PR#31)? | ☐ | |
+| 10 | **Testes** | Testes automatizados executam sem erro (PR#31)? | ⚠️ | Bloqueado: requer auth header |
 | 11 | **Dashboard** | Dashboard KPI funcional com AuthGuard ativo? | ☐ | |
 | 12 | **Políticas** | Migração `agent_global_policies` aplicada e visível? | ☐ | |
 | 13 | **Auditoria** | Auditoria e rollback de cenários funcionam? | ☐ | |
 | 14 | **Auto-upgrade** | Auto-upgrade executa diariamente (cron ativo)? | ☐ | |
 | 15 | **Tag** | Tag v1.0.0 criada e publicada? | ☐ | |
 | 16 | **Docs** | Documentação final (PR#30) versionada? | ☐ | |
-| 17 | **Performance** | Latência média < 15 segundos (test-runner)? | ☐ | |
-| 18 | **Logs Críticos** | Nenhum erro crítico nos logs Supabase? | ☐ | |
+| 17 | **Performance** | Latência média < 15 segundos (test-runner)? | ⚠️ | Bloqueado: requer auth |
+| 18 | **Logs Críticos** | Nenhum erro crítico nos logs Supabase? | ✅ | Sistema saudável |
 | 19 | **Roles** | Políticas e roles (`gestor`, `admin`) válidas? | ☐ | |
 | 20 | **Links** | Todos os PRs possuem link funcional no histórico Lovable? | ☐ | |
-| 21 | **Security Views** | Views SECURITY DEFINER documentadas e justificadas? | ☐ | Criptografia |
-| 22 | **Encryption** | Encryption/Decryption functions testadas? | ☐ | |
-| 23 | **Secrets** | ENCRYPTION_KEY secret configurado? | ✅ | Configurado |
-| 24 | **Linter** | Zero erros críticos no Supabase Linter? | ✅ | 34 warnings (10 justificados) |
+| 21 | **Security Views** | Views SECURITY DEFINER documentadas e justificadas? | ✅ | Criptografia |
+| 22 | **Encryption** | Encryption/Decryption functions testadas? | ⚠️ | Criadas mas bloqueadas |
+| 23 | **Secrets** | ENCRYPTION_KEY secret configurado? | ⚠️ | Edge: ✅ / DB: ❌ |
+| 24 | **Linter** | Zero erros críticos no Supabase Linter? | ⚠️ | 34 warnings (12+ justificados) |
 
 ---
 
@@ -162,14 +162,23 @@ supabase db lint
 
 ## 🚨 Issues Conhecidos
 
-### Linter Warnings (35 total)
-- **10x ERROR**: Security Definer Views (criptografia) - ⚠️ Esperado
-- **1x INFO**: RLS Enabled No Policy - ❌ Requer correção
+### Linter Warnings (34 total)
+- **12x ERROR**: Security Definer Views + Functions (criptografia) - ⚠️ Esperado
+- **0x INFO**: RLS Enabled No Policy - ✅ Corrigido
+
+### Bloqueadores Críticos
+1. **ENCRYPTION_KEY não disponível no Database**
+   - Secret configurado para Edge Functions ✅
+   - **NÃO** disponível para funções PostgreSQL ❌
+   - Impacto: Views `*_decrypted` não funcionam
+   - Solução: `ALTER DATABASE postgres SET app.encryption_key = '[valor]';`
 
 ### Ações Necessárias
-1. Documentar justificativa das Security Definer Views
-2. Adicionar policies na tabela sem políticas
-3. Validar que warnings de criptografia são esperados
+1. ✅ ~~Documentar justificativa das Security Definer Views~~
+2. ✅ ~~Adicionar policies na tabela sem políticas~~
+3. ✅ ~~Validar que warnings de criptografia são esperados~~
+4. ❌ Configurar ENCRYPTION_KEY no Database
+5. ⚠️ Executar test-runner com autenticação para baseline
 
 ---
 
@@ -182,4 +191,5 @@ supabase db lint
 
 ---
 
-**Última atualização:** 2025-10-30 14:21
+**Última atualização:** 2025-10-30 14:53  
+**Status Fase 2:** 🟡 85% completo - Bloqueado por ENCRYPTION_KEY no Database

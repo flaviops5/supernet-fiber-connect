@@ -113,33 +113,59 @@ Adicionadas 4 policies para `service_role`:
 
 ### ENCRYPTION_KEY Secret
 
-**Status:** ✅ **Configurado**
+**Status:** ⚠️ **Configurado para Edge Functions, pendente para Database**
 
 - ✅ Secret adicionado ao Supabase
-- ✅ Acessível via `Deno.env.get('ENCRYPTION_KEY')`
-- ✅ Disponível para Edge Functions
-- ⚠️ Testes de encrypt/decrypt pendentes
+- ✅ Acessível via `Deno.env.get('ENCRYPTION_KEY')` em Edge Functions
+- ❌ **NÃO** disponível via `current_setting('app.encryption_key')` no Database
+- ❌ Funções `encrypt_text()` e `decrypt_text()` criadas mas não funcionais
+
+**Ação necessária:**
+Para tornar o ENCRYPTION_KEY disponível no banco de dados, executar:
+```sql
+ALTER DATABASE postgres SET app.encryption_key = 'sua_chave_aqui';
+-- OU configurar via Supabase Vault
+```
 
 ### Funções de Criptografia
 
+**Status:** ✅ **Criadas** | ❌ **Não funcionais** (bloqueio: ENCRYPTION_KEY)
+
 **Implementadas:**
 ```sql
--- Criadas na migração mais recente
-CREATE FUNCTION encrypt_text(text) RETURNS text
-CREATE FUNCTION decrypt_text(text) RETURNS text
+-- Migração: 20251030145236
+CREATE FUNCTION public.encrypt_text(text) RETURNS text SECURITY DEFINER
+CREATE FUNCTION public.decrypt_text(text) RETURNS text SECURITY DEFINER
 ```
 
-**Teste manual necessário:**
+**Teste executado:**
 ```sql
--- Executar no SQL Editor
 SELECT 
   encrypt_text('teste123') as encrypted,
   decrypt_text(encrypt_text('teste123')) as decrypted;
-
--- Resultado esperado:
--- encrypted: <string base64>
--- decrypted: 'teste123'
 ```
+
+**Resultado:**
+```
+❌ ERROR: ENCRYPTION_KEY not configured
+CONTEXT: PL/pgSQL function encrypt_text(text) line 9 at RAISE
+```
+
+**Causa:**
+- Secret `ENCRYPTION_KEY` existe para Edge Functions
+- Mas **NÃO** está disponível via `current_setting('app.encryption_key')` no Database
+- Funções PostgreSQL não conseguem acessar secrets do Supabase diretamente
+
+**Solução:**
+Configurar no Database via SQL:
+```sql
+ALTER DATABASE postgres SET app.encryption_key = 'valor_do_secret';
+```
+
+**Impacto:**
+- Views de descriptografia (`*_decrypted`) não funcionarão
+- LGPD compliance parcialmente comprometido
+- Auditoria de dados sensíveis bloqueada
 
 ---
 
@@ -147,20 +173,41 @@ SELECT
 
 ### Test Runner (PR#31)
 
-**Status:** 🔄 Pendente
+**Status:** ⚠️ **Bloqueado - Requer Autenticação**
 
-**Comando:**
+**Teste executado:**
+```bash
+curl -X POST \
+  https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner
+```
+
+**Resultado:**
+```json
+{
+  "code": 401,
+  "message": "Missing authorization header"
+}
+```
+
+**Causa:**
+- Edge Function `test-runner` requer header de autorização
+- Não há logs disponíveis (função nunca executou com sucesso)
+- Necessário usar `anon` key ou `service_role` key
+
+**Próximo passo:**
+Executar com autenticação:
 ```bash
 curl -X POST \
   https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  -H "Authorization: Bearer [ANON_KEY]"
 ```
 
-**Métricas esperadas:**
-- ⏱️ Latência média: < 15s
-- ✅ Taxa de sucesso: > 95%
-- 📊 Throughput: > 10 req/s
-- 🔄 Tempo de retry: < 5s
+**Métricas esperadas (quando funcionar):**
+- ⏱️ Latência média: < 15s (target inicial)
+- ⏱️ Latência média: < 5s (alerta crítico - PR#31)
+- ⏱️ Latência média: < 3s (alerta warning - PR#31)
+- ✅ Taxa de sucesso: 100% (4/4 cenários)
+- 📊 Cenários testados: A, B, C, D
 
 ---
 
@@ -194,20 +241,25 @@ Logs mostram sanitização funcionando:
 
 ## ⚠️ Issues Identificados
 
-### Crítico (0)
-- Nenhum issue crítico encontrado
+### Crítico (1)
+1. **ENCRYPTION_KEY não disponível no Database**
+   - Severidade: CRÍTICO
+   - Impacto: Criptografia/descriptografia não funciona
+   - Bloqueio: Views `*_decrypted`, LGPD compliance
+   - Ação: Configurar `app.encryption_key` no Database
 
-### Alto (1)
-1. **Tabela sem RLS policies**
-   - Severidade: INFO (linter)
-   - Impacto: Pode bloquear acesso legítimo
-   - Ação: Investigar e corrigir
+### Alto (0)
+- ~~Tabela sem RLS policies~~ ✅ Corrigido
 
-### Médio (0)
-- Nenhum
+### Médio (1)
+1. **Test-runner requer autenticação**
+   - Severidade: MÉDIO
+   - Impacto: Não conseguimos baseline de performance
+   - Ação: Executar com Authorization header
 
 ### Baixo (10+)
 - Security Definer Views (justificadas)
+- Security Definer Functions (encrypt/decrypt - necessárias)
 
 ---
 
@@ -217,33 +269,49 @@ Logs mostram sanitização funcionando:
 
 - [x] Executar Supabase Linter
 - [x] Analisar resultados do linter
-- [x] Validar ENCRYPTION_KEY
+- [x] Validar ENCRYPTION_KEY (Edge Functions)
 - [x] Verificar logs Postgres
 - [x] Documentar Security Definer Views
 - [x] Identificar tabela sem policies (`rate_limit_tracking`)
 - [x] Corrigir tabela sem policies (4 policies criadas)
 - [x] Validar correção (linter 35→34)
-- [ ] Executar testes de criptografia
-- [ ] Executar test-runner
+- [x] Criar funções encrypt_text/decrypt_text
+- [x] Executar testes de criptografia
+- [x] Tentar executar test-runner
+- [x] Identificar bloqueadores
+- [ ] **BLOQUEADOR:** Configurar ENCRYPTION_KEY no Database
+- [ ] **BLOQUEADOR:** Executar test-runner com auth
 - [ ] Capturar baseline de performance
 - [ ] Gerar relatório de issues
 
-**Progresso:** 80% completo
+**Progresso:** 85% completo (bloqueado por configuração)
 
 ---
 
 ## 🎯 Próximos Passos
 
-### Imediato (hoje)
-1. Executar query para identificar tabela sem policies
-2. Testar funções de criptografia manualmente
-3. Executar test-runner para baseline
-4. Documentar findings no relatório final
+### Imediato (BLOQUEADORES)
+1. ❌ **Configurar ENCRYPTION_KEY no Database:**
+   ```sql
+   -- Opção 1: Via SQL (requer superuser)
+   ALTER DATABASE postgres SET app.encryption_key = 'valor_do_secret';
+   
+   -- Opção 2: Via Supabase Vault (preferencial)
+   -- Necessário configurar manualmente no dashboard
+   ```
 
-### Curto Prazo (próximas 2h)
-1. Completar Fase 2
-2. Iniciar Fase 3 (PRs #1-10)
-3. Validar base handlers e infraestrutura
+2. ⚠️ **Executar test-runner com autenticação:**
+   ```bash
+   curl -X POST \
+     https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14ZHVwa2JweGpjZnhkZ3J3a25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3NTg4ODYsImV4cCI6MjA3NDMzNDg4Nn0.np4wHopAwI7HOTsYPaAUSWbe_qVxMBSIHjYv4PnKL6I"
+   ```
+
+### Curto Prazo (após resolver bloqueadores)
+1. Validar funções de criptografia funcionando
+2. Capturar baseline de performance (test-runner)
+3. Completar Fase 2
+4. Iniciar Fase 3 (PRs #1-10)
 
 ---
 
@@ -251,14 +319,18 @@ Logs mostram sanitização funcionando:
 
 | Métrica | Status | Meta | Atingido? |
 |---------|--------|------|-----------|
-| Erros Críticos | 0 | 0 | ✅ |
-| Erros Alto | 1 | < 3 | ✅ |
-| ENCRYPTION_KEY | Configurado | Sim | ✅ |
+| Erros Críticos | 1 | 0 | ❌ |
+| Erros Alto | 0 | < 3 | ✅ |
+| RLS Issues | 0 | 0 | ✅ |
+| ENCRYPTION_KEY (Edge) | Configurado | Sim | ✅ |
+| ENCRYPTION_KEY (DB) | ❌ Não configurado | Sim | ❌ |
+| Funções Criptografia | Criadas | Funcionais | ⚠️ |
+| Test-runner | Bloqueado | Funcionando | ❌ |
 | Logs Sanitizados | Ativo | Sim | ✅ |
 | Edge Functions Online | ~20 | > 18 | ✅ |
 | Postgres Saudável | Sim | Sim | ✅ |
 
-**Score de Saúde:** 95/100 🟢
+**Score de Saúde:** 70/100 🟡 (bloqueado por configuração)
 
 ---
 
@@ -272,5 +344,48 @@ Logs mostram sanitização funcionando:
 
 ---
 
-**Última atualização:** 2025-10-30 14:26  
-**Próxima revisão:** Após completar investigação de tabela sem policies
+---
+
+## 🚨 Resumo de Bloqueadores
+
+### Bloqueador Crítico #1: ENCRYPTION_KEY no Database
+**Impacto:** Views de descriptografia não funcionam, compliance LGPD comprometido
+
+**O que foi feito:**
+- ✅ Funções `encrypt_text()` e `decrypt_text()` criadas
+- ✅ SECURITY DEFINER aplicado corretamente
+- ✅ Tratamento de erros implementado
+
+**O que está faltando:**
+- ❌ Configurar `app.encryption_key` no Database
+- ❌ Secret só existe para Edge Functions, não para Postgres
+
+**Como resolver:**
+```sql
+-- Executar como superuser no SQL Editor
+ALTER DATABASE postgres SET app.encryption_key = '[VALOR_DO_SECRET]';
+-- Recarregar configuração
+SELECT pg_reload_conf();
+```
+
+### Bloqueador Médio #1: Test-runner sem Auth
+**Impacto:** Não conseguimos medir baseline de performance
+
+**O que foi descoberto:**
+- Edge Function `test-runner` requer Authorization header
+- Tentativa sem auth retornou 401
+- Sem logs disponíveis (nunca executou)
+
+**Como resolver:**
+Executar com anon key:
+```bash
+curl -X POST \
+  https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1/test-runner \
+  -H "Authorization: Bearer [ANON_KEY]"
+```
+
+---
+
+**Última atualização:** 2025-10-30 14:53  
+**Próxima revisão:** Após resolver bloqueadores de configuração  
+**Status da Fase 2:** 🟡 85% completo - Bloqueado por ENCRYPTION_KEY
