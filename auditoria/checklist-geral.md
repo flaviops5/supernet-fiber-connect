@@ -15,8 +15,8 @@
 | 1 | **Documentação** | Todos os PRs possuem documentação `.md`? | ☐ | |
 | 2 | **Cabeçalhos** | Todos os arquivos têm cabeçalho com número e título do PR? | ☐ | |
 | 3 | **Duplicação** | Nenhuma função duplicada entre Edge Functions? | ☐ | |
-| 4 | **Migrações** | Todas as migrações SQL foram aplicadas no Supabase? | ☐ | |
-| 5 | **RLS** | RLS habilitado em todas as tabelas novas? | ☐ | |
+| 4 | **Migrações** | Todas as migrações SQL foram aplicadas no Supabase? | ✅ | Última: rate_limit_tracking policies |
+| 5 | **RLS** | RLS habilitado em todas as tabelas novas? | ✅ | 100% - 0 tabelas sem policies |
 | 6 | **Logs** | `registros_de_monitoramento` estão sendo gravados corretamente? | ☐ | |
 | 7 | **Service Role** | `service_role` usado apenas onde necessário (Edge)? | ☐ | |
 | 8 | **Async** | `await` bloqueantes substituídos por fire-and-forget? | ☐ | |
@@ -35,7 +35,7 @@
 | 21 | **Security Views** | Views SECURITY DEFINER documentadas e justificadas? | ☐ | Criptografia |
 | 22 | **Encryption** | Encryption/Decryption functions testadas? | ☐ | |
 | 23 | **Secrets** | ENCRYPTION_KEY secret configurado? | ✅ | Configurado |
-| 24 | **Linter** | Zero erros críticos no Supabase Linter? | ☐ | 35 warnings atuais |
+| 24 | **Linter** | Zero erros críticos no Supabase Linter? | ✅ | 34 warnings (10 justificados) |
 
 ---
 
