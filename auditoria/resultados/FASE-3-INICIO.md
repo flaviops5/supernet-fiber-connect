@@ -72,13 +72,13 @@ Para cada PR, verificar:
 | #1  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
 | #2  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
 | #3  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
-| #4  | 🔄 | ⚪ | ⚪ | ⚪ | Em andamento |
-| #5  | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
-| #6  | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
-| #7  | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
-| #8  | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
-| #9  | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
-| #10 | ⚪ | ⚪ | ⚪ | ⚪ | Pendente |
+| #4  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
+| #5  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
+| #6  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado (2 errors) |
+| #7  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
+| #8  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
+| #9  | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
+| #10 | ✅ | ✅ | ✅ | ⚠️ | ✅ Aprovado |
 
 **Legenda:**
 - ⚪ Pendente
