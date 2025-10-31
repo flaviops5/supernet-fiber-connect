@@ -7,11 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface KanbanBoard {
   id: string;
-  name: string;
+  title: string;
   description: string | null;
-  owner_id: string;
-  department: string;
-  settings: Record<string, unknown>;
+  created_by: string;
   created_at: string;
   updated_at: string;
 }
