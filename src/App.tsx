@@ -72,13 +72,6 @@ const App = () => {
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
-            {/* Redirects for consolidated tests */}
-            <Route path="/simulacao-completa" element={<Navigate to="/admin/testes" replace />} />
-            <Route path="/roteamento" element={<Navigate to="/admin/testes" replace />} />
-            <Route path="/test-ixc-subjects" element={<Navigate to="/admin/testes" replace />} />
-            <Route path="/teste-fonte-queimada" element={<Navigate to="/admin/testes" replace />} />
-            <Route path="/simulacao_completa" element={<Navigate to="/admin/testes" replace />} />
-            <Route path="/teste_fonte_queimada" element={<Navigate to="/admin/testes" replace />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
             <Route path="/admin/production-readiness" element={<ProductionReadiness />} />

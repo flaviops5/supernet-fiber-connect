@@ -1,7 +1,16 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BackButton } from '@/components/BackButton';
-import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
+import { 
+  FlaskConical, 
+  MessageSquare, 
+  FileCheck,
+  Zap,
+  GitBranch,
+  AlertTriangle
+} from "lucide-react";
+
+// Import test components
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
@@ -20,163 +29,303 @@ import { EmailTestSender } from "@/components/EmailTestSender";
 
 const AdminTestes = () => {
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 max-w-7xl">
       <BackButton />
-      <div className="flex items-center gap-3 mb-6">
-        <FlaskConical className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Central de Testes</h1>
-          <p className="text-muted-foreground">
-            Testes e simulações para validação do sistema
-          </p>
-        </div>
+      
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+          <FlaskConical className="h-8 w-8 text-primary" />
+          Central de Testes
+        </h1>
+        <p className="text-muted-foreground">
+          Execute testes funcionais, de integração e validações do sistema
+        </p>
       </div>
 
-      <Card className="p-6">
-        <Tabs defaultValue="simulations" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="simulations" className="flex items-center gap-2">
-              <FlaskConical className="h-4 w-4" />
-              Simulações Completas
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
-              <Plug className="h-4 w-4" />
-              Integrações
-            </TabsTrigger>
-            <TabsTrigger value="flows" className="flex items-center gap-2">
-              <GitBranch className="h-4 w-4" />
-              Fluxos
-            </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Health Checks
-            </TabsTrigger>
-          </TabsList>
+      <Accordion type="multiple" className="space-y-4">
+        {/* Testes E2E */}
+        <AccordionItem value="e2e" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <FlaskConical className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Testes E2E</div>
+                <div className="text-sm text-muted-foreground">Testes de ponta a ponta completos</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  💬 Text Reply With Context (PR #15)
+                </CardTitle>
+                <CardDescription>
+                  Teste do sistema de salvamento automático de perguntas e contexto
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestTextReplyContext />
+              </CardContent>
+            </Card>
 
-          <TabsContent value="simulations" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  🖼️ Mídia Guiada (PR #14)
+                </CardTitle>
+                <CardDescription>
+                  Teste completo do sistema de mídia guiada: persistência, imagens, logging e feedback
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestMediaGuidedFlow />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Chat Omnichannel - Cloe + Luan */}
+        <AccordionItem value="omnichannel" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Chat Omnichannel - Cloe + Luan</div>
+                <div className="text-sm text-muted-foreground">Simulações de atendimento multicanal</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  🧪 Chat Completo
+                </CardTitle>
+                <CardDescription>
+                  Teste completo do fluxo: Cloe (routing) + Luan (técnico) com cenários de TX/RX, mass outage e diagnósticos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestOmnichannelComplete />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Teste Rápido - Suporte Técnico (Luan)</CardTitle>
+                <CardDescription>
+                  Teste rápido do Luan com mass outage ativo/inativo
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestSupportTechAgent />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Validação de CPF */}
+        <AccordionItem value="cpf" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <FileCheck className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Validação de CPF</div>
+                <div className="text-sm text-muted-foreground">Testes de validação e busca de CPF</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  🔐 Validação Real
+                </CardTitle>
+                <CardDescription>
+                  Teste a validação real de CPF com mascaramento automático (LGPD compliant)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestCPFValidation />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Fluxos */}
+        <AccordionItem value="flows" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <GitBranch className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Fluxos de Negócio</div>
+                <div className="text-sm text-muted-foreground">Testes de fluxos operacionais</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Fluxo de Contrato</CardTitle>
+                <CardDescription>
+                  Teste completo do fluxo de contratos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestContractFlow />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Status Financeiro do Cliente</CardTitle>
+                <CardDescription>
+                  Valida consulta e exibição de status financeiro
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TestClientFinancialStatus />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Envio de Pagamento</CardTitle>
+                <CardDescription>
+                  Testa fluxo de envio de links e informações de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SendPaymentTest />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Integrações */}
+        <AccordionItem value="integrations" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <Zap className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Integrações</div>
+                <div className="text-sm text-muted-foreground">Testes de APIs e webhooks externos</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-4">
+            {/* IXC Soft */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">💬 Teste E2E - textReplyWithContext (PR #15)</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Teste do sistema de salvamento automático de perguntas e contexto
-              </p>
-              <TestTextReplyContext />
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                IXC Soft
+              </h3>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Testador Unificado de Endpoints</CardTitle>
+                    <CardDescription>
+                      Teste endpoints principais e GPON do IXC em um único lugar
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <IXCEndpointTester />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Teste de Conexão</CardTitle>
+                    <CardDescription>
+                      Valida conectividade com a API IXC
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <IXCConnectionTester />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Teste de Todas as Funções</CardTitle>
+                    <CardDescription>
+                      Executa testes em todas as funções disponíveis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <IXCFunctionsTester />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Teste de Assuntos</CardTitle>
+                    <CardDescription>
+                      Valida categorização de assuntos do IXC
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TestIXCSubjects />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
+            {/* WhatsApp */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">🖼️ Teste E2E - Mídia Guiada (PR #14)</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Teste completo do sistema de mídia guiada: persistência, imagens, logging e feedback
-              </p>
-              <TestMediaGuidedFlow />
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                WhatsApp
+              </h3>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Testador de API</CardTitle>
+                    <CardDescription>
+                      Valida chamadas à API do WhatsApp (Evolution)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WhatsAppApiTester />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Teste de Fluxo</CardTitle>
+                    <CardDescription>
+                      Simula fluxos completos de mensagens WhatsApp
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WhatsAppFlowTest />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
+            {/* Email */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">🧪 Chat Omnichannel - Cloe + Luan</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Teste completo do fluxo: Cloe (routing) + Luan (técnico) com cenários de TX/RX, mass outage e diagnósticos
-              </p>
-              <TestOmnichannelComplete />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">🔐 Validação de CPF</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Teste a validação real de CPF com mascaramento automático (LGPD compliant)
-              </p>
-              <TestCPFValidation />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste Rápido - Suporte Técnico</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Teste rápido do Luan com mass outage ativo/inativo
-              </p>
-              <TestSupportTechAgent />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="integrations" className="space-y-6">
-            <Tabs defaultValue="ixc" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="ixc">IXC Soft</TabsTrigger>
-                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-                <TabsTrigger value="email">Email</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="ixc" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Testador Unificado de Endpoints</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Teste endpoints principais e GPON do IXC em um único lugar
-                  </p>
-                  <IXCEndpointTester />
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Teste de Conexão IXC</h3>
-                  <IXCConnectionTester />
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Teste de Todas as Funções IXC</h3>
-                  <IXCFunctionsTester />
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Teste de Assuntos IXC</h3>
-                  <TestIXCSubjects />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="whatsapp" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Testador de API WhatsApp</h3>
-                  <WhatsAppApiTester />
-                </div>
-
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Teste de Fluxo WhatsApp</h3>
-                  <WhatsAppFlowTest />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="email" className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Testador de Email</h3>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <FileCheck className="h-5 w-5" />
+                Email
+              </h3>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Testador de Email</CardTitle>
+                  <CardDescription>
+                    Testa envio de emails pelo sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <EmailTestSender />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-
-          <TabsContent value="flows" className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Teste de Fluxo de Contrato</h3>
-              <TestContractFlow />
+                </CardContent>
+              </Card>
             </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste de Status Financeiro do Cliente</h3>
-              <TestClientFinancialStatus />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Teste de Envio de Pagamento</h3>
-              <SendPaymentTest />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="health" className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Testador Unificado de Endpoints IXC</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Health check dos endpoints principais e GPON
-              </p>
-              <IXCEndpointTester />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </Card>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

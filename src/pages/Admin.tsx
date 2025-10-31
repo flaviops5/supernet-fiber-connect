@@ -108,7 +108,6 @@ const Admin = () => {
                 <Route path="/faq" element={<FAQManagement />} />
                 <Route path="/blog" element={<BlogManagementComponent />} />
                 <Route path="/agents" element={<AgentManagement />} />
-                <Route path="/chat-tester" element={<Navigate to="/admin/testes" replace />} />
                 <Route path="/reviews" element={<ReviewsManagement />} />
                 <Route path="/prompts" element={<AdminPrompts />} />
                 <Route path="/documents" element={<DocumentManagement />} />
