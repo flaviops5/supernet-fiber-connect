@@ -4748,6 +4748,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_expired_cache: { Args: never; Returns: number }
+      cleanup_expired_data: { Args: never; Returns: undefined }
       cleanup_expired_webhooks: { Args: never; Returns: number }
       cleanup_old_logs: { Args: never; Returns: undefined }
       create_installation_appointment:
