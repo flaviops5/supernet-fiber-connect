@@ -19,6 +19,7 @@ import { ClientStats } from '@/components/monitoring/ClientStats';
 import ContextEscapeAnalytics from '@/components/monitoring/ContextEscapeAnalytics';
 import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BackButton } from '@/components/BackButton';
 
 export default function Monitoramento() {
   const [loading, setLoading] = useState(false);
@@ -107,14 +108,8 @@ export default function Monitoramento() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
         <div className="container mx-auto p-6 space-y-6">
           {/* Header */}
+          <BackButton />
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/admin')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Monitoramento Ativo

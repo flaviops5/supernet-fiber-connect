@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { BackButton } from '@/components/BackButton';
 import { FlaskConical, Plug, GitBranch, Activity } from "lucide-react";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
@@ -20,6 +21,7 @@ import { EmailTestSender } from "@/components/EmailTestSender";
 const AdminTestes = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <BackButton />
       <div className="flex items-center gap-3 mb-6">
         <FlaskConical className="h-8 w-8 text-primary" />
         <div>

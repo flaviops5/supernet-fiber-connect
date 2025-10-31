@@ -7,10 +7,12 @@ import { OmnichannelCodesTab } from "@/components/documentation/OmnichannelCodes
 import AgentManagement from "@/components/AgentManagement";
 import KnowledgeManagement from "@/components/KnowledgeManagement";
 import CorporateAI from "@/components/CorporateAI";
+import { BackButton } from "@/components/BackButton";
 
 const AdminDocumentacao = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Central de Documentação</h1>

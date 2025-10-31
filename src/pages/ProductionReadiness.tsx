@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BackButton } from '@/components/BackButton';
 
 interface ValidationResult {
   category: string;
@@ -127,6 +128,8 @@ export default function ProductionReadiness() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
+        <BackButton />
+        
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

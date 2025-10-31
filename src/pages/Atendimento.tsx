@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { BackButton } from '@/components/BackButton';
 import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';

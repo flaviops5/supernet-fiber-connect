@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, RefreshCw, Calendar, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { BackButton } from "@/components/BackButton";
 
 interface MonitoringLog {
   id: string;
@@ -115,6 +116,7 @@ const MonitoringLogs = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <BackButton />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Logs de Monitoramento</h1>

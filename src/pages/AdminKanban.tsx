@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { useKanban } from "@/hooks/useKanban";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BackButton } from "@/components/BackButton";
 
 const AdminKanban = () => {
   const [selectedBoardId, setSelectedBoardId] = useState<string>("");
@@ -80,6 +81,7 @@ const AdminKanban = () => {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <PageHeader
         title="Kanban"
         description="Gerencie projetos e tarefas com quadros Kanban"
