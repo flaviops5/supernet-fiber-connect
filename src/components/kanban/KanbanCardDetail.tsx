@@ -152,7 +152,7 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
               </div>
 
               {/* Additional Fields from Excel Import */}
-              {(card.address || card.latitude || card.longitude || card.link_info) && (
+              {(card.address || card.link_info) && (
                 <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
                   {card.address && (
                     <div>
@@ -164,30 +164,24 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                     </div>
                   )}
 
-                  {(card.latitude && card.longitude) && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-1">Coordenadas</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Lat: {card.latitude}, Long: {card.longitude}
-                        <a 
-                          href={`https://www.google.com/maps?q=${card.latitude},${card.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-primary hover:underline"
-                        >
-                          Ver no mapa
-                        </a>
-                      </p>
-                    </div>
-                  )}
-
                   {card.link_info && (
                     <div>
                       <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
                         <LinkIcon className="h-3 w-3" />
-                        Informação de Link
+                        Link
                       </h3>
-                      <p className="text-sm text-muted-foreground">{card.link_info}</p>
+                      {card.link_info.includes('http') ? (
+                        <a 
+                          href={card.link_info}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {card.link_info}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">{card.link_info}</p>
+                      )}
                     </div>
                   )}
 

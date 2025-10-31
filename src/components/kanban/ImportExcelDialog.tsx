@@ -19,8 +19,6 @@ interface ImportExcelDialogProps {
 interface ExcelRow {
   escola: string;
   endereco: string;
-  latitude: string;
-  longitude: string;
   links: string;
 }
 
@@ -64,8 +62,6 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
           rows.push({
             escola: row[2] || '', // Column C (index 2)
             endereco: row[3] || '', // Column D (index 3)
-            latitude: row[4]?.toString() || '', // Column E (index 4)
-            longitude: row[5]?.toString() || '', // Column F (index 5)
             links: row[8] || '', // Column I (index 8)
           });
         }
@@ -118,8 +114,6 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
           position: i - 1,
           priority: 'medium',
           address: row[3]?.toString().trim() || null, // Column D
-          latitude: parseFloat(row[4]) || null, // Column E
-          longitude: parseFloat(row[5]) || null, // Column F
           link_info: row[8]?.toString().trim() || null, // Column I
           custom_fields: {
             municipio: row[1]?.toString().trim() || null,
@@ -194,7 +188,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Formato esperado: Colunas C (Escola), D (Endereço), E (Latitude), F (Longitude), I (Links)
+              Formato esperado: Colunas C (Escola), D (Endereço), I (Link)
             </p>
           </div>
 
@@ -206,9 +200,11 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
                   <div key={idx} className="flex items-center gap-2 py-1 text-sm">
                     <Check className="h-3 w-3 text-green-500" />
                     <span className="font-medium">{row.escola}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({row.latitude}, {row.longitude})
-                    </span>
+                    {row.links && (
+                      <span className="text-xs text-muted-foreground">
+                        - {row.links}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
