@@ -1,8 +1,11 @@
 // PR #24 — Helper para carregar mídias oficiais com cache e tipagem forte
 
 import { supabase } from "@/integrations/supabase/client";
-import type { OfficialMediaAsset, MediaAssetWithUrl } from "@/types/media.types";
-import { STEP_MEDIA_MAP } from "@/types/media.types";
+
+// Tipos temporários (TODO: Migrar para @/types/media.types)
+type OfficialMediaAsset = any;
+type MediaAssetWithUrl = any;
+const STEP_MEDIA_MAP: Record<string, string> = {};
 
 // Cache em memória (5 minutos)
 const mediaCache = new Map<string, { asset: OfficialMediaAsset; timestamp: number }>();

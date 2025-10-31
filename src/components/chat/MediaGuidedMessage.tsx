@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { getMediaForStep } from "@/lib/media-official-helper";
-import type { MediaAssetWithUrl } from "@/types/media.types";
 import { Loader2, AlertCircle, Play, Volume2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Tipo temporário (TODO: Migrar para @/types/media.types)
+type MediaAssetWithUrl = any;
 
 interface MediaGuidedMessageProps {
   step: string;

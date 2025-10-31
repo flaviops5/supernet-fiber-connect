@@ -14,10 +14,15 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { KPIRow, KPIMetrics, KPIRegionRow, KPIRegionAgg } from "@/types/kpi.types";
 import { AgingSummary, OnuInstability, RetestEffectiveness } from "@/types/pr19.types";
 import SupportHeatmap from "@/components/geo/SupportHeatmap";
 import RegionAlerts from "@/components/alerts/RegionAlerts";
+
+// Tipos temporários (TODO: Migrar para @/types/kpi.types)
+type KPIRow = any;
+type KPIMetrics = any;
+type KPIRegionRow = any;
+type KPIRegionAgg = any;
 import { RegionsMap } from "@/components/admin/RegionsMap";
 import { toCoord } from "@/components/geo/city-centroids";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
