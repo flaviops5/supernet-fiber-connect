@@ -20,6 +20,7 @@ interface ExcelRow {
   escola: string;
   endereco: string;
   links: string;
+  colunaL: string;
 }
 
 export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExcelDialogProps) {
@@ -58,11 +59,12 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       const rows: ExcelRow[] = [];
       for (let i = 1; i < Math.min(6, jsonData.length); i++) {
         const row = jsonData[i];
-        if (row && row.length >= 9) {
+        if (row && row.length >= 12) {
           rows.push({
             escola: row[2] || '', // Column C (index 2)
             endereco: row[3] || '', // Column D (index 3)
             links: row[8] || '', // Column I (index 8)
+            colunaL: row[11] || '', // Column L (index 11)
           });
         }
       }
@@ -101,7 +103,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Skip header row (index 0)
       for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-        if (!row || row.length < 9) continue;
+        if (!row || row.length < 12) continue;
 
         const escola = row[2]?.toString().trim();
         if (!escola) continue;
@@ -109,17 +111,12 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         cardsToInsert.push({
           board_id: boardId,
           column_id: selectedColumn,
-          title: escola,
-          description: row[3]?.toString().trim() || null, // Endereço
+          title: escola, // Column C
+          description: row[11]?.toString().trim() || null, // Column L
           position: i - 1,
           priority: 'medium',
-          address: row[3]?.toString().trim() || null, // Column D
-          link_info: row[8]?.toString().trim() || null, // Column I
-          custom_fields: {
-            municipio: row[1]?.toString().trim() || null,
-            uf: row[0]?.toString().trim() || null,
-            data_ativacao: row[9]?.toString().trim() || null,
-          }
+          address: row[3]?.toString().trim() || null, // Column D (Endereço)
+          link_info: row[8]?.toString().trim() || null, // Column I (Link)
         });
       }
 
@@ -188,7 +185,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Formato esperado: Colunas C (Escola), D (Endereço), I (Link)
+              Formato esperado: Colunas C (Escola), D (Endereço), I (Link), L (Descrição)
             </p>
           </div>
 
