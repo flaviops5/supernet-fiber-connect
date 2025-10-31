@@ -2644,6 +2644,136 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_board_templates: {
+        Row: {
+          category: Database["public"]["Enums"]["kanban_template_category"]
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          structure: Json
+          usage_count: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["kanban_template_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          structure: Json
+          usage_count?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["kanban_template_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          structure?: Json
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      kanban_boards: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kanban_cards: {
+        Row: {
+          column_id: string
+          created_at: string
+          description: string | null
+          id: string
+          position: number
+          priority: string | null
+          title: string
+        }
+        Insert: {
+          column_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          position: number
+          priority?: string | null
+          title: string
+        }
+        Update: {
+          column_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number
+          priority?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_cards_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_columns: {
+        Row: {
+          board_id: string
+          color: string | null
+          created_at: string
+          id: string
+          position: number
+          title: string
+        }
+        Insert: {
+          board_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          position: number
+          title: string
+        }
+        Update: {
+          board_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_columns_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base: {
         Row: {
           agent_types: string[] | null
@@ -4954,6 +5084,7 @@ export type Database = {
         | "paused"
         | "resolved"
         | "transferred"
+      kanban_template_category: "development" | "marketing" | "sales" | "custom"
       maintenance_priority: "high" | "medium" | "low"
       recipient_status:
         | "pending"
@@ -5149,6 +5280,7 @@ export const Constants = {
         "resolved",
         "transferred",
       ],
+      kanban_template_category: ["development", "marketing", "sales", "custom"],
       maintenance_priority: ["high", "medium", "low"],
       recipient_status: [
         "pending",

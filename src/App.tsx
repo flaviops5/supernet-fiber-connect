@@ -33,6 +33,7 @@ import AdminPrompts from "./pages/AdminPrompts";
 import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
 import FluxoAgente from "./pages/FluxoAgente";
 import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
+import AdminKanban from "./pages/AdminKanban";
 import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -75,6 +76,7 @@ const App = () => {
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
             <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
+            <Route path="/kanban" element={<AdminKanban />} />
           <Route path="/atendimento" element={<Atendimento />} />
           <Route path="/perfil-agente" element={<PerfilAgente />} />
           <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
