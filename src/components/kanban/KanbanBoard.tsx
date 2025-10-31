@@ -7,10 +7,16 @@ import { KanbanCard } from './KanbanCard';
 import { KanbanCardDetail } from './KanbanCardDetail';
 import { CreateColumnDialog } from './CreateColumnDialog';
 import { CreateCardDialog } from './CreateCardDialog';
+import { KanbanDashboard } from './KanbanDashboard';
+import { KanbanAutomations } from './KanbanAutomations';
+import { KanbanTemplates } from './KanbanTemplates';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Search, Filter } from 'lucide-react';
+import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 interface KanbanBoardProps {
   boardId: string;
 }
@@ -37,6 +43,9 @@ export function KanbanBoard({
   const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
   const [showCreateCard, setShowCreateCard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [showAutomations, setShowAutomations] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [filters, setFilters] = useState<KanbanFiltersState>({
     search: '',
     priority: null,
@@ -45,6 +54,37 @@ export function KanbanBoard({
   });
   const handleCreateCard = async (columnId: string, title: string, description?: string) => {
     await createCard(columnId, title, description);
+  };
+
+  const handleTemplateSelect = async (template: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (template) {
+      const { data: newBoard } = await supabase
+        .from('kanban_boards' as any)
+        .insert({
+          title: template.name,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (newBoard && template.structure) {
+        const columns = (template.structure as any).columns || [];
+        for (let i = 0; i < columns.length; i++) {
+          const col = columns[i];
+          await supabase.from('kanban_columns' as any).insert({
+            board_id: (newBoard as any).id,
+            name: col.title,
+            color: col.color || '#3b82f6',
+            position: i,
+          });
+        }
+        toast.success("Quadro criado a partir do template!");
+        setShowTemplates(false);
+      }
+    }
   };
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
@@ -131,15 +171,19 @@ export function KanbanBoard({
         })} className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
 
-        {/* View buttons */}
-        <Button variant="outline" size="sm" className="h-8 flex-shrink-0">
-          Quadro
-        </Button>
-        <Button variant="outline" size="sm" className="h-8 flex-shrink-0">
+        {/* Action buttons */}
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowDashboard(true)}>
+          <BarChart3 className="h-3.5 w-3.5 mr-1" />
           Dashboard
         </Button>
-
-        {/* Action buttons */}
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowAutomations(true)}>
+          <Zap className="h-3.5 w-3.5 mr-1" />
+          Automações
+        </Button>
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowTemplates(true)}>
+          <FileText className="h-3.5 w-3.5 mr-1" />
+          Templates
+        </Button>
         <Button variant="outline" size="sm" className="h-8">
           <Filter className="h-3.5 w-3.5 mr-1" />
           Filtros
@@ -194,5 +238,35 @@ export function KanbanBoard({
 
         {/* Create Card Dialog */}
         <CreateCardDialog open={showCreateCard} onClose={() => setShowCreateCard(false)} columns={columns} onCreateCard={handleCreateCard} />
+
+        {/* Dashboard Dialog */}
+        <Dialog open={showDashboard} onOpenChange={setShowDashboard}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Dashboard</DialogTitle>
+            </DialogHeader>
+            <KanbanDashboard columns={columns} cards={cards} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Automations Dialog */}
+        <Dialog open={showAutomations} onOpenChange={setShowAutomations}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Automações</DialogTitle>
+            </DialogHeader>
+            <KanbanAutomations boardId={boardId} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Templates Dialog */}
+        <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Templates</DialogTitle>
+            </DialogHeader>
+            <KanbanTemplates onSelectTemplate={handleTemplateSelect} />
+          </DialogContent>
+        </Dialog>
       </div>;
 }
