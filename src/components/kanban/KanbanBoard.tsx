@@ -175,8 +175,8 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex gap-4 h-full pb-4">
+            <div className="flex-1 overflow-x-auto bg-muted/20 rounded-lg p-4">
+              <div className="flex gap-6 h-full pb-4">
                 <SortableContext
                   items={columns.map((col) => col.id)}
                   strategy={horizontalListSortingStrategy}
@@ -192,10 +192,16 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                 </SortableContext>
 
                 {/* Add Column Button */}
-                <Card className="flex-shrink-0 w-80 h-fit p-4 border-dashed">
-                  <Button variant="ghost" className="w-full" onClick={() => setShowCreateColumn(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Coluna
+                <Card className="flex-shrink-0 w-80 h-fit p-4 border-2 border-dashed bg-muted/20 hover:bg-muted/40 transition-colors">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full h-full min-h-[100px] hover:bg-background/50" 
+                    onClick={() => setShowCreateColumn(true)}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Plus className="h-5 w-5" />
+                      <span className="font-medium">Adicionar Coluna</span>
+                    </div>
                   </Button>
                 </Card>
               </div>

@@ -21,32 +21,35 @@ export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) 
   return (
     <Card
       ref={setNodeRef}
-      className={`flex-shrink-0 w-80 h-fit max-h-full flex flex-col ${
-        isOver ? 'ring-2 ring-primary' : ''
+      className={`flex-shrink-0 w-80 h-fit max-h-[calc(100vh-16rem)] flex flex-col bg-muted/30 transition-all ${
+        isOver ? 'ring-2 ring-primary shadow-lg scale-[1.02]' : ''
       }`}
     >
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
-          <div className="flex items-center gap-2">
+      <CardHeader className="pb-3 border-b bg-background/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full ring-2 ring-background shadow-sm"
               style={{ backgroundColor: column.color }}
             />
-            {column.name}
-            <Badge variant="secondary" className="ml-2">
+            <CardTitle className="text-base font-semibold text-foreground">
+              {column.name}
+            </CardTitle>
+            <Badge variant="secondary" className="ml-1 font-semibold">
               {cards.length}
             </Badge>
           </div>
           {column.limit_cards && (
             <Badge
               variant={cards.length >= column.limit_cards ? 'destructive' : 'outline'}
+              className="font-medium"
             >
               {cards.length}/{column.limit_cards}
             </Badge>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-2" data-column-id={column.id}>
+      <CardContent className="flex-1 overflow-y-auto space-y-3 pt-4 pb-4" data-column-id={column.id}>
         <SortableContext
           items={sortedCards.map((card) => card.id)}
           strategy={verticalListSortingStrategy}
@@ -56,8 +59,9 @@ export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) 
           ))}
         </SortableContext>
         {cards.length === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-8">
-            Nenhum card nesta coluna
+          <div className="flex flex-col items-center justify-center text-muted-foreground text-sm py-12 px-4 bg-background/30 rounded-lg border-2 border-dashed">
+            <p className="font-medium">Nenhum card</p>
+            <p className="text-xs mt-1">Arraste cards aqui</p>
           </div>
         )}
       </CardContent>
