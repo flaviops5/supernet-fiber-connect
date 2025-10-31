@@ -29,13 +29,7 @@ export interface KanbanCard {
   description?: string | null;
   position: number;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  labels?: string[];
-  assigned_to?: string | null;
-  due_date?: string | null;
-  conversation_id?: string | null;
-  metadata?: Record<string, any> | null;
   created_at: string;
-  updated_at: string;
 }
 
 export interface KanbanLabel {

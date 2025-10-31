@@ -159,17 +159,6 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                   </div>
                 </div>
 
-                {card.assigned_to && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2">Atribuído a</h3>
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                )}
-
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Criado em</h3>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -178,19 +167,6 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                   </div>
                 </div>
               </div>
-
-              {card.labels && card.labels.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold mb-2">Labels</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {card.labels.map((label, index) => (
-                      <Badge key={index} variant="secondary">
-                        {label}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             <Separator />

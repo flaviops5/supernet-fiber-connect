@@ -71,17 +71,6 @@ export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
           </p>
         )}
 
-        {/* Labels */}
-        {card.labels && card.labels.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {card.labels.map((label, index) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {label}
-              </Badge>
-            ))}
-          </div>
-        )}
-
         {/* Footer */}
         <div className="flex items-center justify-between">
           {/* Priority */}
@@ -91,24 +80,7 @@ export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
               {priorityLabels[card.priority]}
             </span>
           </div>
-
-          {/* Assigned User */}
-          {card.assigned_to && (
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-xs">
-                <User className="h-3 w-3" />
-              </AvatarFallback>
-            </Avatar>
-          )}
         </div>
-
-        {/* Conversation Link */}
-        {card.conversation_id && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>Linked to conversation</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

@@ -31,16 +31,11 @@ export interface KanbanCard {
   id: string;
   board_id: string;
   column_id: string;
-  conversation_id: string | null;
   title: string;
   description: string | null;
   position: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  labels: string[];
-  assigned_to: string | null;
-  metadata: Record<string, unknown>;
   created_at: string;
-  updated_at: string;
 }
 
 export function useKanban(boardId: string | null) {
@@ -230,9 +225,12 @@ export function useKanban(boardId: string | null) {
       if (error) throw error;
 
       const createdCard = data as unknown as KanbanCard;
+      
+      // Optimistic update - add card to local state immediately
+      setCards(prev => [...prev, createdCard]);
 
-      // Log audit
-      await supabase.functions.invoke('kanban-audit', {
+      // Log audit (don't await to not block the UI)
+      supabase.functions.invoke('kanban-audit', {
         body: {
           board_id: boardId,
           card_id: createdCard.id,

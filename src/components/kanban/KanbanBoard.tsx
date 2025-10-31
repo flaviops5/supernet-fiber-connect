@@ -100,15 +100,11 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     if (filters.priority && card.priority !== filters.priority) {
       return false;
     }
-    if (filters.labels.length > 0) {
-      const hasLabel = filters.labels.some((label) => card.labels?.includes(label));
-      if (!hasLabel) return false;
-    }
     return true;
   });
 
-  // Get all unique labels
-  const allLabels = Array.from(new Set(cards.flatMap((card) => card.labels || [])));
+  // No labels available in current schema
+  const allLabels: string[] = [];
 
   if (loading) {
     return (
