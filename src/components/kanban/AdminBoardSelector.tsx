@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 interface Board {
   id: string;
-  name: string;
+  title: string;
   created_by: string;
   created_at: string;
   profiles?: {
@@ -63,7 +63,7 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
         .from('kanban_boards' as any)
         .select(`
           id,
-          name,
+          title,
           created_by,
           created_at,
           profiles:created_by (
@@ -106,7 +106,7 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
       const { data: newBoard, error } = await supabase
         .from('kanban_boards' as any)
         .insert({
-          name: boardName,
+          title: boardName,
           created_by: selectedUserId,
         })
         .select()
@@ -176,7 +176,7 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h4 className="font-medium">{board.name || 'Sem nome'}</h4>
+                          <h4 className="font-medium">{board.title || 'Sem nome'}</h4>
                           <p className="text-sm text-muted-foreground">
                             Usuário: {(board as any).profiles?.name || 'Desconhecido'}
                           </p>
