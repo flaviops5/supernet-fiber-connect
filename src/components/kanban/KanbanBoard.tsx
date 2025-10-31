@@ -136,7 +136,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
-      <div className="flex items-center gap-2 mb-6 pb-3 border-b overflow-x-hidden">
+      <div className="flex items-center gap-1.5 mb-6 pb-3 border-b overflow-x-hidden">
         {/* Search */}
         <div className="relative flex-shrink-0 w-48">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -149,29 +149,31 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
           />
         </div>
 
+        {/* View buttons */}
+        <Button variant="outline" size="sm" className="h-8 flex-shrink-0">
+          Quadro
+        </Button>
+        <Button variant="outline" size="sm" className="h-8 flex-shrink-0">
+          Dashboard
+        </Button>
+
         {/* Action buttons */}
         <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
           <Button variant="outline" size="sm" className="h-8">
-            <Filter className="h-3.5 w-3.5 mr-1.5" />
+            <Filter className="h-3.5 w-3.5 mr-1" />
             Filtros
           </Button>
           <Button variant="outline" size="sm" className="h-8">
-            <Settings className="h-3.5 w-3.5 mr-1.5" />
+            <Settings className="h-3.5 w-3.5 mr-1" />
             Config
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <Plus className="h-3.5 w-3.5 mr-1" />
             Coluna
           </Button>
           <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <Plus className="h-3.5 w-3.5 mr-1" />
             Card
-          </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
-            Automações
-          </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
-            Templates
           </Button>
         </div>
       </div>
