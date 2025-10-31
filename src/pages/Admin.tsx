@@ -29,6 +29,7 @@ import {
   FAQManagement,
   HeroManagement
 } from "@/components/admin";
+import AdminKanban from "@/pages/AdminKanban";
 
 const AdminCoverageManagement = () => <CoverageManagement />;
 
@@ -98,6 +99,7 @@ const Admin = () => {
             <main className="flex-1 p-6">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/kanban" element={<AdminKanban />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/add-user" element={<AddUserForm />} />
                 <Route path="/plans" element={<PlanManagement />} />

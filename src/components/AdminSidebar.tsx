@@ -45,6 +45,7 @@ import {
   Sparkles,
   Code2,
   FlaskConical,
+  Kanban,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +67,11 @@ const menuItems = [
     url: "/admin",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    title: "Kanban",
+    url: "/admin/kanban",
+    icon: Kanban,
   },
   {
     title: "Central de Atendimento",
