@@ -2753,31 +2753,46 @@ export type Database = {
       }
       kanban_cards: {
         Row: {
+          address: string | null
           board_id: string | null
           column_id: string
           created_at: string
+          custom_fields: Json | null
           description: string | null
           id: string
+          latitude: number | null
+          link_info: string | null
+          longitude: number | null
           position: number
           priority: string | null
           title: string
         }
         Insert: {
+          address?: string | null
           board_id?: string | null
           column_id: string
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           id?: string
+          latitude?: number | null
+          link_info?: string | null
+          longitude?: number | null
           position: number
           priority?: string | null
           title: string
         }
         Update: {
+          address?: string | null
           board_id?: string | null
           column_id?: string
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           id?: string
+          latitude?: number | null
+          link_info?: string | null
+          longitude?: number | null
           position?: number
           priority?: string | null
           title?: string

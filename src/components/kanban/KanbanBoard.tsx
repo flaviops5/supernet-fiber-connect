@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BoardSelector } from './BoardSelector';
 import { CreateBoardDialog } from './CreateBoardDialog';
+import { ImportExcelDialog } from './ImportExcelDialog';
 
 interface KanbanBoardProps {
   boardId: string;
@@ -53,6 +54,7 @@ export function KanbanBoard({
   const [showDashboard, setShowDashboard] = useState(false);
   const [showAutomations, setShowAutomations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showImportExcel, setShowImportExcel] = useState(false);
   const [filters, setFilters] = useState<KanbanFiltersState>({
     search: '',
     priority: null,
@@ -212,6 +214,10 @@ export function KanbanBoard({
           <Plus className="h-3.5 w-3.5 mr-1" />
           Coluna
         </Button>
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowImportExcel(true)}>
+          <FileText className="h-3.5 w-3.5 mr-1" />
+          Importar Excel
+        </Button>
         <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
           <Plus className="h-3.5 w-3.5 mr-1" />
           Card
@@ -293,5 +299,13 @@ export function KanbanBoard({
             onBoardCreated={onBoardChange}
           />
         )}
+
+        {/* Import Excel Dialog */}
+        <ImportExcelDialog
+          open={showImportExcel}
+          onClose={() => setShowImportExcel(false)}
+          boardId={boardId}
+          columns={columns}
+        />
       </div>;
 }

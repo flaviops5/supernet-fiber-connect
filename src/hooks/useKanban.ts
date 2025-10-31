@@ -34,6 +34,11 @@ export interface KanbanCard {
   position: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  link_info?: string | null;
+  custom_fields?: Record<string, any>;
 }
 
 export function useKanban(boardId: string | null) {

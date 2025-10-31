@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Clock, Trash2, Edit2, Send } from 'lucide-react';
+import { User, Clock, Trash2, Edit2, Send, MapPin, Link as LinkIcon } from 'lucide-react';
 import type { KanbanCard } from '@/hooks/useKanban';
 
 interface Comment {
@@ -150,6 +150,59 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                   {card.description || 'Sem descrição'}
                 </p>
               </div>
+
+              {/* Additional Fields from Excel Import */}
+              {(card.address || card.latitude || card.longitude || card.link_info) && (
+                <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
+                  {card.address && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Endereço
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{card.address}</p>
+                    </div>
+                  )}
+
+                  {(card.latitude && card.longitude) && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Coordenadas</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Lat: {card.latitude}, Long: {card.longitude}
+                        <a 
+                          href={`https://www.google.com/maps?q=${card.latitude},${card.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-primary hover:underline"
+                        >
+                          Ver no mapa
+                        </a>
+                      </p>
+                    </div>
+                  )}
+
+                  {card.link_info && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
+                        <LinkIcon className="h-3 w-3" />
+                        Informação de Link
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{card.link_info}</p>
+                    </div>
+                  )}
+
+                  {card.custom_fields && Object.keys(card.custom_fields).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">Dados Adicionais</h3>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        {card.custom_fields.uf && <p>UF: {card.custom_fields.uf}</p>}
+                        {card.custom_fields.municipio && <p>Município: {card.custom_fields.municipio}</p>}
+                        {card.custom_fields.data_ativacao && <p>Data Ativação: {card.custom_fields.data_ativacao}</p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <div>
