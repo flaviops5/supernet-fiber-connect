@@ -13,18 +13,29 @@ import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortabl
 import { useKanban } from '@/hooks/useKanban';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
+import { KanbanCardDetail } from './KanbanCardDetail';
+import { KanbanFilters, type KanbanFiltersState } from './KanbanFilters';
+import { KanbanDashboard } from './KanbanDashboard';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, BarChart } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface KanbanBoardProps {
   boardId: string;
 }
 
 export function KanbanBoard({ boardId }: KanbanBoardProps) {
-  const { board, columns, cards, loading, moveCard } = useKanban(boardId);
+  const { board, columns, cards, loading, moveCard, deleteCard, updateCard } = useKanban(boardId);
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
+  const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
+  const [filters, setFilters] = useState<KanbanFiltersState>({
+    search: '',
+    priority: null,
+    assignedTo: null,
+    labels: [],
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -73,6 +84,24 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     // Could add visual feedback here
   };
 
+  // Filter cards
+  const filteredCards = cards.filter((card) => {
+    if (filters.search && !card.title.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false;
+    }
+    if (filters.priority && card.priority !== filters.priority) {
+      return false;
+    }
+    if (filters.labels.length > 0) {
+      const hasLabel = filters.labels.some((label) => card.labels?.includes(label));
+      if (!hasLabel) return false;
+    }
+    return true;
+  });
+
+  // Get all unique labels
+  const allLabels = Array.from(new Set(cards.flatMap((card) => card.labels || [])));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -99,57 +128,90 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             <p className="text-muted-foreground mt-1">{board.description}</p>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurações
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Card
-          </Button>
-        </div>
       </div>
 
-      {/* Board */}
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-4 h-full pb-4">
-            <SortableContext
-              items={columns.map((col) => col.id)}
-              strategy={horizontalListSortingStrategy}
-            >
-              {columns.map((column) => (
-                <KanbanColumn
-                  key={column.id}
-                  column={column}
-                  cards={cards.filter((card) => card.column_id === column.id)}
-                />
-              ))}
-            </SortableContext>
-
-            {/* Add Column Button */}
-            <Card className="flex-shrink-0 w-80 h-fit p-4 border-dashed">
-              <Button variant="ghost" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Coluna
-              </Button>
-            </Card>
+      <Tabs defaultValue="board" className="flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="board">Board</TabsTrigger>
+            <TabsTrigger value="dashboard">
+              <BarChart className="h-4 w-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+          </TabsList>
+          <div className="flex gap-2">
+            <KanbanFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableLabels={allLabels}
+            />
+            <Button variant="outline" size="sm">
+              <Settings className="h-4 w-4 mr-2" />
+              Configurações
+            </Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Card
+            </Button>
           </div>
         </div>
 
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeCard ? (
-            <KanbanCard card={activeCard} isDragging />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+        <TabsContent value="board" className="flex-1 mt-0">
+          {/* Board */}
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex gap-4 h-full pb-4">
+                <SortableContext
+                  items={columns.map((col) => col.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {columns.map((column) => (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      cards={filteredCards.filter((card) => card.column_id === column.id)}
+                      onCardClick={setSelectedCard}
+                    />
+                  ))}
+                </SortableContext>
+
+                {/* Add Column Button */}
+                <Card className="flex-shrink-0 w-80 h-fit p-4 border-dashed">
+                  <Button variant="ghost" className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Coluna
+                  </Button>
+                </Card>
+              </div>
+            </div>
+
+            {/* Drag Overlay */}
+            <DragOverlay>
+              {activeCard ? (
+                <KanbanCard card={activeCard} isDragging />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </TabsContent>
+
+        <TabsContent value="dashboard" className="flex-1 mt-0">
+          <KanbanDashboard columns={columns} cards={cards} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Card Detail Modal */}
+      <KanbanCardDetail
+        card={selectedCard}
+        open={!!selectedCard}
+        onClose={() => setSelectedCard(null)}
+        onUpdate={updateCard}
+        onDelete={deleteCard}
+      />
     </div>
   );
 }

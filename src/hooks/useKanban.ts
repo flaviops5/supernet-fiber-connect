@@ -291,6 +291,30 @@ export function useKanban(boardId: string | null) {
     }
   };
 
+  // Update card
+  const updateCard = async (cardId: string, updates: Partial<KanbanCard>) => {
+    try {
+      const { error } = await supabase
+        .from('kanban_cards' as any)
+        .update(updates)
+        .eq('id', cardId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Card atualizado',
+        description: 'Card atualizado com sucesso',
+      });
+    } catch (error: any) {
+      console.error('Error updating card:', error);
+      toast({
+        title: 'Erro ao atualizar card',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     board,
     columns,
@@ -299,5 +323,6 @@ export function useKanban(boardId: string | null) {
     moveCard,
     createCard,
     deleteCard,
+    updateCard,
   };
 }

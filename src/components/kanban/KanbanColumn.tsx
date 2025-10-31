@@ -8,9 +8,10 @@ import type { KanbanColumn as KanbanColumnType, KanbanCard as KanbanCardType } f
 interface KanbanColumnProps {
   column: KanbanColumnType;
   cards: KanbanCardType[];
+  onCardClick?: (card: KanbanCardType) => void;
 }
 
-export function KanbanColumn({ column, cards }: KanbanColumnProps) {
+export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
@@ -51,7 +52,9 @@ export function KanbanColumn({ column, cards }: KanbanColumnProps) {
           strategy={verticalListSortingStrategy}
         >
           {sortedCards.map((card) => (
-            <KanbanCard key={card.id} card={card} />
+            <div key={card.id} onClick={() => onCardClick?.(card)}>
+              <KanbanCard card={card} />
+            </div>
           ))}
         </SortableContext>
         {cards.length === 0 && (

@@ -1,0 +1,275 @@
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { User, Clock, Trash2, Edit2, Send } from 'lucide-react';
+import type { KanbanCard } from '@/hooks/useKanban';
+
+interface Comment {
+  id: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface KanbanCardDetailProps {
+  card: KanbanCard | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdate: (cardId: string, updates: Partial<KanbanCard>) => void;
+  onDelete: (cardId: string) => void;
+}
+
+export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: KanbanCardDetailProps) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (card && open) {
+      loadComments();
+      subscribeToComments();
+    }
+  }, [card?.id, open]);
+
+  const loadComments = async () => {
+    if (!card) return;
+
+    const { data, error } = await supabase
+      .from('kanban_comments' as any)
+      .select('*')
+      .eq('card_id', card.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading comments:', error);
+      return;
+    }
+
+    setComments((data as any) || []);
+  };
+
+  const subscribeToComments = () => {
+    if (!card) return;
+
+    const channel = supabase
+      .channel(`kanban-card-${card.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'kanban_comments',
+          filter: `card_id=eq.${card.id}`,
+        },
+        () => {
+          loadComments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleAddComment = async () => {
+    if (!card || !newComment.trim()) return;
+
+    setLoading(true);
+    const { error } = await supabase
+      .from('kanban_comments' as any)
+      .insert({
+        card_id: card.id,
+        content: newComment,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+      });
+
+    if (error) {
+      toast({
+        title: 'Erro ao adicionar comentário',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      setNewComment('');
+      toast({
+        title: 'Comentário adicionado',
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from('kanban_comments' as any)
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      toast({
+        title: 'Erro ao excluir comentário',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const priorityColors = {
+    low: 'bg-blue-500',
+    medium: 'bg-yellow-500',
+    high: 'bg-orange-500',
+    urgent: 'bg-red-500',
+  };
+
+  if (!card) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{card.title}</DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="h-[70vh]">
+          <div className="space-y-6 pr-4">
+            {/* Card Info */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Descrição</h3>
+                <p className="text-sm text-muted-foreground">
+                  {card.description || 'Sem descrição'}
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Prioridade</h3>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${priorityColors[card.priority]}`} />
+                    <span className="text-sm capitalize">{card.priority}</span>
+                  </div>
+                </div>
+
+                {card.assigned_to && (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Atribuído a</h3>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Criado em</h3>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {new Date(card.created_at).toLocaleDateString('pt-BR')}
+                  </div>
+                </div>
+              </div>
+
+              {card.labels && card.labels.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Labels</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {card.labels.map((label, index) => (
+                      <Badge key={index} variant="secondary">
+                        {label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Comments Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Comentários</h3>
+
+              <div className="space-y-3">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="bg-muted p-3 rounded-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">
+                            <User className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(comment.created_at).toLocaleString('pt-BR')}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteComment(comment.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
+                  </div>
+                ))}
+
+                {comments.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum comentário ainda
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Adicionar comentário..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                />
+                <Button
+                  onClick={handleAddComment}
+                  disabled={loading || !newComment.trim()}
+                  size="sm"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Actions */}
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => onDelete(card.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir Card
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
