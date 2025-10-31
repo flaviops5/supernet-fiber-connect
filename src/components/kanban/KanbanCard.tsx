@@ -9,9 +9,10 @@ import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 interface KanbanCardProps {
   card: KanbanCardType;
   isDragging?: boolean;
+  onCardClick?: (card: KanbanCardType) => void;
 }
 
-export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
+export function KanbanCard({ card, isDragging = false, onCardClick }: KanbanCardProps) {
   const {
     attributes,
     listeners,
@@ -27,6 +28,14 @@ export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isSortableDragging ? 0.5 : 1,
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Only trigger click if not dragging
+    if (!isSortableDragging && onCardClick) {
+      e.stopPropagation();
+      onCardClick(card);
+    }
   };
 
   const priorityColors = {
@@ -47,21 +56,22 @@ export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
     <Card
       ref={setNodeRef}
       style={style}
-      className={`cursor-grab active:cursor-grabbing ${
+      data-testid={`card-${card.id}`}
+      onClick={handleClick}
+      className={`cursor-grab active:cursor-grabbing bg-card hover:shadow-md transition-shadow ${
         isDragging ? 'shadow-lg rotate-3' : ''
       }`}
       {...attributes}
+      {...listeners}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <CardTitle className="text-sm font-medium line-clamp-2">
+            <CardTitle className="text-sm font-medium line-clamp-2 text-foreground">
               {card.title}
             </CardTitle>
           </div>
-          <div {...listeners} className="cursor-grab active:cursor-grabbing">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
+          <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -71,15 +81,12 @@ export function KanbanCard({ card, isDragging = false }: KanbanCardProps) {
           </p>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between">
-          {/* Priority */}
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${priorityColors[card.priority]}`} />
-            <span className="text-xs text-muted-foreground">
-              {priorityLabels[card.priority]}
-            </span>
-          </div>
+        {/* Priority Badge */}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            <div className={`w-2 h-2 rounded-full ${priorityColors[card.priority]} mr-1`} />
+            {priorityLabels[card.priority]}
+          </Badge>
         </div>
       </CardContent>
     </Card>

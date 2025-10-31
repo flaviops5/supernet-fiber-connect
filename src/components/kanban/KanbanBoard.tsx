@@ -63,29 +63,36 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveCard(null);
 
-    if (!over) {
-      setActiveCard(null);
+    if (!over || active.id === over.id) {
       return;
     }
 
-    const activeCard = cards.find((c) => c.id === active.id);
-    if (!activeCard) {
-      setActiveCard(null);
+    const draggedCard = cards.find((c) => c.id === active.id);
+    if (!draggedCard) {
       return;
     }
 
     // Check if dropped over a column
-    const targetColumn = columns.find((col) => col.id === over.id);
-    if (targetColumn) {
-      // Calculate new position (add to end of column)
-      const cardsInColumn = cards.filter((c) => c.column_id === targetColumn.id);
-      const newPosition = cardsInColumn.length;
-      
-      moveCard(activeCard.id, targetColumn.id, newPosition);
+    let targetColumnId = over.id as string;
+    
+    // If dropped over another card, get that card's column
+    const overCard = cards.find((c) => c.id === over.id);
+    if (overCard) {
+      targetColumnId = overCard.column_id;
     }
 
-    setActiveCard(null);
+    const targetColumn = columns.find((col) => col.id === targetColumnId);
+    if (!targetColumn) {
+      return;
+    }
+
+    // Calculate new position (add to end of column)
+    const cardsInColumn = cards.filter((c) => c.column_id === targetColumn.id);
+    const newPosition = cardsInColumn.length;
+    
+    moveCard(draggedCard.id, targetColumn.id, newPosition);
   };
 
   const handleDragOver = (event: DragOverEvent) => {

@@ -46,15 +46,13 @@ export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) 
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-2">
+      <CardContent className="flex-1 overflow-y-auto space-y-2" data-column-id={column.id}>
         <SortableContext
           items={sortedCards.map((card) => card.id)}
           strategy={verticalListSortingStrategy}
         >
           {sortedCards.map((card) => (
-            <div key={card.id} onClick={() => onCardClick?.(card)}>
-              <KanbanCard card={card} />
-            </div>
+            <KanbanCard key={card.id} card={card} onCardClick={onCardClick} />
           ))}
         </SortableContext>
         {cards.length === 0 && (
