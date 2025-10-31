@@ -50,7 +50,12 @@ const AdminKanban = () => {
         <span>Voltar ao Menu</span>
       </button>
 
-      {selectedBoardId && <KanbanBoard boardId={selectedBoardId} />}
+      {selectedBoardId && (
+        <KanbanBoard 
+          boardId={selectedBoardId} 
+          onBoardChange={setSelectedBoardId}
+        />
+      )}
     </div>
   );
 };

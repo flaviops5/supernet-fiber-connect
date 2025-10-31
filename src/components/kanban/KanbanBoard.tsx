@@ -17,8 +17,10 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AdminBoardSelector } from './AdminBoardSelector';
 interface KanbanBoardProps {
   boardId: string;
+  onBoardChange?: (boardId: string) => void;
 }
 interface KanbanFiltersState {
   search: string;
@@ -27,7 +29,8 @@ interface KanbanFiltersState {
   labels: string[];
 }
 export function KanbanBoard({
-  boardId
+  boardId,
+  onBoardChange
 }: KanbanBoardProps) {
   const {
     board,
@@ -162,6 +165,14 @@ export function KanbanBoard({
   return <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
       <div className="flex items-center gap-1 mb-6 pb-3 border-b overflow-x-hidden">
+        {/* Admin Board Selector */}
+        {onBoardChange && (
+          <AdminBoardSelector 
+            currentBoardId={boardId} 
+            onBoardChange={onBoardChange}
+          />
+        )}
+
         {/* Search */}
         <div className="relative flex-shrink-0 w-48">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
