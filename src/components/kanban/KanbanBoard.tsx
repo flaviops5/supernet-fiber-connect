@@ -176,7 +176,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             onDragEnd={handleDragEnd}
           >
             <div className="flex-1 overflow-x-auto bg-muted/20 rounded-lg p-4">
-              <div className="flex gap-6 h-full pb-4">
+              <div className="flex gap-6 h-full pb-4" role="list" aria-label="Kanban columns">
                 <SortableContext
                   items={columns.map((col) => col.id)}
                   strategy={horizontalListSortingStrategy}

@@ -165,16 +165,24 @@ export function useKanban(boardId: string | null) {
 
       const oldColumnId = card.column_id;
 
-      // Update card
+      // Optimistic update
+      const prevCards = cards;
+      setCards(prev => prev.map(c => c.id === cardId ? { ...c, column_id: newColumnId, position: newPosition } : c));
+
+      // Update card on server
       const { error } = await supabase
         .from('kanban_cards' as any)
         .update({
           column_id: newColumnId,
-          position: newPosition.toString(),
+          position: newPosition,
         })
         .eq('id', cardId);
 
-      if (error) throw error;
+      if (error) {
+        // Revert on error
+        setCards(prevCards);
+        throw error;
+      }
 
       // Log audit
       await supabase.functions.invoke('kanban-audit', {

@@ -1,9 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { GripVertical, AlertCircle, Clock, User } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
+import type { MouseEvent } from 'react';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 
 interface KanbanCardProps {
@@ -30,7 +29,7 @@ export function KanbanCard({ card, isDragging = false, onCardClick }: KanbanCard
     opacity: isSortableDragging ? 0.5 : 1,
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent) => {
     // Only trigger click if not dragging
     if (!isSortableDragging && onCardClick) {
       e.stopPropagation();
@@ -69,7 +68,14 @@ export function KanbanCard({ card, isDragging = false, onCardClick }: KanbanCard
     },
   };
 
-  const config = priorityConfig[card.priority];
+  const safePriority = (card.priority ?? 'medium') as 'low' | 'medium' | 'high' | 'urgent';
+  const config = priorityConfig[safePriority] ?? {
+    bg: 'bg-muted/20',
+    border: 'border-border',
+    text: 'text-muted-foreground',
+    dot: 'bg-muted-foreground',
+    label: 'Sem prioridade',
+  };
 
   return (
     <Card
