@@ -17,6 +17,8 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BoardSelector } from './BoardSelector';
+import { CreateBoardDialog } from './CreateBoardDialog';
 
 interface KanbanBoardProps {
   boardId: string;
@@ -40,12 +42,14 @@ export function KanbanBoard({
     moveCard,
     deleteCard,
     updateCard,
-    createCard
+    createCard,
+    deleteColumn
   } = useKanban(boardId);
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
   const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
   const [showCreateColumn, setShowCreateColumn] = useState(false);
   const [showCreateCard, setShowCreateCard] = useState(false);
+  const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showAutomations, setShowAutomations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -55,8 +59,8 @@ export function KanbanBoard({
     assignedTo: null,
     labels: []
   });
-  const handleCreateCard = async (columnId: string, title: string, description?: string) => {
-    await createCard(columnId, title, description);
+  const handleCreateCard = async (columnId: string, title: string, description?: string, priority?: 'low' | 'medium' | 'high' | 'urgent') => {
+    await createCard(columnId, title, description, priority);
   };
 
   const handleTemplateSelect = async (template: any) => {
@@ -165,6 +169,14 @@ export function KanbanBoard({
   return <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
       <div className="flex items-center gap-1 mb-6 pb-3 border-b overflow-x-hidden">
+        {/* Board Selector */}
+        {onBoardChange && (
+          <BoardSelector 
+            currentBoardId={boardId} 
+            onBoardChange={onBoardChange}
+            onCreateBoard={() => setShowCreateBoard(true)}
+          />
+        )}
 
         {/* Search */}
         <div className="relative flex-shrink-0 w-48">
@@ -212,7 +224,7 @@ export function KanbanBoard({
           <div className="flex-1 overflow-x-auto bg-muted/20 rounded-lg p-4">
               <div className="flex gap-6 h-full pb-4" role="list" aria-label="Kanban columns">
                 <SortableContext items={columns.map(col => col.id)} strategy={horizontalListSortingStrategy}>
-                  {columns.map(column => <KanbanColumn key={column.id} column={column} cards={filteredCards.filter(card => card.column_id === column.id)} onCardClick={setSelectedCard} />)}
+                  {columns.map(column => <KanbanColumn key={column.id} column={column} cards={filteredCards.filter(card => card.column_id === column.id)} onCardClick={setSelectedCard} onDeleteColumn={deleteColumn} />)}
                 </SortableContext>
 
                 {/* Add Column Button */}
@@ -272,5 +284,14 @@ export function KanbanBoard({
             <KanbanTemplates onSelectTemplate={handleTemplateSelect} />
           </DialogContent>
         </Dialog>
+
+        {/* Create Board Dialog */}
+        {onBoardChange && (
+          <CreateBoardDialog 
+            open={showCreateBoard} 
+            onClose={() => setShowCreateBoard(false)}
+            onBoardCreated={onBoardChange}
+          />
+        )}
       </div>;
 }

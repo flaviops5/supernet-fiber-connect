@@ -213,7 +213,8 @@ export function useKanban(boardId: string | null) {
   const createCard = async (
     columnId: string,
     title: string,
-    description?: string
+    description?: string,
+    priority?: 'low' | 'medium' | 'high' | 'urgent'
   ) => {
     try {
       if (!boardId) throw new Error('No board selected');
@@ -225,6 +226,7 @@ export function useKanban(boardId: string | null) {
           column_id: columnId,
           title,
           description,
+          priority: priority || 'medium',
           position: 0,
         } as any)
         .select()
@@ -321,6 +323,41 @@ export function useKanban(boardId: string | null) {
     }
   };
 
+  // Delete column
+  const deleteColumn = async (columnId: string) => {
+    try {
+      // Check if column has cards
+      const cardsInColumn = cards.filter(c => c.column_id === columnId);
+      if (cardsInColumn.length > 0) {
+        toast({
+          title: 'Não é possível deletar',
+          description: 'A coluna possui cards. Mova ou delete os cards primeiro.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('kanban_columns' as any)
+        .delete()
+        .eq('id', columnId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Coluna excluída',
+        description: 'Coluna excluída com sucesso',
+      });
+    } catch (error: any) {
+      console.error('Error deleting column:', error);
+      toast({
+        title: 'Erro ao excluir coluna',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     board,
     columns,
@@ -330,5 +367,6 @@ export function useKanban(boardId: string | null) {
     createCard,
     deleteCard,
     updateCard,
+    deleteColumn,
   };
 }

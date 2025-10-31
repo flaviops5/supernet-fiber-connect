@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Clock, Trash2, Edit2, Send } from 'lucide-react';
@@ -153,10 +154,20 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
               <div className="flex gap-4">
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Prioridade</h3>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${priorityColors[card.priority]}`} />
-                    <span className="text-sm capitalize">{card.priority}</span>
-                  </div>
+                  <Select 
+                    value={card.priority} 
+                    onValueChange={(value: any) => onUpdate(card.id, { priority: value })}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">🔵 Baixa</SelectItem>
+                      <SelectItem value="medium">🟡 Média</SelectItem>
+                      <SelectItem value="high">🟠 Alta</SelectItem>
+                      <SelectItem value="urgent">🔴 Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>

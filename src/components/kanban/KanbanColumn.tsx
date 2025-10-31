@@ -3,15 +3,18 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { KanbanCard } from './KanbanCard';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import type { KanbanColumn as KanbanColumnType, KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 
 interface KanbanColumnProps {
   column: KanbanColumnType;
   cards: KanbanCardType[];
   onCardClick?: (card: KanbanCardType) => void;
+  onDeleteColumn?: (columnId: string) => void;
 }
 
-export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) {
+export function KanbanColumn({ column, cards, onCardClick, onDeleteColumn }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
@@ -39,14 +42,26 @@ export function KanbanColumn({ column, cards, onCardClick }: KanbanColumnProps) 
               {cards.length}
             </Badge>
           </div>
-          {column.limit_cards && (
-            <Badge
-              variant={cards.length >= column.limit_cards ? 'destructive' : 'outline'}
-              className="font-medium"
-            >
-              {cards.length}/{column.limit_cards}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {column.limit_cards && (
+              <Badge
+                variant={cards.length >= column.limit_cards ? 'destructive' : 'outline'}
+                className="font-medium"
+              >
+                {cards.length}/{column.limit_cards}
+              </Badge>
+            )}
+            {onDeleteColumn && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={() => onDeleteColumn(column.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto space-y-3 pt-4 pb-4" data-column-id={column.id}>

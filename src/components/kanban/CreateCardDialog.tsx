@@ -11,13 +11,14 @@ interface CreateCardDialogProps {
   open: boolean;
   onClose: () => void;
   columns: KanbanColumn[];
-  onCreateCard: (columnId: string, title: string, description?: string) => Promise<void>;
+  onCreateCard: (columnId: string, title: string, description?: string, priority?: 'low' | 'medium' | 'high' | 'urgent') => Promise<void>;
 }
 
 export function CreateCardDialog({ open, onClose, columns, onCreateCard }: CreateCardDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [columnId, setColumnId] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,10 +27,11 @@ export function CreateCardDialog({ open, onClose, columns, onCreateCard }: Creat
 
     setLoading(true);
     try {
-      await onCreateCard(columnId, title.trim(), description.trim() || undefined);
+      await onCreateCard(columnId, title.trim(), description.trim() || undefined, priority);
       setTitle('');
       setDescription('');
       setColumnId('');
+      setPriority('medium');
       onClose();
     } catch (error) {
       // Error handled by useKanban
@@ -77,6 +79,20 @@ export function CreateCardDialog({ open, onClose, columns, onCreateCard }: Creat
                     {column.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="card-priority">Prioridade</Label>
+            <Select value={priority} onValueChange={(value: any) => setPriority(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">🔵 Baixa</SelectItem>
+                <SelectItem value="medium">🟡 Média</SelectItem>
+                <SelectItem value="high">🟠 Alta</SelectItem>
+                <SelectItem value="urgent">🔴 Urgente</SelectItem>
               </SelectContent>
             </Select>
           </div>
