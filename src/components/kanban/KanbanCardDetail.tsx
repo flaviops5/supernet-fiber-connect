@@ -131,6 +131,15 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
     urgent: 'bg-red-500',
   };
 
+  // Helper to detect and format URL-like values
+  const isLikelyUrl = (val?: string | null) => {
+    if (!val) return false;
+    const v = val.trim();
+    return /^https?:\/\//i.test(v) || /^www\./i.test(v) || /^[a-z0-9.-]+\.[a-z]{2,}/i.test(v);
+  };
+
+  const formatUrl = (v: string) => (/^https?:\/\//i.test(v) ? v : `https://${v.trim()}`);
+  
   if (!card) return null;
 
   return (
@@ -164,37 +173,23 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                     </div>
                   )}
 
-                  {card.link_info && (
+                  {isLikelyUrl(card.link_info) && (
                     <div>
                       <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
                         <LinkIcon className="h-3 w-3" />
                         Link
                       </h3>
-                      {card.link_info.includes('http') ? (
-                        <a 
-                          href={card.link_info}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
-                        >
-                          {card.link_info}
-                        </a>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">{card.link_info}</p>
-                      )}
+                      <a 
+                        href={formatUrl(card.link_info!)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        {card.link_info}
+                      </a>
                     </div>
                   )}
 
-                  {card.custom_fields && Object.keys(card.custom_fields).length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-1">Dados Adicionais</h3>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        {card.custom_fields.uf && <p>UF: {card.custom_fields.uf}</p>}
-                        {card.custom_fields.municipio && <p>Município: {card.custom_fields.municipio}</p>}
-                        {card.custom_fields.data_ativacao && <p>Data Ativação: {card.custom_fields.data_ativacao}</p>}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
