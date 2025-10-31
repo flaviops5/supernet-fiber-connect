@@ -2644,6 +2644,53 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_automations: {
+        Row: {
+          action_config: Json
+          action_type: string
+          board_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_config?: Json
+          action_type: string
+          board_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          board_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          trigger_config?: Json
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_automations_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_board_templates: {
         Row: {
           category: Database["public"]["Enums"]["kanban_template_category"]
@@ -2703,6 +2750,7 @@ export type Database = {
       }
       kanban_cards: {
         Row: {
+          board_id: string | null
           column_id: string
           created_at: string
           description: string | null
@@ -2712,6 +2760,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          board_id?: string | null
           column_id: string
           created_at?: string
           description?: string | null
@@ -2721,6 +2770,7 @@ export type Database = {
           title: string
         }
         Update: {
+          board_id?: string | null
           column_id?: string
           created_at?: string
           description?: string | null
@@ -2730,6 +2780,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "kanban_cards_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kanban_cards_column_id_fkey"
             columns: ["column_id"]
@@ -2745,24 +2802,27 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          limit_cards: number | null
+          name: string
           position: number
-          title: string
         }
         Insert: {
           board_id: string
           color?: string | null
           created_at?: string
           id?: string
+          limit_cards?: number | null
+          name: string
           position: number
-          title: string
         }
         Update: {
           board_id?: string
           color?: string | null
           created_at?: string
           id?: string
+          limit_cards?: number | null
+          name?: string
           position?: number
-          title?: string
         }
         Relationships: [
           {

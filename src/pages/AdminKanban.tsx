@@ -4,11 +4,10 @@ import { KanbanDashboard } from "@/components/kanban/KanbanDashboard";
 import { KanbanAutomations } from "@/components/kanban/KanbanAutomations";
 import { KanbanTemplates } from "@/components/kanban/KanbanTemplates";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageHeader } from "@/components/admin/PageHeader";
 import { useKanban } from "@/hooks/useKanban";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BackButton } from "@/components/BackButton";
+import { ArrowLeft } from "lucide-react";
 
 const AdminKanban = () => {
   const [selectedBoardId, setSelectedBoardId] = useState<string>("");
@@ -64,12 +63,14 @@ const AdminKanban = () => {
 
       if (newBoard && template.structure) {
         // Criar colunas do template
-        const columns = template.structure as any;
-        for (const col of columns) {
+        const columns = (template.structure as any).columns || [];
+        for (let i = 0; i < columns.length; i++) {
+          const col = columns[i];
           await supabase.from('kanban_columns' as any).insert({
             board_id: (newBoard as any).id,
-            title: col.title,
-            position: col.position,
+            name: col.title,
+            color: col.color || '#3b82f6',
+            position: i,
           });
         }
         
@@ -81,11 +82,13 @@ const AdminKanban = () => {
 
   return (
     <div className="space-y-6">
-      <BackButton />
-      <PageHeader
-        title="Kanban"
-        description="Gerencie projetos e tarefas com quadros Kanban"
-      />
+      <button 
+        onClick={() => window.location.href = '/admin'}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>Voltar ao Menu</span>
+      </button>
 
       <Tabs defaultValue="board" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
