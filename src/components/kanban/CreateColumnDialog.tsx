@@ -43,6 +43,9 @@ export function CreateColumnDialog({ open, onClose, boardId }: CreateColumnDialo
       setName('');
       setColor('#3b82f6');
       onClose();
+      
+      // Force page reload to show the new column
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: 'Erro ao criar coluna',
