@@ -150,22 +150,28 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5 ml-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
           <Button variant="outline" size="sm" className="h-8">
-            <Filter className="h-3.5 w-3.5 mr-1" />
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
             Filtros
           </Button>
           <Button variant="outline" size="sm" className="h-8">
-            <Settings className="h-3.5 w-3.5 mr-1" />
+            <Settings className="h-3.5 w-3.5 mr-1.5" />
             Config
           </Button>
           <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
             Coluna
           </Button>
           <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
             Card
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
+            Automações
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
+            Templates
           </Button>
         </div>
       </div>
