@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AdminBoardSelector } from './AdminBoardSelector';
+
 interface KanbanBoardProps {
   boardId: string;
   onBoardChange?: (boardId: string) => void;
@@ -165,13 +165,6 @@ export function KanbanBoard({
   return <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
       <div className="flex items-center gap-1 mb-6 pb-3 border-b overflow-x-hidden">
-        {/* Admin Board Selector */}
-        {onBoardChange && (
-          <AdminBoardSelector 
-            currentBoardId={boardId} 
-            onBoardChange={onBoardChange}
-          />
-        )}
 
         {/* Search */}
         <div className="relative flex-shrink-0 w-48">
