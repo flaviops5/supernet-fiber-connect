@@ -14,18 +14,22 @@ import { useKanban } from '@/hooks/useKanban';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { KanbanCardDetail } from './KanbanCardDetail';
-import { KanbanFilters, type KanbanFiltersState } from './KanbanFilters';
-import { KanbanDashboard } from './KanbanDashboard';
 import { CreateColumnDialog } from './CreateColumnDialog';
 import { CreateCardDialog } from './CreateCardDialog';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, BarChart } from 'lucide-react';
+import { Plus, Settings, Search, Filter } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface KanbanBoardProps {
   boardId: string;
+}
+
+interface KanbanFiltersState {
+  search: string;
+  priority: string | null;
+  assignedTo: string | null;
+  labels: string[];
 }
 
 export function KanbanBoard({ boardId }: KanbanBoardProps) {
@@ -131,51 +135,75 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">{board.name}</h1>
-          {board.description && (
-            <p className="text-muted-foreground mt-1">{board.description}</p>
-          )}
+      {/* Header com menu horizontal */}
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mr-4">
+          <Button
+            variant={filters.search === '' ? 'ghost' : 'outline'}
+            size="sm"
+            className="font-medium"
+          >
+            Quadro
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="font-medium text-muted-foreground"
+            onClick={() => {/* Switch to dashboard */}}
+          >
+            Dashboard
+          </Button>
+        </div>
+
+        {/* Search */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar cards"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            className="w-full pl-9 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 ml-auto">
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtros
+          </Button>
+          <Button variant="outline" size="sm">
+            <Settings className="h-4 w-4 mr-2" />
+            Configurações
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowCreateColumn(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Coluna
+          </Button>
+          <Button size="sm" onClick={() => setShowCreateCard(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Card
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            Automações
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            Templates
+          </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="board" className="flex-1 flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="board">Board</TabsTrigger>
-            <TabsTrigger value="dashboard">
-              <BarChart className="h-4 w-4 mr-2" />
-              Dashboard
-            </TabsTrigger>
-          </TabsList>
-          <div className="flex gap-2">
-            <KanbanFilters
-              filters={filters}
-              onFiltersChange={setFilters}
-              availableLabels={allLabels}
-            />
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Configurações
-            </Button>
-            <Button size="sm" onClick={() => setShowCreateCard(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Card
-            </Button>
-          </div>
-        </div>
-
-        <TabsContent value="board" className="flex-1 mt-0">
-          {/* Board */}
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex-1 overflow-x-auto bg-muted/20 rounded-lg p-4">
+      {/* Board */}
+      <div className="flex-1 flex flex-col">
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex-1 overflow-x-auto bg-muted/20 rounded-lg p-4">
               <div className="flex gap-6 h-full pb-4" role="list" aria-label="Kanban columns">
                 <SortableContext
                   items={columns.map((col) => col.id)}
@@ -214,36 +242,31 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
               ) : null}
             </DragOverlay>
           </DndContext>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="dashboard" className="flex-1 mt-0">
-          <KanbanDashboard columns={columns} cards={cards} />
-        </TabsContent>
-      </Tabs>
+        {/* Card Detail Modal */}
+        <KanbanCardDetail
+          card={selectedCard}
+          open={!!selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onUpdate={updateCard}
+          onDelete={deleteCard}
+        />
 
-      {/* Card Detail Modal */}
-      <KanbanCardDetail
-        card={selectedCard}
-        open={!!selectedCard}
-        onClose={() => setSelectedCard(null)}
-        onUpdate={updateCard}
-        onDelete={deleteCard}
-      />
+        {/* Create Column Dialog */}
+        <CreateColumnDialog
+          open={showCreateColumn}
+          onClose={() => setShowCreateColumn(false)}
+          boardId={boardId}
+        />
 
-      {/* Create Column Dialog */}
-      <CreateColumnDialog
-        open={showCreateColumn}
-        onClose={() => setShowCreateColumn(false)}
-        boardId={boardId}
-      />
-
-      {/* Create Card Dialog */}
-      <CreateCardDialog
-        open={showCreateCard}
-        onClose={() => setShowCreateCard(false)}
-        columns={columns}
-        onCreateCard={handleCreateCard}
-      />
-    </div>
-  );
-}
+        {/* Create Card Dialog */}
+        <CreateCardDialog
+          open={showCreateCard}
+          onClose={() => setShowCreateCard(false)}
+          columns={columns}
+          onCreateCard={handleCreateCard}
+        />
+      </div>
+    );
+  }
