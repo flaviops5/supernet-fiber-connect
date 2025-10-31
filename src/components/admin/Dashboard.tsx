@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, CreditCard, MapPin, BarChart3, MessageSquare, Monitor } from "lucide-react";
+import { Users, CreditCard, MapPin, BarChart3, MessageSquare, Monitor, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { MassOutageAlertCard } from "@/components/MassOutageAlertCard";
-import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
-import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
-import { DiagnosticoClienteCompleto } from "@/components/DiagnosticoClienteCompleto";
-import { AutoSendOverdueInvoices } from "@/components/AutoSendOverdueInvoices";
-import { TestContractFlow } from "@/components/TestContractFlow";
 import { logger } from "@/lib/logger";
 
 export default function Dashboard() {
@@ -55,12 +49,6 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Visão geral do sistema administrativo</p>
       </div>
 
-      <MassOutageAlertCard />
-      <WhatsAppApiTester />
-      <TestClientFinancialStatus />
-      <DiagnosticoClienteCompleto />
-      <AutoSendOverdueInvoices />
-
       <Card>
         <CardHeader>
           <CardTitle>Ações Rápidas</CardTitle>
@@ -106,6 +94,19 @@ export default function Dashboard() {
               </div>
             </div>
           </Button>
+          <Button
+            variant="outline"
+            className="justify-start h-auto py-4"
+            onClick={() => window.location.href = '/admin/testes'}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FlaskConical className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Central de Testes</div>
+                <div className="text-xs text-muted-foreground">Testes e validações</div>
+              </div>
+            </div>
+          </Button>
         </CardContent>
       </Card>
 
@@ -147,19 +148,6 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.testimonials}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <TestContractFlow />
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Atividades Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Nenhuma atividade recente</p>
           </CardContent>
         </Card>
       </div>

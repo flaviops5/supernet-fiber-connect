@@ -19,6 +19,9 @@ import { TestTextReplyContext } from "@/components/tests/TestTextReplyContext";
 import { TestContractFlow } from "@/components/TestContractFlow";
 import { TestClientFinancialStatus } from "@/components/TestClientFinancialStatus";
 import { SendPaymentTest } from "@/components/SendPaymentTest";
+import { DiagnosticoClienteCompleto } from "@/components/DiagnosticoClienteCompleto";
+import { AutoSendOverdueInvoices } from "@/components/AutoSendOverdueInvoices";
+import { MassOutageAlertCard } from "@/components/MassOutageAlertCard";
 import { IXCConnectionTester } from "@/components/IXCConnectionTester";
 import { IXCFunctionsTester } from "@/components/IXCFunctionsTester";
 import { IXCEndpointTester } from "@/components/IXCEndpointTester";
@@ -148,6 +151,56 @@ const AdminTestes = () => {
               </CardHeader>
               <CardContent>
                 <TestCPFValidation />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Alertas e Diagnósticos */}
+        <AccordionItem value="alerts" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold">Alertas e Diagnósticos</div>
+                <div className="text-sm text-muted-foreground">Alertas massivos e diagnósticos de clientes</div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Alerta de Queda Massiva</CardTitle>
+                <CardDescription>
+                  Gerenciamento de alertas de queda massiva
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MassOutageAlertCard />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Diagnóstico Completo do Cliente</CardTitle>
+                <CardDescription>
+                  Diagnóstico técnico e financeiro completo de clientes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DiagnosticoClienteCompleto />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Envio Automático de Faturas Vencidas</CardTitle>
+                <CardDescription>
+                  Automação de envio de faturas vencidas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AutoSendOverdueInvoices />
               </CardContent>
             </Card>
           </AccordionContent>
