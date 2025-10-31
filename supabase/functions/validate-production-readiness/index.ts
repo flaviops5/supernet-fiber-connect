@@ -1,8 +1,10 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createProtectedHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 /**
  * Validate Production Readiness
  * Verifica se todas as configurações necessárias estão prontas para produção
+ * REQUER AUTENTICAÇÃO ADMIN
  */
 
 interface ValidationResult {
@@ -13,13 +15,26 @@ interface ValidationResult {
   details?: string;
 }
 
-Deno.serve(createPublicHandler('validate-production-readiness', async (req, { supabase }) => {
-  console.log('🔍 Running production readiness validation...');
+Deno.serve(createProtectedHandler('validate-production-readiness', async (req, { supabase, user }) => {
+  const logger = createLogger('validate-production-readiness', req.headers.get('x-request-id') || undefined);
+  
+  // Verificar se é admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  
+  if (profile?.role !== 'admin') {
+    logger.warn('Tentativa de acesso não autorizado', { user_id: user.id });
+    throw new Error('Acesso negado: apenas administradores podem executar esta validação');
+  }
+  logger.info('Executando validação de prontidão para produção');
 
   const results: ValidationResult[] = [];
 
   // 1. Validar Secrets/Environment Variables
-  console.log('📋 Validando variáveis de ambiente...');
+  logger.info('Validando variáveis de ambiente');
   
   const requiredEnvVars = [
     'IXC_BASE_URL',
@@ -52,7 +67,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 2. Testar conectividade IXC
-  console.log('🔌 Testando conectividade IXC...');
+  logger.info('Testando conectividade IXC');
   try {
     const ixcUrl = Deno.env.get('IXC_BASE_URL');
     const ixcUser = Deno.env.get('IXC_USER_ID');
@@ -95,7 +110,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 3. Testar Evolution API
-  console.log('📱 Testando Evolution API...');
+  logger.info('Testando Evolution API');
   try {
     const evolutionUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
     const evolutionKey = Deno.env.get('EVOLUTION_API_KEY');
@@ -137,7 +152,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 4. Verificar tabelas críticas
-  console.log('🗄️ Verificando estrutura do banco...');
+  logger.info('Verificando estrutura do banco');
   const criticalTables = [
     'conversations',
     'messages',
@@ -186,7 +201,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 5. Verificar Edge Functions críticas
-  console.log('⚡ Verificando Edge Functions...');
+  logger.info('Verificando Edge Functions');
   const criticalFunctions = [
     'routing-agent',
     'support-tech-agent',
@@ -209,7 +224,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 6. Verificar alertas ativos
-  console.log('🚨 Verificando alertas críticos...');
+  logger.info('Verificando alertas críticos');
   const { data: recentAlerts } = await supabase
     .from('alert_history')
     .select('*')
@@ -235,7 +250,7 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
   }
 
   // 7. Verificar backup recente
-  console.log('💾 Verificando backups...');
+  logger.info('Verificando backups');
   // Como não temos acesso direto aos backups do Supabase, apenas lembramos
   results.push({
     category: 'Backup',
@@ -259,7 +274,11 @@ Deno.serve(createPublicHandler('validate-production-readiness', async (req, { su
       ? 'not_ready' 
       : 'ready_with_warnings';
 
-  console.log(`✅ Validação completa: ${passedChecks}/${totalChecks} checks OK (Score: ${score}%)`);
+  logger.info('Validação completa', { 
+    passed: passedChecks, 
+    total: totalChecks, 
+    score 
+  });
 
   return {
     status: readinessStatus,

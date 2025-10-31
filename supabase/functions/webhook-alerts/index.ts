@@ -1,8 +1,10 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createProtectedHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/logger.ts';
 
 /**
  * Webhook Alerts - Envia alertas críticos para webhook externo
  * Processa alertas do sistema e notifica via HTTP POST
+ * REQUER AUTENTICAÇÃO
  */
 
 interface AlertPayload {
@@ -13,8 +15,9 @@ interface AlertPayload {
   timestamp: string;
 }
 
-Deno.serve(createPublicHandler('webhook-alerts', async (req, { supabase }) => {
-  console.log('🚨 Processing webhook alerts...');
+Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user }) => {
+  const logger = createLogger('webhook-alerts', req.headers.get('x-request-id') || undefined);
+  logger.info('Processando alertas webhook', { user_id: user.id });
 
   // Buscar configuração do webhook
   const { data: settings } = await supabase
@@ -23,7 +26,7 @@ Deno.serve(createPublicHandler('webhook-alerts', async (req, { supabase }) => {
     .single();
 
   if (!settings?.webhook_url) {
-    console.log('⚠️ Webhook URL não configurada, pulando envio');
+    logger.warn('Webhook URL não configurada');
     return { success: true, message: 'Webhook não configurado', alerts_sent: 0 };
   }
 
@@ -43,11 +46,11 @@ Deno.serve(createPublicHandler('webhook-alerts', async (req, { supabase }) => {
   }
 
   if (!alerts || alerts.length === 0) {
-    console.log('✅ Nenhum alerta pendente para enviar');
+    logger.info('Nenhum alerta pendente para enviar');
     return { success: true, message: 'Nenhum alerta pendente', alerts_sent: 0 };
   }
 
-  console.log(`📤 Enviando ${alerts.length} alertas para webhook`);
+  logger.info('Enviando alertas para webhook', { count: alerts.length });
 
   let sentCount = 0;
   const errors: string[] = [];
@@ -84,13 +87,13 @@ Deno.serve(createPublicHandler('webhook-alerts', async (req, { supabase }) => {
           .eq('id', alert.id);
 
         sentCount++;
-        console.log(`✅ Alerta ${alert.id} enviado com sucesso`);
+        logger.debug('Alerta enviado com sucesso', { alert_id: alert.id });
       } else {
         throw new Error(`Webhook returned status ${response.status}`);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`❌ Erro ao enviar alerta ${alert.id}:`, errorMsg);
+      logger.error('Erro ao enviar alerta', err, { alert_id: alert.id });
       errors.push(`${alert.id}: ${errorMsg}`);
 
       // Registrar falha
@@ -104,7 +107,11 @@ Deno.serve(createPublicHandler('webhook-alerts', async (req, { supabase }) => {
     }
   }
 
-  console.log(`✅ Webhook alerts processados: ${sentCount}/${alerts.length} enviados`);
+  logger.info('Webhook alerts processados', { 
+    sent: sentCount, 
+    total: alerts.length,
+    failed: errors.length 
+  });
 
   return {
     success: true,
