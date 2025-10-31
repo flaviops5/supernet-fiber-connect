@@ -16,6 +16,8 @@ import { KanbanCard } from './KanbanCard';
 import { KanbanCardDetail } from './KanbanCardDetail';
 import { KanbanFilters, type KanbanFiltersState } from './KanbanFilters';
 import { KanbanDashboard } from './KanbanDashboard';
+import { CreateColumnDialog } from './CreateColumnDialog';
+import { CreateCardDialog } from './CreateCardDialog';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings, BarChart } from 'lucide-react';
@@ -27,15 +29,21 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ boardId }: KanbanBoardProps) {
-  const { board, columns, cards, loading, moveCard, deleteCard, updateCard } = useKanban(boardId);
+  const { board, columns, cards, loading, moveCard, deleteCard, updateCard, createCard } = useKanban(boardId);
   const [activeCard, setActiveCard] = useState<KanbanCardType | null>(null);
   const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
+  const [showCreateColumn, setShowCreateColumn] = useState(false);
+  const [showCreateCard, setShowCreateCard] = useState(false);
   const [filters, setFilters] = useState<KanbanFiltersState>({
     search: '',
     priority: null,
     assignedTo: null,
     labels: [],
   });
+
+  const handleCreateCard = async (columnId: string, title: string, description?: string) => {
+    await createCard(columnId, title, description);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -149,7 +157,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
               <Settings className="h-4 w-4 mr-2" />
               Configurações
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setShowCreateCard(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Card
             </Button>
@@ -182,7 +190,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
                 {/* Add Column Button */}
                 <Card className="flex-shrink-0 w-80 h-fit p-4 border-dashed">
-                  <Button variant="ghost" className="w-full">
+                  <Button variant="ghost" className="w-full" onClick={() => setShowCreateColumn(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Coluna
                   </Button>
@@ -211,6 +219,21 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         onClose={() => setSelectedCard(null)}
         onUpdate={updateCard}
         onDelete={deleteCard}
+      />
+
+      {/* Create Column Dialog */}
+      <CreateColumnDialog
+        open={showCreateColumn}
+        onClose={() => setShowCreateColumn(false)}
+        boardId={boardId}
+      />
+
+      {/* Create Card Dialog */}
+      <CreateCardDialog
+        open={showCreateCard}
+        onClose={() => setShowCreateCard(false)}
+        columns={columns}
+        onCreateCard={handleCreateCard}
       />
     </div>
   );
