@@ -136,9 +136,9 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+      <div className="flex items-center gap-2 mb-6 pb-3 border-b overflow-x-hidden">
         {/* Tabs */}
-        <div className="flex items-center gap-1 mr-4">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Button
             variant={filters.search === '' ? 'ghost' : 'outline'}
             size="sm"
@@ -157,39 +157,39 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
         </div>
 
         {/* Search */}
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-shrink-0 w-48">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar cards"
+            placeholder="Buscar"
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="w-full pl-9 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 ml-auto">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+          <Button variant="outline" size="sm" className="h-8">
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
             Filtros
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurações
+          <Button variant="outline" size="sm" className="h-8">
+            <Settings className="h-3.5 w-3.5 mr-1.5" />
+            Config
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowCreateColumn(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Coluna
+          <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Coluna
           </Button>
-          <Button size="sm" onClick={() => setShowCreateCard(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Card
+          <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Card
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
+          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
             Automações
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
+          <Button variant="ghost" size="sm" className="text-muted-foreground h-8 px-2.5">
             Templates
           </Button>
         </div>
