@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, X, Image, Video, FileAudio } from 'lucide-react';
 import type { CampaignType, CampaignChannel, CTAType } from '@/types';
+import { logger } from '@/lib/logger';
 
 interface CampaignFormProps {
   onSuccess: () => void;
@@ -69,7 +70,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
         description: 'Mídia enviada com sucesso',
       });
     } catch (error) {
-      console.error('Erro no upload:', error);
+      logger.error('Erro no upload', error);
       toast({
         title: 'Erro no upload',
         description: 'Não foi possível enviar a mídia',
@@ -135,7 +136,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
 
       onSuccess();
     } catch (error) {
-      console.error('Erro ao criar campanha:', error);
+      logger.error('Erro ao criar campanha', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar a campanha',

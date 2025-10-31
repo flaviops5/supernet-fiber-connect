@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CampaignForm } from './CampaignForm';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface Campaign {
   id: string;
@@ -56,7 +57,7 @@ export function CampaignManagement() {
 
       setCampaigns(campaignsData || []);
     } catch (error) {
-      console.error('Erro ao buscar campanhas:', error);
+      logger.error('Erro ao buscar campanhas', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível carregar as campanhas',
@@ -111,7 +112,7 @@ export function CampaignManagement() {
 
       fetchCampaigns();
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
+      logger.error('Erro ao atualizar status', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar o status',

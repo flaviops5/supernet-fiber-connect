@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { logger } from '@/lib/logger';
 import {
   LayoutDashboard,
   Users,
@@ -310,7 +311,7 @@ export function AdminSidebar() {
       toast.success("Logout realizado com sucesso!");
       navigate("/auth");
     } catch (error) {
-      console.error("Error logging out:", error);
+      logger.error('Error logging out', error);
       toast.error("Erro ao fazer logout");
     }
   };

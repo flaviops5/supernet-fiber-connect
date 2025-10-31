@@ -9,6 +9,7 @@ import { Eye, EyeOff, UserPlus, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export const AddUserForm = () => {
   const [email, setEmail] = useState('');
@@ -103,7 +104,7 @@ export const AddUserForm = () => {
       
       navigate('/admin/users');
     } catch (err) {
-      console.error('Error creating user:', err);
+      logger.error('Error creating user', err);
       setError('Erro interno. Tente novamente.');
     } finally {
       setLoading(false);

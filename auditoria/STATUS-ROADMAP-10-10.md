@@ -68,7 +68,7 @@ TOTAL             7.1/10   8.0/10          10/10     -2.0
   - `no-new-func: "error"`
 
 **Entregas Fase 2.1 - Logger Migration**:
-- ✅ Migrados 15+ componentes críticos para logger estruturado
+- ✅ Migrados 13 componentes críticos para logger estruturado
 - ✅ `src/lib/logger.ts` com sanitização de dados sensíveis
 - ✅ `supabase/functions/_shared/structured-logger.ts` para edge functions
 - ✅ Componentes migrados incluem:
@@ -79,10 +79,17 @@ TOTAL             7.1/10   8.0/10          10/10     -2.0
   - ContractTemplatesView.tsx
   - ContractSigning.tsx
   - AIFAQGenerator.tsx
+  - AddUserForm.tsx
+  - AdminSidebar.tsx
+  - AgentConfigEditor.tsx
+  - AgentManagement.tsx
+  - CampaignForm.tsx
+  - CampaignManagement.tsx
 
 **Impacto**:
 - 🔴 **Antes**: 243 console statements no frontend, 748 nas edge functions
-- ✅ **Agora**: Logger estruturado com sanitização automática e persistência
+- ✅ **Agora**: 13 componentes críticos migrados (~30 console statements eliminados)
+- ✅ Logger estruturado com sanitização automática e persistência
 - ✅ Build quebra se houver console statements
 
 ---
@@ -123,8 +130,8 @@ TOTAL             7.1/10   8.0/10          10/10     -2.0
 
 #### Missão 2.1: Logger Migration  ✅ PARCIALMENTE CONCLUÍDO
 - [x] Criar logger estruturado com sanitização
-- [x] Migrar 15+ componentes críticos
-- [ ] Migrar restantes (228 console statements)
+- [x] Migrar 13 componentes críticos (~30 console statements)
+- [ ] Migrar restantes (213 console statements)
 - [x] Usar `logger.info()`, `logger.error()`
 
 ---

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 import AgentConfigEditor from './AgentConfigEditor';
 import { useNavigate } from 'react-router-dom';
 import type { Json } from '@/integrations/supabase/types';
@@ -83,7 +84,7 @@ export function AgentManagement() {
       .select('department, status, created_at');
 
     if (error) {
-      console.error('Error loading stats:', error);
+      logger.error('Error loading stats', error);
       return;
     }
 

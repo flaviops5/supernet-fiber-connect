@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, X } from 'lucide-react';
 import { parseError } from '@/types/error.types';
+import { logger } from '@/lib/logger';
 
 interface AgentConfig {
   id: string;
@@ -64,7 +65,7 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
       onClose();
     } catch (error) {
       const err = parseError(error);
-      console.error('Error saving config:', err);
+      logger.error('Error saving config', err);
       toast({
         title: 'Erro ao salvar',
         description: err.message,
