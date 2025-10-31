@@ -94,26 +94,11 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
     }
 
     try {
-      const selected = users.find(u => u.id === selectedUserId);
-      if (!selected?.email) {
-        toast.error('Não foi possível obter o email do usuário selecionado');
-        return;
-      }
-
-      const { data: authId, error: rpcError } = await supabase.rpc('get_auth_user_id_by_email', {
-        _email: selected.email,
-      });
-      if (rpcError) throw rpcError;
-      if (!authId) {
-        toast.error('Usuário selecionado não possui conta ativa. Peça para ele acessar o sistema ao menos uma vez.');
-        return;
-      }
-
       const { data: newBoard, error } = await supabase
         .from('kanban_boards' as any)
         .insert({
           title: boardName,
-          created_by: authId as any,
+          created_by: selectedUserId,
         })
         .select()
         .single();
@@ -131,7 +116,7 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
         onBoardChange((newBoard as any).id);
       }
     } catch (error: any) {
-      toast.error('Erro ao criar board: ' + (error?.message || ''));
+      toast.error('Erro ao criar board: ' + error.message);
     }
   };
 

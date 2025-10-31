@@ -4991,7 +4991,6 @@ export type Database = {
       enable_maintenance_cron: { Args: never; Returns: undefined }
       encrypt_text: { Args: { plain_text: string }; Returns: string }
       generate_contract_number: { Args: never; Returns: string }
-      get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_available_agents_for_department: {
         Args: {
           dept: Database["public"]["Enums"]["agent_department"]
