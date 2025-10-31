@@ -1,28 +1,82 @@
-// PR #24 — Tipos para mídias oficiais
+/**
+ * Media & Guided Message Types
+ * MISSÃO 1.1: TypeScript Zero-Any (Frontend)
+ * Types para componentes de mídia guiada
+ */
 
-export type MediaKind = 'video' | 'audio' | 'image';
+/**
+ * Contextos de mídia guiada disponíveis
+ */
+export type MediaContext = 
+  | 'los_detected'
+  | 'payment_due'
+  | 'installation_guide'
+  | 'troubleshooting'
+  | 'welcome'
+  | 'survey';
 
-export interface OfficialMediaAsset {
-  id: string;
-  kind: MediaKind;
-  code: string;
-  storage_path: string;
-  duration_seconds: number | null;
-  locale: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MediaAssetWithUrl extends OfficialMediaAsset {
+/**
+ * Asset de mídia (imagem, vídeo, PDF)
+ */
+export interface MediaAsset {
   url: string;
+  type: 'image' | 'video' | 'pdf' | 'gif';
+  title?: string;
+  description?: string;
+  thumbnail_url?: string;
+  duration_seconds?: number; // Para vídeos
+  file_size_bytes?: number;
 }
 
-export const STEP_MEDIA_MAP: Record<string, string> = {
-  'scenario_a_check_power': 'video_onu_power',
-  'scenario_a_verify_red_light': 'video_onu_power',
-  'scenario_a_reconnect_fiber': 'video_fiber_connector',
-  'scenario_c_reconnect_fiber': 'video_fiber_connector',
-  'scenario_b_power_cycle_request': 'audio_reboot_router',
-  'scenario_b_reboot_router': 'audio_reboot_router'
-} as const;
+/**
+ * Mensagem guiada por mídia
+ */
+export interface GuidedMessage {
+  id: string;
+  conversation_id: string;
+  media_asset: MediaAsset;
+  media_context: MediaContext;
+  sent_at: string;
+  viewed_at?: string;
+  feedback?: 'helpful' | 'not_helpful';
+  feedback_at?: string;
+}
+
+/**
+ * Metadata de mensagem com contexto de mídia
+ */
+export interface MessageMetadata {
+  media_context?: MediaContext;
+  media_url?: string;
+  media_type?: MediaAsset['type'];
+  customer_name?: string;
+  customer_phone?: string;
+  [key: string]: unknown; // Permite propriedades adicionais
+}
+
+/**
+ * Feedback de mídia guiada
+ */
+export interface MediaFeedback {
+  guided_message_id: string;
+  helped: boolean;
+  comment?: string;
+  created_at: string;
+}
+
+/**
+ * Estatísticas de mídia guiada
+ */
+export interface MediaGuidedStats {
+  total_sent: number;
+  total_viewed: number;
+  helpful_count: number;
+  not_helpful_count: number;
+  view_rate: number;
+  helpfulness_rate: number;
+  by_context: Record<MediaContext, {
+    sent: number;
+    viewed: number;
+    helpful: number;
+  }>;
+}

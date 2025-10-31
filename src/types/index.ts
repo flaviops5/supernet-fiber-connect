@@ -15,3 +15,8 @@ export * from './error.types';
 export * from './api.types';
 export * from './event.types';
 export * from './admin.types';
+export * from './kpi.types';
+export * from './monitoring.types';
+export * from './media.types';
+export * from './test.types';
+export * from './ui.types';

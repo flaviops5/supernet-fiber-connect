@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { sanitizeContractHTML } from '@/lib/sanitize';
 import {
   FileText,
   Plus,
@@ -558,7 +559,7 @@ const ContractTemplatesView: React.FC = () => {
           {selectedTemplate && (
             <div 
               className="border rounded-lg p-4 bg-white"
-              dangerouslySetInnerHTML={{ __html: getPreviewHTML(selectedTemplate) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeContractHTML(getPreviewHTML(selectedTemplate)) }}
             />
           )}
 

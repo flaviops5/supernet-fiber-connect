@@ -13,6 +13,7 @@ import { Bell, Calendar, CheckCircle, XCircle, Clock, RefreshCw, Play, MessageSq
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseError } from "@/types/error.types";
+import { sanitizeEmailHTML } from "@/lib/sanitize";
 
 interface Notification {
   id: string;
@@ -671,7 +672,7 @@ export const PaymentNotifications = () => {
                                 <h3 className="font-semibold mb-2">Email - Preview (HTML)</h3>
                                 <div className="border rounded-lg p-4 bg-white">
                                   {notification.email_message ? (
-                                    <div dangerouslySetInnerHTML={{ __html: notification.email_message }} />
+                                    <div dangerouslySetInnerHTML={{ __html: sanitizeEmailHTML(notification.email_message) }} />
                                   ) : (
                                     'Mensagem não gerada'
                                   )}

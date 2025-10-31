@@ -13,6 +13,7 @@ import { FileText, Edit, Eye, Save, X, AlertCircle, Mail } from "lucide-react";
 import { EmailTemplateManagement } from './EmailTemplateManagement';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { sanitizeEmailHTML } from "@/lib/sanitize";
 import { parseError } from "@/types/error.types";
 
 interface Template {
@@ -194,7 +195,7 @@ export const NotificationTemplates = () => {
                             <h3 className="font-semibold mb-2">Email - Corpo (HTML)</h3>
                             <div className="border rounded-lg p-4 bg-white">
                               <div dangerouslySetInnerHTML={{ 
-                                __html: replaceVariables(template.email_body_template, true) 
+                                __html: sanitizeEmailHTML(replaceVariables(template.email_body_template, true))
                               }} />
                             </div>
                           </div>

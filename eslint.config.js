@@ -34,11 +34,16 @@ export default tseslint.config(
       }],
       
       // General Code Quality
-      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-console": "error", // MISSÃO 2.2: Zero console statements
       "prefer-const": "warn",
       "no-var": "error",
       "eqeqeq": ["error", "always"],
       "no-throw-literal": "error",
+      
+      // Security & Performance
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
       
       // Naming Conventions (Sprint 3)
       "@typescript-eslint/naming-convention": [

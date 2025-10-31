@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, FileText, PenTool, CheckCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { sanitizeContractHTML } from '@/lib/sanitize';
 import type { EdgeFunctionResponse } from '@/types/api.types';
 
 interface IXCIntegrationResponse {
@@ -393,7 +394,7 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
             ) : (
               <div 
                 className="border rounded-lg p-4 max-h-96 overflow-y-auto bg-white"
-                dangerouslySetInnerHTML={{ __html: contractHTML }}
+                dangerouslySetInnerHTML={{ __html: sanitizeContractHTML(contractHTML) }}
               />
             )}
             

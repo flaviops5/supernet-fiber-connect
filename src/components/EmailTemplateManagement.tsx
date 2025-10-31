@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Eye, Mail } from 'lucide-react';
+import { sanitizeEmailHTML } from '@/lib/sanitize';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -415,7 +416,7 @@ export function EmailTemplateManagement() {
                 <Label>Conteúdo HTML</Label>
                 <div 
                   className="border rounded-lg p-4 mt-2"
-                  dangerouslySetInnerHTML={{ __html: selectedTemplate.body_html }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeEmailHTML(selectedTemplate.body_html) }}
                 />
               </div>
               <div>
