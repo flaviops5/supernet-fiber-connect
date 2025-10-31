@@ -121,7 +121,7 @@ export function KanbanBoard({
   }
   return <div className="flex flex-col h-full">
       {/* Header com menu horizontal */}
-      <div className="flex items-center gap-1.5 mb-6 pb-3 border-b overflow-x-hidden">
+      <div className="flex items-center gap-1 mb-6 pb-3 border-b overflow-x-hidden">
         {/* Search */}
         <div className="relative flex-shrink-0 w-48">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -140,24 +140,22 @@ export function KanbanBoard({
         </Button>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-          <Button variant="outline" size="sm" className="h-8 mx-[7px]">
-            <Filter className="h-3.5 w-3.5 mr-1" />
-            Filtros
-          </Button>
-          <Button variant="outline" size="sm" className="h-8">
-            <Settings className="h-3.5 w-3.5 mr-1" />
-            Config
-          </Button>
-          <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Coluna
-          </Button>
-          <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" />
-            Card
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" className="h-8">
+          <Filter className="h-3.5 w-3.5 mr-1" />
+          Filtros
+        </Button>
+        <Button variant="outline" size="sm" className="h-8">
+          <Settings className="h-3.5 w-3.5 mr-1" />
+          Config
+        </Button>
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Coluna
+        </Button>
+        <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Card
+        </Button>
       </div>
 
       {/* Board */}
