@@ -23,7 +23,7 @@ export const useSanitization = () => {
     clean = clean.replace(/\s+/g, ' ').trim();
     
     // Remove caracteres potencialmente perigosos para SQL
-    clean = clean.replace(/[';--]/g, '');
+    clean = clean.replace(/[';\-]/g, '');
     
     return clean;
   }, []);
