@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { sanitizeContractHTML } from '@/lib/sanitize';
+import { logger } from '@/lib/logger';
 import {
   FileText,
   Plus,
@@ -88,7 +89,7 @@ const ContractTemplatesView: React.FC = () => {
         };
       }));
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      logger.error('Error fetching templates', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar templates de contratos.",

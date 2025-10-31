@@ -9,6 +9,7 @@ import { Bot, Send, User, Brain, MessageCircle, Clock, Trash2, Plus, Sparkles, R
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface Message {
   id: string;
@@ -53,7 +54,7 @@ const CorporateAI = () => {
         description: `${data.itemsProcessed} endpoints IXC sincronizados com sucesso`,
       });
     } catch (error) {
-      console.error('Error syncing IXC documentation:', error);
+      // Error handled by toast
       toast({
         title: "Erro na sincronização",
         description: "Não foi possível sincronizar os endpoints IXC",
@@ -79,7 +80,7 @@ const CorporateAI = () => {
       if (error) throw error;
       setConversations(data || []);
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      logger.error('Error loading conversations', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar conversas",
@@ -105,7 +106,7 @@ const CorporateAI = () => {
       }));
       setMessages(formattedMessages);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      logger.error('Error loading messages', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar mensagens",
@@ -136,7 +137,7 @@ const CorporateAI = () => {
       
       return data;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logger.error('Error creating conversation', error);
       toast({
         title: "Erro",
         description: "Erro ao criar nova conversa",
@@ -229,7 +230,7 @@ const CorporateAI = () => {
       }
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message', error);
       toast({
         title: "Erro",
         description: "Erro ao enviar mensagem",
@@ -261,7 +262,7 @@ const CorporateAI = () => {
 
       loadConversations();
     } catch (error) {
-      console.error('Error deleting conversation:', error);
+      logger.error('Error deleting conversation', error);
       toast({
         title: "Erro",
         description: "Erro ao excluir conversa",

@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { sanitizeContractHTML } from '@/lib/sanitize';
 import type { EdgeFunctionResponse } from '@/types/api.types';
+import { logger } from '@/lib/logger';
 
 interface IXCIntegrationResponse {
   success: boolean;
@@ -124,7 +125,7 @@ const ContractSigning: React.FC<ContractSigningProps> = ({
       setContractHTML(data.contractHTML);
       setContractNumber(data.contractNumber);
     } catch (error) {
-      console.error('Error generating contract:', error);
+      logger.error('Error generating contract', error);
       toast({
         title: "Erro",
         description: "Erro ao gerar contrato. Tente novamente.",

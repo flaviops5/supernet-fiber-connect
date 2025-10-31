@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 import { parseError } from '@/types/error.types';
+import { logger } from '@/lib/logger';
 
 interface GeneratedFAQ {
   question: string;
@@ -43,7 +44,7 @@ export const AIFAQGenerator = () => {
     },
     onError: (error) => {
       const err = parseError(error);
-      console.error('Error generating FAQs:', err.message);
+      logger.error('Error generating FAQs', err);
       toast.error('Erro ao gerar FAQs. Tente novamente.');
     }
   });
@@ -65,7 +66,7 @@ export const AIFAQGenerator = () => {
     },
     onError: (error) => {
       const err = parseError(error);
-      console.error('Error saving FAQ:', err);
+      logger.error('Error saving FAQ', err);
       toast.error('Erro ao salvar FAQ');
     }
   });

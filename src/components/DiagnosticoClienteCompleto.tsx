@@ -78,11 +78,11 @@ export const DiagnosticoClienteCompleto = () => {
     };
 
     try {
-      console.log("🔍 INICIANDO DIAGNÓSTICO COMPLETO DO CLIENTE 313");
-      console.log("================================================");
+      logger.info("🔍 INICIANDO DIAGNÓSTICO COMPLETO DO CLIENTE 313");
+      logger.info("================================================");
 
       // ETAPA 1: Buscar dados básicos do cliente
-      console.log("\n📋 ETAPA 1: Buscando dados básicos do cliente...");
+      logger.info("📋 ETAPA 1: Buscando dados básicos do cliente...");
       try {
         const { data: clientData, error: clientError } = await supabase.functions.invoke('ixc-proxy', {
           body: {
@@ -114,7 +114,7 @@ export const DiagnosticoClienteCompleto = () => {
           success: false,
           error: err.message
         };
-        console.error("✗ Erro ao buscar dados básicos:", err.message);
+        logger.error("✗ Erro ao buscar dados básicos:", err, { clientId: "313" });
       }
 
       // ETAPA 2: Buscar status online via radusuarios
@@ -164,7 +164,7 @@ export const DiagnosticoClienteCompleto = () => {
           success: false,
           error: err.message
         };
-        console.error("✗ Erro ao buscar status online:", err.message);
+        logger.error("✗ Erro ao buscar status online:", err, { clientId: "313" });
       }
 
       // ETAPA 3: Buscar contratos
@@ -210,7 +210,7 @@ export const DiagnosticoClienteCompleto = () => {
           success: false,
           error: err.message
         };
-        console.error("✗ Erro ao buscar contratos:", err.message);
+        logger.error("✗ Erro ao buscar contratos:", err, { clientId: "313" });
       }
 
       // ETAPA 4: Buscar títulos financeiros (TODOS)
@@ -280,7 +280,7 @@ export const DiagnosticoClienteCompleto = () => {
           success: false,
           error: err.message
         };
-        console.error("✗ Erro ao buscar títulos:", err.message);
+        logger.error("✗ Erro ao buscar títulos:", err, { clientId: "313" });
       }
 
       // ETAPA 5: Análise da Lógica de Bloqueio e Redução de Velocidade

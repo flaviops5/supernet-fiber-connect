@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Wand2, Edit, Trash2, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 interface BlogPost {
   id: string;
@@ -73,7 +74,7 @@ export default function BlogManagement() {
       if (error) throw error;
       setPosts(data || []);
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      logger.error('Error fetching posts', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar posts do blog',
@@ -94,7 +95,7 @@ export default function BlogManagement() {
       if (error) throw error;
       setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories', error);
     }
   };
 
