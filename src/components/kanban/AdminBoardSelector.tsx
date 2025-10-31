@@ -61,16 +61,7 @@ export function AdminBoardSelector({ currentBoardId, onBoardChange }: AdminBoard
     try {
       const { data, error } = await supabase
         .from('kanban_boards' as any)
-        .select(`
-          id,
-          title,
-          created_by,
-          created_at,
-          profiles:created_by (
-            name,
-            email
-          )
-        `)
+        .select('id, title, created_by, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
