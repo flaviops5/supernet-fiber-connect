@@ -7,6 +7,7 @@ import { Upload, FileSpreadsheet, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import { z } from 'zod';
 import type { KanbanColumn } from '@/hooks/useKanban';
 
 interface ImportExcelDialogProps {
@@ -168,8 +169,23 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices
       const cols = detectColumns(jsonData);
 
-      const cardsToInsert = [];
-      
+      const CardInsertSchema = z.object({
+        board_id: z.string().uuid(),
+        column_id: z.string().uuid(),
+        title: z.string().trim().min(1).max(200),
+        description: z.string().trim().max(4000).nullable().optional(),
+        position: z.number().int().nonnegative(),
+        priority: z.enum(['low','medium','high','urgent']),
+        municipio: z.string().trim().max(200).nullable().optional(),
+        address: z.string().trim().max(500).nullable().optional(),
+        localizacao_url: z.string().url().nullable().optional(),
+        links_texto: z.string().trim().max(1000).nullable().optional(),
+        data_instalacao: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        periodo: z.string().trim().max(100).nullable().optional(),
+        provedor_local: z.string().trim().max(200).nullable().optional(),
+        telefone: z.string().trim().max(50).nullable().optional(),
+      });
+      const cardsToInsert: any[] = [];
       // Skip header row (index 0)
       for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
@@ -251,25 +267,55 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         return;
       }
 
+      // Validate and filter invalid rows (security)
+      const parsedResults = cardsToInsert.map((c, idx) => ({
+        idx,
+        result: CardInsertSchema.safeParse(c),
+      }));
+      const validCardsToInsert = parsedResults
+        .filter((p) => p.result.success)
+        .map((p) => (p.result as any).data);
+      const invalidCount = cardsToInsert.length - validCardsToInsert.length;
+
+      if (validCardsToInsert.length === 0) {
+        toast({
+          title: 'Nenhum dado válido',
+          description: 'Todos os registros foram rejeitados por validação',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      if (invalidCount > 0) {
+        toast({
+          title: 'Importação parcial',
+          description: `${invalidCount} linhas foram ignoradas por dados inválidos`,
+        });
+      }
+
       const { error } = await supabase
         .from('kanban_cards' as any)
-        .insert(cardsToInsert);
+        .insert(validCardsToInsert);
 
       if (error) throw error;
 
       toast({
         title: 'Importação concluída',
-        description: `${cardsToInsert.length} cards importados com sucesso!`,
+        description: `${validCardsToInsert.length} cards importados com sucesso!`,
       });
 
-      // Log audit event
-      await supabase.functions.invoke('kanban-audit', {
-        body: {
-          board_id: boardId,
-          action: 'card_created',
-          metadata: { imported_count: cardsToInsert.length, source: 'excel_import' },
-        },
-      });
+      // Log audit event (non-blocking)
+      try {
+        await supabase.functions.invoke('kanban-audit', {
+          body: {
+            board_id: boardId,
+            action: 'card_created',
+            metadata: { imported_count: validCardsToInsert.length, source: 'excel_import' },
+          },
+        });
+      } catch (auditErr) {
+        console.warn('kanban-audit failed:', auditErr);
+      }
 
       setFile(null);
       setPreviewData([]);
