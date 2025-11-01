@@ -140,7 +140,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         const escola = row[2]?.toString().trim();
         if (!escola) continue;
 
-        // Parse date if present
+        // Parse date if present - only accept valid dates
         let dataInstalacao = null;
         if (row[10]) {
           try {
@@ -149,11 +149,22 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
               // Excel serial date
               const excelDate = XLSX.SSF.parse_date_code(dateValue);
               dataInstalacao = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
-            } else {
-              dataInstalacao = dateValue.toString().trim();
+            } else if (typeof dateValue === 'string') {
+              // Try to parse string as date
+              const dateStr = dateValue.toString().trim();
+              // Check if it matches common date formats (DD/MM/YYYY, YYYY-MM-DD, etc.)
+              const dateRegex = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$|^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+              if (dateRegex.test(dateStr)) {
+                // Try to create a valid date
+                const parsedDate = new Date(dateStr);
+                if (!isNaN(parsedDate.getTime())) {
+                  dataInstalacao = parsedDate.toISOString().split('T')[0];
+                }
+              }
             }
           } catch (e) {
             console.error('Error parsing date:', e);
+            // dataInstalacao remains null
           }
         }
 
