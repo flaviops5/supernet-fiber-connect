@@ -267,7 +267,7 @@ export function KanbanBoard({
             <DialogHeader>
               <DialogTitle>Dashboard</DialogTitle>
             </DialogHeader>
-            <KanbanDashboard columns={columns} cards={cards} />
+            <KanbanDashboard boardId={boardId!} />
           </DialogContent>
         </Dialog>
 
