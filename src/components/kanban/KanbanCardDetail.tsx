@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Clock, Trash2, Edit2, Send, MapPin, Link as LinkIcon } from 'lucide-react';
+import { User, Clock, Trash2, Edit2, Send, MapPin, Link as LinkIcon, Edit } from 'lucide-react';
+import { EditCardDialog } from './EditCardDialog';
 import type { KanbanCard } from '@/hooks/useKanban';
 
 interface Comment {
@@ -32,6 +33,7 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -336,6 +338,13 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
             {/* Actions */}
             <div className="flex gap-2 justify-end">
               <Button
+                variant="default"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button
                 variant="destructive"
                 onClick={async () => {
                   if (confirm('Tem certeza que deseja excluir este card?')) {
@@ -360,6 +369,23 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
             </div>
           </div>
         </ScrollArea>
+
+        {/* Edit Dialog */}
+        <EditCardDialog
+          open={showEditDialog}
+          onClose={() => {
+            setShowEditDialog(false);
+            if (card) {
+              // Reload card data after edit
+              onClose();
+            }
+          }}
+          card={card}
+          onUpdate={() => {
+            setShowEditDialog(false);
+            onClose();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
