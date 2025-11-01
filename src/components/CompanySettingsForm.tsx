@@ -23,6 +23,8 @@ interface CompanySettings {
   auth_gradient_from: string;
   auth_gradient_to: string;
   signup_enabled: boolean;
+  whatsapp_notification_phones: string[] | null;
+  whatsapp_instance_name: string;
 }
 
 export const CompanySettingsForm = () => {
@@ -117,6 +119,8 @@ export const CompanySettingsForm = () => {
           auth_gradient_from: settings.auth_gradient_from,
           auth_gradient_to: settings.auth_gradient_to,
           signup_enabled: settings.signup_enabled,
+          whatsapp_notification_phones: settings.whatsapp_notification_phones,
+          whatsapp_instance_name: settings.whatsapp_instance_name,
         })
         .eq('id', settings.id);
 
@@ -284,6 +288,46 @@ export const CompanySettingsForm = () => {
               onChange={(e) => setSettings({ ...settings, address: e.target.value })}
               placeholder="Rua Exemplo, 123 - Cidade, UF"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notificações WhatsApp</CardTitle>
+          <CardDescription>Configure números para receber notificações de instalações</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp-phones">Números WhatsApp</Label>
+            <Input
+              id="whatsapp-phones"
+              value={settings.whatsapp_notification_phones?.join(', ') || ''}
+              onChange={(e) => {
+                const phones = e.target.value
+                  .split(',')
+                  .map(p => p.trim())
+                  .filter(p => p.length > 0);
+                setSettings({ ...settings, whatsapp_notification_phones: phones });
+              }}
+              placeholder="5561999999999, 5561988888888"
+            />
+            <p className="text-xs text-muted-foreground">
+              Números que receberão notificações quando instalações forem concluídas (formato: DDI + DDD + número, separados por vírgula)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp-instance">Instância Evolution API</Label>
+            <Input
+              id="whatsapp-instance"
+              value={settings.whatsapp_instance_name}
+              onChange={(e) => setSettings({ ...settings, whatsapp_instance_name: e.target.value })}
+              placeholder="SDR2"
+            />
+            <p className="text-xs text-muted-foreground">
+              Nome da instância configurada na Evolution API
+            </p>
           </div>
         </CardContent>
       </Card>

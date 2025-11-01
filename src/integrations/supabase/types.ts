@@ -1315,8 +1315,8 @@ export type Database = {
           secondary_color: string | null
           signup_enabled: boolean | null
           updated_at: string | null
-          webhook_secret: string | null
-          webhook_url: string | null
+          whatsapp_instance_name: string | null
+          whatsapp_notification_phones: string[] | null
         }
         Insert: {
           address?: string | null
@@ -1335,8 +1335,8 @@ export type Database = {
           secondary_color?: string | null
           signup_enabled?: boolean | null
           updated_at?: string | null
-          webhook_secret?: string | null
-          webhook_url?: string | null
+          whatsapp_instance_name?: string | null
+          whatsapp_notification_phones?: string[] | null
         }
         Update: {
           address?: string | null
@@ -1355,8 +1355,8 @@ export type Database = {
           secondary_color?: string | null
           signup_enabled?: boolean | null
           updated_at?: string | null
-          webhook_secret?: string | null
-          webhook_url?: string | null
+          whatsapp_instance_name?: string | null
+          whatsapp_notification_phones?: string[] | null
         }
         Relationships: []
       }

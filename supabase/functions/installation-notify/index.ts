@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Buscar webhook URL do company_settings
+    // Buscar configurações de WhatsApp do company_settings
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -33,49 +33,79 @@ Deno.serve(async (req) => {
 
     const { data: settings, error: settingsError } = await supabase
       .from('company_settings')
-      .select('webhook_url, webhook_secret')
+      .select('whatsapp_notification_phones, whatsapp_instance_name')
       .single();
 
-    if (settingsError || !settings?.webhook_url) {
-      console.error("Webhook URL não configurado em company_settings", settingsError);
+    if (settingsError || !settings?.whatsapp_notification_phones?.length) {
+      console.error("Números WhatsApp não configurados em company_settings", settingsError);
       return new Response(
-        JSON.stringify({ error: "Webhook URL not configured in company settings" }), 
+        JSON.stringify({ error: "WhatsApp notification phones not configured" }), 
         { status: 500, headers }
       );
     }
 
-    console.log("Enviando notificação para webhook:", settings.webhook_url);
+    const instanceName = settings.whatsapp_instance_name || 'SDR2';
+    const phones = settings.whatsapp_notification_phones;
     
-    const webhookHeaders: Record<string, string> = { 
-      "Content-Type": "application/json" 
-    };
-    
-    if (settings.webhook_secret) {
-      webhookHeaders['X-Webhook-Secret'] = settings.webhook_secret;
-    }
-    
-    const response = await fetch(settings.webhook_url, {
-      method: "POST",
-      headers: webhookHeaders,
-      body: JSON.stringify({ message }),
-    });
+    console.log(`Enviando notificação WhatsApp para ${phones.length} número(s) via instância ${instanceName}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Falha ao enviar notificação:", response.status, errorText);
+    // Buscar credenciais da Evolution API
+    const apiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const baseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+
+    if (!apiKey || !baseUrl) {
+      console.error("Credenciais Evolution API não configuradas");
       return new Response(
-        JSON.stringify({ 
-          error: "Webhook failed", 
-          status: response.status, 
-          details: errorText 
-        }), 
-        { status: 502, headers }
+        JSON.stringify({ error: "Evolution API credentials not configured" }), 
+        { status: 500, headers }
       );
     }
 
-    console.log("Notificação enviada com sucesso");
+    // Enviar mensagem para todos os números configurados
+    const results = await Promise.all(
+      phones.map(async (phone) => {
+        try {
+          const url = `${baseUrl}/message/sendText/${instanceName}`;
+          console.log(`Enviando para ${phone}: ${url}`);
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": apiKey,
+            },
+            body: JSON.stringify({
+              number: phone,
+              text: message,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Falha ao enviar para ${phone}:`, response.status, errorText);
+            return { phone, success: false, error: errorText };
+          }
+
+          console.log(`Mensagem enviada com sucesso para ${phone}`);
+          return { phone, success: true };
+        } catch (error) {
+          console.error(`Erro ao enviar para ${phone}:`, error);
+          return { phone, success: false, error: String(error) };
+        }
+      })
+    );
+
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+
+    console.log(`Notificações: ${successCount} enviadas, ${failureCount} falhas`);
+
     return new Response(
-      JSON.stringify({ success: true }), 
+      JSON.stringify({ 
+        success: true, 
+        results,
+        summary: { success: successCount, failure: failureCount }
+      }), 
       { headers }
     );
   } catch (err) {
