@@ -12,7 +12,7 @@ import { KanbanAutomations } from './KanbanAutomations';
 import { KanbanTemplates } from './KanbanTemplates';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Trash2 } from 'lucide-react';
+import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,25 +63,6 @@ export function KanbanBoard({
   });
   const handleCreateCard = async (columnId: string, title: string, description?: string, priority?: 'low' | 'medium' | 'high' | 'urgent') => {
     await createCard(columnId, title, description, priority);
-  };
-
-  const handleClearAllCards = async () => {
-    if (!confirm('Tem certeza que deseja deletar TODOS os cards deste board? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('kanban-clear-cards', {
-        body: { board_id: boardId },
-      });
-
-      if (error) throw error;
-
-      toast.success(`${data.deleted_count} cards deletados com sucesso!`);
-    } catch (error: any) {
-      console.error('Error clearing cards:', error);
-      toast.error('Erro ao deletar cards: ' + error.message);
-    }
   };
 
   const handleTemplateSelect = async (template: any) => {
@@ -236,10 +217,6 @@ export function KanbanBoard({
         <Button variant="outline" size="sm" className="h-8" onClick={() => setShowImportExcel(true)}>
           <FileText className="h-3.5 w-3.5 mr-1" />
           Importar Excel
-        </Button>
-        <Button variant="outline" size="sm" className="h-8 text-destructive hover:text-destructive" onClick={handleClearAllCards}>
-          <Trash2 className="h-3.5 w-3.5 mr-1" />
-          Limpar Cards
         </Button>
         <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
           <Plus className="h-3.5 w-3.5 mr-1" />
