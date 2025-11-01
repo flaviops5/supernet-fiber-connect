@@ -15,3 +15,4 @@ export * from './error.types';
 export * from './api.types';
 export * from './event.types';
 export * from './admin.types';
+export * from './notification.types';

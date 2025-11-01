@@ -3629,6 +3629,75 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_targets: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string
+          tipo: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone: string
+          tipo?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string
+          tipo?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      notification_targets_audit: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          target_id: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       notification_templates: {
         Row: {
           created_at: string

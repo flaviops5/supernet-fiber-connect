@@ -25,27 +25,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Buscar configurações de WhatsApp do company_settings
+    // Buscar números de notificação da tabela notification_targets
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: settings, error: settingsError } = await supabase
-      .from('company_settings')
-      .select('whatsapp_notification_phones, whatsapp_instance_name')
-      .single();
+    const { data: targets, error: targetsError } = await supabase
+      .from('notification_targets')
+      .select('telefone')
+      .eq('ativo', true)
+      .eq('tipo', 'instalacao');
 
-    if (settingsError || !settings?.whatsapp_notification_phones?.length) {
-      console.error("Números WhatsApp não configurados em company_settings", settingsError);
+    if (targetsError || !targets?.length) {
+      console.error("Números de notificação não configurados", targetsError);
       return new Response(
-        JSON.stringify({ error: "WhatsApp notification phones not configured" }), 
+        JSON.stringify({ error: "Notification targets not configured" }), 
         { status: 500, headers }
       );
     }
 
-    const instanceName = settings.whatsapp_instance_name || 'SDR2';
-    const phones = settings.whatsapp_notification_phones;
+    // Buscar instância WhatsApp (mantido para compatibilidade)
+    const { data: settings } = await supabase
+      .from('company_settings')
+      .select('whatsapp_instance_name')
+      .single();
+
+    const instanceName = settings?.whatsapp_instance_name || 'SDR2';
+    const phones = targets.map(t => t.telefone);
     
     console.log(`Enviando notificação WhatsApp para ${phones.length} número(s) via instância ${instanceName}`);
 

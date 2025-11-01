@@ -152,6 +152,11 @@ const agentsItems = [
     icon: MessageCircle,
   },
   {
+    title: "Gerenciar Notificações",
+    url: "/admin/notificacoes",
+    icon: Bell,
+  },
+  {
     title: "Integração IXC",
     url: "/admin/ixc-integration",
     icon: Database,

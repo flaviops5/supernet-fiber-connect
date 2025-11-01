@@ -19,6 +19,7 @@ import { NPSDashboard } from '@/components/NPSDashboard';
 import { AddUserForm } from '@/components/AddUserForm';
 import WhatsAppSetup from '@/components/WhatsAppSetup';
 import { FinancialDashboard } from '@/components/FinancialDashboard';
+import AdminNotifications from '@/pages/AdminNotifications';
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { 
@@ -117,6 +118,7 @@ const Admin = () => {
                 <Route path="/ixc-documentation" element={<Navigate to="/admin/knowledge" replace />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
+                <Route path="/notificacoes" element={<AdminNotifications />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
