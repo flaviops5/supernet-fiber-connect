@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { User, Clock, Trash2, Edit2, Send, MapPin, Link as LinkIcon, Edit } from 'lucide-react';
 import { EditCardDialog } from './EditCardDialog';
+import { InstallActions } from './InstallActions';
 import type { KanbanCard } from '@/hooks/useKanban';
 
 interface Comment {
@@ -332,6 +333,11 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                 </Button>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Installation Actions */}
+            <InstallActions card={card} />
 
             <Separator />
 

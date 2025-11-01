@@ -2623,6 +2623,73 @@ export type Database = {
         }
         Relationships: []
       }
+      installation_events: {
+        Row: {
+          board_id: string
+          card_id: string
+          change_reason: string | null
+          created_at: string | null
+          created_by: string | null
+          data_instalacao: string
+          fotos: Json
+          id: string
+          periodo: string
+          previous_event_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          board_id: string
+          card_id: string
+          change_reason?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_instalacao: string
+          fotos?: Json
+          id?: string
+          periodo: string
+          previous_event_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          board_id?: string
+          card_id?: string
+          change_reason?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_instalacao?: string
+          fotos?: Json
+          id?: string
+          periodo?: string
+          previous_event_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_events_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installation_events_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "installation_events_previous_event_id_fkey"
+            columns: ["previous_event_id"]
+            isOneToOne: false
+            referencedRelation: "installation_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ixc_cache: {
         Row: {
           created_at: string | null
@@ -5167,6 +5234,19 @@ export type Database = {
           customer_name: string
           customer_phone: string
           last_event: string
+        }[]
+      }
+      get_installation_events: {
+        Args: { p_board: string; p_end: string; p_start: string }
+        Returns: {
+          card_id: string
+          change_reason: string
+          data_instalacao: string
+          id: string
+          municipio: string
+          periodo: string
+          status: string
+          title: string
         }[]
       }
       get_migration_stats: {

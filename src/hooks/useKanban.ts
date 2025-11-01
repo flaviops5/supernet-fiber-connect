@@ -43,7 +43,7 @@ export interface KanbanCard {
   localizacao_url?: string | null;
   links_texto?: string | null;
   data_instalacao?: string | null;
-  periodo?: string | null;
+  periodo?: 'manhã' | 'tarde' | 'noite' | null;
   provedor_local?: string | null;
   telefone?: string | null;
 }
