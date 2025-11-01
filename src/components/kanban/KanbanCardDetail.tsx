@@ -336,8 +336,17 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
             {/* Actions */}
             <div className="flex gap-2 justify-end">
               <Button
-                variant="outline"
-                onClick={() => onDelete(card.id)}
+                variant="destructive"
+                onClick={async () => {
+                  if (confirm('Tem certeza que deseja excluir este card?')) {
+                    try {
+                      await onDelete(card.id);
+                      onClose();
+                    } catch (error) {
+                      // Error already handled in deleteCard
+                    }
+                  }
+                }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir Card

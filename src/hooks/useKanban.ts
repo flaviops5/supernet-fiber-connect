@@ -279,15 +279,23 @@ export function useKanban(boardId: string | null) {
   // Delete card
   const deleteCard = async (cardId: string) => {
     try {
+      // Optimistic update - remove card from local state immediately
+      const prevCards = cards;
+      setCards(prev => prev.filter(c => c.id !== cardId));
+
       const { error } = await supabase
         .from('kanban_cards' as any)
         .delete()
         .eq('id', cardId);
 
-      if (error) throw error;
+      if (error) {
+        // Revert on error
+        setCards(prevCards);
+        throw error;
+      }
 
-      // Log audit
-      await supabase.functions.invoke('kanban-audit', {
+      // Log audit (don't await to not block the UI)
+      supabase.functions.invoke('kanban-audit', {
         body: {
           board_id: boardId,
           card_id: cardId,
@@ -306,6 +314,7 @@ export function useKanban(boardId: string | null) {
         description: error.message,
         variant: 'destructive',
       });
+      throw error;
     }
   };
 
