@@ -169,21 +169,23 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices
       const cols = detectColumns(jsonData);
 
+      // Schema simplificado: apenas os 5 campos que existem na planilha
       const CardInsertSchema = z.object({
         board_id: z.string().uuid(),
         column_id: z.string().uuid(),
-        title: z.string().trim().min(1).max(200),
-        description: z.string().max(4000).nullable().optional(),
+        title: z.string().min(1, 'Escola é obrigatória').max(200),
         position: z.number().int().nonnegative(),
         priority: z.enum(['low','medium','high','urgent']),
         municipio: z.string().max(200).nullable().optional(),
         address: z.string().max(500).nullable().optional(),
         localizacao_url: z.string().nullable().optional(),
         links_texto: z.string().max(1000).nullable().optional(),
-        data_instalacao: z.string().nullable().optional(),
-        periodo: z.string().max(100).nullable().optional(),
-        provedor_local: z.string().max(200).nullable().optional(),
-        telefone: z.string().max(50).nullable().optional(),
+        // Campos que NÃO existem na planilha (serão null)
+        description: z.null(),
+        data_instalacao: z.null(),
+        periodo: z.null(),
+        provedor_local: z.null(),
+        telefone: z.null(),
       });
       const cardsToInsert: any[] = [];
       // Skip header row (index 0)
@@ -243,17 +245,19 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
           board_id: boardId,
           column_id: selectedColumn,
           title: escola,
-          description: cols.descricaoIdx >= 0 ? (row[cols.descricaoIdx]?.toString().trim() || null) : null,
           position: i - 1,
-          priority: 'medium',
+          priority: 'medium' as const,
+          // Apenas os 5 campos que existem na planilha
           municipio: municipioName || null,
           address: enderecoVal || null,
           localizacao_url: localizacaoUrl,
           links_texto: cleanText(cols.linksIdx >= 0 ? row[cols.linksIdx] : null),
-          data_instalacao: dataInstalacao,
-          periodo: cols.periodoIdx >= 0 ? (row[cols.periodoIdx]?.toString().trim() || null) : null,
-          provedor_local: cols.provedorIdx >= 0 ? (row[cols.provedorIdx]?.toString().trim() || null) : null,
-          telefone: cols.telefoneIdx >= 0 ? (row[cols.telefoneIdx]?.toString().trim() || null) : null,
+          // Campos que NÃO existem (serão preenchidos manualmente depois)
+          description: null,
+          data_instalacao: null,
+          periodo: null,
+          provedor_local: null,
+          telefone: null,
         });
       }
 
@@ -372,7 +376,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Formato esperado: A (Município), C (Escola), D (Endereço), I (Localização), J (Links), K (Data Instalação), L (Descrição), M (Período), N (Provedor), O (Telefone)
+              Formato esperado: Município, Escola, Endereço, Localização (link), Links. Os demais campos serão preenchidos manualmente.
             </p>
           </div>
 
