@@ -55,13 +55,15 @@ export function useKanban(boardId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Load board data
+  // Load board data with AbortController to prevent race conditions
   useEffect(() => {
     if (!boardId) {
       setLoading(false);
       return;
     }
 
+    const controller = new AbortController();
+    
     const loadBoard = async () => {
       try {
         setLoading(true);
@@ -74,6 +76,7 @@ export function useKanban(boardId: string | null) {
           .single();
 
         if (boardError) throw boardError;
+        if (controller.signal.aborted) return;
         setBoard(boardData as any);
 
         // Load columns
@@ -84,6 +87,7 @@ export function useKanban(boardId: string | null) {
           .order('position');
 
         if (columnsError) throw columnsError;
+        if (controller.signal.aborted) return;
         setColumns(columnsData as any);
 
         // Load cards
@@ -94,8 +98,10 @@ export function useKanban(boardId: string | null) {
           .order('position');
 
         if (cardsError) throw cardsError;
+        if (controller.signal.aborted) return;
         setCards(cardsData as any);
       } catch (error: any) {
+        if (controller.signal.aborted) return;
         console.error('Error loading kanban board:', error);
         toast({
           title: 'Erro ao carregar board',
@@ -103,14 +109,20 @@ export function useKanban(boardId: string | null) {
           variant: 'destructive',
         });
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadBoard();
+
+    return () => {
+      controller.abort();
+    };
   }, [boardId, toast]);
 
-  // Realtime subscriptions
+  // Realtime subscriptions with optimized filtering
   useEffect(() => {
     if (!boardId) return;
 
@@ -125,7 +137,7 @@ export function useKanban(boardId: string | null) {
           filter: `board_id=eq.${boardId}`,
         },
         () => {
-          // Reload columns
+          // Reload columns only for this board
           supabase
             .from('kanban_columns' as any)
             .select('*')
@@ -145,7 +157,7 @@ export function useKanban(boardId: string | null) {
           filter: `board_id=eq.${boardId}`,
         },
         () => {
-          // Reload cards
+          // Reload cards only for this board
           supabase
             .from('kanban_cards' as any)
             .select('*')
@@ -194,7 +206,7 @@ export function useKanban(boardId: string | null) {
         throw error;
       }
 
-      // Log audit
+      // Log audit (await for data integrity)
       await supabase.functions.invoke('kanban-audit', {
         body: {
           board_id: boardId,
@@ -249,8 +261,8 @@ export function useKanban(boardId: string | null) {
       // Optimistic update - add card to local state immediately
       setCards(prev => [...prev, createdCard]);
 
-      // Log audit (don't await to not block the UI)
-      supabase.functions.invoke('kanban-audit', {
+      // Log audit (await for data integrity)
+      await supabase.functions.invoke('kanban-audit', {
         body: {
           board_id: boardId,
           card_id: createdCard.id,
@@ -294,8 +306,8 @@ export function useKanban(boardId: string | null) {
         throw error;
       }
 
-      // Log audit (don't await to not block the UI)
-      supabase.functions.invoke('kanban-audit', {
+      // Log audit (await for data integrity)
+      await supabase.functions.invoke('kanban-audit', {
         body: {
           board_id: boardId,
           card_id: cardId,

@@ -5094,6 +5094,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      kanban_board_stats: { Args: { p_board_id: string }; Returns: Json }
       log_security_event: {
         Args: {
           details_param?: Json
