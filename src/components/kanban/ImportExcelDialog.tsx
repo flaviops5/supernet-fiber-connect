@@ -36,6 +36,55 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
   const [previewData, setPreviewData] = useState<ExcelRow[]>([]);
   const { toast } = useToast();
 
+  // Helpers to detect column indexes by header names and extract cell hyperlinks
+  const normalize = (s: any) => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  const detectColumns = (jsonData: any[][]) => {
+    const header = (jsonData[0] || []).map((h) => normalize(h));
+    const find = (keys: string[]) =>
+      keys.map(normalize).map((k) => header.indexOf(k)).find((idx) => idx >= 0) ?? -1;
+
+    // Try exact header match first, then fuzzy contains
+    const byContains = (needles: string[]) => {
+      const idx = header.findIndex((h) => needles.some((n) => h.includes(n)));
+      return idx >= 0 ? idx : -1;
+    };
+
+    const municipioIdx = find(['municipio']) ?? byContains(['municip']);
+    const escolaIdx = find(['escola']) ?? byContains(['escola']);
+    const enderecoIdx = find(['endereco', 'endereço']) ?? byContains(['ender']);
+    const localizacaoIdx = find(['localizacao', 'localização']) ?? byContains(['localiz']);
+    const linksIdx = find(['links']) ?? byContains(['link']);
+    const dataIdx = find(['data instalacao', 'data instalação', 'data']) ?? byContains(['data']);
+    const descricaoIdx = find(['descricao', 'descrição']) ?? byContains(['descr']);
+    const periodoIdx = find(['periodo', 'período']) ?? byContains(['period']);
+    const provedorIdx = find(['provedor']) ?? byContains(['proved']);
+    const telefoneIdx = find(['telefone']) ?? byContains(['telefon', 'fone']);
+
+    return {
+      municipioIdx,
+      escolaIdx,
+      enderecoIdx,
+      localizacaoIdx,
+      linksIdx,
+      dataIdx,
+      descricaoIdx,
+      periodoIdx,
+      provedorIdx,
+      telefoneIdx,
+    };
+  };
+
+  const getHyperlinkAt = (worksheet: XLSX.WorkSheet, rowIndex: number, colIndex: number) => {
+    if (colIndex == null || colIndex < 0) return null;
+    // jsonData rowIndex is 0-based; worksheet rows are 1-based in A1 notation, but we will use encode_cell with 0-based
+    const address = XLSX.utils.encode_cell({ c: colIndex, r: rowIndex });
+    const cell = (worksheet as any)[address];
+    const url = cell?.l?.Target || cell?.l?.target || null;
+    return url || null;
+  };
+
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -61,33 +110,29 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-      // Extract hyperlinks from column I
-      const extractHyperlink = (rowIndex: number) => {
-        const cellAddress = `I${rowIndex + 1}`;
-        const cell = worksheet[cellAddress];
-        if (cell && cell.l && cell.l.Target) {
-          return cell.l.Target;
-        }
-        return jsonData[rowIndex][8] || '';
-      };
+      // Auto-detect column indices based on headers
+      const cols = detectColumns(jsonData);
 
       // Skip header row, get first 5 rows for preview
       const rows: ExcelRow[] = [];
       for (let i = 1; i < Math.min(6, jsonData.length); i++) {
         const row = jsonData[i];
-        if (row && row.length >= 3) {
-          rows.push({
-            municipio: row[0] || '', // Column A
-            escola: row[2] || '', // Column C
-            endereco: row[3] || '', // Column D
-            localizacao: extractHyperlink(i), // Column I (hyperlink)
-            linksTexto: row[9] || '', // Column J
-            dataInstalacao: row[10] || '', // Column K
-            periodo: row[12] || '', // Column M
-            provedorLocal: row[13] || '', // Column N
-            telefone: row[14] || '', // Column O
-            descricao: row[11] || '', // Column L
-          });
+        if (row && row.length >= 1) {
+          const escolaName = cols.escolaIdx >= 0 ? row[cols.escolaIdx] : '';
+          if (escolaName) {
+            rows.push({
+              municipio: cols.municipioIdx >= 0 ? row[cols.municipioIdx] || '' : '',
+              escola: escolaName,
+              endereco: cols.enderecoIdx >= 0 ? row[cols.enderecoIdx] || '' : '',
+              localizacao: getHyperlinkAt(worksheet, i, cols.localizacaoIdx) || (cols.localizacaoIdx >= 0 ? row[cols.localizacaoIdx] || '' : ''),
+              linksTexto: cols.linksIdx >= 0 ? row[cols.linksIdx] || '' : '',
+              dataInstalacao: cols.dataIdx >= 0 ? row[cols.dataIdx] || '' : '',
+              descricao: cols.descricaoIdx >= 0 ? row[cols.descricaoIdx] || '' : '',
+              periodo: cols.periodoIdx >= 0 ? row[cols.periodoIdx] || '' : '',
+              provedorLocal: cols.provedorIdx >= 0 ? row[cols.provedorIdx] || '' : '',
+              telefone: cols.telefoneIdx >= 0 ? row[cols.telefoneIdx] || '' : '',
+            });
+          }
         }
       }
 
@@ -120,31 +165,28 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
+      // Auto-detect column indices
+      const cols = detectColumns(jsonData);
+
       const cardsToInsert = [];
-      
-      // Extract hyperlinks from column I
-      const extractHyperlink = (rowIndex: number) => {
-        const cellAddress = `I${rowIndex + 1}`;
-        const cell = worksheet[cellAddress];
-        if (cell && cell.l && cell.l.Target) {
-          return cell.l.Target;
-        }
-        return jsonData[rowIndex][8]?.toString().trim() || null;
-      };
       
       // Skip header row (index 0)
       for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-        if (!row || row.length < 3) continue;
+        if (!row || row.length < 1) continue;
 
-        const escola = row[2]?.toString().trim();
+        const escola = cols.escolaIdx >= 0 ? row[cols.escolaIdx]?.toString().trim() : '';
         if (!escola) continue;
+
+        const municipioName = cols.municipioIdx >= 0 ? row[cols.municipioIdx]?.toString().trim() || '' : '';
+        const enderecoVal = cols.enderecoIdx >= 0 ? row[cols.enderecoIdx]?.toString().trim() || '' : '';
+        const linkCell = getHyperlinkAt(worksheet, i, cols.localizacaoIdx) || (cols.localizacaoIdx >= 0 ? row[cols.localizacaoIdx]?.toString().trim() || '' : '');
 
         // Parse date if present - only accept valid dates
         let dataInstalacao = null;
-        if (row[10]) {
+        if (cols.dataIdx >= 0 && row[cols.dataIdx]) {
           try {
-            const dateValue = row[10];
+            const dateValue = row[cols.dataIdx];
             if (typeof dateValue === 'number') {
               // Excel serial date
               const excelDate = XLSX.SSF.parse_date_code(dateValue);
@@ -168,21 +210,34 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
           }
         }
 
+        // Clean link text: ignore numeric-only/"0" and build Google Maps fallback when needed
+        const cleanText = (v: any) => {
+          const s = (v ?? '').toString().trim();
+          if (!s || s === '0') return null;
+          return s;
+        };
+
+        let localizacaoUrl = linkCell && /^https?:/i.test(linkCell) ? linkCell : null;
+        if (!localizacaoUrl) {
+          const query = enderecoVal || `${escola} ${municipioName}`.trim();
+          localizacaoUrl = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
+        }
+
         cardsToInsert.push({
           board_id: boardId,
           column_id: selectedColumn,
-          title: escola, // Column C
-          description: row[11]?.toString().trim() || null, // Column L
+          title: escola,
+          description: cols.descricaoIdx >= 0 ? (row[cols.descricaoIdx]?.toString().trim() || null) : null,
           position: i - 1,
           priority: 'medium',
-          municipio: row[0]?.toString().trim() || null, // Column A
-          address: row[3]?.toString().trim() || null, // Column D
-          localizacao_url: extractHyperlink(i), // Column I (hyperlink)
-          links_texto: row[9]?.toString().trim() || null, // Column J
-          data_instalacao: dataInstalacao, // Column K
-          periodo: row[12]?.toString().trim() || null, // Column M
-          provedor_local: row[13]?.toString().trim() || null, // Column N
-          telefone: row[14]?.toString().trim() || null, // Column O
+          municipio: municipioName || null,
+          address: enderecoVal || null,
+          localizacao_url: localizacaoUrl,
+          links_texto: cleanText(cols.linksIdx >= 0 ? row[cols.linksIdx] : null),
+          data_instalacao: dataInstalacao,
+          periodo: cols.periodoIdx >= 0 ? (row[cols.periodoIdx]?.toString().trim() || null) : null,
+          provedor_local: cols.provedorIdx >= 0 ? (row[cols.provedorIdx]?.toString().trim() || null) : null,
+          telefone: cols.telefoneIdx >= 0 ? (row[cols.telefoneIdx]?.toString().trim() || null) : null,
         });
       }
 
