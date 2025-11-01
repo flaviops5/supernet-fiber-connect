@@ -173,17 +173,17 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         board_id: z.string().uuid(),
         column_id: z.string().uuid(),
         title: z.string().trim().min(1).max(200),
-        description: z.string().trim().max(4000).nullable().optional(),
+        description: z.string().max(4000).nullable().optional(),
         position: z.number().int().nonnegative(),
         priority: z.enum(['low','medium','high','urgent']),
-        municipio: z.string().trim().max(200).nullable().optional(),
-        address: z.string().trim().max(500).nullable().optional(),
-        localizacao_url: z.string().url().nullable().optional(),
-        links_texto: z.string().trim().max(1000).nullable().optional(),
-        data_instalacao: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-        periodo: z.string().trim().max(100).nullable().optional(),
-        provedor_local: z.string().trim().max(200).nullable().optional(),
-        telefone: z.string().trim().max(50).nullable().optional(),
+        municipio: z.string().max(200).nullable().optional(),
+        address: z.string().max(500).nullable().optional(),
+        localizacao_url: z.string().nullable().optional(),
+        links_texto: z.string().max(1000).nullable().optional(),
+        data_instalacao: z.string().nullable().optional(),
+        periodo: z.string().max(100).nullable().optional(),
+        provedor_local: z.string().max(200).nullable().optional(),
+        telefone: z.string().max(50).nullable().optional(),
       });
       const cardsToInsert: any[] = [];
       // Skip header row (index 0)
@@ -271,16 +271,27 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       const parsedResults = cardsToInsert.map((c, idx) => ({
         idx,
         result: CardInsertSchema.safeParse(c),
+        card: c,
       }));
       const validCardsToInsert = parsedResults
         .filter((p) => p.result.success)
         .map((p) => (p.result as any).data);
       const invalidCount = cardsToInsert.length - validCardsToInsert.length;
 
+      // Log erros de validação no console para debug
+      if (invalidCount > 0) {
+        console.warn('Cards rejeitados na validação:');
+        parsedResults
+          .filter((p) => !p.result.success)
+          .forEach((p) => {
+            console.warn(`Linha ${p.idx + 1}:`, p.result.error?.issues, p.card);
+          });
+      }
+
       if (validCardsToInsert.length === 0) {
         toast({
           title: 'Nenhum dado válido',
-          description: 'Todos os registros foram rejeitados por validação',
+          description: 'Todos os registros foram rejeitados. Verifique o console para detalhes.',
           variant: 'destructive',
         });
         setLoading(false);
@@ -289,7 +300,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       if (invalidCount > 0) {
         toast({
           title: 'Importação parcial',
-          description: `${invalidCount} linhas foram ignoradas por dados inválidos`,
+          description: `${invalidCount} linhas ignoradas (veja console)`,
         });
       }
 
