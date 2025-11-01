@@ -2644,6 +2644,71 @@ export type Database = {
         }
         Relationships: []
       }
+      kanban_audit_logs: {
+        Row: {
+          action: string
+          board_id: string
+          card_id: string | null
+          created_at: string
+          from_column_id: string | null
+          id: string
+          metadata: Json | null
+          to_column_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          board_id: string
+          card_id?: string | null
+          created_at?: string
+          from_column_id?: string | null
+          id?: string
+          metadata?: Json | null
+          to_column_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          board_id?: string
+          card_id?: string | null
+          created_at?: string
+          from_column_id?: string | null
+          id?: string
+          metadata?: Json | null
+          to_column_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_audit_logs_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_audit_logs_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_audit_logs_from_column_id_fkey"
+            columns: ["from_column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_audit_logs_to_column_id_fkey"
+            columns: ["to_column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_automations: {
         Row: {
           action_config: Json
@@ -2684,6 +2749,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "kanban_automations_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_board_members: {
+        Row: {
+          board_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_board_members_board_id_fkey"
             columns: ["board_id"]
             isOneToOne: false
             referencedRelation: "kanban_boards"
@@ -5094,12 +5194,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_board_member: { Args: { p_board_id: string }; Returns: boolean }
       kanban_board_stats:
         | { Args: { p_board_id: string }; Returns: Json }
         | {
             Args: { p_board_id: string; p_periodo?: string; p_search?: string }
             Returns: Json
           }
+      kanban_user_activity_log: {
+        Args: { p_board_id: string; p_days?: number }
+        Returns: {
+          created_cards: number
+          deleted_cards: number
+          last_action_at: string
+          moved_cards: number
+          total_actions: number
+          updated_cards: number
+          user_id: string
+          user_name: string
+        }[]
+      }
       log_security_event: {
         Args: {
           details_param?: Json
