@@ -262,6 +262,15 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         description: `${cardsToInsert.length} cards importados com sucesso!`,
       });
 
+      // Log audit event
+      await supabase.functions.invoke('kanban-audit', {
+        body: {
+          board_id: boardId,
+          action: 'card_created',
+          metadata: { imported_count: cardsToInsert.length, source: 'excel_import' },
+        },
+      });
+
       setFile(null);
       setPreviewData([]);
       setSelectedColumn('');

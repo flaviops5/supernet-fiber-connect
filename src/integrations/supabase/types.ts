@@ -5201,6 +5201,14 @@ export type Database = {
             Args: { p_board_id: string; p_periodo?: string; p_search?: string }
             Returns: Json
           }
+      kanban_import_summary: {
+        Args: { p_board_id: string; p_limit?: number }
+        Returns: {
+          column_name: string
+          last_import: string
+          total_imported: number
+        }[]
+      }
       kanban_user_activity_log: {
         Args: { p_board_id: string; p_days?: number }
         Returns: {
