@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, Users } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -42,6 +43,17 @@ interface DashboardStats {
   media_por_coluna: number;
 }
 
+interface UserActivity {
+  user_id: string;
+  user_name: string;
+  total_actions: number;
+  created_cards: number;
+  moved_cards: number;
+  updated_cards: number;
+  deleted_cards: number;
+  last_action_at: string;
+}
+
 export function KanbanDashboard({ boardId }: KanbanDashboardProps) {
   // Carregar filtros salvos do localStorage
   const [filters, setFilters] = useState(() => {
@@ -50,7 +62,9 @@ export function KanbanDashboard({ boardId }: KanbanDashboardProps) {
   });
   
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   
   // Debounce para evitar múltiplas requisições
   const debouncedFilters = useDebounce(filters, 400);
@@ -84,6 +98,30 @@ export function KanbanDashboard({ boardId }: KanbanDashboardProps) {
 
     loadStats();
   }, [boardId, debouncedFilters]);
+
+  // Buscar atividade de usuários
+  useEffect(() => {
+    if (!boardId) return;
+    
+    const loadUserActivity = async () => {
+      try {
+        setLoadingActivity(true);
+        const { data, error } = await supabase.rpc('kanban_user_activity_log', {
+          p_board_id: boardId,
+          p_days: 7,
+        });
+
+        if (error) throw error;
+        setUserActivity((data || []) as unknown as UserActivity[]);
+      } catch (error) {
+        console.error('Error loading user activity:', error);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    loadUserActivity();
+  }, [boardId]);
 
   // Mapear prioridades para cores e nomes em português
   const priorityMap = {
@@ -280,6 +318,74 @@ export function KanbanDashboard({ boardId }: KanbanDashboardProps) {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* User Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Atividade de Usuários (últimos 7 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingActivity ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : userActivity.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma atividade registrada nos últimos 7 dias
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">Usuário</TableHead>
+                    <TableHead className="text-center font-semibold">Total</TableHead>
+                    <TableHead className="text-center font-semibold">Criados</TableHead>
+                    <TableHead className="text-center font-semibold">Movidos</TableHead>
+                    <TableHead className="text-center font-semibold">Atualizados</TableHead>
+                    <TableHead className="text-center font-semibold">Deletados</TableHead>
+                    <TableHead className="font-semibold">Última Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userActivity.map((user) => (
+                    <TableRow key={user.user_id}>
+                      <TableCell className="font-medium">{user.user_name}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary">{user.total_actions}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {user.created_cards}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {user.moved_cards}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {user.updated_cards}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {user.deleted_cards}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(user.last_action_at).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
