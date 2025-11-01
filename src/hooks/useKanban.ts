@@ -39,6 +39,13 @@ export interface KanbanCard {
   longitude?: number | null;
   link_info?: string | null;
   custom_fields?: Record<string, any>;
+  municipio?: string | null;
+  localizacao_url?: string | null;
+  links_texto?: string | null;
+  data_instalacao?: string | null;
+  periodo?: string | null;
+  provedor_local?: string | null;
+  telefone?: string | null;
 }
 
 export function useKanban(boardId: string | null) {

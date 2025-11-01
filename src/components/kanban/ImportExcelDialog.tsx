@@ -17,10 +17,16 @@ interface ImportExcelDialogProps {
 }
 
 interface ExcelRow {
+  municipio: string;
   escola: string;
   endereco: string;
-  links: string;
-  colunaL: string;
+  localizacao: string;
+  linksTexto: string;
+  dataInstalacao: string;
+  periodo: string;
+  provedorLocal: string;
+  telefone: string;
+  descricao: string;
 }
 
 export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExcelDialogProps) {
@@ -55,16 +61,32 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
+      // Extract hyperlinks from column I
+      const extractHyperlink = (rowIndex: number) => {
+        const cellAddress = `I${rowIndex + 1}`;
+        const cell = worksheet[cellAddress];
+        if (cell && cell.l && cell.l.Target) {
+          return cell.l.Target;
+        }
+        return jsonData[rowIndex][8] || '';
+      };
+
       // Skip header row, get first 5 rows for preview
       const rows: ExcelRow[] = [];
       for (let i = 1; i < Math.min(6, jsonData.length); i++) {
         const row = jsonData[i];
-        if (row && row.length >= 12) {
+        if (row && row.length >= 3) {
           rows.push({
-            escola: row[2] || '', // Column C (index 2)
-            endereco: row[3] || '', // Column D (index 3)
-            links: row[8] || '', // Column I (index 8)
-            colunaL: row[11] || '', // Column L (index 11)
+            municipio: row[0] || '', // Column A
+            escola: row[2] || '', // Column C
+            endereco: row[3] || '', // Column D
+            localizacao: extractHyperlink(i), // Column I (hyperlink)
+            linksTexto: row[9] || '', // Column J
+            dataInstalacao: row[10] || '', // Column K
+            periodo: row[12] || '', // Column M
+            provedorLocal: row[13] || '', // Column N
+            telefone: row[14] || '', // Column O
+            descricao: row[11] || '', // Column L
           });
         }
       }
@@ -100,13 +122,40 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
 
       const cardsToInsert = [];
       
+      // Extract hyperlinks from column I
+      const extractHyperlink = (rowIndex: number) => {
+        const cellAddress = `I${rowIndex + 1}`;
+        const cell = worksheet[cellAddress];
+        if (cell && cell.l && cell.l.Target) {
+          return cell.l.Target;
+        }
+        return jsonData[rowIndex][8]?.toString().trim() || null;
+      };
+      
       // Skip header row (index 0)
       for (let i = 1; i < jsonData.length; i++) {
         const row = jsonData[i];
-        if (!row || row.length < 12) continue;
+        if (!row || row.length < 3) continue;
 
         const escola = row[2]?.toString().trim();
         if (!escola) continue;
+
+        // Parse date if present
+        let dataInstalacao = null;
+        if (row[10]) {
+          try {
+            const dateValue = row[10];
+            if (typeof dateValue === 'number') {
+              // Excel serial date
+              const excelDate = XLSX.SSF.parse_date_code(dateValue);
+              dataInstalacao = `${excelDate.y}-${String(excelDate.m).padStart(2, '0')}-${String(excelDate.d).padStart(2, '0')}`;
+            } else {
+              dataInstalacao = dateValue.toString().trim();
+            }
+          } catch (e) {
+            console.error('Error parsing date:', e);
+          }
+        }
 
         cardsToInsert.push({
           board_id: boardId,
@@ -115,8 +164,14 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
           description: row[11]?.toString().trim() || null, // Column L
           position: i - 1,
           priority: 'medium',
-          address: row[3]?.toString().trim() || null, // Column D (Endereço)
-          link_info: row[8]?.toString().trim() || null, // Column I (Link)
+          municipio: row[0]?.toString().trim() || null, // Column A
+          address: row[3]?.toString().trim() || null, // Column D
+          localizacao_url: extractHyperlink(i), // Column I (hyperlink)
+          links_texto: row[9]?.toString().trim() || null, // Column J
+          data_instalacao: dataInstalacao, // Column K
+          periodo: row[12]?.toString().trim() || null, // Column M
+          provedor_local: row[13]?.toString().trim() || null, // Column N
+          telefone: row[14]?.toString().trim() || null, // Column O
         });
       }
 
@@ -185,23 +240,25 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Formato esperado: Colunas C (Escola), D (Endereço), I (Link), L (Descrição)
+              Formato esperado: A (Município), C (Escola), D (Endereço), I (Localização), J (Links), K (Data Instalação), L (Descrição), M (Período), N (Provedor), O (Telefone)
             </p>
           </div>
 
           {previewData.length > 0 && (
             <div className="space-y-2">
               <Label>Pré-visualização (primeiras 5 linhas)</Label>
-              <div className="border rounded-md p-3 bg-muted/20 max-h-48 overflow-y-auto">
+              <div className="border rounded-md p-3 bg-muted/20 max-h-48 overflow-y-auto space-y-2">
                 {previewData.map((row, idx) => (
-                  <div key={idx} className="flex items-center gap-2 py-1 text-sm">
-                    <Check className="h-3 w-3 text-green-500" />
-                    <span className="font-medium">{row.escola}</span>
-                    {row.links && (
-                      <span className="text-xs text-muted-foreground">
-                        - {row.links}
-                      </span>
-                    )}
+                  <div key={idx} className="text-xs border-b pb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                      <span className="font-medium">{row.municipio} - {row.escola}</span>
+                    </div>
+                    <div className="ml-5 text-muted-foreground space-y-0.5">
+                      {row.endereco && <div>📍 {row.endereco}</div>}
+                      {row.linksTexto && <div>🔗 {row.linksTexto}</div>}
+                      {row.provedorLocal && <div>👤 {row.provedorLocal}</div>}
+                    </div>
                   </div>
                 ))}
               </div>

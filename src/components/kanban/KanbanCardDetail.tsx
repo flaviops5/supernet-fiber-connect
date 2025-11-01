@@ -160,36 +160,89 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                 </p>
               </div>
 
-              {/* Additional Fields from Excel Import */}
-              {(card.address || card.link_info) && (
-                <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
-                  {card.address && (
+              {/* School Information */}
+              {(card.municipio || card.address || card.localizacao_url || card.links_texto || card.data_instalacao || card.periodo || card.provedor_local || card.telefone) && (
+                <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
+                    📋 Informações da Escola
+                  </h3>
+                  
+                  {card.municipio && (
                     <div>
-                      <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        Endereço
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{card.address}</p>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Município</h4>
+                      <p className="text-sm">{card.municipio}</p>
                     </div>
                   )}
 
-                  {isLikelyUrl(card.link_info) && (
+                  {card.address && (
                     <div>
-                      <h3 className="text-sm font-semibold mb-1 flex items-center gap-1">
-                        <LinkIcon className="h-3 w-3" />
-                        Link
-                      </h3>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Endereço
+                      </h4>
+                      <p className="text-sm">{card.address}</p>
+                    </div>
+                  )}
+
+                  {card.localizacao_url && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Localização
+                      </h4>
                       <a 
-                        href={formatUrl(card.link_info!)}
+                        href={card.localizacao_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
+                        className="text-sm text-primary hover:underline inline-flex items-center gap-1"
                       >
-                        {card.link_info}
+                        Ver no Google Maps <LinkIcon className="h-3 w-3" />
                       </a>
                     </div>
                   )}
 
+                  {card.links_texto && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground flex items-center gap-1">
+                        <LinkIcon className="h-3 w-3" />
+                        Links
+                      </h4>
+                      <p className="text-sm">{card.links_texto}</p>
+                    </div>
+                  )}
+
+                  {card.data_instalacao && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Data de Instalação
+                      </h4>
+                      <p className="text-sm">
+                        {new Date(card.data_instalacao).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
+
+                  {card.periodo && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Período</h4>
+                      <p className="text-sm">{card.periodo}</p>
+                    </div>
+                  )}
+
+                  {card.provedor_local && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Provedor Local</h4>
+                      <p className="text-sm">{card.provedor_local}</p>
+                    </div>
+                  )}
+
+                  {card.telefone && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Telefone</h4>
+                      <p className="text-sm">{card.telefone}</p>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -2758,13 +2758,20 @@ export type Database = {
           column_id: string
           created_at: string
           custom_fields: Json | null
+          data_instalacao: string | null
           description: string | null
           id: string
           latitude: number | null
           link_info: string | null
+          links_texto: string | null
+          localizacao_url: string | null
           longitude: number | null
+          municipio: string | null
+          periodo: string | null
           position: number
           priority: string | null
+          provedor_local: string | null
+          telefone: string | null
           title: string
         }
         Insert: {
@@ -2773,13 +2780,20 @@ export type Database = {
           column_id: string
           created_at?: string
           custom_fields?: Json | null
+          data_instalacao?: string | null
           description?: string | null
           id?: string
           latitude?: number | null
           link_info?: string | null
+          links_texto?: string | null
+          localizacao_url?: string | null
           longitude?: number | null
+          municipio?: string | null
+          periodo?: string | null
           position: number
           priority?: string | null
+          provedor_local?: string | null
+          telefone?: string | null
           title: string
         }
         Update: {
@@ -2788,13 +2802,20 @@ export type Database = {
           column_id?: string
           created_at?: string
           custom_fields?: Json | null
+          data_instalacao?: string | null
           description?: string | null
           id?: string
           latitude?: number | null
           link_info?: string | null
+          links_texto?: string | null
+          localizacao_url?: string | null
           longitude?: number | null
+          municipio?: string | null
+          periodo?: string | null
           position?: number
           priority?: string | null
+          provedor_local?: string | null
+          telefone?: string | null
           title?: string
         }
         Relationships: [
