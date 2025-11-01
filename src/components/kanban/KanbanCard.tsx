@@ -97,13 +97,32 @@ export function KanbanCard({ card, isDragging = false, onCardClick }: KanbanCard
             <CardTitle className="text-sm font-semibold line-clamp-2 text-foreground mb-1">
               {card.title}
             </CardTitle>
+            {(card as any).municipio && (
+              <p className="text-xs font-medium text-foreground/70 mt-1">
+                📍 {(card as any).municipio}
+              </p>
+            )}
             {card.description && (
               <p className="text-xs text-muted-foreground line-clamp-2 mt-2">
                 {card.description}
               </p>
             )}
           </div>
-          <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            {(card as any).localizacao_url && (
+              <a
+                href={(card as any).localizacao_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-primary hover:text-primary/80 transition-colors"
+                title="Ver no Google Maps"
+              >
+                📍
+              </a>
+            )}
+            <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
