@@ -348,20 +348,60 @@ export function useKanban(boardId: string | null) {
       // Check if column has cards
       const cardsInColumn = cards.filter(c => c.column_id === columnId);
       if (cardsInColumn.length > 0) {
+        const confirmed = window.confirm(
+          `A coluna possui ${cardsInColumn.length} cards.\n\nDeseja excluir TODOS os cards desta coluna e a coluna?\nEsta ação não pode ser desfeita.`
+        );
+        if (!confirmed) return;
+
+        // Optimistic update: remove cards and column locally first
+        const prevCards = cards;
+        const prevColumns = columns;
+        setCards(prev => prev.filter(c => c.column_id !== columnId));
+        setColumns(prev => prev.filter(col => col.id !== columnId));
+
+        // Delete cards from this column
+        const { error: cardsError } = await supabase
+          .from('kanban_cards' as any)
+          .delete()
+          .eq('column_id', columnId);
+        if (cardsError) {
+          // Revert on error
+          setCards(prevCards);
+          setColumns(prevColumns);
+          throw cardsError;
+        }
+
+        // Now delete the column
+        const { error: columnError } = await supabase
+          .from('kanban_columns' as any)
+          .delete()
+          .eq('id', columnId);
+        if (columnError) {
+          // Revert columns (cards already gone in DB, keep local as-is)
+          setColumns(prevColumns);
+          throw columnError;
+        }
+
         toast({
-          title: 'Não é possível deletar',
-          description: 'A coluna possui cards. Mova ou delete os cards primeiro.',
-          variant: 'destructive',
+          title: 'Coluna excluída',
+          description: 'Coluna e cards associados excluídos com sucesso',
         });
         return;
       }
+
+      // No cards: delete column directly
+      const prevColumns = columns;
+      setColumns(prev => prev.filter(col => col.id !== columnId));
 
       const { error } = await supabase
         .from('kanban_columns' as any)
         .delete()
         .eq('id', columnId);
 
-      if (error) throw error;
+      if (error) {
+        setColumns(prevColumns);
+        throw error;
+      }
 
       toast({
         title: 'Coluna excluída',
