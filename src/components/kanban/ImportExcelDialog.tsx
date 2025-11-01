@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -114,6 +114,15 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices based on headers
       const cols = detectColumns(jsonData);
 
+      if (cols.escolaIdx < 0) {
+        toast({
+          title: 'Coluna obrigatória ausente',
+          description: 'Não encontramos a coluna "Escola" na planilha. Verifique os nomes do cabeçalho.',
+          variant: 'destructive',
+        });
+        setPreviewData([]);
+        return;
+      }
       // Skip header row, get first 5 rows for preview
       const rows: ExcelRow[] = [];
       for (let i = 1; i < Math.min(6, jsonData.length); i++) {
@@ -169,6 +178,15 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices
       const cols = detectColumns(jsonData);
 
+      if (cols.escolaIdx < 0) {
+        toast({
+          title: 'Coluna obrigatória ausente',
+          description: 'Não encontramos a coluna "Escola" na planilha. Verifique os nomes do cabeçalho.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
       // Schema simplificado: apenas os 5 campos que existem na planilha
       const CardInsertSchema = z.object({
         board_id: z.string().uuid(),
@@ -353,6 +371,9 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Importar Excel</DialogTitle>
+          <DialogDescription>
+            Selecione sua planilha. Apenas as colunas Município, Escola, Endereço, Localização e Links serão importadas.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
