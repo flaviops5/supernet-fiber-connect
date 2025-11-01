@@ -231,7 +231,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
                 className="hidden"
               />
               <Button
-                variant="outline"
+                variant={file ? "default" : "outline"}
                 className="w-full"
                 onClick={() => document.getElementById('excel-file')?.click()}
               >
@@ -288,6 +288,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
             <Button 
               onClick={handleImport} 
               disabled={!file || !selectedColumn || loading}
+              className={!file || !selectedColumn ? "opacity-50 cursor-not-allowed" : ""}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               {loading ? 'Importando...' : 'Importar'}
