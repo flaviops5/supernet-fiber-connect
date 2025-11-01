@@ -1315,6 +1315,8 @@ export type Database = {
           secondary_color: string | null
           signup_enabled: boolean | null
           updated_at: string | null
+          webhook_secret: string | null
+          webhook_url: string | null
         }
         Insert: {
           address?: string | null
@@ -1333,6 +1335,8 @@ export type Database = {
           secondary_color?: string | null
           signup_enabled?: boolean | null
           updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
         }
         Update: {
           address?: string | null
@@ -1351,6 +1355,8 @@ export type Database = {
           secondary_color?: string | null
           signup_enabled?: boolean | null
           updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
         }
         Relationships: []
       }

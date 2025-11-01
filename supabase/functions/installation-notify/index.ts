@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,21 +25,38 @@ serve(async (req) => {
       );
     }
 
-    const webhook = Deno.env.get("EVOLUTION_WEBHOOK_URL");
-    
-    if (!webhook) {
-      console.error("EVOLUTION_WEBHOOK_URL não configurado");
+    // Buscar webhook URL do company_settings
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: settings, error: settingsError } = await supabase
+      .from('company_settings')
+      .select('webhook_url, webhook_secret')
+      .single();
+
+    if (settingsError || !settings?.webhook_url) {
+      console.error("Webhook URL não configurado em company_settings", settingsError);
       return new Response(
-        JSON.stringify({ error: "EVOLUTION_WEBHOOK_URL not configured" }), 
+        JSON.stringify({ error: "Webhook URL not configured in company settings" }), 
         { status: 500, headers }
       );
     }
 
-    console.log("Enviando notificação para webhook:", webhook);
+    console.log("Enviando notificação para webhook:", settings.webhook_url);
     
-    const response = await fetch(webhook, {
+    const webhookHeaders: Record<string, string> = { 
+      "Content-Type": "application/json" 
+    };
+    
+    if (settings.webhook_secret) {
+      webhookHeaders['X-Webhook-Secret'] = settings.webhook_secret;
+    }
+    
+    const response = await fetch(settings.webhook_url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: webhookHeaders,
       body: JSON.stringify({ message }),
     });
 
