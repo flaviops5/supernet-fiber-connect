@@ -1400,10 +1400,9 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         });
         
         // Log das variações aprovadas para documentação
-        if (approvedExamples.length > 0 && approvedSimulationsCache) {
+        if (approvedExamples.length > 0) {
           logger.info("Variações aprovadas em uso", {
-            total: approvedSimulationsCache.data.length,
-            scenarios: [...new Set(approvedSimulationsCache.data.map(s => s.scenario_key))],
+            total: approvedExamples.length,
             context: "Fluxo de energia seguindo protocolos aprovados"
           });
         }
@@ -1516,7 +1515,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         logger.info("Processando Cenário A - Fluxo de Energia", { 
           flowState,
           scenario,
-          approvedVariations: approvedSimulationsCache?.data.length || 0,
+          approvedVariations: approvedExamples.length || 0,
           context: "Seguindo protocolo de energia com variações aprovadas como referência"
         });
 
