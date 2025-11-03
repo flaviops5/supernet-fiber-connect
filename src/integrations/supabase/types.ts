@@ -5349,7 +5349,13 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_board_member: { Args: { p_board_id: string }; Returns: boolean }
+      is_board_member:
+        | { Args: { _board_id: string; _user_id: string }; Returns: boolean }
+        | { Args: { p_board_id: string }; Returns: boolean }
+      is_board_owner: {
+        Args: { _board_id: string; _user_id: string }
+        Returns: boolean
+      }
       kanban_board_stats:
         | { Args: { p_board_id: string }; Returns: Json }
         | {
