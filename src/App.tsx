@@ -34,6 +34,7 @@ import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
 import FluxoAgente from "./pages/FluxoAgente";
 import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
 import AdminKanban from "./pages/AdminKanban";
+import PublicCalendar from "./pages/PublicCalendar";
 import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -86,6 +87,9 @@ const App = () => {
           <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
           <Route path="/admin/fluxo-luan" element={<Navigate to="/admin/fluxo-agentes" replace />} />
           <Route path="/fluxo-agente" element={<FluxoAgente />} />
+            
+            {/* Public calendar route (no header/footer) */}
+            <Route path="/instalacoes/:token" element={<PublicCalendar />} />
             
             {/* Public routes with header/footer */}
             <Route path="/*" element={

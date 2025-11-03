@@ -10,9 +10,10 @@ import { CreateCardDialog } from './CreateCardDialog';
 import { KanbanDashboard } from './KanbanDashboard';
 import { KanbanAutomations } from './KanbanAutomations';
 import { KanbanTemplates } from './KanbanTemplates';
+import { TokenManager } from './TokenManager';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText } from 'lucide-react';
+import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Link2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +56,7 @@ export function KanbanBoard({
   const [showAutomations, setShowAutomations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showImportExcel, setShowImportExcel] = useState(false);
+  const [showTokenManager, setShowTokenManager] = useState(false);
   const [filters, setFilters] = useState<KanbanFiltersState>({
     search: '',
     priority: null,
@@ -202,6 +204,10 @@ export function KanbanBoard({
           <FileText className="h-3.5 w-3.5 mr-1" />
           Templates
         </Button>
+        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowTokenManager(true)}>
+          <Link2 className="h-3.5 w-3.5 mr-1" />
+          Links Públicos
+        </Button>
         <Button variant="outline" size="sm" className="h-8">
           <Filter className="h-3.5 w-3.5 mr-1" />
           Filtros
@@ -307,5 +313,15 @@ export function KanbanBoard({
           boardId={boardId}
           columns={columns}
         />
+
+        {/* Token Manager Dialog */}
+        <Dialog open={showTokenManager} onOpenChange={setShowTokenManager}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Links de Acesso Público</DialogTitle>
+            </DialogHeader>
+            <TokenManager boardId={boardId} />
+          </DialogContent>
+        </Dialog>
       </div>;
 }

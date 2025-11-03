@@ -827,6 +827,56 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_access_tokens: {
+        Row: {
+          access_count: number
+          board_id: string
+          created_at: string
+          created_by: string | null
+          entity_filter: Json | null
+          entity_name: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          last_accessed_at: string | null
+          token: string
+        }
+        Insert: {
+          access_count?: number
+          board_id: string
+          created_at?: string
+          created_by?: string | null
+          entity_filter?: Json | null
+          entity_name: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          token: string
+        }
+        Update: {
+          access_count?: number
+          board_id?: string
+          created_at?: string
+          created_by?: string | null
+          entity_filter?: Json | null
+          entity_name?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_access_tokens_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_content: {
         Row: {
           campaign_id: string
@@ -5324,6 +5374,20 @@ export type Database = {
           title: string
         }[]
       }
+      get_installation_events_by_token: {
+        Args: { p_end: string; p_start: string; p_token: string }
+        Returns: {
+          card_id: string
+          data_instalacao: string
+          fotos: string[]
+          id: string
+          localizacao_url: string
+          municipio: string
+          periodo: string
+          status: string
+          title: string
+        }[]
+      }
       get_migration_stats: {
         Args: never
         Returns: {
@@ -5418,6 +5482,15 @@ export type Database = {
           source_id: string
           tags: string[]
           title: string
+        }[]
+      }
+      validate_calendar_token: {
+        Args: { p_token: string }
+        Returns: {
+          board_id: string
+          entity_filter: Json
+          entity_name: string
+          is_valid: boolean
         }[]
       }
     }
