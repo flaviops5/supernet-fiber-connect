@@ -2687,7 +2687,6 @@ Nossa equipe técnica já está a caminho de uma solução ⚡`
 
       // 🔵 CENÁRIO B: Fluxo de equipamento travado (sinal OK)
       const isCenarioB = scenario === "B" || flowState?.waiting_step?.startsWith("scenario_b");
-      const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
       
       if (isCenarioB && waitingStep) {
         logger.info("Processando Cenário B - Equipamento Travado", { 
