@@ -38,10 +38,14 @@ export default function PublicCalendar() {
       setLoading(true);
       setError("");
 
+      console.log("🔍 Iniciando carregamento do calendário...", { token });
+
       // Verificar se usuário está autenticado
       const { data: { user } } = await supabase.auth.getUser();
       let boardId: string | null = null;
       let isAdmin = false;
+
+      console.log("👤 Usuário:", user?.id || "não autenticado");
 
       if (user) {
         // Verificar se é admin
@@ -51,10 +55,12 @@ export default function PublicCalendar() {
         });
 
         isAdmin = hasAdminRole === true;
+        console.log("🔐 É admin?", isAdmin);
       }
 
       // Se não é admin e não tem token, mostrar erro
       if (!isAdmin && !token) {
+        console.error("❌ Sem token e não é admin");
         setError("Token de acesso não fornecido");
         setLoading(false);
         return;
@@ -62,18 +68,24 @@ export default function PublicCalendar() {
 
       // Se tem token, validar
       if (token) {
+        console.log("🔑 Validando token...");
         const { data: tokenData, error: tokenError } = await supabase
           .rpc("validate_calendar_token", { p_token: token })
-          .single();
+          .maybeSingle();
+
+        console.log("Token data:", tokenData, "Error:", tokenError);
 
         if (tokenError || !tokenData?.is_valid) {
           // Se não é admin, mostrar erro
           if (!isAdmin) {
+            console.error("❌ Token inválido e não é admin");
             setError("Link inválido ou expirado. Entre em contato com a empresa.");
             setLoading(false);
             return;
           }
+          console.log("⚠️ Token inválido mas é admin, continuando...");
         } else {
+          console.log("✅ Token válido:", tokenData.entity_name);
           setEntityName(tokenData.entity_name);
           boardId = tokenData.board_id;
         }
@@ -81,6 +93,7 @@ export default function PublicCalendar() {
 
       // Se é admin e não tem boardId do token, buscar primeiro board
       if (isAdmin && !boardId) {
+        console.log("🔍 Admin sem boardId, buscando primeiro board...");
         const { data: boards } = await supabase
           .from("kanban_boards")
           .select("id")
@@ -90,10 +103,12 @@ export default function PublicCalendar() {
         if (boards && boards.length > 0) {
           boardId = boards[0].id;
           setEntityName("Administrador - Todos os Eventos");
+          console.log("✅ Board encontrado:", boardId);
         }
       }
 
       if (!boardId) {
+        console.error("❌ Nenhum board encontrado");
         setError("Nenhum board encontrado");
         setLoading(false);
         return;
@@ -104,11 +119,15 @@ export default function PublicCalendar() {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 90);
 
+      console.log("📅 Buscando eventos de", startDate.toISOString().split("T")[0], "até", endDate.toISOString().split("T")[0]);
+
       let eventsData;
+      let eventsError;
       
-      if (token) {
+      if (token && !isAdmin) {
         // Usar função com token
-        const { data, error: eventsError } = await supabase.rpc(
+        console.log("🔑 Buscando eventos por token...");
+        const result = await supabase.rpc(
           "get_installation_events_by_token",
           {
             p_token: token,
@@ -117,17 +136,12 @@ export default function PublicCalendar() {
           }
         );
         
-        if (eventsError) {
-          console.error("Erro ao carregar eventos:", eventsError);
-          setError("Erro ao carregar o calendário. Tente novamente.");
-          setLoading(false);
-          return;
-        }
-        
-        eventsData = data;
-      } else if (isAdmin) {
-        // Admin sem token - buscar todos os eventos do board
-        const { data, error: eventsError } = await supabase.rpc(
+        eventsData = result.data;
+        eventsError = result.error;
+      } else {
+        // Admin - buscar todos os eventos do board
+        console.log("👑 Admin buscando todos os eventos do board...");
+        const result = await supabase.rpc(
           "get_installation_events",
           {
             p_board: boardId,
@@ -136,15 +150,18 @@ export default function PublicCalendar() {
           }
         );
         
-        if (eventsError) {
-          console.error("Erro ao carregar eventos:", eventsError);
-          setError("Erro ao carregar o calendário. Tente novamente.");
-          setLoading(false);
-          return;
-        }
-        
-        eventsData = data;
+        eventsData = result.data;
+        eventsError = result.error;
       }
+
+      if (eventsError) {
+        console.error("❌ Erro ao carregar eventos:", eventsError);
+        setError(`Erro ao carregar o calendário: ${eventsError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      console.log("📊 Eventos carregados:", eventsData?.length || 0);
 
       const formattedEvents: CalendarEvent[] = (eventsData || []).map((e: any) => ({
         id: e.id,
@@ -156,11 +173,12 @@ export default function PublicCalendar() {
         localizacao_url: e.localizacao_url,
       }));
 
+      console.log("✅ Eventos formatados:", formattedEvents.length);
       setEvents(formattedEvents);
+      setLoading(false);
     } catch (err: any) {
-      console.error("Erro:", err);
-      setError("Erro ao carregar o calendário.");
-    } finally {
+      console.error("💥 Erro geral:", err);
+      setError(`Erro: ${err.message}`);
       setLoading(false);
     }
   };
