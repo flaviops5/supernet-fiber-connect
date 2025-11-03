@@ -30,12 +30,6 @@ export default function PublicCalendar() {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    if (!token) {
-      setError("Token de acesso não fornecido");
-      setLoading(false);
-      return;
-    }
-
     loadCalendar();
   }, [token]);
 
@@ -44,38 +38,112 @@ export default function PublicCalendar() {
       setLoading(true);
       setError("");
 
-      // Validar token
-      const { data: tokenData, error: tokenError } = await supabase
-        .rpc("validate_calendar_token", { p_token: token })
-        .single();
+      // Verificar se usuário está autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      let boardId: string | null = null;
+      let isAdmin = false;
 
-      if (tokenError || !tokenData?.is_valid) {
-        setError("Link inválido ou expirado. Entre em contato com a empresa.");
+      if (user) {
+        // Verificar se é admin
+        const { data: hasAdminRole } = await supabase.rpc("has_role", {
+          _user_id: user.id,
+          _role: "admin",
+        });
+
+        isAdmin = hasAdminRole === true;
+      }
+
+      // Se não é admin e não tem token, mostrar erro
+      if (!isAdmin && !token) {
+        setError("Token de acesso não fornecido");
         setLoading(false);
         return;
       }
 
-      setEntityName(tokenData.entity_name);
+      // Se tem token, validar
+      if (token) {
+        const { data: tokenData, error: tokenError } = await supabase
+          .rpc("validate_calendar_token", { p_token: token })
+          .single();
+
+        if (tokenError || !tokenData?.is_valid) {
+          // Se não é admin, mostrar erro
+          if (!isAdmin) {
+            setError("Link inválido ou expirado. Entre em contato com a empresa.");
+            setLoading(false);
+            return;
+          }
+        } else {
+          setEntityName(tokenData.entity_name);
+          boardId = tokenData.board_id;
+        }
+      }
+
+      // Se é admin e não tem boardId do token, buscar primeiro board
+      if (isAdmin && !boardId) {
+        const { data: boards } = await supabase
+          .from("kanban_boards")
+          .select("id")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (boards && boards.length > 0) {
+          boardId = boards[0].id;
+          setEntityName("Administrador - Todos os Eventos");
+        }
+      }
+
+      if (!boardId) {
+        setError("Nenhum board encontrado");
+        setLoading(false);
+        return;
+      }
 
       // Buscar eventos dos próximos 90 dias
       const startDate = new Date();
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 90);
 
-      const { data: eventsData, error: eventsError } = await supabase.rpc(
-        "get_installation_events_by_token",
-        {
-          p_token: token,
-          p_start: startDate.toISOString().split("T")[0],
-          p_end: endDate.toISOString().split("T")[0],
+      let eventsData;
+      
+      if (token) {
+        // Usar função com token
+        const { data, error: eventsError } = await supabase.rpc(
+          "get_installation_events_by_token",
+          {
+            p_token: token,
+            p_start: startDate.toISOString().split("T")[0],
+            p_end: endDate.toISOString().split("T")[0],
+          }
+        );
+        
+        if (eventsError) {
+          console.error("Erro ao carregar eventos:", eventsError);
+          setError("Erro ao carregar o calendário. Tente novamente.");
+          setLoading(false);
+          return;
         }
-      );
-
-      if (eventsError) {
-        console.error("Erro ao carregar eventos:", eventsError);
-        setError("Erro ao carregar o calendário. Tente novamente.");
-        setLoading(false);
-        return;
+        
+        eventsData = data;
+      } else if (isAdmin) {
+        // Admin sem token - buscar todos os eventos do board
+        const { data, error: eventsError } = await supabase.rpc(
+          "get_installation_events",
+          {
+            p_board: boardId,
+            p_start: startDate.toISOString().split("T")[0],
+            p_end: endDate.toISOString().split("T")[0],
+          }
+        );
+        
+        if (eventsError) {
+          console.error("Erro ao carregar eventos:", eventsError);
+          setError("Erro ao carregar o calendário. Tente novamente.");
+          setLoading(false);
+          return;
+        }
+        
+        eventsData = data;
       }
 
       const formattedEvents: CalendarEvent[] = (eventsData || []).map((e: any) => ({
