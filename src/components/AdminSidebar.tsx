@@ -61,8 +61,7 @@ interface UserProfile {
   role?: string;
 }
 
-// COLUNA 1 - OPERACIONAL
-const dashboardItems = [
+const menuItems = [
   {
     title: "Dashboard",
     url: "/admin",
@@ -74,42 +73,11 @@ const dashboardItems = [
     url: "/admin/kanban",
     icon: Kanban,
   },
-];
-
-const attendanceItems = [
   {
     title: "Central de Atendimento",
     url: "/atendimento",
     icon: MessageSquare,
     external: true,
-  },
-  {
-    title: "Config. Atendimento",
-    url: "/admin/atendimento-config",
-    icon: MessageSquare,
-  },
-  {
-    title: "WhatsApp",
-    url: "/admin/whatsapp",
-    icon: MessageCircle,
-  },
-  {
-    title: "Gerenciar Notificações",
-    url: "/admin/notificacoes",
-    icon: Bell,
-  },
-  {
-    title: "Escalonamento",
-    url: "/admin/escalonamento",
-    icon: Activity,
-  },
-];
-
-const agentsItems = [
-  {
-    title: "Agentes IA",
-    url: "/admin/agents",
-    icon: Bot,
   },
   {
     title: "Usuários & Agentes",
@@ -121,10 +89,18 @@ const agentsItems = [
     url: "/admin/agentes",
     icon: Users,
   },
+];
+
+const marketingItems = [
   {
-    title: "Atlas Insights",
-    url: "/admin/atlas-insights",
-    icon: Brain,
+    title: "Campanhas",
+    url: "/admin/campaigns",
+    icon: Megaphone,
+  },
+  {
+    title: "Dashboard NPS",
+    url: "/admin/nps-dashboard",
+    icon: Star,
   },
 ];
 
@@ -144,6 +120,9 @@ const documentationItems = [
     url: "/admin/documents",
     icon: FolderOpen,
   },
+];
+
+const testingItems = [
   {
     title: "Central de Testes",
     url: "/admin/testes",
@@ -151,7 +130,87 @@ const documentationItems = [
   },
 ];
 
-// COLUNA 2 - NEGÓCIO & CONFIGURAÇÃO
+const agentsItems = [
+  {
+    title: "Agentes IA",
+    url: "/admin/agents",
+    icon: Bot,
+  },
+  {
+    title: "Config. Atendimento",
+    url: "/admin/atendimento-config",
+    icon: MessageSquare,
+  },
+  {
+    title: "Escalonamento",
+    url: "/admin/escalonamento",
+    icon: Activity,
+  },
+  {
+    title: "WhatsApp",
+    url: "/admin/whatsapp",
+    icon: MessageCircle,
+  },
+  {
+    title: "Gerenciar Notificações",
+    url: "/admin/notificacoes",
+    icon: Bell,
+  },
+  {
+    title: "Integração IXC",
+    url: "/admin/ixc-integration",
+    icon: Database,
+  },
+  {
+    title: "Monitoramento Ativo",
+    url: "/admin/monitoramento",
+    icon: Monitor,
+  },
+  {
+    title: "Atlas Insights",
+    url: "/admin/atlas-insights",
+    icon: Brain,
+  },
+  {
+    title: "Logs do Sistema",
+    url: "/monitoring/logs",
+    icon: FileText,
+  },
+  {
+    title: "Manutenção Inteligente",
+    url: "/manutencao",
+    icon: Wrench,
+  },
+  {
+    title: "Métricas do Sistema",
+    url: "/system-metrics",
+    icon: Activity,
+  },
+  {
+    title: "Preparação Produção",
+    url: "/admin/production-readiness",
+    icon: Rocket,
+  },
+];
+
+const financialItems = [
+  {
+    title: "Dashboard Financeiro",
+    url: "/admin/financial",
+    icon: DollarSign,
+  },
+  {
+    title: "Notificações Pagamento",
+    url: "/admin/payment-notifications",
+    icon: Bell,
+  },
+  {
+    title: "Templates de Notificação",
+    url: "/admin/notification-templates",
+    icon: FileText,
+  },
+];
+
 const siteManagementItems = [
   {
     title: "Planos",
@@ -185,68 +244,7 @@ const siteManagementItems = [
   },
 ];
 
-const marketingItems = [
-  {
-    title: "Campanhas",
-    url: "/admin/campaigns",
-    icon: Megaphone,
-  },
-  {
-    title: "Dashboard NPS",
-    url: "/admin/nps-dashboard",
-    icon: Star,
-  },
-];
-
-const financialItems = [
-  {
-    title: "Dashboard Financeiro",
-    url: "/admin/financial",
-    icon: DollarSign,
-  },
-  {
-    title: "Notificações Pagamento",
-    url: "/admin/payment-notifications",
-    icon: Bell,
-  },
-  {
-    title: "Templates de Notificação",
-    url: "/admin/notification-templates",
-    icon: FileText,
-  },
-];
-
-const systemItems = [
-  {
-    title: "Integração IXC",
-    url: "/admin/ixc-integration",
-    icon: Database,
-  },
-  {
-    title: "Monitoramento Ativo",
-    url: "/admin/monitoramento",
-    icon: Monitor,
-  },
-  {
-    title: "Logs do Sistema",
-    url: "/monitoring/logs",
-    icon: FileText,
-  },
-  {
-    title: "Manutenção Inteligente",
-    url: "/manutencao",
-    icon: Wrench,
-  },
-  {
-    title: "Métricas do Sistema",
-    url: "/system-metrics",
-    icon: Activity,
-  },
-  {
-    title: "Preparação Produção",
-    url: "/admin/production-readiness",
-    icon: Rocket,
-  },
+const profileItems = [
   {
     title: "Meu Perfil",
     url: "/perfil-agente",
@@ -367,204 +365,194 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {!isCollapsed && (
-          <div className="grid grid-cols-2 gap-4 p-4">
-            {/* COLUNA 1 - OPERACIONAL */}
-            <div className="space-y-6">
-              <SidebarGroup>
-                <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {dashboardItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            className={getNavClasses(item.url, item.exact)}
-                            end={item.exact}
-                          >
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Atendimento</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {attendanceItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          {item.external ? (
-                            <a href={item.url} className={getNavClasses(item.url)}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
-                            </a>
-                          ) : (
-                            <NavLink to={item.url} className={getNavClasses(item.url)}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
-                            </NavLink>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Agentes & IA</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {agentsItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClasses(item.url)}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Documentação</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {documentationItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClasses(item.url)}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </div>
-
-            {/* COLUNA 2 - NEGÓCIO & CONFIGURAÇÃO */}
-            <div className="space-y-6">
-              <SidebarGroup>
-                <SidebarGroupLabel>Site</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {siteManagementItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClasses(item.url)}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Marketing</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {marketingItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClasses(item.url)}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Financeiro</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {financialItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} className={getNavClasses(item.url)}>
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-
-              <SidebarGroup>
-                <SidebarGroupLabel>Sistema</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {systemItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          {item.external ? (
-                            <a href={item.url} className={getNavClasses(item.url)}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
-                            </a>
-                          ) : (
-                            <NavLink to={item.url} className={getNavClasses(item.url)}>
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
-                            </NavLink>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </div>
-          </div>
-        )}
-
-        {/* Modo collapsed - menu vertical simples */}
-        {isCollapsed && (
-          <div className="space-y-2">
-            {[...dashboardItems, ...attendanceItems, ...agentsItems, ...documentationItems, 
-              ...siteManagementItems, ...marketingItems, ...financialItems, ...systemItems].map((item) => {
-              const isExternal = 'external' in item && (item as any).external === true;
-              const isExact = 'exact' in item && (item as any).exact === true;
-              
-              return (
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    {isExternal ? (
-                      <a href={item.url} className={getNavClasses(item.url, isExact)} title={item.title}>
+                    {item.external ? (
+                      <a
+                        href={item.url}
+                        className={getNavClasses(item.url, item.exact)}
+                      >
                         <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
                       </a>
                     ) : (
-                      <NavLink to={item.url} className={getNavClasses(item.url, isExact)} end={isExact} title={item.title}>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url, item.exact)}
+                        end={item.exact}
+                      >
                         <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
                       </NavLink>
                     )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Marketing</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {marketingItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Documentação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {documentationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Testes & Validação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {testingItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Agentes</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {agentsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Financeiro</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {financialItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gerenciar Site</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {siteManagementItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Conta</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {profileItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    {item.external ? (
+                      <a
+                        href={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </a>
+                    ) : (
+                      <NavLink
+                        to={item.url}
+                        className={getNavClasses(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">
