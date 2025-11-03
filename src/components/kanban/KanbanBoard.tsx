@@ -276,16 +276,6 @@ export function KanbanBoard({
                 <SortableContext items={columns.map(col => col.id)} strategy={horizontalListSortingStrategy}>
                   {columns.map(column => <KanbanColumn key={column.id} column={column} cards={filteredCards.filter(card => card.column_id === column.id)} onCardClick={setSelectedCard} onDeleteColumn={deleteColumn} />)}
                 </SortableContext>
-
-                {/* Add Column Button */}
-                <Card className="flex-shrink-0 w-80 h-fit p-4 border-2 border-dashed bg-muted/20 hover:bg-muted/40 transition-colors">
-                  <Button variant="ghost" className="w-full h-full min-h-[100px] hover:bg-background/50" onClick={() => setShowCreateColumn(true)}>
-                    <div className="flex flex-col items-center gap-2">
-                      <Plus className="h-5 w-5" />
-                      <span className="font-medium">Adicionar Coluna</span>
-                    </div>
-                  </Button>
-                </Card>
               </div>
             </div>
 
