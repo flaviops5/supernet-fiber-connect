@@ -166,22 +166,22 @@ export function EditCardDialog({ open, onClose, card, onUpdate }: EditCardDialog
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Escola *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Nome da escola"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="municipio">Município</Label>
+            <Label htmlFor="municipio">Município *</Label>
             <Input
               id="municipio"
               value={formData.municipio}
               onChange={(e) => setFormData({ ...formData, municipio: e.target.value })}
               placeholder="Nome do município"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="title">Nome da Escola</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Nome da escola"
             />
           </div>
 
@@ -295,7 +295,7 @@ export function EditCardDialog({ open, onClose, card, onUpdate }: EditCardDialog
           <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={loading || !formData.title}>
+          <Button onClick={handleSave} disabled={loading || !formData.municipio}>
             <Save className="h-4 w-4 mr-2" />
             {loading ? 'Salvando...' : 'Salvar'}
           </Button>

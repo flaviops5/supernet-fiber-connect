@@ -154,10 +154,23 @@ export function KanbanBoard({
     // Could add visual feedback here
   };
 
-  // Filter cards
+  // Filter cards - busca em TODOS os campos do card
   const filteredCards = cards.filter(card => {
-    if (filters.search && !card.title.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const searchableFields = [
+        card.title,
+        (card as any).municipio,
+        card.description,
+        (card as any).address,
+        (card as any).provedor_local,
+        (card as any).telefone,
+        (card as any).links_texto,
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      if (!searchableFields.includes(searchLower)) {
+        return false;
+      }
     }
     if (filters.priority && card.priority !== filters.priority) {
       return false;

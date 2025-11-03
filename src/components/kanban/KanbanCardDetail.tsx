@@ -149,7 +149,12 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{card.title}</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {card.municipio || card.title}
+          </DialogTitle>
+          {card.municipio && card.title && (
+            <p className="text-sm text-muted-foreground">{card.title}</p>
+          )}
         </DialogHeader>
 
         <ScrollArea className="h-[70vh]">
@@ -164,16 +169,23 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
               </div>
 
               {/* School Information */}
-              {(card.municipio || card.address || card.localizacao_url || card.links_texto || card.data_instalacao || card.periodo || card.provedor_local || card.telefone) && (
+              {(card.municipio || card.title || card.address || card.localizacao_url || card.links_texto || card.data_instalacao || card.periodo || card.provedor_local || card.telefone) && (
                 <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-1">
-                    📋 Informações da Escola
+                    📋 Informações
                   </h3>
                   
                   {card.municipio && (
                     <div>
                       <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Município</h4>
-                      <p className="text-sm">{card.municipio}</p>
+                      <p className="text-sm font-bold">{card.municipio}</p>
+                    </div>
+                  )}
+
+                  {card.title && (
+                    <div>
+                      <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Nome da Escola</h4>
+                      <p className="text-sm">{card.title}</p>
                     </div>
                   )}
 

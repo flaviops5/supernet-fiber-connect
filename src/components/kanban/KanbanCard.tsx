@@ -94,14 +94,20 @@ export function KanbanCard({ card, isDragging = false, onCardClick }: KanbanCard
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm font-semibold line-clamp-2 text-foreground mb-1">
-              {card.title}
-            </CardTitle>
+            {/* Município em DESTAQUE como informação principal */}
             {(card as any).municipio && (
-              <p className="text-xs font-medium text-foreground/70 mt-1">
-                📍 {(card as any).municipio}
-              </p>
+              <div className="mb-2">
+                <CardTitle className="text-base font-bold line-clamp-1 text-foreground flex items-center gap-1">
+                  📍 {(card as any).municipio}
+                </CardTitle>
+              </div>
             )}
+            
+            {/* Nome da escola como informação secundária */}
+            <p className="text-xs font-medium text-muted-foreground line-clamp-1 mb-1">
+              {card.title}
+            </p>
+            
             {card.description && (
               <p className="text-xs text-muted-foreground line-clamp-2 mt-2">
                 {card.description}
