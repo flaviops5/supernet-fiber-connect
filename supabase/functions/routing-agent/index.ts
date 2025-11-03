@@ -184,13 +184,12 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         sender_name: "Cloé Martins",
         content: `Olá ${firstName}! Me dê mais um minutinho para verificar tudo!`,
       });
-      
-      // Aguardar 2 segundos antes da próxima mensagem
-      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     // 📤 Fluxo específico para suporte técnico
     if (targetDepartment === "tecnico") {
+      // Aguardar 2 segundos após a mensagem de confirmação
+      await new Promise(resolve => setTimeout(resolve, 2000));
       logger.info("Cliente offline detectado - iniciando fluxo de reboot pela Cloé", {
         cpf_redacted: `***${clientStatus.cpf?.slice(-3)}`,
         ixc_client_id: clientStatus.id,
