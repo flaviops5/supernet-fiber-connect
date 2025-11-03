@@ -10,10 +10,11 @@ import { CreateCardDialog } from './CreateCardDialog';
 import { KanbanDashboard } from './KanbanDashboard';
 import { KanbanAutomations } from './KanbanAutomations';
 import { KanbanTemplates } from './KanbanTemplates';
+import { KanbanCalendar } from './KanbanCalendar';
 import { TokenManager } from './TokenManager';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Link2, MoreVertical, Download } from 'lucide-react';
+import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Link2, MoreVertical, Download, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -62,6 +63,7 @@ export function KanbanBoard({
   const [showDashboard, setShowDashboard] = useState(false);
   const [showAutomations, setShowAutomations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showImportExcel, setShowImportExcel] = useState(false);
   const [showTokenManager, setShowTokenManager] = useState(false);
   const [filters, setFilters] = useState<KanbanFiltersState>({
@@ -254,6 +256,10 @@ export function KanbanBoard({
               <FileText className="h-4 w-4" />
               Templates
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowCalendar(true)} className="gap-2 cursor-pointer">
+              <Calendar className="h-4 w-4" />
+              Calendário
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setShowTokenManager(true)} className="gap-2 cursor-pointer">
               <Link2 className="h-4 w-4" />
@@ -330,6 +336,20 @@ export function KanbanBoard({
               <DialogTitle>Templates</DialogTitle>
             </DialogHeader>
             <KanbanTemplates onSelectTemplate={handleTemplateSelect} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Calendar Dialog */}
+        <Dialog open={showCalendar} onOpenChange={setShowCalendar}>
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Calendário de Instalações</DialogTitle>
+            </DialogHeader>
+            <KanbanCalendar 
+              boardId={boardId} 
+              startDate={new Date().toISOString().split('T')[0]}
+              endDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+            />
           </DialogContent>
         </Dialog>
 
