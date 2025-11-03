@@ -17,6 +17,8 @@ Deno.serve(async (req) => {
   try {
     const { message, photos } = await req.json();
     
+    console.log(`📦 Payload recebido: message=${!!message}, photos=${photos ? photos.length : 0}`);
+    
     if (!message) {
       console.error("Mensagem ausente no payload");
       return new Response(
@@ -98,31 +100,40 @@ Deno.serve(async (req) => {
           }
 
           // Se houver fotos, enviar cada uma
-          if (photos && photos.length > 0) {
-            console.log(`Enviando ${photos.length} foto(s) para ${phone}`);
+          if (photos && Array.isArray(photos) && photos.length > 0) {
+            console.log(`📸 Enviando ${photos.length} foto(s) para ${phone}`);
             
             for (const photoUrl of photos) {
+              console.log(`📸 URL da foto: ${photoUrl}`);
               const mediaUrl = `${normalizedBaseUrl}/message/sendMedia/${instanceName}`;
+              
+              const payload = {
+                number: phone,
+                mediatype: "image",
+                media: photoUrl,
+              };
+              
+              console.log(`📤 Enviando foto para ${mediaUrl}`, JSON.stringify(payload));
+              
               const mediaResponse = await fetch(mediaUrl, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   "apikey": apiKey,
                 },
-                body: JSON.stringify({
-                  number: phone,
-                  mediatype: "image",
-                  media: photoUrl,
-                }),
+                body: JSON.stringify(payload),
               });
 
+              const responseText = await mediaResponse.text();
+              
               if (!mediaResponse.ok) {
-                const errorText = await mediaResponse.text();
-                console.error(`Falha ao enviar foto para ${phone}:`, mediaResponse.status, errorText);
+                console.error(`❌ Falha ao enviar foto para ${phone}:`, mediaResponse.status, responseText);
               } else {
-                console.log(`Foto enviada com sucesso para ${phone}`);
+                console.log(`✅ Foto enviada com sucesso para ${phone}:`, responseText);
               }
             }
+          } else {
+            console.log(`⚠️ Nenhuma foto para enviar. photos:`, JSON.stringify(photos));
           }
 
           console.log(`Notificação completa enviada para ${phone}`);
