@@ -23,6 +23,7 @@ const validatePhone = (phone: string): boolean => {
 };
 
 export default function NotificationTargetsManager() {
+  console.log("NotificationTargetsManager rendering...");
   const { toast } = useToast();
   const [targets, setTargets] = useState<NotificationTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
