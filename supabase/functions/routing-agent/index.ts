@@ -184,6 +184,9 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         sender_name: "Cloé Martins",
         content: `Olá ${firstName}! Me dê mais um minutinho para verificar tudo!`,
       });
+      
+      // Aguardar 2 segundos antes da próxima mensagem
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     // 📤 Fluxo específico para suporte técnico
@@ -208,6 +211,9 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           sender_name: "Cloé Martins",
           content: "Detectei que você está offline. Vou tentar reiniciar seu equipamento remotamente... 🔄\n\nIsso vai demorar mais um minutinho, por favor aguarde.",
         });
+        
+        // Aguardar 2 segundos antes de iniciar o reboot
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         try {
           // Executar reboot com timeout de 90s
@@ -268,6 +274,9 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           logger.error("Erro ao buscar sinal ONU", { error: signalError instanceof Error ? signalError.message : 'Unknown error' });
         }
 
+        // Aguardar 3 segundos antes de enviar mensagem de transferência
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
         // Mensagem informando que o reboot não resolveu
         await supabase.from("conversation_messages").insert({
           conversation_id: conversationId,
