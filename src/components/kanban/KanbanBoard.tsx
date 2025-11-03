@@ -181,7 +181,7 @@ export function KanbanBoard({
       {/* Header com menu reorganizado */}
       <div className="flex items-center gap-3 mb-6 pb-4 border-b">
         {/* Grupo 1: Seleção e Busca */}
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-3">
           {/* Board Selector */}
           {onBoardChange && (
             <BoardSelector 
@@ -191,8 +191,8 @@ export function KanbanBoard({
             />
           )}
 
-          {/* Search - maior */}
-          <div className="relative flex-1 max-w-sm">
+          {/* Search */}
+          <div className="relative w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input 
               type="text" 
@@ -205,7 +205,7 @@ export function KanbanBoard({
         </div>
 
         {/* Grupo 2: Ações Primárias */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           <Button 
             size="default" 
             onClick={() => setShowCreateCard(true)}
@@ -223,49 +223,49 @@ export function KanbanBoard({
             <Plus className="h-4 w-4" />
             Nova Coluna
           </Button>
-        </div>
 
-        {/* Grupo 3: Ferramentas (Dropdown) */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="default" className="gap-2">
-              <MoreVertical className="h-4 w-4" />
-              Ferramentas
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-background z-50">
-            <DropdownMenuItem onClick={() => setShowDashboard(true)} className="gap-2 cursor-pointer">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowAutomations(true)} className="gap-2 cursor-pointer">
-              <Zap className="h-4 w-4" />
-              Automações
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowTemplates(true)} className="gap-2 cursor-pointer">
-              <FileText className="h-4 w-4" />
-              Templates
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setShowTokenManager(true)} className="gap-2 cursor-pointer">
-              <Link2 className="h-4 w-4" />
-              Links Públicos
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowImportExcel(true)} className="gap-2 cursor-pointer">
-              <Download className="h-4 w-4" />
-              Importar Excel
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 cursor-pointer">
-              <Filter className="h-4 w-4" />
-              Filtros Avançados
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer">
-              <Settings className="h-4 w-4" />
-              Configurações
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* Grupo 3: Ferramentas (Dropdown) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="default" className="gap-2">
+                <MoreVertical className="h-4 w-4" />
+                Ferramentas
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-background z-50">
+              <DropdownMenuItem onClick={() => setShowDashboard(true)} className="gap-2 cursor-pointer">
+                <BarChart3 className="h-4 w-4" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAutomations(true)} className="gap-2 cursor-pointer">
+                <Zap className="h-4 w-4" />
+                Automações
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowTemplates(true)} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                Templates
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowTokenManager(true)} className="gap-2 cursor-pointer">
+                <Link2 className="h-4 w-4" />
+                Links Públicos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowImportExcel(true)} className="gap-2 cursor-pointer">
+                <Download className="h-4 w-4" />
+                Importar Excel
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <Filter className="h-4 w-4" />
+                Filtros Avançados
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <Settings className="h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Board */}
