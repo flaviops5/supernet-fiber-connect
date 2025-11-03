@@ -13,9 +13,16 @@ import { KanbanTemplates } from './KanbanTemplates';
 import { TokenManager } from './TokenManager';
 import type { KanbanCard as KanbanCardType } from '@/hooks/useKanban';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Link2 } from 'lucide-react';
+import { Plus, Settings, Search, Filter, BarChart3, Zap, FileText, Link2, MoreVertical, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BoardSelector } from './BoardSelector';
@@ -171,63 +178,94 @@ export function KanbanBoard({
       </div>;
   }
   return <div className="flex flex-col h-full">
-      {/* Header com menu horizontal */}
-      <div className="flex items-center gap-1 mb-6 pb-3 border-b overflow-x-hidden">
-        {/* Board Selector */}
-        {onBoardChange && (
-          <BoardSelector 
-            currentBoardId={boardId} 
-            onBoardChange={onBoardChange}
-            onCreateBoard={() => setShowCreateBoard(true)}
-          />
-        )}
+      {/* Header com menu reorganizado */}
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+        {/* Grupo 1: Seleção e Busca */}
+        <div className="flex items-center gap-3 flex-1">
+          {/* Board Selector */}
+          {onBoardChange && (
+            <BoardSelector 
+              currentBoardId={boardId} 
+              onBoardChange={onBoardChange}
+              onCreateBoard={() => setShowCreateBoard(true)}
+            />
+          )}
 
-        {/* Search */}
-        <div className="relative flex-shrink-0 w-48">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input type="text" placeholder="Buscar" value={filters.search} onChange={e => setFilters({
-          ...filters,
-          search: e.target.value
-        })} className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary" />
+          {/* Search - maior */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input 
+              type="text" 
+              placeholder="Buscar cards..." 
+              value={filters.search} 
+              onChange={e => setFilters({ ...filters, search: e.target.value })} 
+              className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary transition-all" 
+            />
+          </div>
         </div>
 
-        {/* Action buttons */}
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowDashboard(true)}>
-          <BarChart3 className="h-3.5 w-3.5 mr-1" />
-          Dashboard
-        </Button>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowAutomations(true)}>
-          <Zap className="h-3.5 w-3.5 mr-1" />
-          Automações
-        </Button>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowTemplates(true)}>
-          <FileText className="h-3.5 w-3.5 mr-1" />
-          Templates
-        </Button>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowTokenManager(true)}>
-          <Link2 className="h-3.5 w-3.5 mr-1" />
-          Links Públicos
-        </Button>
-        <Button variant="outline" size="sm" className="h-8">
-          <Filter className="h-3.5 w-3.5 mr-1" />
-          Filtros
-        </Button>
-        <Button variant="outline" size="sm" className="h-8">
-          <Settings className="h-3.5 w-3.5 mr-1" />
-          Config
-        </Button>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowCreateColumn(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Coluna
-        </Button>
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setShowImportExcel(true)}>
-          <FileText className="h-3.5 w-3.5 mr-1" />
-          Importar Excel
-        </Button>
-        <Button size="sm" className="h-8" onClick={() => setShowCreateCard(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Card
-        </Button>
+        {/* Grupo 2: Ações Primárias */}
+        <div className="flex items-center gap-2">
+          <Button 
+            size="default" 
+            onClick={() => setShowCreateCard(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Card
+          </Button>
+          <Button 
+            variant="outline" 
+            size="default"
+            onClick={() => setShowCreateColumn(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Coluna
+          </Button>
+        </div>
+
+        {/* Grupo 3: Ferramentas (Dropdown) */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="default" className="gap-2">
+              <MoreVertical className="h-4 w-4" />
+              Ferramentas
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-background z-50">
+            <DropdownMenuItem onClick={() => setShowDashboard(true)} className="gap-2 cursor-pointer">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowAutomations(true)} className="gap-2 cursor-pointer">
+              <Zap className="h-4 w-4" />
+              Automações
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowTemplates(true)} className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4" />
+              Templates
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setShowTokenManager(true)} className="gap-2 cursor-pointer">
+              <Link2 className="h-4 w-4" />
+              Links Públicos
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowImportExcel(true)} className="gap-2 cursor-pointer">
+              <Download className="h-4 w-4" />
+              Importar Excel
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <Filter className="h-4 w-4" />
+              Filtros Avançados
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer">
+              <Settings className="h-4 w-4" />
+              Configurações
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Board */}
