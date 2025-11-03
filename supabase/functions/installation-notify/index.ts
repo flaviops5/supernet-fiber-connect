@@ -68,11 +68,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Normalizar base URL
+    const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+
     // Enviar mensagem para todos os números configurados
     const results = await Promise.all(
       phones.map(async (phone) => {
         try {
-          const url = `${baseUrl}/message/sendText/${instanceName}`;
+          const url = `${normalizedBaseUrl}/message/sendText/${instanceName}`;
           console.log(`Enviando para ${phone}: ${url}`);
 
           const response = await fetch(url, {
