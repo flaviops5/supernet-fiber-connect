@@ -1591,7 +1591,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           });
           
           // Buscar mensagens aprovadas para usar textos customizados
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           
           if (lightInterpretation.result === 'negou' && lightInterpretation.confidence >= 0.6) {
             // Luzes apagadas → Verificar energia
@@ -1691,7 +1691,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           });
           
           // Buscar mensagens aprovadas
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           
           if (interpretation.result === 'confirmou' && interpretation.confidence >= 0.6) {
             // Energia OK → Verificar luz vermelha
@@ -1768,7 +1768,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           });
           
           // Buscar mensagens aprovadas
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           
           if (redLightInterpretation.result === 'confirmou' && redLightInterpretation.confidence >= 0.6) {
             // Tem luz vermelha → Instruir manipulação do conector
@@ -1882,7 +1882,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           });
           
           // Buscar mensagens aprovadas
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           
           if (manipulationInterpretation.result === 'confirmou' && manipulationInterpretation.confidence >= 0.6) {
             // Cliente manipulou o conector → Verificar resultado
@@ -1965,7 +1965,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           });
           
           // Buscar mensagens aprovadas
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           
           if (resultInterpretation.result === 'confirmou' && resultInterpretation.confidence >= 0.6) {
             // Luz ficou verde → Consultar IXC para verificar se voltou online
@@ -4510,7 +4510,7 @@ Me responde com:
           responseMessage = `Perfeito! Aguarde mais **1 minuto** para sincronização completa. ⏳\n\nMe diga: a luz **LOS** parou de **PISCAR** e ficou **VERDE FIXA**?\n\nE você consegue navegar agora?`;
         } else if (saysPowerAvailable) {
           // 🔌 FLUXO ENERGIA: Cliente confirmou energia OK (CENÁRIO A - PARTE 2)
-          const approvedMessages = await getApprovedSimulations(supabaseClient, 'energia');
+          const approvedMessages = await getApprovedSimulations(supabase, 'energia');
           const approvedQuestion = getApprovedQuestionForStep(approvedMessages, 'cenario_a_verificar_luz_vermelha');
           responseMessage = approvedQuestion || `Ok! O equipamento está com energia. 💡\n\nAgora verifique se a **luz LOS (vermelha)** está **PISCANDO** no equipamento.\n\nObs.: a luz PON normalmente é **VERDE** (fixa ou piscando).\n\nVocê está vendo a luz LOS piscando? 🔴`;
           
