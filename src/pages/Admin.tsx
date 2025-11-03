@@ -31,6 +31,7 @@ import {
   HeroManagement
 } from "@/components/admin";
 import AdminKanban from "@/pages/AdminKanban";
+import AdminTestes from "@/pages/AdminTestes";
 
 const AdminCoverageManagement = () => <CoverageManagement />;
 
@@ -124,6 +125,7 @@ const Admin = () => {
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
                 <Route path="/whatsapp" element={<WhatsAppSetup />} />
+                <Route path="/testes" element={<AdminTestes />} />
               </Routes>
             </main>
           </div>
