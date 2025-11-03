@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
   const headers = { ...corsHeaders, 'Content-Type': 'application/json' };
 
   try {
-    const { message } = await req.json();
+    const { message, photos } = await req.json();
     
     if (!message) {
       console.error("Mensagem ausente no payload");
@@ -75,10 +75,11 @@ Deno.serve(async (req) => {
     const results = await Promise.all(
       phones.map(async (phone) => {
         try {
-          const url = `${normalizedBaseUrl}/message/sendText/${instanceName}`;
-          console.log(`Enviando para ${phone}: ${url}`);
+          // Enviar mensagem de texto
+          const textUrl = `${normalizedBaseUrl}/message/sendText/${instanceName}`;
+          console.log(`Enviando mensagem para ${phone}: ${textUrl}`);
 
-          const response = await fetch(url, {
+          const textResponse = await fetch(textUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -90,13 +91,41 @@ Deno.serve(async (req) => {
             }),
           });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Falha ao enviar para ${phone}:`, response.status, errorText);
+          if (!textResponse.ok) {
+            const errorText = await textResponse.text();
+            console.error(`Falha ao enviar mensagem para ${phone}:`, textResponse.status, errorText);
             return { phone, success: false, error: errorText };
           }
 
-          console.log(`Mensagem enviada com sucesso para ${phone}`);
+          // Se houver fotos, enviar cada uma
+          if (photos && photos.length > 0) {
+            console.log(`Enviando ${photos.length} foto(s) para ${phone}`);
+            
+            for (const photoUrl of photos) {
+              const mediaUrl = `${normalizedBaseUrl}/message/sendMedia/${instanceName}`;
+              const mediaResponse = await fetch(mediaUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "apikey": apiKey,
+                },
+                body: JSON.stringify({
+                  number: phone,
+                  mediatype: "image",
+                  media: photoUrl,
+                }),
+              });
+
+              if (!mediaResponse.ok) {
+                const errorText = await mediaResponse.text();
+                console.error(`Falha ao enviar foto para ${phone}:`, mediaResponse.status, errorText);
+              } else {
+                console.log(`Foto enviada com sucesso para ${phone}`);
+              }
+            }
+          }
+
+          console.log(`Notificação completa enviada para ${phone}`);
           return { phone, success: true };
         } catch (error) {
           console.error(`Erro ao enviar para ${phone}:`, error);

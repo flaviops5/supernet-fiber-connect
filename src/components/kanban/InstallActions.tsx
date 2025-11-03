@@ -16,6 +16,7 @@ interface InstallActionsProps {
 export function InstallActions({ card }: InstallActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [openFinalize, setOpenFinalize] = useState(false);
   const [date, setDate] = useState<string>("");
   const [periodo, setPeriodo] = useState<"manhã" | "tarde" | "noite">("manhã");
   const [motivo, setMotivo] = useState<string>("");
@@ -110,15 +111,93 @@ export function InstallActions({ card }: InstallActionsProps) {
     }
   };
 
+  const finalizeInstall = async () => {
+    try {
+      if (!files || files.length === 0) {
+        toast({ title: "Adicione pelo menos uma foto", variant: "destructive" });
+        return;
+      }
+
+      const fotos = await uploadPhotos();
+      if (fotos.length === 0) {
+        toast({ title: "Erro ao fazer upload das fotos", variant: "destructive" });
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+
+      const { error } = await supabase.from("installation_events").insert({
+        card_id: card.id,
+        board_id: card.board_id,
+        data_instalacao: new Date().toISOString().split('T')[0],
+        periodo: "manhã",
+        status: "finalizado",
+        fotos,
+        created_by: userData.user?.id ?? null
+      });
+
+      if (error) throw error;
+
+      // Obter URLs públicas das fotos
+      const photoUrls = await Promise.all(
+        fotos.map(async (path) => {
+          const { data } = supabase.storage
+            .from("install_photos")
+            .getPublicUrl(path);
+          return data.publicUrl;
+        })
+      );
+
+      // Monta mensagem e envia com fotos
+      const msgLines = [
+        "✅ *Instalação finalizada!*",
+        `🏷️ ${card.title}`,
+        `📍 ${card.municipio || "—"}`,
+        card.localizacao_url ? `🔗 ${card.localizacao_url}` : "",
+        `📸 ${photoUrls.length} foto(s) anexada(s)`
+      ].filter(Boolean);
+
+      await supabase.functions.invoke("installation-notify", {
+        body: { 
+          message: msgLines.join("\n"),
+          photos: photoUrls
+        }
+      });
+
+      toast({ 
+        title: "Instalação finalizada", 
+        description: "Notificações enviadas com fotos." 
+      });
+      
+      setOpenFinalize(false);
+      setFiles(null);
+    } catch (err: any) {
+      toast({ 
+        title: "Erro ao finalizar instalação", 
+        description: err.message, 
+        variant: "destructive" 
+      });
+    }
+  };
+
   return (
     <>
-      <Button 
-        variant="outline" 
-        onClick={() => setOpen(true)} 
-        className="mt-2"
-      >
-        📅 Marcar / Reagendar Instalação
-      </Button>
+      <div className="flex gap-2 mt-2">
+        <Button 
+          variant="outline" 
+          onClick={() => setOpen(true)} 
+          className="flex-1"
+        >
+          📅 Agendar
+        </Button>
+        <Button 
+          variant="default" 
+          onClick={() => setOpenFinalize(true)} 
+          className="flex-1"
+        >
+          ✅ Finalizar
+        </Button>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm">
@@ -174,6 +253,39 @@ export function InstallActions({ card }: InstallActionsProps) {
 
             <Button onClick={submit} disabled={uploading}>
               Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openFinalize} onOpenChange={setOpenFinalize}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Finalizar Instalação - {card.title}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-3">
+            <div className="grid gap-1">
+              <Label>Fotos da instalação *</Label>
+              <Input 
+                type="file" 
+                multiple 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                required
+              />
+              {uploading && (
+                <div className="text-xs text-muted-foreground">
+                  Enviando fotos...
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Adicione fotos da instalação finalizada
+              </p>
+            </div>
+
+            <Button onClick={finalizeInstall} disabled={uploading}>
+              Confirmar Finalização
             </Button>
           </div>
         </DialogContent>
