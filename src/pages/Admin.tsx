@@ -118,7 +118,7 @@ const Admin = () => {
                 <Route path="/ixc-documentation" element={<Navigate to="/admin/knowledge" replace />} />
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
-                <Route path="/notificacoes" element={<AdminNotifications />} />
+                <Route path="/notifications" element={<AdminNotifications />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
