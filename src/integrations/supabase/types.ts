@@ -5365,9 +5365,10 @@ export type Database = {
         Args: { p_board: string; p_end: string; p_start: string }
         Returns: {
           card_id: string
-          change_reason: string
           data_instalacao: string
+          fotos: string[]
           id: string
+          localizacao_url: string
           municipio: string
           periodo: string
           status: string
