@@ -119,6 +119,7 @@ const Admin = () => {
                 <Route path="/payment-notifications" element={<PaymentNotifications />} />
                 <Route path="/notification-templates" element={<NotificationTemplates />} />
                 <Route path="/notifications" element={<AdminNotifications />} />
+                <Route path="/notificacoes" element={<AdminNotifications />} />
                 <Route path="/campaigns" element={<CampaignManagement />} />
                 <Route path="/nps-dashboard" element={<NPSDashboard />} />
                 <Route path="/financial" element={<FinancialDashboard />} />
