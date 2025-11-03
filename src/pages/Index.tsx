@@ -7,7 +7,6 @@ import Testimonials from '@/components/Testimonials';
 import AdditionalServices from '@/components/AdditionalServices';
 import FAQ from '@/components/FAQ';
 import { useScrollToHash } from '@/hooks/useScrollToHash';
-import TelemedicinaAgentWidget from '@/components/TelemedicinaAgentWidget';
 
 const Index = () => {
   useScrollToHash();
@@ -22,7 +21,6 @@ const Index = () => {
       <FAQ />
       <Testimonials />
       <AdditionalServices />
-      <TelemedicinaAgentWidget />
     </div>
   );
 };
