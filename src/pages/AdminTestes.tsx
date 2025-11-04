@@ -7,10 +7,12 @@ import {
   FileCheck,
   Zap,
   GitBranch,
-  AlertTriangle
+  AlertTriangle,
+  TrendingUp
 } from "lucide-react";
 
 // Import test components
+import TestSuiteRunner from "@/components/tests/TestSuiteRunner";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
@@ -45,7 +47,28 @@ const AdminTestes = () => {
         </p>
       </div>
 
-      <Accordion type="multiple" className="space-y-4">
+      <Accordion type="multiple" className="space-y-4" defaultValue={["llm-qa"]}>
+        {/* LLM QA System - PR#50 */}
+        <AccordionItem value="llm-qa" className="border rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <div className="text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  QA Conversacional LLM
+                  <span className="text-xs px-2 py-0.5 bg-primary/20 rounded-full">PR#50</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Validação automática de roteamento e qualidade conversacional (Lovable AI)
+                </div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <TestSuiteRunner />
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Testes E2E */}
         <AccordionItem value="e2e" className="border rounded-lg">
           <AccordionTrigger className="px-6 hover:no-underline">
