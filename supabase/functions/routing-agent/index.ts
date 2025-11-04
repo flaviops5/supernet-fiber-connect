@@ -124,6 +124,15 @@ serve(async (req) => {
         return await createTestResponse("Cloé Martins", "sem_cpf");
       }
       
+      // 🔴 4️⃣ FINANCEIRO (Julia) - ALTA PRIORIDADE: desbloqueio após pagamento (antes de Comercial)
+      if (messageText.match(/\b((desbloquear|desbloqueio|reativar|liberar).*(j[aá].*paguei|paguei.*fatura|paguei.*boleto)|(j[aá].*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar|liberar))\b/i)) {
+        return await createTestResponse("Julia", "financeiro_desbloquear");
+      }
+      // Também cobrir "paguei" mas ainda bloqueado
+      if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|j[aá].*paguei.*bloqueado)\b/i)) {
+        return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
+      }
+      
       // 1️⃣ COMERCIAL (Vicente) - PRIORIDADE MÁXIMA para evitar falsos positivos técnicos
       // C1: Cobertura
       if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|vocês.*atendem)\b/i)) {
