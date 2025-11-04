@@ -3,7 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, AlertCircle, CheckCircle2, XCircle, TrendingUp, Clock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Play, AlertCircle, CheckCircle2, XCircle, TrendingUp, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -15,6 +17,11 @@ interface TestResult {
   latency: number;
   overall_score: string;
   error?: string;
+  routing_score?: string;
+  clarity_score?: string;
+  context_score?: string;
+  tone_score?: string;
+  timing_score?: string;
 }
 
 interface TestSummary {
@@ -31,6 +38,7 @@ export function LLMTestRunner() {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
   const [summary, setSummary] = useState<TestSummary | null>(null);
+  const [expandedTests, setExpandedTests] = useState<Set<number>>(new Set());
 
   const runTests = async () => {
     setRunning(true);
@@ -83,6 +91,20 @@ export function LLMTestRunner() {
     if (numScore >= 0.6) return "text-yellow-600";
     return "text-red-600";
   };
+
+  const toggleTestExpansion = (index: number) => {
+    setExpandedTests(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const failedTests = results.filter(r => !r.pass);
 
   return (
     <Card>
@@ -146,47 +168,129 @@ export function LLMTestRunner() {
           </div>
         )}
 
+        {/* Error Summary */}
+        {failedTests.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Testes Falhados: {failedTests.length}</AlertTitle>
+            <AlertDescription>
+              <div className="mt-2 space-y-1">
+                {failedTests.map((test, idx) => (
+                  <div key={idx} className="text-sm">
+                    • <span className="font-medium">{test.scenario}</span>: esperava {test.expected}, detectou {test.detected || "desconhecido"}
+                    {test.error && <span className="text-red-400"> ({test.error})</span>}
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Results */}
         {results.length > 0 && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Resultados</h3>
+            <h3 className="font-semibold">Resultados Detalhados</h3>
             <div className="space-y-2">
               {results.map((result, index) => (
-                <div
+                <Collapsible 
                   key={index}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  open={expandedTests.has(index)}
+                  onOpenChange={() => toggleTestExpansion(index)}
                 >
-                  <div className="flex items-center gap-3 flex-1">
-                    {result.pass ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{result.scenario}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>Esperado: {result.expected}</span>
-                        <span>→</span>
-                        <span>Detectado: {result.detected}</span>
-                        {result.error && (
-                          <Badge variant="destructive" className="ml-2">
-                            {result.error}
-                          </Badge>
-                        )}
+                  <div className="rounded-lg border bg-card">
+                    <CollapsibleTrigger className="w-full p-3 hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          {result.pass ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-medium truncate">{result.scenario}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>Esperado: <span className="font-medium">{result.expected}</span></span>
+                              <span>→</span>
+                              <span>Detectado: <span className="font-medium">{result.detected}</span></span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 flex-shrink-0">
+                          <div className="text-right">
+                            <p className={`text-sm font-semibold ${getScoreColor(result.overall_score)}`}>
+                              Score: {result.overall_score}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {result.latency}ms
+                            </p>
+                          </div>
+                          {expandedTests.has(index) ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="border-t p-4 space-y-3 bg-muted/30">
+                        {/* Error Details */}
+                        {result.error && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Erro</AlertTitle>
+                            <AlertDescription>{result.error}</AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {/* Score Breakdown */}
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                          {result.routing_score && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Roteamento</p>
+                              <p className={`text-lg font-semibold ${getScoreColor(result.routing_score)}`}>
+                                {result.routing_score}
+                              </p>
+                            </div>
+                          )}
+                          {result.clarity_score && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Clareza</p>
+                              <p className={`text-lg font-semibold ${getScoreColor(result.clarity_score)}`}>
+                                {result.clarity_score}
+                              </p>
+                            </div>
+                          )}
+                          {result.context_score && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Contexto</p>
+                              <p className={`text-lg font-semibold ${getScoreColor(result.context_score)}`}>
+                                {result.context_score}
+                              </p>
+                            </div>
+                          )}
+                          {result.tone_score && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Tom</p>
+                              <p className={`text-lg font-semibold ${getScoreColor(result.tone_score)}`}>
+                                {result.tone_score}
+                              </p>
+                            </div>
+                          )}
+                          {result.timing_score && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">Tempo</p>
+                              <p className={`text-lg font-semibold ${getScoreColor(result.timing_score)}`}>
+                                {result.timing_score}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleContent>
                   </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${getScoreColor(result.overall_score)}`}>
-                        Score: {result.overall_score}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {result.latency}ms
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                </Collapsible>
               ))}
             </div>
           </div>
