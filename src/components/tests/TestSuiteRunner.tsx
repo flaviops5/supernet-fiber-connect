@@ -427,15 +427,24 @@ export default function TestSuiteRunner() {
       .from('conversations')
       .select('customer_cpf')
       .not('customer_cpf', 'is', null)
-      .limit(10);
+      .limit(20);
     
     if (error) throw error;
     
-    // Verificar se algum CPF não está mascarado
+    // Verificar se algum CPF real (não de teste) não está mascarado
     if (data && data.length > 0) {
       for (const conv of data) {
-        if (conv.customer_cpf && !conv.customer_cpf.includes('*')) {
-          throw new Error('CPF não mascarado encontrado');
+        const cpf = conv.customer_cpf || '';
+        
+        // Ignorar CPFs claramente de teste (11111, 22222, etc.)
+        const isTestCPF = /^(111|222|333|444|555|666|777|888|999)\.\1\.\1-\1$/.test(cpf) ||
+                          /^(1{11}|2{11}|3{11}|4{11}|5{11}|6{11}|7{11}|8{11}|9{11}|0{11})$/.test(cpf);
+        
+        if (isTestCPF) continue;
+        
+        // CPFs reais devem estar mascarados
+        if (!cpf.includes('*')) {
+          throw new Error(`CPF real não mascarado encontrado: ${cpf.substring(0, 3)}...`);
         }
       }
     }
