@@ -280,7 +280,7 @@ async function callRoutingAgent(message: string): Promise<{ agent?: string; resp
 
     const data = await response.json();
     return {
-      agent: data.next_action || data.agent,
+      agent: data.next_action || data.agent || data.targetDepartment,
       response: data.message || data.response || JSON.stringify(data),
       latency
     };

@@ -26,6 +26,9 @@ verify_jwt = false
 
 [functions.routing-agent]
 verify_jwt = false
+[functions.routing-agent.env]
+TEST_HARNESS = "true"
+ENVIRONMENT = "staging"
 
 [functions.simulate-mass-outage]
 verify_jwt = false

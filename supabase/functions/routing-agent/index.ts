@@ -89,7 +89,9 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             ok: true, 
-            protocol, 
+            protocol,
+            agent: agentName.toLowerCase(), // ✅ Para llm-test-runner
+            next_action: agentName.toLowerCase(), // ✅ Para llm-test-runner
             targetDepartment: agentName.toLowerCase(),
             testHarness: true,
             routeReason: reason,
