@@ -346,6 +346,15 @@ export function determineTargetDepartment(
 
   // Análise de intenção por palavras-chave (mesmo para clientes não encontrados)
   
+  // 🔵 COMERCIAL: Cobertura, novos planos, upgrade, downgrade
+  if (
+    /\b(cobertura|novo.*plano|novo.*contrato|contratar|assinar|quero.*internet|upgrade|downgrade|mudar.*plano|cancelar.*plano|vendas)\b/i.test(
+      msgLower
+    )
+  ) {
+    return "comercial";
+  }
+  
   // 🆕 Pedido explícito de suporte técnico
   if (
     /\b(t[eé]cnico|suporte t[eé]cnico|técnico|falar com t[eé]cnico|chamar t[eé]cnico|técnico luan|luan)\b/i.test(
@@ -355,12 +364,12 @@ export function determineTargetDepartment(
     return "tecnico";
   }
   
-  // Keywords técnicas (problema de conexão/internet)
+  // Keywords técnicas (problema de conexão/internet, reiniciei, senha)
   if (
-    /\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar|não funciona|problema técnico)\b/i.test(
+    /\b(internet|lenta|conexão|sem sinal|travando|wi-?fi|caiu|fora do ar|não funciona|problema técnico|reiniciei|reiniciar|senha|password)\b/i.test(
       msgLower
     ) &&
-    !/\b(novo|ótimo|funcionando bem)\b/i.test(msgLower)
+    !/\b(novo.*plano|novo.*contrato|ótimo|funcionando bem)\b/i.test(msgLower)
   ) {
     return "tecnico";
   }

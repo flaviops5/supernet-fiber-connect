@@ -184,7 +184,7 @@ Analise se o roteamento está correto e avalie os outros critérios.
   let fallbackUsed = false;
   try {
     const ev = await lovableChat(
-      "google/gemini-2.5-pro",
+      "google/gemini-2.5-flash", // ⚡ MUDANÇA: Flash é mais barato e rápido
       [
         { role: "system", content: buildSystemPrompt() },
         { role: "user", content: evalMsg }
@@ -297,7 +297,7 @@ serve(async (req) => {
             expected_agent: c.expected_agent,
             detected_agent: r.detected_agent,
             model_generation: "fixed-baseline",
-            model_evaluator: "google/gemini-2.5-pro",
+            model_evaluator: "google/gemini-2.5-flash", // ⚡ Atualizado para Flash
             endpoint_called: "routing-agent",
             routing_score: r.scores.routing_score,
             clarity_score: r.scores.clarity_score,
@@ -392,7 +392,7 @@ serve(async (req) => {
             expected_agent: s.expected_agent,
             detected_agent: r.detected_agent,
             model_generation: "google/gemini-2.5-flash",
-            model_evaluator: "google/gemini-2.5-pro",
+            model_evaluator: "google/gemini-2.5-flash", // ⚡ Atualizado para Flash
             endpoint_called: "routing-agent",
             routing_score: r.scores.routing_score,
             clarity_score: r.scores.clarity_score,

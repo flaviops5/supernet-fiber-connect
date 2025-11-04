@@ -124,11 +124,11 @@ serve(async (req) => {
         return await createTestResponse("Luan", "pedido_explicito_tecnico");
       }
 
-      // 2️⃣ KEYWORDS TÉCNICAS - problema de conexão/internet (alinhado com helpers.ts linha 358-366)
-      // Excluir casos positivos ("novo", "ótimo", "funcionando bem")
+      // 2️⃣ KEYWORDS TÉCNICAS - problema de conexão/internet (alinhado com helpers.ts linha 358-375)
+      // Excluir casos comerciais ("novo plano", "novo contrato")
       if (
-        messageText.match(/\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar|não funciona|problema técnico)\b/i) &&
-        !messageText.match(/\b(novo|ótimo|funcionando bem)\b/i)
+        messageText.match(/\b(internet|lenta|conexão|sem sinal|travando|wi-?fi|caiu|fora do ar|não funciona|problema técnico|reiniciei|reiniciar|senha|password)\b/i) &&
+        !messageText.match(/\b(novo.*plano|novo.*contrato|ótimo|funcionando bem)\b/i)
       ) {
         return await createTestResponse("Luan", "keyword_tecnica_detectada");
       }
@@ -141,11 +141,11 @@ serve(async (req) => {
         return await createTestResponse("Julia", "keyword_financeira_detectada");
       }
 
-      // 4️⃣ COMERCIAL - palavras-chave comerciais
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|plano|cobertura|upgrade|cancelar|mudar.*plano|vendas|atendente|falar.*com|pessoa|humano/))
+      // 4️⃣ COMERCIAL - palavras-chave comerciais (cobertura, novo plano, etc)
+      if (messageText.match(/cobertura|novo.*plano|novo.*contrato|contratar|assinar|quero.*internet|upgrade|downgrade|mudar.*plano|cancelar.*plano|vendas/))
         return await createTestResponse("Vicente", "keyword_comercial_detectada");
 
-      // 5️⃣ PADRÃO CLOÉ (casos genéricos) - alinhado com helpers.ts linha 386-387
+      // 5️⃣ PADRÃO CLOÉ (casos genéricos) - alinhado com helpers.ts
       return await createTestResponse("Cloé Martins", "roteamento_padrao");
     }
     // ===========================================================
