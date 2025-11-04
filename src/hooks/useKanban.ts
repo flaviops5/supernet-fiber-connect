@@ -58,9 +58,17 @@ export function useKanban(boardId: string | null) {
   // Load board data with AbortController to prevent race conditions
   useEffect(() => {
     if (!boardId) {
+      setBoard(null);
+      setColumns([]);
+      setCards([]);
       setLoading(false);
       return;
     }
+
+    // Reset state immediately to avoid rendering heavy previous board while switching
+    setBoard(null);
+    setColumns([]);
+    setCards([]);
 
     const controller = new AbortController();
     
@@ -127,6 +135,17 @@ export function useKanban(boardId: string | null) {
     if (!boardId) return;
 
     let isSubscribed = true;
+
+    // Ensure no lingering channels from previous boards
+    try {
+      const existing = (supabase as any).getChannels?.() || [];
+      for (const ch of existing) {
+        if (ch?.topic?.startsWith('kanban-board-') && ch.topic !== `kanban-board-${boardId}`) {
+          supabase.removeChannel(ch);
+        }
+      }
+    } catch {}
+
     const channel = supabase
       .channel(`kanban-board-${boardId}`)
       .on(
