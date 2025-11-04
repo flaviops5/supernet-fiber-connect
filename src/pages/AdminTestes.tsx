@@ -13,6 +13,7 @@ import {
 
 // Import test components
 import TestSuiteRunner from "@/components/tests/TestSuiteRunner";
+import { QAOrchestratorRunner } from "@/components/tests/QAOrchestratorRunner";
 import { TestOmnichannelComplete } from "@/components/tests/TestOmnichannelComplete";
 import { TestSupportTechAgent } from "@/components/tests/TestSupportTechAgent";
 import { TestCPFValidation } from "@/components/tests/TestCPFValidation";
@@ -47,19 +48,40 @@ const AdminTestes = () => {
         </p>
       </div>
 
-      <Accordion type="multiple" className="space-y-4" defaultValue={["llm-qa"]}>
-        {/* LLM QA System - PR#50 */}
-        <AccordionItem value="llm-qa" className="border rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
+      <Accordion type="multiple" className="space-y-4" defaultValue={["qa-orchestrator"]}>
+        {/* QA Orchestrator - PR#53 */}
+        <AccordionItem value="qa-orchestrator" className="border rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
           <AccordionTrigger className="px-6 hover:no-underline">
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5 text-primary" />
               <div className="text-left">
                 <div className="font-semibold flex items-center gap-2">
-                  QA Conversacional LLM
-                  <span className="text-xs px-2 py-0.5 bg-primary/20 rounded-full">PR#50</span>
+                  QA Orchestrator - Baseline Regressiva
+                  <span className="text-xs px-2 py-0.5 bg-primary/20 rounded-full">PR#53</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Validação automática de roteamento e qualidade conversacional (Lovable AI)
+                  Suite de regressão fixa + exploratória opcional (Gemini-2.5-pro determinístico)
+                </div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <QAOrchestratorRunner />
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* LLM QA System - PR#50 (legado) */}
+        <AccordionItem value="llm-qa" className="border rounded-lg">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  QA Conversacional LLM (Legado)
+                  <span className="text-xs px-2 py-0.5 bg-muted rounded-full">PR#50</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Validação com seleção aleatória de cenários (substituído por PR#53)
                 </div>
               </div>
             </div>
