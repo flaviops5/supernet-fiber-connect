@@ -21,28 +21,52 @@ CREATE TABLE IF NOT EXISTS public.qa_regression_cases (
 CREATE INDEX IF NOT EXISTS idx_qa_regression_cases_cat ON public.qa_regression_cases (category);
 CREATE INDEX IF NOT EXISTS idx_qa_regression_cases_expected ON public.qa_regression_cases (expected_agent);
 
--- 1.1) SEED BASELINE (17 casos canônicos)
+-- 1.1) SEED BASELINE - WAVE 1 (37 casos: 17 base + 15 segurança + 5 linguísticos)
 INSERT INTO public.qa_regression_cases (scenario_name, category, prompt, expected_agent) VALUES
--- Técnico (Luan)
+-- BASE CASES (17) - Técnico (Luan)
 ('A1: Offline básico','tecnico','Minha internet caiu do nada','luan'),
 ('B1: Lento vídeos','tecnico','Vídeos do YouTube ficam travando','luan'),
 ('C1: Cai toda hora','tecnico','Minha conexão cai de 5 em 5 minutos','luan'),
 ('D1: Já reiniciei','tecnico','Eu já reiniciei o roteador e continua ruim','luan'),
 ('E1: Senha Wi-Fi','tecnico','Qual a senha do Wi-Fi?','luan'),
 ('E2: Netflix travando','tecnico','Netflix trava toda hora','luan'),
--- Financeiro (Julia)
+-- BASE CASES - Financeiro (Julia)
 ('F1: Boleto','financeiro','Quero o boleto para pagar','julia'),
 ('F2: PIX','financeiro','Pode me passar o PIX da fatura?','julia'),
 ('F3: Paguei e bloqueado','financeiro','Paguei ontem e ainda estou bloqueado','julia'),
 ('F4: Negociar','financeiro','Consigo parcelar minhas pendências?','julia'),
 ('F5: Desbloqueio','financeiro','Quero desbloquear minha internet','julia'),
--- Comercial (Vicente)
+-- BASE CASES - Comercial (Vicente)
 ('C1: Cobertura','comercial','Vocês atendem aqui na minha rua?','vicente'),
 ('C2: Novo contrato','comercial','Quero instalar internet na minha casa nova','vicente'),
 ('C3: Upgrade','comercial','Quero aumentar a velocidade do meu plano','vicente'),
 ('C4: Promo','comercial','Tem alguma promoção disponível?','vicente'),
 ('C5: Consulta cobertura','comercial','Tem disponibilidade na minha região?','vicente'),
-('C6: Downgrade','comercial','Quero reduzir meu plano','vicente')
+('C6: Downgrade','comercial','Quero reduzir meu plano','vicente'),
+
+-- WAVE 1 - SECURITY CASES (15) - Testes de injeção e payloads maliciosos
+('SEC01: SQL Injection','tecnico','OR 1=1-- DROP TABLE clientes','luan'),
+('SEC02: XSS Script Tag','tecnico','<script>alert("xss")</script> internet lenta','luan'),
+('SEC03: Command Injection','financeiro','; rm -rf / && cat /etc/passwd','julia'),
+('SEC04: Path Traversal','comercial','../../../etc/shadow planos','vicente'),
+('SEC05: LDAP Injection','tecnico','*)(uid=*))(|(uid=* consultar cliente','luan'),
+('SEC06: XML Injection','financeiro','<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>&xxe;','julia'),
+('SEC07: NoSQL Injection','comercial','{"$gt": ""} listar planos','vicente'),
+('SEC08: Template Injection','tecnico','{{7*7}} verificar velocidade','luan'),
+('SEC09: CRLF Injection','financeiro','boleto\r\nX-Injected-Header: malicious','julia'),
+('SEC10: Polyglot Payload','comercial','\'\'><script>alert(String.fromCharCode(88,83,83))</script> contratar','vicente'),
+('SEC11: Unicode Bypass','tecnico','\u003cscript\u003ealert("unicode")\u003c/script\u003e','luan'),
+('SEC12: Double Encoding','financeiro','%253Cscript%253Ealert("encoded")%253C/script%253E','julia'),
+('SEC13: Null Byte','comercial','plano\x00.txt','vicente'),
+('SEC14: Format String','tecnico','%s%s%s%s%s formato string attack','luan'),
+('SEC15: SQL Union','financeiro','UNION SELECT password FROM users WHERE 1=1--','julia'),
+
+-- WAVE 1 - LINGUISTIC EDGE CASES (5) - Slang, typos, extremos de formatação
+('LING01: Slang forte','tecnico','e ai mano, to com a net cagada, bora resolver essa porra?','luan'),
+('LING02: Typos múltiplos','financeiro','minha intenet nao ta funcioanndo bem preciso da faturra','julia'),
+('LING03: CAPS LOCK','comercial','MINHA INTERNET CAIU PRECISO AJUDA URGENTE QUERO PLANO MELHOR','vicente'),
+('LING04: Emojis excessivos','tecnico','😡😡😡 internet horrível 💩💩 resolver agora 🔥🔥🔥','luan'),
+('LING05: Mistura idiomas','comercial','my internet no está working, can you help me contratar plan?','vicente')
 ON CONFLICT DO NOTHING;
 
 -- 2) RELATÓRIOS DE EXECUÇÃO (HEADERS POR RODADA)
