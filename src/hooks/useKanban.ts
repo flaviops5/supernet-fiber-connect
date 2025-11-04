@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -54,6 +54,7 @@ export function useKanban(boardId: string | null) {
   const [cards, setCards] = useState<KanbanCard[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const fetchTokenRef = useRef(0);
 
   // Load board data with AbortController to prevent race conditions
   useEffect(() => {
@@ -71,6 +72,7 @@ export function useKanban(boardId: string | null) {
     setCards([]);
 
     const controller = new AbortController();
+    const myToken = ++fetchTokenRef.current;
     
     const loadBoard = async () => {
       try {
@@ -83,8 +85,8 @@ export function useKanban(boardId: string | null) {
           .eq('id', boardId)
           .single();
 
+        if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         if (boardError) throw boardError;
-        if (controller.signal.aborted) return;
         setBoard(boardData as any);
 
         // Load columns
@@ -94,8 +96,8 @@ export function useKanban(boardId: string | null) {
           .eq('board_id', boardId)
           .order('position');
 
+        if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         if (columnsError) throw columnsError;
-        if (controller.signal.aborted) return;
         setColumns(columnsData as any);
 
         // Load cards
@@ -105,11 +107,11 @@ export function useKanban(boardId: string | null) {
           .eq('board_id', boardId)
           .order('position');
 
+        if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         if (cardsError) throw cardsError;
-        if (controller.signal.aborted) return;
         setCards(cardsData as any);
       } catch (error: any) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         console.error('Error loading kanban board:', error);
         toast({
           title: 'Erro ao carregar board',
@@ -117,7 +119,7 @@ export function useKanban(boardId: string | null) {
           variant: 'destructive',
         });
       } finally {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && myToken === fetchTokenRef.current) {
           setLoading(false);
         }
       }

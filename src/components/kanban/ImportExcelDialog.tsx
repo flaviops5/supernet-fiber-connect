@@ -51,20 +51,22 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       return idx >= 0 ? idx : -1;
     };
 
-    const municipioIdx = find(['municipio']) ?? byContains(['municip']);
+    const municipioIdx = find(['municipio','município','cidade']) ?? byContains(['municip','cidade']);
     const escolaIdx = find(['escola']) ?? byContains(['escola']);
-    const enderecoIdx = find(['endereco', 'endereço']) ?? byContains(['ender']);
-    const localizacaoIdx = find(['localizacao', 'localização']) ?? byContains(['localiz']);
-    const linksIdx = find(['links']) ?? byContains(['link']);
+    const titleIdx = find(['escola','unidade','nome','referencia','referência','titulo','título','local']) ?? byContains(['escola','unid','nome','refer','titul','local']);
+    const enderecoIdx = find(['endereco', 'endereço','logradouro','rua']) ?? byContains(['ender','lograd','rua']);
+    const localizacaoIdx = find(['localizacao', 'localização','gps','geo','latitude','longitude']) ?? byContains(['localiz','gps','geo','lat','long']);
+    const linksIdx = find(['links','link','url']) ?? byContains(['link','url']);
     const dataIdx = find(['data instalacao', 'data instalação', 'data']) ?? byContains(['data']);
-    const descricaoIdx = find(['descricao', 'descrição']) ?? byContains(['descr']);
+    const descricaoIdx = find(['descricao', 'descrição','observacao','observação','obs']) ?? byContains(['descr','observ']);
     const periodoIdx = find(['periodo', 'período']) ?? byContains(['period']);
-    const provedorIdx = find(['provedor']) ?? byContains(['proved']);
-    const telefoneIdx = find(['telefone']) ?? byContains(['telefon', 'fone']);
+    const provedorIdx = find(['provedor','responsavel','responsável']) ?? byContains(['proved','respons']);
+    const telefoneIdx = find(['telefone','celular','fone']) ?? byContains(['telefon','celul','fone']);
 
     return {
       municipioIdx,
       escolaIdx,
+      titleIdx,
       enderecoIdx,
       localizacaoIdx,
       linksIdx,
@@ -114,10 +116,10 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices based on headers
       const cols = detectColumns(jsonData);
 
-      if (cols.escolaIdx < 0) {
+      if (cols.titleIdx < 0) {
         toast({
           title: 'Coluna obrigatória ausente',
-          description: 'Não encontramos a coluna "Escola" na planilha. Verifique os nomes do cabeçalho.',
+          description: 'Não encontramos a coluna de título (Ex.: Escola, Unidade, Nome, Referência) na planilha.',
           variant: 'destructive',
         });
         setPreviewData([]);
@@ -128,11 +130,11 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       for (let i = 1; i < Math.min(6, jsonData.length); i++) {
         const row = jsonData[i];
         if (row && row.length >= 1) {
-          const escolaName = cols.escolaIdx >= 0 ? row[cols.escolaIdx] : '';
-          if (escolaName) {
+          const title = cols.titleIdx >= 0 ? row[cols.titleIdx] : '';
+          if (title) {
             rows.push({
               municipio: cols.municipioIdx >= 0 ? row[cols.municipioIdx] || '' : '',
-              escola: escolaName,
+              escola: title,
               endereco: cols.enderecoIdx >= 0 ? row[cols.enderecoIdx] || '' : '',
               localizacao: getHyperlinkAt(worksheet, i, cols.localizacaoIdx) || (cols.localizacaoIdx >= 0 ? row[cols.localizacaoIdx] || '' : ''),
               linksTexto: cols.linksIdx >= 0 ? row[cols.linksIdx] || '' : '',
@@ -178,15 +180,15 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       // Auto-detect column indices
       const cols = detectColumns(jsonData);
 
-      if (cols.escolaIdx < 0) {
-        toast({
-          title: 'Coluna obrigatória ausente',
-          description: 'Não encontramos a coluna "Escola" na planilha. Verifique os nomes do cabeçalho.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
+    if (cols.titleIdx < 0) {
+      toast({
+        title: 'Coluna obrigatória ausente',
+        description: 'Não encontramos a coluna de título (Ex.: Escola, Unidade, Nome, Referência) na planilha.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
       // Schema simplificado: apenas os 5 campos que existem na planilha
       const CardInsertSchema = z.object({
         board_id: z.string().uuid(),
@@ -211,8 +213,8 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
         const row = jsonData[i];
         if (!row || row.length < 1) continue;
 
-        const escola = cols.escolaIdx >= 0 ? row[cols.escolaIdx]?.toString().trim() : '';
-        if (!escola) continue;
+        const titleVal = cols.titleIdx >= 0 ? row[cols.titleIdx]?.toString().trim() : '';
+        if (!titleVal) continue;
 
         const municipioName = cols.municipioIdx >= 0 ? row[cols.municipioIdx]?.toString().trim() || '' : '';
         const enderecoVal = cols.enderecoIdx >= 0 ? row[cols.enderecoIdx]?.toString().trim() || '' : '';
@@ -255,14 +257,14 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
 
         let localizacaoUrl = linkCell && /^https?:/i.test(linkCell) ? linkCell : null;
         if (!localizacaoUrl) {
-          const query = enderecoVal || `${escola} ${municipioName}`.trim();
+          const query = enderecoVal || `${titleVal} ${municipioName}`.trim();
           localizacaoUrl = query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : null;
         }
 
         cardsToInsert.push({
           board_id: boardId,
           column_id: selectedColumn,
-          title: escola,
+          title: titleVal,
           position: i - 1,
           priority: 'medium' as const,
           // Apenas os 5 campos que existem na planilha
