@@ -103,10 +103,9 @@ serve(async (req) => {
         );
       };
 
-      // 🔧 Regras de intenção (ordem de prioridade ajustada)
+      // 🔧 Regras de roteamento alinhadas com a lógica de produção (helpers.ts/determineTargetDepartment)
       
-      // 0️⃣ CPF INVÁLIDO OU INEXISTENTE (máxima prioridade - vai para Cloé)
-      // Detecta CPFs sequenciais, repetidos ou obviamente inválidos
+      // 0️⃣ CPF INVÁLIDO (vai para Cloé pedir CPF válido)
       const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
       if (hasCPF) {
         const cpfNumbers = messageText.replace(/\D/g, '');
@@ -120,33 +119,34 @@ serve(async (req) => {
         }
       }
       
-      // 1️⃣ PROBLEMAS TÉCNICOS (qualquer menção a problema de internet/conexão)
-      // "internet caiu", "sem internet", "internet parou", etc → SEMPRE técnico
-      // Mass Outage é detectado pelo sistema, não por mensagem individual
-      if (messageText.match(/internet\s+(caiu|parou|está\s+fora|sem|não funciona|travando|lenta|offline|fora do ar|não está funcionando)/)) {
-        return await createTestResponse("Luan", "problema_tecnico_detectado");
-      }
-      
-      // 2️⃣ MÚLTIPLAS INTENÇÕES - apenas quando há solicitações explícitas em 2+ categorias
-      const explicitTechnical = messageText.match(/(internet|conexão).*caiu|caiu.*(internet|conexão)|sem.*internet|travando|lenta.*internet|problema.*técnico/);
-      const explicitFinancial = messageText.match(/boleto.*pix|pix.*boleto|boleto.*pagamento|segunda.*via.*boleto/);
-      const explicitCommercial = messageText.match(/contratar.*plano|upgrade.*plano|mudar.*plano|cancelar.*contrato/);
-      
-      const explicitIntentCount = [explicitTechnical, explicitFinancial, explicitCommercial].filter(Boolean).length;
-      if (explicitIntentCount >= 2) {
-        return await createTestResponse("Cloé Martins", "multiplas_intencoes_detectadas");
+      // 1️⃣ PEDIDO EXPLÍCITO DE SUPORTE TÉCNICO (alinhado com helpers.ts linha 350-356)
+      if (messageText.match(/\b(t[eé]cnico|suporte t[eé]cnico|técnico|falar com t[eé]cnico|chamar t[eé]cnico|técnico luan|luan)\b/i)) {
+        return await createTestResponse("Luan", "pedido_explicito_tecnico");
       }
 
-      // 3️⃣ FINANCEIRO
-      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|parcelamento|nota fiscal|segunda.*via|vencimento|vence|quando vence|data de vencimento|conta|mensalidade|valor|cobrança|cobran.*indevid|cobrança.*errada|atrasad|pendên|liberar|desbloquear|compens/))
-        return await createTestResponse("Julia", "intencao_financeira_simulada");
+      // 2️⃣ KEYWORDS TÉCNICAS - problema de conexão/internet (alinhado com helpers.ts linha 358-366)
+      // Excluir casos positivos ("novo", "ótimo", "funcionando bem")
+      if (
+        messageText.match(/\b(internet|lenta|conexão|sem sinal|travando|wifi|caiu|fora do ar|não funciona|problema técnico)\b/i) &&
+        !messageText.match(/\b(novo|ótimo|funcionando bem)\b/i)
+      ) {
+        return await createTestResponse("Luan", "keyword_tecnica_detectada");
+      }
 
-      // 4️⃣ COMERCIAL
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra.*nova|plano|cobertura|consulta.*cobertura|downgrade|promo|upgrade|cancelar|cancelamento|mudar.*plano|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar.*novo|vendas|mudar.*casa|casa nova|mudar.*endereço|mudança.*endereço|transfere.*contrato|transferir.*contrato|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém|segunda.*via.*contrato|preciso.*contrato|cópia.*contrato|levar.*internet|posso.*levar/))
-        return await createTestResponse("Vicente", "intencao_comercial_simulada");
+      // 3️⃣ KEYWORDS FINANCEIRAS (alinhado com helpers.ts linha 368-374)
+      if (
+        messageText.match(/\b(boleto|fatura|pagamento|débito|mensalidade|pagar|pix)\b/i) &&
+        !messageText.match(/\b(novo|ótimo|funcionando)\b/i)
+      ) {
+        return await createTestResponse("Julia", "keyword_financeira_detectada");
+      }
 
-      // 5️⃣ PADRÃO CLOÉ (casos genéricos, outros casos não classificados)
-      return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
+      // 4️⃣ COMERCIAL - palavras-chave comerciais
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|plano|cobertura|upgrade|cancelar|mudar.*plano|vendas|atendente|falar.*com|pessoa|humano/))
+        return await createTestResponse("Vicente", "keyword_comercial_detectada");
+
+      // 5️⃣ PADRÃO CLOÉ (casos genéricos) - alinhado com helpers.ts linha 386-387
+      return await createTestResponse("Cloé Martins", "roteamento_padrao");
     }
     // ===========================================================
 
