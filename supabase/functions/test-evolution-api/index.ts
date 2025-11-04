@@ -17,9 +17,10 @@ Deno.serve(createPublicHandler('test-evolution-api', async (req) => {
   // Parse request body to get action
   let action = 'test-instance';
   let instanceName = 'SDR2';
+  let body: any = {};
   
   try {
-    const body = await req.json();
+    body = await req.json();
     action = body.action || 'test-instance';
     instanceName = body.instance || 'SDR2';
     console.log('📋 Action:', action, 'Instance:', instanceName);
@@ -87,8 +88,48 @@ Deno.serve(createPublicHandler('test-evolution-api', async (req) => {
       };
     }
 
+    case 'send-message': {
+      const { phone, message } = body;
+      
+      if (!phone || !message) {
+        throw new Error('Phone and message are required for send-message action');
+      }
+
+      console.log(`📤 Sending message to ${phone} via ${instanceName}`);
+      const sendUrl = `${normalizedBaseUrl}/message/sendText/${instanceName}`;
+      console.log('🔗 URL:', sendUrl);
+
+      const response = await fetch(sendUrl, {
+        method: 'POST',
+        headers: {
+          'apikey': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          number: phone,
+          text: message,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({ error: 'Invalid JSON response' }));
+      console.log('📥 Send Response:', JSON.stringify(data, null, 2));
+
+      return {
+        success: response.ok,
+        status: response.status,
+        message: response.ok ? `Message sent to ${phone}` : 'Failed to send message',
+        data,
+        config: {
+          baseUrl: normalizedBaseUrl,
+          instanceName,
+          phone,
+          testedUrl: sendUrl,
+        }
+      };
+    }
+
     default: {
-      throw new Error(`Unknown action: ${action}. Valid actions: list-instances, test-instance`);
+      throw new Error(`Unknown action: ${action}. Valid actions: list-instances, test-instance, send-message`);
     }
   }
 }));
