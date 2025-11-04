@@ -65,11 +65,30 @@ export function QAOrchestratorRunner() {
       if (reportsError) throw reportsError;
       setLastReport(reports?.[0] || null);
 
-      // Carregar últimas falhas
+      // Carregar últimas falhas (com fallback se RPC falhar)
+      let failuresData: any[] = [];
       const { data: failures, error: failuresError } = await supabase.rpc('get_last_qa_failures' as any) as any;
-
-      if (failuresError) throw failuresError;
-      setLastFailures((failures || []) as LastFailure[]);
+      if (failuresError) {
+        console.warn('get_last_qa_failures falhou, usando fallback em llm_test_results:', failuresError);
+        const { data: fallback, error: fbErr } = await supabase
+          .from('llm_test_results')
+          .select('scenario, category, expected_agent, detected_agent, justificativa, created_at, passed')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (!fbErr && fallback) {
+          failuresData = (fallback as any[]).filter((r) => r.passed === false).map((r) => ({
+            scenario: r.scenario ?? '—',
+            category: r.category ?? '—',
+            expected_agent: r.expected_agent ?? '—',
+            detected_agent: r.detected_agent ?? '—',
+            justificativa: r.justificativa ?? '',
+            created_at: r.created_at ?? new Date().toISOString(),
+          }));
+        }
+      } else {
+        failuresData = (failures || []) as any[];
+      }
+      setLastFailures(failuresData as LastFailure[]);
     } catch (error) {
       console.error("Erro ao carregar dados QA:", error);
       // Silenciar erro se tabelas não existirem ainda (migration pendente)
@@ -93,12 +112,24 @@ export function QAOrchestratorRunner() {
     });
 
     try {
-      // A edge function espera query params, não body
-      const { data, error } = await supabase.functions.invoke("qa-orchestrator?regression=true&exploratory=false", {
-        method: 'POST'
-      });
-
-      if (error) throw error;
+      // Tenta com até 3 tentativas para contornar erros transitórios de rede
+      const attempt = async () => {
+        const { data, error } = await supabase.functions.invoke("qa-orchestrator?regression=true&exploratory=false", {} as any);
+        if (error) throw error;
+        return data as any;
+      };
+      let data: any | null = null;
+      let lastErr: any = null;
+      for (let i = 0; i < 3; i++) {
+        try {
+          data = await attempt();
+          break;
+        } catch (e) {
+          lastErr = e;
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+      if (!data) throw lastErr || new Error("Falha ao invocar qa-orchestrator");
 
       if (data?.ok) {
         const { totals, breakdown, avg_latency_ms, avg_score } = data;
