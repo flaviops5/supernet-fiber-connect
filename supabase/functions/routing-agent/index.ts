@@ -119,13 +119,13 @@ serve(async (req) => {
       };
 
       // 🔧 Regras de intenção
-      // 0️⃣ MÚLTIPLAS INTENÇÕES - detectar se tem palavras de diferentes categorias
-      const hasTechnical = messageText.match(/caiu|lenta|lento|travando|sem sinal|offline|conexão|modem|roteador|internet.*problem/);
-      const hasFinancial = messageText.match(/boleto|pix|paguei|fatura|pagamento|débito/);
-      const hasCommercial = messageText.match(/contratar|plano|upgrade|cancelar|cobertura/);
+      // 0️⃣ MÚLTIPLAS INTENÇÕES - apenas quando há solicitações explícitas em 2+ categorias
+      const explicitTechnical = messageText.match(/(internet|conexão).*caiu|caiu.*(internet|conexão)|sem.*internet|travando|lenta.*internet|problema.*técnico/);
+      const explicitFinancial = messageText.match(/boleto.*pix|pix.*boleto|boleto.*pagamento|segunda.*via.*boleto/);
+      const explicitCommercial = messageText.match(/contratar.*plano|upgrade.*plano|mudar.*plano|cancelar.*contrato/);
       
-      const intentCount = [hasTechnical, hasFinancial, hasCommercial].filter(Boolean).length;
-      if (intentCount >= 2) {
+      const explicitIntentCount = [explicitTechnical, explicitFinancial, explicitCommercial].filter(Boolean).length;
+      if (explicitIntentCount >= 2) {
         return await createTestResponse("Cloé Martins", "multiplas_intencoes_detectadas");
       }
 
