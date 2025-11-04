@@ -130,7 +130,7 @@ serve(async (req) => {
       }
 
       // 1️⃣ COMERCIAL (maior prioridade para evitar conflitos)
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|casa nova|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém/))
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra|plano|cobertura|consulta.*cobertura|downgrade|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|casa nova|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
       // 2️⃣ FINANCEIRO
@@ -138,7 +138,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
       // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
-      if (messageText.match(/caiu|lenta|lento|travando|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha/))
+      if (messageText.match(/caiu|lenta|lento|travando|trava|netflix.*trava|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha/))
         return await createTestResponse("Luan", "intencao_tecnica_simulada");
 
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
