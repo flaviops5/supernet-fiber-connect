@@ -85,14 +85,19 @@ Formato de retorno (JSON puro):
 }`;
 }
 
-async function lovableChat(model: string, messages: any[], response_format?: any) {
+async function lovableChat(model: string, messages: any[], response_format?: any, temperature?: number) {
   const res = await fetch(LOVABLE_AI_URL, {
     method: "POST",
     headers: { 
       "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
       "Content-Type": "application/json" 
     },
-    body: JSON.stringify({ model, messages, ...(response_format ? { response_format } : {}) })
+    body: JSON.stringify({ 
+      model, 
+      messages, 
+      ...(response_format ? { response_format } : {}),
+      ...(temperature !== undefined ? { temperature } : {})
+    })
   });
   
   if (!res.ok) {
@@ -166,7 +171,8 @@ Analise se o roteamento está correto e avalie os outros critérios.
       { role: "system", content: buildSystemPrompt() },
       { role: "user", content: evalMsg }
     ],
-    { type: "json_object" }
+    { type: "json_object" },
+    0.0 // temperatura 0 = julgamento determinístico
   );
 
   const parsed = safeJson(ev.content) || {};
