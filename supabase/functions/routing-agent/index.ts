@@ -118,15 +118,18 @@ serve(async (req) => {
         );
       };
 
-      // 🔧 Regras simples de intenção
-      if (messageText.match(/caiu|lenta|travando|sem sinal|offline|internet|conexão|modem|roteador|reiniciar/))
-        return await createTestResponse("Luan", "intencao_tecnica_simulada");
+      // 🔧 Regras de intenção (ordem: comercial → financeiro → técnico)
+      // 1️⃣ COMERCIAL (maior prioridade para evitar conflitos)
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano/))
+        return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
-      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar/))
+      // 2️⃣ FINANCEIRO
+      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|nota fiscal|segunda via/))
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
-      if (messageText.match(/instalar|plano|cobertura|promo|contratar|velocidade|upgrade|cancelar|mudar/))
-        return await createTestResponse("Vicente", "intencao_comercial_simulada");
+      // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
+      if (messageText.match(/caiu|lenta|lento|travando|sem sinal|offline|conexão ruim|modem|roteador|reiniciar|reboot|desconectando/))
+        return await createTestResponse("Luan", "intencao_tecnica_simulada");
 
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
     }
