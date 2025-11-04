@@ -132,10 +132,12 @@ export function QAOrchestratorRunner() {
       if (!data) throw lastErr || new Error("Falha ao invocar qa-orchestrator");
 
       if (data?.ok) {
-        const { totals, breakdown, avg_latency_ms, avg_score } = data;
+        const { totals, breakdown, avg_latency_ms, avg_score, timed_out } = data;
+        
+        const timeoutWarning = timed_out ? " ⚠️ (timeout - execução parcial)" : "";
         
         toast({
-          title: totals.fail === 0 ? "✅ Todos os testes passaram!" : `⚠️ ${totals.fail} teste(s) falharam`,
+          title: totals.fail === 0 ? `✅ Todos os testes passaram!${timeoutWarning}` : `⚠️ ${totals.fail} teste(s) falharam${timeoutWarning}`,
           description: `${totals.pass}/${totals.total} passou | Latência média: ${avg_latency_ms}ms | Score: ${avg_score}`,
           variant: totals.fail === 0 ? "default" : "destructive",
         });

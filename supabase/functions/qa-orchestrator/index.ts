@@ -85,8 +85,22 @@ Formato de retorno (JSON puro):
 }`;
 }
 
+async function fetchWithTimeout(url: string, options: any, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
 async function lovableChat(model: string, messages: any[], response_format?: any, temperature?: number) {
-  const res = await fetch(LOVABLE_AI_URL, {
+  const res = await fetchWithTimeout(LOVABLE_AI_URL, {
     method: "POST",
     headers: { 
       "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
@@ -98,7 +112,7 @@ async function lovableChat(model: string, messages: any[], response_format?: any
       ...(response_format ? { response_format } : {}),
       ...(temperature !== undefined ? { temperature } : {})
     })
-  });
+  }, 25000); // 25s timeout para LLM
   
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -124,7 +138,7 @@ async function evalOne(prompt: string, expectedAgent: string) {
   // 1) Envia para routing-agent com testMode
   const t0 = performance.now();
   
-  const routingRes = await fetch(ROUTING_ENDPOINT, {
+  const routingRes = await fetchWithTimeout(ROUTING_ENDPOINT, {
     method: "POST",
     headers: { 
       "Content-Type": "application/json",
@@ -135,7 +149,7 @@ async function evalOne(prompt: string, expectedAgent: string) {
       message: prompt,
       testMode: true
     })
-  });
+  }, 15000); // 15s timeout para routing
   
   if (!routingRes.ok) {
     throw new Error(`Routing agent HTTP ${routingRes.status}`);
@@ -214,11 +228,15 @@ serve(async (req) => {
     const runExploratory = (url.searchParams.get("exploratory") ?? "false").toLowerCase() === "true";
 
     const reportStart = new Date();
+    const GLOBAL_TIMEOUT_MS = 130000; // 130s - deixa 20s de margem antes do limite de 150s
+    const startTime = Date.now();
+    
     let total = 0, pass = 0, fail = 0;
     let regPass = 0, regFail = 0;
     let expPass = 0, expFail = 0;
     let latencies: number[] = [];
     const allResults: any[] = [];
+    let timedOut = false;
 
     // ---------------------------
     // REGRESSION SUITE (FIXA)
@@ -236,7 +254,15 @@ serve(async (req) => {
       }
 
       for (const c of (cases || [])) {
+        // Verificar timeout global
+        if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) {
+          console.warn(`[QA] Timeout global atingido após ${total} testes`);
+          timedOut = true;
+          break;
+        }
+
         try {
+          console.log(`[QA] Executando teste ${total + 1}/${cases.length}: ${c.scenario_name}`);
           const r = await evalOne(c.prompt, c.expected_agent);
           total += 1;
           latencies.push(r.latency_ms);
@@ -416,7 +442,8 @@ serve(async (req) => {
       .select()
       .single();
 
-    console.log(`[QA Orchestrator] Concluído: ${pass}/${total} passou`);
+    const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+    console.log(`[QA Orchestrator] Concluído: ${pass}/${total} passou | Tempo: ${elapsedTime}s | Timeout: ${timedOut}`);
 
     return new Response(JSON.stringify({
       ok: true,
@@ -428,8 +455,10 @@ serve(async (req) => {
       },
       avg_latency_ms: avgLatency,
       avg_score: avgScore,
+      elapsed_time_s: elapsedTime,
+      timed_out: timedOut,
       results: allResults
-    }), { 
+    }), {
       headers: { 
         ...corsHeaders,
         "Content-Type": "application/json" 
