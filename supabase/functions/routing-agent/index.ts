@@ -73,23 +73,9 @@ serve(async (req) => {
       const createTestResponse = async (agentName: string, reason: string) => {
         const protocol = `TEST-${Date.now()}`;
         
-        // 🎭 Respostas simuladas realistas por agente
-        const agentResponses: Record<string, string> = {
-          "Luan": "Entendi! Vou verificar seu sinal agora. Me dê um momento para fazer o diagnóstico completo da sua conexão. 🔧",
-          "Julia": "Claro! Vou localizar sua fatura agora. Um momento enquanto verifico sua situação financeira. 💰",
-          "Vicente": "Ótimo! Deixa eu verificar as opções disponíveis pra você. Vou te passar os detalhes rapidinho! 📋",
-          "Cloé Martins": "Oi! Entendi sua solicitação. Deixa eu te ajudar com isso! 😊"
-        };
-
-        const responseMessage = agentResponses[agentName] || agentResponses["Cloé Martins"];
+        // ✅ NO MODO TESTE: Apenas atualizar metadata, NÃO inserir mensagens simuladas
+        // O QA orchestrator deve detectar o agente pelo JSON response, não pelas mensagens
         
-        await supabase.from("conversation_messages").insert({
-          conversation_id: conversationId,
-          sender_type: "agent",
-          sender_name: agentName,
-          content: responseMessage,
-        });
-
         await supabase.from("conversations").update({
           department: agentName.toLowerCase(),
           metadata: { protocol, testHarness: true, routeReason: reason },
@@ -100,7 +86,7 @@ serve(async (req) => {
 
         // Normalizar nome do agente para comparação
         const normalizedAgent = agentName.toLowerCase().replace(/[áàãâ]/g, 'a').replace(/[éê]/g, 'e');
-        const agentKey = normalizedAgent === "cloé martins" ? "cloe" : normalizedAgent;
+        const agentKey = normalizedAgent === "cloé martins" || normalizedAgent === "cloe martins" ? "cloe" : normalizedAgent;
 
         return new Response(
           JSON.stringify({
@@ -109,7 +95,6 @@ serve(async (req) => {
             agent: agentKey,
             next_action: agentKey,
             targetDepartment: agentKey,
-            message: responseMessage,
             testHarness: true,
             routeReason: reason,
             confidence: 0.95,
@@ -130,15 +115,15 @@ serve(async (req) => {
       }
 
       // 1️⃣ COMERCIAL (maior prioridade para evitar conflitos)
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra|plano|cobertura|consulta.*cobertura|downgrade|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|casa nova|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém/))
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra|plano|cobertura|consulta.*cobertura|downgrade|promo|velocidade|upgrade|cancelar|cancelamento|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|casa nova|mudar.*endereço|mudança.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém|contrato|segunda.*via.*contrato|preciso.*contrato|cópia.*contrato|documento|levar.*internet|posso.*levar/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
       // 2️⃣ FINANCEIRO
-      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|nota fiscal|segunda via|vencimento|vence|quando vence|data de vencimento|conta|mensalidade|valor|cobrança|mais car/))
+      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|parcelamento|nota fiscal|segunda.*via|vencimento|vence|quando vence|data de vencimento|conta|mensalidade|valor|cobrança|cobran.*indevid|cobrança.*errada|atrasad|pendên|liberar|desbloquear|compens/))
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
       // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
-      if (messageText.match(/caiu|lenta|lento|travando|trava|netflix.*trava|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha/))
+      if (messageText.match(/caiu|lenta|lento|travando|trava|netflix.*trava|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha|luz.*vermelha|luz.*apagad|equipamento.*desligad|obra.*cortou|velocidade.*abaixo|velocidade.*baixa|só.*pega.*perto|lag|ping|jogo|gaming|banco.*não.*abre|site.*específico/))
         return await createTestResponse("Luan", "intencao_tecnica_simulada");
 
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
