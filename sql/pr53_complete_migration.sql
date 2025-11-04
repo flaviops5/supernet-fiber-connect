@@ -96,7 +96,7 @@ SELECT
   context_score,
   tone_score,
   timing_score,
-  evaluation ->> 'justification' AS justificativa,
+  (evaluation::jsonb) ->> 'justification' AS justificativa,
   created_at
 FROM public.llm_test_results
 WHERE pass = false
@@ -198,7 +198,7 @@ AS $$
     category,
     expected_agent,
     detected_agent,
-    evaluation ->> 'justification' AS justificativa,
+    (evaluation::jsonb) ->> 'justification' AS justificativa,
     created_at
   FROM public.llm_test_results
   WHERE pass = false
