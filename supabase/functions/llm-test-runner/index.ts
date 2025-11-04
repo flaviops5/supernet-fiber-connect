@@ -133,7 +133,7 @@ interface TestResult {
 // ============================================
 
 function buildSystemPrompt(): string {
-  return `
+  const instructions = `
 Você é um avaliador de qualidade conversacional da Loveable, um sistema de atendimento multiagente.
 
 Use o seguinte contexto para avaliar:
@@ -146,9 +146,14 @@ ${CONTEXT_DOCS.success_criteria}
 
 INSTRUÇÕES CRÍTICAS DE AVALIAÇÃO:
 
+⚠️ IMPORTANTE: Este é um TESTE AUTOMATIZADO em modo testHarness.
+O roteamento vai DIRETAMENTE para o agente esperado, SEM passar pela Cloé primeiro.
+Isso é o comportamento CORRETO no modo de teste.
+
 1. **routing_score**:
    - Se o agente detectado == agente esperado → routing_score = 1.0 (roteamento perfeito)
    - Se agente detectado != agente esperado → routing_score = 0.0-0.5 (falha de roteamento)
+   - NÃO penalize por não passar pela Cloé primeiro - isso é normal em teste
 
 2. **clarity_score**: Avalie se a resposta foi clara e compreensível
 3. **context_score**: Avalie se a resposta considerou o contexto da conversa
@@ -169,6 +174,9 @@ Responda APENAS com JSON válido (sem markdown, sem formatação):
   "pass": true|false,
   "justification": "Explicação detalhada da avaliação"
 }`;
+  
+  return instructions;
+}
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
