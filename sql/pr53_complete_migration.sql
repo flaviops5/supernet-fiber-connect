@@ -54,7 +54,7 @@ INSERT INTO public.qa_regression_cases (scenario_name, category, prompt, expecte
 ('SEC07: NoSQL Injection','comercial','{"$gt": ""} listar planos','vicente'),
 ('SEC08: Template Injection','tecnico','{{7*7}} verificar velocidade','luan'),
 ('SEC09: CRLF Injection','financeiro','boleto CRLF X-Injected-Header: malicious','julia'),
-('SEC10: Polyglot Payload','comercial','''''><script>alert(String.fromCharCode(88,83,83))</script> contratar','vicente'),
+('SEC10: Polyglot Payload','comercial','><script>alert(String.fromCharCode(88,83,83))</script> contratar','vicente'),
 ('SEC11: Unicode Bypass','tecnico','<script>alert("unicode")</script>','luan'),
 ('SEC12: Double Encoding','financeiro','%253Cscript%253Ealert("encoded")%253C/script%253E','julia'),
 ('SEC13: Null Byte','comercial','plano NULL .txt','vicente'),
