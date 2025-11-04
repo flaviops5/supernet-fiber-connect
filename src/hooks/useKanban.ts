@@ -126,6 +126,7 @@ export function useKanban(boardId: string | null) {
   useEffect(() => {
     if (!boardId) return;
 
+    let isSubscribed = true;
     const channel = supabase
       .channel(`kanban-board-${boardId}`)
       .on(
@@ -138,14 +139,16 @@ export function useKanban(boardId: string | null) {
         },
         () => {
           // Reload columns only for this board
-          supabase
-            .from('kanban_columns' as any)
-            .select('*')
-            .eq('board_id', boardId)
-            .order('position')
-            .then(({ data }) => {
-              if (data) setColumns(data as any);
-            });
+          if (isSubscribed) {
+            supabase
+              .from('kanban_columns' as any)
+              .select('*')
+              .eq('board_id', boardId)
+              .order('position')
+              .then(({ data }) => {
+                if (data && isSubscribed) setColumns(data as any);
+              });
+          }
         }
       )
       .on(
@@ -158,19 +161,22 @@ export function useKanban(boardId: string | null) {
         },
         () => {
           // Reload cards only for this board
-          supabase
-            .from('kanban_cards' as any)
-            .select('*')
-            .eq('board_id', boardId)
-            .order('position')
-            .then(({ data }) => {
-              if (data) setCards(data as any);
-            });
+          if (isSubscribed) {
+            supabase
+              .from('kanban_cards' as any)
+              .select('*')
+              .eq('board_id', boardId)
+              .order('position')
+              .then(({ data }) => {
+                if (data && isSubscribed) setCards(data as any);
+              });
+          }
         }
       )
       .subscribe();
 
     return () => {
+      isSubscribed = false;
       supabase.removeChannel(channel);
     };
   }, [boardId]);

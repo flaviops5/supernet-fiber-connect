@@ -20,6 +20,7 @@ interface BoardSelectorProps {
 export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: BoardSelectorProps) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,14 +52,32 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
     }
   };
 
+  const handleBoardChange = async (newBoardId: string) => {
+    if (switching || newBoardId === currentBoardId) return;
+    
+    setSwitching(true);
+    try {
+      // Add small delay to ensure cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+      onBoardChange(newBoardId);
+    } finally {
+      // Reset switching state after board loads
+      setTimeout(() => setSwitching(false), 500);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
       <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-      <Select value={currentBoardId} onValueChange={onBoardChange} disabled={loading}>
+      <Select 
+        value={currentBoardId} 
+        onValueChange={handleBoardChange} 
+        disabled={loading || switching}
+      >
         <SelectTrigger className="w-64">
-          <SelectValue placeholder="Selecione um board" />
+          <SelectValue placeholder={switching ? "Carregando..." : "Selecione um board"} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-background z-50">
           {boards.map((board) => (
             <SelectItem key={board.id} value={board.id}>
               {board.title}
@@ -71,6 +90,7 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
         size="icon"
         onClick={onCreateBoard}
         title="Criar novo board"
+        disabled={switching}
       >
         <Plus className="h-4 w-4" />
       </Button>
