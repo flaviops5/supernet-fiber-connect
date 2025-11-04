@@ -32,16 +32,28 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      // Buscar boards criados pelo usuário
+      const { data: created, error: errCreated } = await supabase
         .from('kanban_boards' as any)
-        .select('id, title, created_at, kanban_board_members!left(user_id)')
-        .or(`created_by.eq.${user.id},kanban_board_members.user_id.eq.${user.id}`)
+        .select('id, title, created_at')
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Buscar boards onde o usuário é membro (relacionamento inverso)
+      const { data: memberOf, error: errMember } = await supabase
+        .from('kanban_board_members' as any)
+        .select('board:kanban_boards(id, title, created_at)')
+        .eq('user_id', user.id);
+
+      if (errCreated) throw errCreated;
+      // member query pode falhar por RLS — tratamos como vazio
+      const memberBoards = (memberOf as any)?.map((r: any) => r.board).filter(Boolean) || [];
+
       const unique = new Map<string, Board>();
-      (data as any)?.forEach((b: any) => unique.set(b.id, { id: b.id, title: b.title, created_at: b.created_at }));
-      setBoards(Array.from(unique.values()));
+      [...((created as any) || []), ...memberBoards].forEach((b: any) => {
+        if (b?.id) unique.set(b.id, { id: b.id, title: b.title, created_at: b.created_at });
+      });
+      setBoards(Array.from(unique.values()).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
     } catch (error: any) {
       console.error('Error loading boards:', error);
       toast({

@@ -18,16 +18,24 @@ const AdminKanban = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar boards onde o usuário é owner ou membro
-      const { data, error } = await supabase
+      // Buscar boards onde o usuário é owner ou membro (2 chamadas seguras)
+      const { data: created } = await supabase
         .from('kanban_boards' as any)
-        .select('id, created_at, kanban_board_members!left(user_id)')
-        .or(`created_by.eq.${user.id},kanban_board_members.user_id.eq.${user.id}`)
+        .select('id, title, created_at')
+        .eq('created_by', user.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (!error && data && data.length > 0) {
-        setSelectedBoardId((data as any)[0].id);
+      const { data: memberOf } = await supabase
+        .from('kanban_board_members' as any)
+        .select('board:kanban_boards(id, title, created_at)')
+        .eq('user_id', user.id);
+
+      const memberBoards = (memberOf as any)?.map((r: any) => r.board).filter(Boolean) || [];
+      const candidates = [...((created as any) || []), ...memberBoards].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+
+      if (candidates.length > 0) {
+        setSelectedBoardId(candidates[0].id);
         return;
       }
 
