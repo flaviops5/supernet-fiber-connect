@@ -120,7 +120,7 @@ serve(async (req) => {
 
       // 🔧 Regras de intenção (ordem: comercial → financeiro → técnico)
       // 1️⃣ COMERCIAL (maior prioridade para evitar conflitos)
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|disponível.*região|instalar|vendas/))
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|disponível.*região|instalar|vendas|mudar.*casa|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*atendente|atendimento.*humano|pessoa.*real|não.*robô/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
       // 2️⃣ FINANCEIRO
