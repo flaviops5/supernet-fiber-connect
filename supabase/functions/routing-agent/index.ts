@@ -126,7 +126,7 @@ serve(async (req) => {
       
       // 1️⃣ COMERCIAL (Vicente) - PRIORIDADE MÁXIMA para evitar falsos positivos técnicos
       // C1: Cobertura
-      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região)\b/i)) {
+      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui)\b/i)) {
         return await createTestResponse("Vicente", "comercial_cobertura");
       }
       
@@ -156,7 +156,7 @@ serve(async (req) => {
       }
       
       // C8: Segunda via contrato
-      if (messageText.match(/\b(segunda.*via.*contrato|cópia.*contrato|contrato.*assinado)\b/i)) {
+      if (messageText.match(/\b(segunda.*via.*contrato|cópia.*contrato|contrato.*assinado|preciso.*contrato|contrato.*que.*assinei)\b/i)) {
         return await createTestResponse("Vicente", "comercial_segunda_via");
       }
       
@@ -166,7 +166,7 @@ serve(async (req) => {
       }
       
       // 2️⃣ PANE EM MASSA (Mass Outage) → Cloé (não redirecionar para Luan durante pane)
-      if (messageText.match(/\b(todo mundo|bairro.*todo|região.*toda|vizinhos.*sem|quando volta|previsão.*volta)\b/i)) {
+      if (messageText.match(/\b(todo mundo|bairro.*todo|região.*toda|vizinhos.*sem|quando volta|previsão.*volta|internet.*caiu.*o.*que|o.*que.*está.*acontecendo)\b/i)) {
         return await createTestResponse("Cloé Martins", "mass_outage_detectado");
       }
       
@@ -177,7 +177,7 @@ serve(async (req) => {
       
       // 3️⃣ TÉCNICO (Luan) - problemas de conexão/equipamento
       // T1: Velocidade baixa
-      if (messageText.match(/\b(velocidade.*baixa|velocidade.*contratada|teste.*velocidade|speed.*test)\b/i)) {
+      if (messageText.match(/\b(velocidade.*baixa|velocidade.*contratada|teste.*velocidade|speed.*test|contratei.*mega.*pega|contratei.*mb.*pega)\b/i)) {
         return await createTestResponse("Luan", "tecnico_velocidade");
       }
       
@@ -221,15 +221,12 @@ serve(async (req) => {
         return await createTestResponse("Luan", "tecnico_gaming");
       }
       
-      // Técnico genérico (internet, lenta, sem sinal, etc)
-      if (
-        messageText.match(/\b(internet|lenta|lento|conexão|sem.*sinal|travando|wi-?fi|fora.*ar|não.*funciona|problema.*técnico|reiniciei|senha|password)\b/i) &&
-        !messageText.match(/\b(novo.*plano|novo.*contrato|ótimo|funcionando.*bem)\b/i)
-      ) {
-        return await createTestResponse("Luan", "tecnico_generico");
+      // 4️⃣ FINANCEIRO (Julia) - COLOCAR ANTES de técnico genérico para capturar "já paguei"
+      // F5: Desbloquear (priorizar "já paguei a fatura")
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar).*\b(já.*paguei|paguei.*fatura)\b/i)) {
+        return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
-      // 4️⃣ FINANCEIRO (Julia)
       // F3: Paguei mas bloqueado
       if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|já.*paguei.*bloqueado)\b/i)) {
         return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
@@ -240,7 +237,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "financeiro_negociar");
       }
       
-      // F5: Desbloquear
+      // F5: Desbloquear genérico (sem "já paguei")
       if (messageText.match(/\b(desbloquear|desbloqueio|reativar)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
@@ -268,7 +265,16 @@ serve(async (req) => {
         return await createTestResponse("Julia", "financeiro_generico");
       }
       
-      // 5️⃣ PADRÃO CLOÉ (casos não classificados)
+      // 5️⃣ TÉCNICO GENÉRICO (depois do financeiro para evitar conflitos)
+      // Técnico genérico (internet, lenta, sem sinal, etc)
+      if (
+        messageText.match(/\b(internet|lenta|lento|conexão|sem.*sinal|travando|wi-?fi|fora.*ar|não.*funciona|problema.*técnico|reiniciei|senha|password)\b/i) &&
+        !messageText.match(/\b(novo.*plano|novo.*contrato|ótimo|funcionando.*bem)\b/i)
+      ) {
+        return await createTestResponse("Luan", "tecnico_generico");
+      }
+      
+      // 6️⃣ PADRÃO CLOÉ (casos não classificados)
       return await createTestResponse("Cloé Martins", "roteamento_padrao");
     }
     // ===========================================================
