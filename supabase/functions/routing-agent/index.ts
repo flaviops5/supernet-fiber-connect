@@ -105,7 +105,31 @@ serve(async (req) => {
 
       // 🔧 Regras de intenção (ordem de prioridade ajustada)
       
-      // 0️⃣ MÚLTIPLAS INTENÇÕES - apenas quando há solicitações explícitas em 2+ categorias
+      // 0️⃣ CPF INVÁLIDO OU INEXISTENTE (máxima prioridade - vai para Cloé)
+      // Detecta CPFs sequenciais, repetidos ou obviamente inválidos
+      const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
+      if (hasCPF) {
+        const cpfNumbers = messageText.replace(/\D/g, '');
+        const invalidPatterns = [
+          '11111111111', '22222222222', '33333333333', '44444444444', '55555555555',
+          '66666666666', '77777777777', '88888888888', '99999999999', '00000000000'
+        ];
+        
+        if (invalidPatterns.some(pattern => cpfNumbers.includes(pattern))) {
+          return await createTestResponse("Cloé Martins", "cpf_invalido_detectado");
+        }
+      }
+      
+      // 1️⃣ MASS OUTAGE (queda genérica sem detalhes específicos - Cloé verifica primeiro)
+      // "internet caiu" SEM outros detalhes técnicos específicos
+      const hasGenericOutage = messageText.match(/^(minha\s+)?internet\s+(caiu|parou|está\s+fora)/);
+      const hasSpecificTechDetails = messageText.match(/velocidade|fibra|equipamento|senha|wi-?fi|luz|sinal|TX|RX|lag|ping|modem|roteador/);
+      
+      if (hasGenericOutage && !hasSpecificTechDetails) {
+        return await createTestResponse("Cloé Martins", "possivel_mass_outage");
+      }
+      
+      // 2️⃣ MÚLTIPLAS INTENÇÕES - apenas quando há solicitações explícitas em 2+ categorias
       const explicitTechnical = messageText.match(/(internet|conexão).*caiu|caiu.*(internet|conexão)|sem.*internet|travando|lenta.*internet|problema.*técnico/);
       const explicitFinancial = messageText.match(/boleto.*pix|pix.*boleto|boleto.*pagamento|segunda.*via.*boleto/);
       const explicitCommercial = messageText.match(/contratar.*plano|upgrade.*plano|mudar.*plano|cancelar.*contrato/);
@@ -115,24 +139,24 @@ serve(async (req) => {
         return await createTestResponse("Cloé Martins", "multiplas_intencoes_detectadas");
       }
 
-      // 1️⃣ CASOS TÉCNICOS ESPECÍFICOS (prioridade alta para evitar conflito com comercial/cloé)
+      // 3️⃣ CASOS TÉCNICOS ESPECÍFICOS (prioridade alta para evitar conflito com comercial/cloé)
       // Problemas de velocidade, corte de fibra, equipamento, sinal
       if (messageText.match(/contratei.*mega.*só.*pega|contratei.*\d+.*só.*pega|velocidade.*abaixo|velocidade.*baixa|só.*pega.*\d+|obra.*cortou|cortaram.*fibra|cortaram.*internet|luz.*vermelha|luz.*apagad|equipamento.*desligad|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha|só.*pega.*perto|sinal.*fraco|TX.*alto|RX.*baix|lag|ping.*alto|jogo.*lag|gaming.*lag|banco.*não.*abre|site.*específico.*não|netflix.*trava|vídeo.*trava/))
         return await createTestResponse("Luan", "intencao_tecnica_especifica");
 
-      // 2️⃣ FINANCEIRO
+      // 4️⃣ FINANCEIRO
       if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|parcelamento|nota fiscal|segunda.*via|vencimento|vence|quando vence|data de vencimento|conta|mensalidade|valor|cobrança|cobran.*indevid|cobrança.*errada|atrasad|pendên|liberar|desbloquear|compens/))
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
-      // 3️⃣ COMERCIAL
+      // 5️⃣ COMERCIAL
       if (messageText.match(/contratar|assinar|novo cliente|quero internet|colocar internet|fibra.*nova|plano|cobertura|consulta.*cobertura|downgrade|promo|upgrade|cancelar|cancelamento|mudar.*plano|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar.*novo|vendas|mudar.*casa|casa nova|mudar.*endereço|mudança.*endereço|transfere.*contrato|transferir.*contrato|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém|segunda.*via.*contrato|preciso.*contrato|cópia.*contrato|levar.*internet|posso.*levar/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
-      // 4️⃣ TÉCNICO GERAL (casos gerais de problema técnico)
+      // 6️⃣ TÉCNICO GERAL (casos gerais de problema técnico)
       if (messageText.match(/caiu|lenta|lento|travando|trava|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema.*internet|internet.*não.*funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre/))
         return await createTestResponse("Luan", "intencao_tecnica_geral");
 
-      // 5️⃣ PADRÃO CLOÉ (casos genéricos, CPF inválido, cliente inexistente, panes em massa)
+      // 7️⃣ PADRÃO CLOÉ (casos genéricos, outros casos não classificados)
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
     }
     // ===========================================================
