@@ -49,24 +49,29 @@ serve(async (req) => {
     logger.info("Routing Agent iniciado", { conversationId });
 
     // ===========================================================
-    // 🧪 TEST HARNESS MODE - roteamento por intenção (sem CPF)
+    // 🧪 TEST HARNESS MODE (Fail-Safe) — roteamento por intenção
     // ===========================================================
-    const TEST_HARNESS = Deno.env.get("TEST_HARNESS") === "true";
-    const ENVIRONMENT = Deno.env.get("ENVIRONMENT") || "development";
+    const envHarness = Deno.env.get("TEST_HARNESS") === "true";
+    const envType = Deno.env.get("ENVIRONMENT") || "development";
+    const bodyHarness = body?.testMode === true || body?.test_harness === true;
+
+    const TEST_HARNESS = envHarness || bodyHarness;
 
     if (TEST_HARNESS) {
-      if (ENVIRONMENT === "production") {
+      if (envType === "production") {
         throw new Error("⚠️ TEST_HARNESS não pode estar ativo em produção!");
       }
 
-      logger.info("🧪 TEST HARNESS ativo — ignorando validação de CPF e roteando por intenção.");
+      logger.info("🧪 TEST HARNESS ativo — ignorando CPF e roteando por intenção.", {
+        envHarness,
+        bodyHarness,
+        environment: envType,
+      });
 
-      const messageText = message.toLowerCase();
-      
-      // Helper function para resposta padronizada
+      const messageText = (message || "").toLowerCase();
+
       const createTestResponse = async (agentName: string, reason: string) => {
         const protocol = `TEST-${Date.now()}`;
-        
         await supabase.from("conversation_messages").insert({
           conversation_id: conversationId,
           sender_type: "agent",
@@ -76,56 +81,37 @@ serve(async (req) => {
 
         await supabase.from("conversations").update({
           department: agentName.toLowerCase(),
-          metadata: { 
-            protocol, 
-            testHarness: true, 
-            routeReason: reason 
-          },
+          metadata: { protocol, testHarness: true, routeReason: reason },
           updated_at: new Date().toISOString(),
         }).eq("id", conversationId);
 
         logger.info("🧪 Roteamento de teste concluído", { agentName, reason });
 
         return new Response(
-          JSON.stringify({ 
-            ok: true, 
+          JSON.stringify({
+            ok: true,
             protocol,
-            agent: agentName.toLowerCase(), // ✅ Para llm-test-runner
-            next_action: agentName.toLowerCase(), // ✅ Para llm-test-runner
+            agent: agentName.toLowerCase(),
+            next_action: agentName.toLowerCase(),
             targetDepartment: agentName.toLowerCase(),
             testHarness: true,
             routeReason: reason,
-            confidence: 0.95
+            confidence: 0.95,
           }),
-          { headers: corsHeaders, status: 200 }
+          { headers: corsHeaders, status: 200 },
         );
       };
 
-      // 🔧 Regras de roteamento por intenção simples
-      if (messageText.includes("caiu") || messageText.includes("lenta") || 
-          messageText.includes("travando") || messageText.includes("sem sinal") ||
-          messageText.includes("offline") || messageText.includes("internet") ||
-          messageText.includes("conexão") || messageText.includes("modem") ||
-          messageText.includes("roteador") || messageText.includes("reiniciar")) {
+      // 🔧 Regras simples de intenção
+      if (messageText.match(/caiu|lenta|travando|sem sinal|offline|internet|conexão|modem|roteador|reiniciar/))
         return await createTestResponse("Luan", "intencao_tecnica_simulada");
-      }
 
-      if (messageText.includes("boleto") || messageText.includes("pix") || 
-          messageText.includes("paguei") || messageText.includes("fatura") ||
-          messageText.includes("pagamento") || messageText.includes("financeiro") ||
-          messageText.includes("débito") || messageText.includes("parcelar")) {
+      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar/))
         return await createTestResponse("Julia", "intencao_financeira_simulada");
-      }
 
-      if (messageText.includes("instalar") || messageText.includes("plano") || 
-          messageText.includes("cobertura") || messageText.includes("promo") ||
-          messageText.includes("contratar") || messageText.includes("velocidade") ||
-          messageText.includes("upgrade") || messageText.includes("cancelar") ||
-          messageText.includes("mudar")) {
+      if (messageText.match(/instalar|plano|cobertura|promo|contratar|velocidade|upgrade|cancelar|mudar/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
-      }
 
-      // fallback padrão para Cloé
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
     }
     // ===========================================================
