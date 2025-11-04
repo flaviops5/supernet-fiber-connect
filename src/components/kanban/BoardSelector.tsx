@@ -57,12 +57,13 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
     
     setSwitching(true);
     try {
-      // Add small delay to ensure cleanup
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Add delay to ensure complete cleanup of previous board
+      await new Promise(resolve => setTimeout(resolve, 300));
       onBoardChange(newBoardId);
+      // Wait for new board to mount
+      await new Promise(resolve => setTimeout(resolve, 800));
     } finally {
-      // Reset switching state after board loads
-      setTimeout(() => setSwitching(false), 500);
+      setSwitching(false);
     }
   };
 

@@ -52,6 +52,7 @@ const AdminKanban = () => {
 
       {selectedBoardId && (
         <KanbanBoard 
+          key={selectedBoardId}
           boardId={selectedBoardId} 
           onBoardChange={setSelectedBoardId}
         />
