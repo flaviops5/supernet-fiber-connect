@@ -72,11 +72,22 @@ serve(async (req) => {
 
       const createTestResponse = async (agentName: string, reason: string) => {
         const protocol = `TEST-${Date.now()}`;
+        
+        // 🎭 Respostas simuladas realistas por agente
+        const agentResponses: Record<string, string> = {
+          "Luan": "Entendi! Vou verificar seu sinal agora. Me dê um momento para fazer o diagnóstico completo da sua conexão. 🔧",
+          "Julia": "Claro! Vou localizar sua fatura agora. Um momento enquanto verifico sua situação financeira. 💰",
+          "Vicente": "Ótimo! Deixa eu verificar as opções disponíveis pra você. Vou te passar os detalhes rapidinho! 📋",
+          "Cloé Martins": "Oi! Entendi sua solicitação. Deixa eu te ajudar com isso! 😊"
+        };
+
+        const responseMessage = agentResponses[agentName] || agentResponses["Cloé Martins"];
+        
         await supabase.from("conversation_messages").insert({
           conversation_id: conversationId,
           sender_type: "agent",
           sender_name: agentName,
-          content: `[TEST MODE] Roteado para ${agentName} - ${reason}`,
+          content: responseMessage,
         });
 
         await supabase.from("conversations").update({
@@ -87,13 +98,18 @@ serve(async (req) => {
 
         logger.info("🧪 Roteamento de teste concluído", { agentName, reason });
 
+        // Normalizar nome do agente para comparação
+        const normalizedAgent = agentName.toLowerCase().replace(/[áàãâ]/g, 'a').replace(/[éê]/g, 'e');
+        const agentKey = normalizedAgent === "cloé martins" ? "cloe" : normalizedAgent;
+
         return new Response(
           JSON.stringify({
             ok: true,
             protocol,
-            agent: agentName.toLowerCase(),
-            next_action: agentName.toLowerCase(),
-            targetDepartment: agentName.toLowerCase(),
+            agent: agentKey,
+            next_action: agentKey,
+            targetDepartment: agentKey,
+            message: responseMessage,
             testHarness: true,
             routeReason: reason,
             confidence: 0.95,
