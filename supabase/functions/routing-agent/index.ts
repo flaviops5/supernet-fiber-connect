@@ -128,7 +128,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
       // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
-      if (messageText.match(/caiu|lenta|lento|travando|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha/))
+      if (messageText.match(/caiu|lenta|lento|travando|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|conexão.*cai|cai.*conexão|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix|RX.*<|distante.*CTO|longe.*CTO|senha.*wi-?fi|senha.*rede|esqueci.*senha|recuper.*senha/))
         return await createTestResponse("Luan", "intencao_tecnica_simulada");
 
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
