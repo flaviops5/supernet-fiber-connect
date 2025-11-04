@@ -5293,6 +5293,42 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_dashboard_summary: {
+        Row: {
+          category: string | null
+          clarity_avg: number | null
+          context_avg: number | null
+          routing_avg: number | null
+          score_medio: number | null
+          taxa_sucesso_pct: number | null
+          timing_avg: number | null
+          tone_avg: number | null
+          total_testes: number | null
+          ultimo_teste: string | null
+        }
+        Relationships: []
+      }
+      qa_latest_failures: {
+        Row: {
+          avaliacao_preview: string | null
+          category: string | null
+          clarity_score: number | null
+          confidence: number | null
+          context_score: number | null
+          created_at: string | null
+          detected_agent: string | null
+          error_details: string | null
+          expected_agent: string | null
+          id: string | null
+          latency_ms: number | null
+          resposta_preview: string | null
+          routing_score: number | null
+          scenario: string | null
+          timing_score: number | null
+          tone_score: number | null
+        }
+        Relationships: []
+      }
       support_critical_clusters: {
         Row: {
           cidade: string | null
