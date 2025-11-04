@@ -144,11 +144,18 @@ ${CONTEXT_DOCS.routing}
 
 ${CONTEXT_DOCS.success_criteria}
 
-IMPORTANTE:
-- Seja objetivo e técnico na avaliação
-- Considere o contexto completo da conversa
-- Avalie se o roteamento foi correto para o cenário
-- Verifique se a comunicação foi clara e empática
+INSTRUÇÕES CRÍTICAS DE AVALIAÇÃO:
+
+1. **routing_score**:
+   - Se o agente detectado == agente esperado → routing_score = 1.0 (roteamento perfeito)
+   - Se agente detectado != agente esperado → routing_score = 0.0-0.5 (falha de roteamento)
+
+2. **clarity_score**: Avalie se a resposta foi clara e compreensível
+3. **context_score**: Avalie se a resposta considerou o contexto da conversa
+4. **tone_score**: Avalie se o tom foi empático e profissional
+5. **timing_score**: Avalie se a latência foi adequada (< 2s = 1.0, < 5s = 0.8, > 5s = 0.5)
+
+6. **pass**: true se routing_score >= 0.9 E média dos outros scores >= 0.7
 
 Responda APENAS com JSON válido (sem markdown, sem formatação):
 {
@@ -162,7 +169,6 @@ Responda APENAS com JSON válido (sem markdown, sem formatação):
   "pass": true|false,
   "justification": "Explicação detalhada da avaliação"
 }`;
-}
 
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
