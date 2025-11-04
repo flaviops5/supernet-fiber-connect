@@ -454,26 +454,28 @@ serve(async (req) => {
   try {
     console.log("🚀 Iniciando LLM Test Runner...");
     
-    // Buscar cenários (máximo 10 por execução, ordenação aleatória)
-    const { data: scenarios, error: scenariosError } = await supabase
+    // Buscar todos os cenários ativos
+    const { data: allScenarios, error: scenariosError } = await supabase
       .from("kb_scenarios")
       .select("*")
-      .eq("is_active", true)
-      .order("random()")
-      .limit(10);
+      .eq("is_active", true);
 
     if (scenariosError) {
       throw new Error(`Error fetching scenarios: ${scenariosError.message}`);
     }
 
-    if (!scenarios || scenarios.length === 0) {
+    if (!allScenarios || allScenarios.length === 0) {
       return new Response(
         JSON.stringify({ error: "No active scenarios found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`📋 Executando ${scenarios.length} testes...`);
+    // Randomizar e pegar até 10 cenários
+    const shuffled = allScenarios.sort(() => Math.random() - 0.5);
+    const scenarios = shuffled.slice(0, Math.min(10, shuffled.length));
+
+    console.log(`📋 Executando ${scenarios.length} testes de ${allScenarios.length} cenários disponíveis...`);
     
     // Executar testes sequencialmente (para evitar rate limits)
     const results: TestResult[] = [];
