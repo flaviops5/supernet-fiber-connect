@@ -3096,6 +3096,42 @@ export type Database = {
           },
         ]
       }
+      kb_scenarios: {
+        Row: {
+          category: string
+          created_at: string | null
+          expected_agent: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          prompt: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          expected_agent: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          prompt: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          expected_agent?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          prompt?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       knowledge_base: {
         Row: {
           agent_types: string[] | null
