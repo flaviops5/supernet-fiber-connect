@@ -488,9 +488,9 @@ serve(async (req) => {
       );
     }
 
-    // Randomizar e pegar até 10 cenários
+    // Randomizar e pegar até 3 cenários (evitar timeout do Edge Function)
     const shuffled = allScenarios.sort(() => Math.random() - 0.5);
-    const scenarios = shuffled.slice(0, Math.min(10, shuffled.length));
+    const scenarios = shuffled.slice(0, Math.min(3, shuffled.length));
 
     console.log(`📋 Executando ${scenarios.length} testes de ${allScenarios.length} cenários disponíveis...`);
     
@@ -501,7 +501,7 @@ serve(async (req) => {
       results.push(result);
       
       // Pequeno delay entre testes
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     // Calcular estatísticas
