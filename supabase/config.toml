@@ -200,3 +200,6 @@ verify_jwt = false
 
 [functions.llm-test-runner]
 verify_jwt = false
+
+[functions.qa-orchestrator]
+verify_jwt = false
