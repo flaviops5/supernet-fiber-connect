@@ -436,15 +436,9 @@ export default function TestSuiteRunner() {
       for (const conv of data) {
         const cpf = conv.customer_cpf || '';
         
-        // Ignorar CPFs claramente de teste (11111, 22222, etc.)
-        const isTestCPF = /^(111|222|333|444|555|666|777|888|999)\.\1\.\1-\1$/.test(cpf) ||
-                          /^(1{11}|2{11}|3{11}|4{11}|5{11}|6{11}|7{11}|8{11}|9{11}|0{11})$/.test(cpf);
-        
-        if (isTestCPF) continue;
-        
-        // CPFs reais devem estar mascarados
-        if (!cpf.includes('*')) {
-          throw new Error(`CPF real não mascarado encontrado: ${cpf.substring(0, 3)}...`);
+        // Todo CPF no banco deve estar mascarado
+        if (cpf && !cpf.includes('*')) {
+          throw new Error('CPF não mascarado encontrado');
         }
       }
     }

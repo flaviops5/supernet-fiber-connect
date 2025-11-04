@@ -4,6 +4,8 @@
  * Previne exposição de senhas, tokens, CPFs em logs
  */
 
+import { redactPII } from './pii-redaction.ts';
+
 // Campos que devem ser redacted em logs
 const SENSITIVE_FIELDS = [
   'senha',
@@ -82,25 +84,28 @@ export function truncateForLog(str: string, maxLength = 500): string {
  */
 export const safeLog = {
   info: (message: string, data?: any) => {
+    const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     const sanitized = data ? sanitizeForLog(data) : undefined;
-    console.log(message, sanitized);
+    console.log(redactedMessage, sanitized);
   },
   
   warn: (message: string, data?: any) => {
+    const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     const sanitized = data ? sanitizeForLog(data) : undefined;
-    console.warn(message, sanitized);
+    console.warn(redactedMessage, sanitized);
   },
   
   error: (message: string, error?: any) => {
+    const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     if (error instanceof Error) {
-      console.error(message, {
+      console.error(redactedMessage, {
         name: error.name,
-        message: error.message,
+        message: redactPII(error.message, 'logs'),
         stack: error.stack?.split('\n').slice(0, 5).join('\n') // Limitar stack trace
       });
     } else {
       const sanitized = error ? sanitizeForLog(error) : undefined;
-      console.error(message, sanitized);
+      console.error(redactedMessage, sanitized);
     }
   },
   
