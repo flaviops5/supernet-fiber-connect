@@ -424,18 +424,24 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
 
           <div className="space-y-2">
             <Label htmlFor="target-column">Coluna de Destino</Label>
-            <Select value={selectedColumn} onValueChange={setSelectedColumn}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a coluna" />
-              </SelectTrigger>
-              <SelectContent>
-                {columns.map((column) => (
-                  <SelectItem key={column.id} value={column.id}>
-                    {column.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {columns.length === 0 ? (
+              <div className="border rounded-md p-3 bg-muted/20 text-center text-sm text-muted-foreground">
+                ⚠️ Nenhuma coluna disponível. Crie pelo menos uma coluna no quadro antes de importar.
+              </div>
+            ) : (
+              <Select value={selectedColumn} onValueChange={setSelectedColumn}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a coluna" />
+                </SelectTrigger>
+                <SelectContent>
+                  {columns.map((column) => (
+                    <SelectItem key={column.id} value={column.id}>
+                      {column.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
@@ -444,8 +450,8 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
             </Button>
             <Button 
               onClick={handleImport} 
-              disabled={!file || !selectedColumn || loading}
-              className={!file || !selectedColumn ? "opacity-50 cursor-not-allowed" : ""}
+              disabled={!file || !selectedColumn || loading || columns.length === 0}
+              className={(!file || !selectedColumn || columns.length === 0) ? "opacity-50 cursor-not-allowed" : ""}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               {loading ? 'Importando...' : 'Importar'}
