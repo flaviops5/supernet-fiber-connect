@@ -32,28 +32,46 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar boards criados pelo usuário
-      const { data: created, error: errCreated } = await supabase
+      // Query 1: Buscar boards criados pelo usuário
+      const { data: created, error: err1 } = await supabase
         .from('kanban_boards' as any)
         .select('id, title, created_at')
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
-      // Buscar boards onde o usuário é membro (relacionamento inverso)
-      const { data: memberOf, error: errMember } = await supabase
+      if (err1) throw err1;
+
+      // Query 2: Buscar boards onde usuário é membro (JOIN manual)
+      const { data: memberships, error: err2 } = await supabase
         .from('kanban_board_members' as any)
-        .select('board:kanban_boards(id, title, created_at)')
+        .select('board_id')
         .eq('user_id', user.id);
 
-      if (errCreated) throw errCreated;
-      // member query pode falhar por RLS — tratamos como vazio
-      const memberBoards = (memberOf as any)?.map((r: any) => r.board).filter(Boolean) || [];
+      // Buscar detalhes dos boards das memberships
+      const memberBoardIds = (memberships as any)?.map((m: any) => m.board_id) || [];
+      let memberBoards: any[] = [];
+      
+      if (memberBoardIds.length > 0) {
+        const { data: memberBoardData } = await supabase
+          .from('kanban_boards' as any)
+          .select('id, title, created_at')
+          .in('id', memberBoardIds);
+        
+        memberBoards = memberBoardData || [];
+      }
 
+      // Combinar e remover duplicatas
+      const allBoards = [...((created as any) || []), ...memberBoards];
       const unique = new Map<string, Board>();
-      [...((created as any) || []), ...memberBoards].forEach((b: any) => {
+      allBoards.forEach((b: any) => {
         if (b?.id) unique.set(b.id, { id: b.id, title: b.title, created_at: b.created_at });
       });
-      setBoards(Array.from(unique.values()).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)));
+      
+      const sorted = Array.from(unique.values()).sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      setBoards(sorted);
     } catch (error: any) {
       console.error('Error loading boards:', error);
       toast({
