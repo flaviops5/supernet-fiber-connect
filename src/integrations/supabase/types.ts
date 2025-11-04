@@ -4460,6 +4460,96 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_regression_cases: {
+        Row: {
+          category: string
+          created_at: string | null
+          expected_agent: string
+          id: string
+          last_passed: boolean | null
+          last_routing_score: number | null
+          last_run_at: string | null
+          prompt: string
+          scenario_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          expected_agent: string
+          id?: string
+          last_passed?: boolean | null
+          last_routing_score?: number | null
+          last_run_at?: string | null
+          prompt: string
+          scenario_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          expected_agent?: string
+          id?: string
+          last_passed?: boolean | null
+          last_routing_score?: number | null
+          last_run_at?: string | null
+          prompt?: string
+          scenario_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      qa_reports: {
+        Row: {
+          avg_latency_ms: number | null
+          avg_score: number | null
+          created_at: string | null
+          exploratory_fail: number | null
+          exploratory_pass: number | null
+          id: string
+          notes: string | null
+          regression_fail: number | null
+          regression_pass: number | null
+          run_finished_at: string | null
+          run_started_at: string
+          total_fail: number | null
+          total_pass: number | null
+          total_tests: number | null
+        }
+        Insert: {
+          avg_latency_ms?: number | null
+          avg_score?: number | null
+          created_at?: string | null
+          exploratory_fail?: number | null
+          exploratory_pass?: number | null
+          id?: string
+          notes?: string | null
+          regression_fail?: number | null
+          regression_pass?: number | null
+          run_finished_at?: string | null
+          run_started_at?: string
+          total_fail?: number | null
+          total_pass?: number | null
+          total_tests?: number | null
+        }
+        Update: {
+          avg_latency_ms?: number | null
+          avg_score?: number | null
+          created_at?: string | null
+          exploratory_fail?: number | null
+          exploratory_pass?: number | null
+          id?: string
+          notes?: string | null
+          regression_fail?: number | null
+          regression_pass?: number | null
+          run_finished_at?: string | null
+          run_started_at?: string
+          total_fail?: number | null
+          total_pass?: number | null
+          total_tests?: number | null
+        }
+        Relationships: []
+      }
       quick_replies: {
         Row: {
           content: string
@@ -5293,6 +5383,36 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_baseline_status: {
+        Row: {
+          category: string | null
+          expected_agent: string | null
+          last_passed: boolean | null
+          last_routing_score: number | null
+          last_run_at: string | null
+          scenario_name: string | null
+          status: string | null
+        }
+        Insert: {
+          category?: string | null
+          expected_agent?: string | null
+          last_passed?: boolean | null
+          last_routing_score?: number | null
+          last_run_at?: string | null
+          scenario_name?: string | null
+          status?: never
+        }
+        Update: {
+          category?: string | null
+          expected_agent?: string | null
+          last_passed?: boolean | null
+          last_routing_score?: number | null
+          last_run_at?: string | null
+          scenario_name?: string | null
+          status?: never
+        }
+        Relationships: []
+      }
       qa_dashboard_summary: {
         Row: {
           category: string | null
@@ -5305,6 +5425,23 @@ export type Database = {
           tone_avg: number | null
           total_testes: number | null
           ultimo_teste: string | null
+        }
+        Relationships: []
+      }
+      qa_last_failures: {
+        Row: {
+          category: string | null
+          clarity_score: number | null
+          context_score: number | null
+          created_at: string | null
+          detected_agent: string | null
+          expected_agent: string | null
+          id: string | null
+          justificativa: string | null
+          routing_score: number | null
+          scenario: string | null
+          timing_score: number | null
+          tone_score: number | null
         }
         Relationships: []
       }
@@ -5326,6 +5463,20 @@ export type Database = {
           scenario: string | null
           timing_score: number | null
           tone_score: number | null
+        }
+        Relationships: []
+      }
+      qa_summary: {
+        Row: {
+          category: string | null
+          clarity_avg: number | null
+          context_avg: number | null
+          routing_avg: number | null
+          score_medio: number | null
+          taxa_sucesso_pct: number | null
+          timing_avg: number | null
+          tone_avg: number | null
+          total_testes: number | null
         }
         Relationships: []
       }
@@ -5553,6 +5704,31 @@ export type Database = {
           title: string
         }[]
       }
+      get_last_qa_failures: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          detected_agent: string
+          expected_agent: string
+          justificativa: string
+          scenario: string
+        }[]
+      }
+      get_last_qa_report: {
+        Args: never
+        Returns: {
+          avg_latency_ms: number
+          avg_score: number
+          id: string
+          regression_fail: number
+          regression_pass: number
+          run_started_at: string
+          total_fail: number
+          total_pass: number
+          total_tests: number
+        }[]
+      }
       get_migration_stats: {
         Args: never
         Returns: {
@@ -5560,6 +5736,18 @@ export type Database = {
           migration_progress: number
           pending_docs: number
           total_docs: number
+        }[]
+      }
+      get_qa_baseline_cases: {
+        Args: never
+        Returns: {
+          category: string
+          expected_agent: string
+          id: string
+          last_passed: boolean
+          last_routing_score: number
+          last_run_at: string
+          scenario_name: string
         }[]
       }
       get_top5_critical_regions: {
