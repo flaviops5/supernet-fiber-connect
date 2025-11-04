@@ -126,7 +126,7 @@ serve(async (req) => {
       
       // 1️⃣ COMERCIAL (Vicente) - PRIORIDADE MÁXIMA para evitar falsos positivos técnicos
       // C1: Cobertura
-      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui)\b/i)) {
+      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|vocês.*atendem)\b/i)) {
         return await createTestResponse("Vicente", "comercial_cobertura");
       }
       
@@ -156,7 +156,7 @@ serve(async (req) => {
       }
       
       // C8: Segunda via contrato
-      if (messageText.match(/\b(segunda.*via.*contrato|cópia.*contrato|contrato.*assinado|preciso.*contrato|contrato.*que.*assinei)\b/i)) {
+      if (messageText.match(/\b(segunda.*via.*contrato|cópia.*contrato|contrato.*assinado|preciso.*do?.*contrato|contrato.*que.*assinei|contrato.*assinei)\b/i)) {
         return await createTestResponse("Vicente", "comercial_segunda_via");
       }
       
@@ -166,7 +166,7 @@ serve(async (req) => {
       }
       
       // 2️⃣ PANE EM MASSA (Mass Outage) → Cloé (não redirecionar para Luan durante pane)
-      if (messageText.match(/\b(todo mundo|bairro.*todo|região.*toda|vizinhos.*sem|quando volta|previsão.*volta|internet.*caiu.*o.*que|o.*que.*está.*acontecendo)\b/i)) {
+      if (messageText.match(/\b(todo mundo|bairro.*todo|região.*toda|vizinhos.*sem|quando volta|previsão.*volta|caiu.*o.*que|que.*está.*acontecendo|o.*que.*acontecendo)\b/i)) {
         return await createTestResponse("Cloé Martins", "mass_outage_detectado");
       }
       
@@ -177,7 +177,7 @@ serve(async (req) => {
       
       // 3️⃣ TÉCNICO (Luan) - problemas de conexão/equipamento
       // T1: Velocidade baixa
-      if (messageText.match(/\b(velocidade.*baixa|velocidade.*contratada|teste.*velocidade|speed.*test|contratei.*mega.*pega|contratei.*mb.*pega)\b/i)) {
+      if (messageText.match(/\b(velocidade.*baixa|velocidade.*contratada|teste.*velocidade|speed.*test|contratei.*\d+.*mega|contratei.*\d+.*mb|mega.*(?:só|mas|porém).*pega|mb.*(?:só|mas|porém).*pega)\b/i)) {
         return await createTestResponse("Luan", "tecnico_velocidade");
       }
       
@@ -223,7 +223,7 @@ serve(async (req) => {
       
       // 4️⃣ FINANCEIRO (Julia) - COLOCAR ANTES de técnico genérico para capturar "já paguei"
       // F5: Desbloquear (priorizar "já paguei a fatura")
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar).*\b(já.*paguei|paguei.*fatura)\b/i)) {
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar)\b/i) && messageText.match(/\b(já.*paguei|paguei.*fatura|paguei.*boleto)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
