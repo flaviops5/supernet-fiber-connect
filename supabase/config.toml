@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.installation-notify]
 verify_jwt = false
+
+[functions.llm-test-runner]
+verify_jwt = false

@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from '@/integrations/supabase/client';
 import { PlayCircle, CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { LLMTestRunner } from './LLMTestRunner';
 
 type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
 
@@ -337,13 +339,20 @@ export default function TestSuiteRunner() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PlayCircle className="h-6 w-6" />
-            Test Suite Runner - Testes E2E
+            Test Suite Runner
           </CardTitle>
           <CardDescription>
-            Execute todos os testes de ponta a ponta antes de ir para produção
+            Testes end-to-end e validação conversacional com LLM
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
+          <Tabs defaultValue="functional" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="functional">Testes Funcionais</TabsTrigger>
+              <TabsTrigger value="llm">Validação LLM</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="functional" className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progresso: {completedTests}/{totalTests}</span>
@@ -394,45 +403,51 @@ export default function TestSuiteRunner() {
               <div className="text-muted-foreground">Pendente</div>
             </div>
           </div>
+
+          {Object.entries(groupedTests).map(([category, categoryTests]) => (
+            <Card key={category} className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg">{category}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {categoryTests.map(test => (
+                    <div
+                      key={test.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        test.id === currentTest ? 'bg-accent' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {getStatusIcon(test.status)}
+                        <div>
+                          <div className="font-medium">{test.name}</div>
+                          <div className="text-sm text-muted-foreground">{test.description}</div>
+                          {test.error && (
+                            <div className="text-sm text-red-500 mt-1">Erro: {test.error}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {test.duration && (
+                          <span className="text-sm text-muted-foreground">{test.duration}ms</span>
+                        )}
+                        {getStatusBadge(test.status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="llm">
+          <LLMTestRunner />
+        </TabsContent>
+      </Tabs>
         </CardContent>
       </Card>
-
-      {Object.entries(groupedTests).map(([category, categoryTests]) => (
-        <Card key={category}>
-          <CardHeader>
-            <CardTitle className="text-lg">{category}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {categoryTests.map(test => (
-                <div
-                  key={test.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    test.id === currentTest ? 'bg-accent' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    {getStatusIcon(test.status)}
-                    <div>
-                      <div className="font-medium">{test.name}</div>
-                      <div className="text-sm text-muted-foreground">{test.description}</div>
-                      {test.error && (
-                        <div className="text-sm text-red-500 mt-1">Erro: {test.error}</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {test.duration && (
-                      <span className="text-sm text-muted-foreground">{test.duration}ms</span>
-                    )}
-                    {getStatusBadge(test.status)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
     </div>
   );
 }
