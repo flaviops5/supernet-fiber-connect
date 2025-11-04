@@ -3107,6 +3107,7 @@ export type Database = {
           name: string
           prompt: string
           updated_at: string | null
+          weight: number | null
         }
         Insert: {
           category: string
@@ -3118,6 +3119,7 @@ export type Database = {
           name: string
           prompt: string
           updated_at?: string | null
+          weight?: number | null
         }
         Update: {
           category?: string
@@ -3129,6 +3131,7 @@ export type Database = {
           name?: string
           prompt?: string
           updated_at?: string | null
+          weight?: number | null
         }
         Relationships: []
       }
@@ -3305,6 +3308,95 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      llm_test_results: {
+        Row: {
+          category: string
+          clarity_score: number | null
+          confidence: number | null
+          context_score: number | null
+          created_at: string | null
+          detected_agent: string | null
+          endpoint_called: string | null
+          error_details: string | null
+          evaluation: string | null
+          execution_time_ms: number | null
+          expected_agent: string | null
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          model_evaluator: string | null
+          model_generation: string | null
+          pass: boolean | null
+          response: string | null
+          routing_score: number | null
+          scenario: string
+          scenario_id: string | null
+          timing_score: number | null
+          tone_score: number | null
+          user_message: string | null
+        }
+        Insert: {
+          category: string
+          clarity_score?: number | null
+          confidence?: number | null
+          context_score?: number | null
+          created_at?: string | null
+          detected_agent?: string | null
+          endpoint_called?: string | null
+          error_details?: string | null
+          evaluation?: string | null
+          execution_time_ms?: number | null
+          expected_agent?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_evaluator?: string | null
+          model_generation?: string | null
+          pass?: boolean | null
+          response?: string | null
+          routing_score?: number | null
+          scenario: string
+          scenario_id?: string | null
+          timing_score?: number | null
+          tone_score?: number | null
+          user_message?: string | null
+        }
+        Update: {
+          category?: string
+          clarity_score?: number | null
+          confidence?: number | null
+          context_score?: number | null
+          created_at?: string | null
+          detected_agent?: string | null
+          endpoint_called?: string | null
+          error_details?: string | null
+          evaluation?: string | null
+          execution_time_ms?: number | null
+          expected_agent?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_evaluator?: string | null
+          model_generation?: string | null
+          pass?: boolean | null
+          response?: string | null
+          routing_score?: number | null
+          scenario?: string
+          scenario_id?: string | null
+          timing_score?: number | null
+          tone_score?: number | null
+          user_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llm_test_results_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "kb_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_cron_control: {
         Row: {
