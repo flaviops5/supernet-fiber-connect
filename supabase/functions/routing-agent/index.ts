@@ -124,7 +124,7 @@ serve(async (req) => {
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
       // 2️⃣ FINANCEIRO
-      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|nota fiscal|segunda via/))
+      if (messageText.match(/boleto|pix|paguei|fatura|pagamento|financeiro|débito|parcelar|nota fiscal|segunda via|vencimento|vence|quando vence|data de vencimento/))
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
       // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
