@@ -34,12 +34,14 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
 
       const { data, error } = await supabase
         .from('kanban_boards' as any)
-        .select('id, title, created_at')
-        .eq('created_by', user.id)
+        .select('id, title, created_at, kanban_board_members!left(user_id)')
+        .or(`created_by.eq.${user.id},kanban_board_members.user_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setBoards((data as any) || []);
+      const unique = new Map<string, Board>();
+      (data as any)?.forEach((b: any) => unique.set(b.id, { id: b.id, title: b.title, created_at: b.created_at }));
+      setBoards(Array.from(unique.values()));
     } catch (error: any) {
       console.error('Error loading boards:', error);
       toast({

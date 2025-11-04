@@ -8,37 +8,52 @@ const AdminKanban = () => {
 
   useEffect(() => {
     const loadDefaultBoard = async () => {
+      // Priorizar último board usado, se existir
+      const saved = localStorage.getItem('lastKanbanBoardId');
+      if (saved) {
+        setSelectedBoardId(saved);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: boards } = await supabase
+      // Buscar boards onde o usuário é owner ou membro
+      const { data, error } = await supabase
         .from('kanban_boards' as any)
-        .select('id')
-        .eq('created_by', user.id)
+        .select('id, created_at, kanban_board_members!left(user_id)')
+        .or(`created_by.eq.${user.id},kanban_board_members.user_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (boards && boards.length > 0) {
-        setSelectedBoardId((boards as any)[0].id);
-      } else {
-        // Criar board padrão
-        const { data: newBoard } = await supabase
-          .from('kanban_boards' as any)
-          .insert({
-            title: 'Meu Quadro',
-            created_by: user.id,
-          })
-          .select()
-          .single();
+      if (!error && data && data.length > 0) {
+        setSelectedBoardId((data as any)[0].id);
+        return;
+      }
 
-        if (newBoard) {
-          setSelectedBoardId((newBoard as any).id);
-        }
+      // Se não houver, criar board padrão
+      const { data: newBoard } = await supabase
+        .from('kanban_boards' as any)
+        .insert({
+          title: 'Meu Quadro',
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (newBoard) {
+        setSelectedBoardId((newBoard as any).id);
       }
     };
 
     loadDefaultBoard();
   }, []);
+
+  useEffect(() => {
+    if (selectedBoardId) {
+      localStorage.setItem('lastKanbanBoardId', selectedBoardId);
+    }
+  }, [selectedBoardId]);
 
   return (
     <div className="space-y-6">
