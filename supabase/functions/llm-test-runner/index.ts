@@ -233,11 +233,13 @@ async function generateUserMessage(basePrompt: string): Promise<string> {
   try {
     const generated = await callLovableAI(
       "google/gemini-2.5-flash",
-      "Você gera variações naturais de mensagens de clientes em português brasileiro. Seja espontâneo, use linguagem informal mas respeitosa. Adicione variações como erros de digitação leves, gírias, emoções.",
-      `Gere uma variação natural desta mensagem: "${basePrompt}"`,
+      "Você gera UMA ÚNICA variação natural de mensagem de cliente em português brasileiro. Seja espontâneo, use linguagem informal mas respeitosa. Responda APENAS com a mensagem variada, nada mais.",
+      `Varie esta mensagem de forma natural e concisa: "${basePrompt}"`,
       TIMEOUT_GENERATION
     );
-    return generated.trim();
+    // Pegar apenas a primeira linha se vier múltiplas
+    const firstLine = generated.trim().split('\n')[0];
+    return firstLine.replace(/^[">*-]\s*/, '').trim() || basePrompt;
   } catch (error) {
     console.error("Error generating message variation:", error);
     return basePrompt; // Fallback para prompt original
@@ -248,6 +250,8 @@ async function callRoutingAgent(message: string): Promise<{ agent?: string; resp
   const startTime = Date.now();
   
   try {
+    const testConversationId = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const response = await fetchWithTimeout(
       ROUTING_ENDPOINT,
       {
@@ -257,9 +261,10 @@ async function callRoutingAgent(message: string): Promise<{ agent?: string; resp
           "Authorization": `Bearer ${supabaseServiceKey}`
         },
         body: JSON.stringify({
+          conversationId: testConversationId,
           message,
-          phone: "+5511999999999", // Telefone de teste
-          testMode: true // Flag para não criar dados reais
+          phone: "+5511999999999",
+          testMode: true
         })
       },
       TIMEOUT_ROUTING
@@ -319,12 +324,24 @@ Avalie a qualidade do roteamento e da resposta.
       { type: "json_object" }
     );
 
-    const evaluation = JSON.parse(evalText) as EvaluationResult;
-    
-    // Validar estrutura
-    if (!evaluation.routing_score || !evaluation.justification) {
-      throw new Error("Invalid evaluation structure");
+    let evaluation: EvaluationResult;
+    try {
+      evaluation = JSON.parse(evalText) as EvaluationResult;
+    } catch (parseError) {
+      console.error("Error parsing evaluation JSON:", evalText);
+      throw new Error(`Invalid JSON response: ${parseError}`);
     }
+    
+    // Validar estrutura e aplicar defaults
+    evaluation.routing_score = evaluation.routing_score ?? 0.5;
+    evaluation.clarity_score = evaluation.clarity_score ?? 0.5;
+    evaluation.context_score = evaluation.context_score ?? 0.5;
+    evaluation.tone_score = evaluation.tone_score ?? 0.5;
+    evaluation.timing_score = evaluation.timing_score ?? 0.5;
+    evaluation.detected_agent = evaluation.detected_agent || detectedAgent || "desconhecido";
+    evaluation.expected_agent = scenario.expected_agent;
+    evaluation.pass = evaluation.pass ?? false;
+    evaluation.justification = evaluation.justification || "Avaliação incompleta";
 
     return evaluation;
   } catch (error) {
