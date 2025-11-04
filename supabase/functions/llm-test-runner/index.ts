@@ -28,7 +28,7 @@ const ROUTING_ENDPOINT = `${supabaseUrl}/functions/v1/routing-agent`;
 // Timeouts em ms
 const TIMEOUT_GENERATION = 15000;
 const TIMEOUT_ROUTING = 30000;
-const TIMEOUT_EVALUATION = 20000;
+const TIMEOUT_EVALUATION = 35000; // 🔧 Aumentado para evitar timeouts
 
 // ============================================
 // CONTEXTO DOCUMENTAL
@@ -317,7 +317,7 @@ Avalie a qualidade do roteamento e da resposta.
 `;
 
     const evalText = await callLovableAI(
-      "google/gemini-2.5-pro",
+      "google/gemini-2.5-flash", // 🚀 Modelo mais rápido
       buildSystemPrompt(),
       evalPrompt,
       TIMEOUT_EVALUATION,
