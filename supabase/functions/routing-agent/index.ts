@@ -48,6 +48,86 @@ serve(async (req) => {
 
     logger.info("Routing Agent iniciado", { conversationId });
 
+    // ===========================================================
+    // 🧪 TEST HARNESS MODE - roteamento por intenção (sem CPF)
+    // ===========================================================
+    const TEST_HARNESS = Deno.env.get("TEST_HARNESS") === "true";
+    const ENVIRONMENT = Deno.env.get("ENVIRONMENT") || "development";
+
+    if (TEST_HARNESS) {
+      if (ENVIRONMENT === "production") {
+        throw new Error("⚠️ TEST_HARNESS não pode estar ativo em produção!");
+      }
+
+      logger.info("🧪 TEST HARNESS ativo — ignorando validação de CPF e roteando por intenção.");
+
+      const messageText = message.toLowerCase();
+      
+      // Helper function para resposta padronizada
+      const createTestResponse = async (agentName: string, reason: string) => {
+        const protocol = `TEST-${Date.now()}`;
+        
+        await supabase.from("conversation_messages").insert({
+          conversation_id: conversationId,
+          sender_type: "agent",
+          sender_name: agentName,
+          content: `[TEST MODE] Roteado para ${agentName} - ${reason}`,
+        });
+
+        await supabase.from("conversations").update({
+          department: agentName.toLowerCase(),
+          metadata: { 
+            protocol, 
+            testHarness: true, 
+            routeReason: reason 
+          },
+          updated_at: new Date().toISOString(),
+        }).eq("id", conversationId);
+
+        logger.info("🧪 Roteamento de teste concluído", { agentName, reason });
+
+        return new Response(
+          JSON.stringify({ 
+            ok: true, 
+            protocol, 
+            targetDepartment: agentName.toLowerCase(),
+            testHarness: true,
+            routeReason: reason,
+            confidence: 0.95
+          }),
+          { headers: corsHeaders, status: 200 }
+        );
+      };
+
+      // 🔧 Regras de roteamento por intenção simples
+      if (messageText.includes("caiu") || messageText.includes("lenta") || 
+          messageText.includes("travando") || messageText.includes("sem sinal") ||
+          messageText.includes("offline") || messageText.includes("internet") ||
+          messageText.includes("conexão") || messageText.includes("modem") ||
+          messageText.includes("roteador") || messageText.includes("reiniciar")) {
+        return await createTestResponse("Luan", "intencao_tecnica_simulada");
+      }
+
+      if (messageText.includes("boleto") || messageText.includes("pix") || 
+          messageText.includes("paguei") || messageText.includes("fatura") ||
+          messageText.includes("pagamento") || messageText.includes("financeiro") ||
+          messageText.includes("débito") || messageText.includes("parcelar")) {
+        return await createTestResponse("Julia", "intencao_financeira_simulada");
+      }
+
+      if (messageText.includes("instalar") || messageText.includes("plano") || 
+          messageText.includes("cobertura") || messageText.includes("promo") ||
+          messageText.includes("contratar") || messageText.includes("velocidade") ||
+          messageText.includes("upgrade") || messageText.includes("cancelar") ||
+          messageText.includes("mudar")) {
+        return await createTestResponse("Vicente", "intencao_comercial_simulada");
+      }
+
+      // fallback padrão para Cloé
+      return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
+    }
+    // ===========================================================
+
     // 🔍 Detectar tipo de entrada (CPF, telefone, outro)
     const inputType = detectInputType(message);
     logger.info("Tipo de entrada detectado", { inputType });
