@@ -223,7 +223,7 @@ serve(async (req) => {
       
       // 4️⃣ FINANCEIRO (Julia) - COLOCAR ANTES de técnico genérico para capturar "já paguei"
       // F5: Desbloquear (priorizar "já paguei a fatura")
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar)\b/i) && messageText.match(/\b(já.*paguei|paguei.*fatura|paguei.*boleto)\b/i)) {
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar).*(já.*paguei|paguei.*fatura|paguei.*boleto)|(já.*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
