@@ -120,7 +120,7 @@ serve(async (req) => {
 
       // 🔧 Regras de intenção (ordem: comercial → financeiro → técnico)
       // 1️⃣ COMERCIAL (maior prioridade para evitar conflitos)
-      if (messageText.match(/contratar|assinar|novo cliente|quero internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*atendente|atendimento.*humano|pessoa.*real|não.*robô/))
+      if (messageText.match(/contratar|assinar|novo cliente|quero internet|fibra|plano|cobertura|promo|velocidade|upgrade|cancelar|mudar|mais rápido|aumentar velocidade|trocar plano|atendem.*área|atendem.*rua|atendem.*aqui|disponível.*região|instalar|vendas|mudar.*casa|mudar.*endereço|transfere.*contrato|transferir.*contrato|mudança.*endereço|atendente|falar.*com|pessoa|humano|pessoa.*real|não.*robô|alguém/))
         return await createTestResponse("Vicente", "intencao_comercial_simulada");
 
       // 2️⃣ FINANCEIRO
@@ -128,7 +128,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "intencao_financeira_simulada");
 
       // 3️⃣ TÉCNICO (por último para não capturar "internet" em contexto comercial)
-      if (messageText.match(/caiu|lenta|lento|travando|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix/))
+      if (messageText.match(/caiu|lenta|lento|travando|vídeo.*trava|vídeo.*travando|sem sinal|offline|conexão ruim|modem|roteador|reiniciar|reboot|desconectando|instável|oscilando|cai toda|toda hora|cai.*hora|quedas|intermitente|abandona|problema na internet|internet não funciona|internet ruim|demorando|site.*carreg|site.*abr|não carrega|não abre|sinal.*fort|sinal.*alt|bombando|próxim.*CTO|perto.*antena|coladinho.*antena|TX.*alto|RX.*baix/))
         return await createTestResponse("Luan", "intencao_tecnica_simulada");
 
       return await createTestResponse("Cloé Martins", "roteamento_padrao_teste");
