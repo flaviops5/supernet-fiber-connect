@@ -93,8 +93,9 @@ export function QAOrchestratorRunner() {
     });
 
     try {
-      const { data, error } = await supabase.functions.invoke("qa-orchestrator", {
-        body: { regression: true, exploratory: false },
+      // A edge function espera query params, não body
+      const { data, error } = await supabase.functions.invoke("qa-orchestrator?regression=true&exploratory=false", {
+        method: 'POST'
       });
 
       if (error) throw error;
