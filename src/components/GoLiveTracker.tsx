@@ -156,6 +156,9 @@ const goLiveCriteria: GoLiveCriterion[] = [
 ];
 
 
+// Versão do schema - incrementar quando houver mudanças importantes
+const TRACKER_VERSION = 2;
+
 const initialPhases: Phase[] = [
   {
     id: "phase-0",
@@ -418,7 +421,40 @@ const initialPhases: Phase[] = [
 export function GoLiveTracker() {
   const [phases, setPhases] = useState<Phase[]>(() => {
     const saved = localStorage.getItem("go-live-tracker");
-    return saved ? JSON.parse(saved) : initialPhases;
+    const savedVersion = localStorage.getItem("go-live-tracker-version");
+    
+    // Se não há dados salvos ou versão mudou, usar initialPhases
+    if (!saved || !savedVersion || parseInt(savedVersion) !== TRACKER_VERSION) {
+      localStorage.setItem("go-live-tracker-version", TRACKER_VERSION.toString());
+      return initialPhases;
+    }
+    
+    // Se versão é a mesma, fazer merge inteligente
+    const savedPhases: Phase[] = JSON.parse(saved);
+    
+    // Merge: preservar progresso do usuário, mas aplicar mudanças do initialPhases
+    return initialPhases.map(initialPhase => {
+      const savedPhase = savedPhases.find(p => p.id === initialPhase.id);
+      
+      if (!savedPhase) return initialPhase;
+      
+      // Merge tasks: se tarefa foi marcada como completed no initialPhases, manter completed
+      const mergedTasks = initialPhase.tasks.map(initialTask => {
+        const savedTask = savedPhase.tasks.find(t => t.id === initialTask.id);
+        
+        if (!savedTask) return initialTask;
+        
+        // Se tarefa está completed no initialPhases, usar esse status
+        if (initialTask.status === "completed") {
+          return { ...initialTask, status: "completed" as TaskStatus };
+        }
+        
+        // Caso contrário, preservar status do usuário
+        return { ...savedTask, status: savedTask.status as TaskStatus };
+      });
+      
+      return { ...initialPhase, tasks: mergedTasks };
+    });
   });
 
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
