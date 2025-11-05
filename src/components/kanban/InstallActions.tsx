@@ -55,17 +55,26 @@ export function InstallActions({ card }: InstallActionsProps) {
   };
 
   const submit = async () => {
+    console.log('🚀 [InstallActions] Iniciando agendamento/reagendamento', { cardId: card.id, date, periodo, motivo });
+    
     try {
       if (!date) {
+        console.warn('⚠️ [InstallActions] Data não informada');
         toast({ title: "Informe a data", variant: "destructive" });
         return;
       }
       
+      console.log('📸 [InstallActions] Verificando upload de fotos (opcional)');
       const fotos = await uploadPhotos();
+      console.log(`✅ [InstallActions] Upload concluído: ${fotos.length} foto(s)`);
+      
       const status = motivo ? "reagendado" : "agendado";
+      console.log(`📋 [InstallActions] Status: ${status}`);
 
       const { data: userData } = await supabase.auth.getUser();
+      console.log('👤 [InstallActions] Usuário autenticado:', userData.user?.id);
 
+      console.log('💾 [InstallActions] Salvando evento no banco');
       const { error } = await supabase.from("installation_events").insert({
         card_id: card.id,
         board_id: card.board_id,
@@ -77,7 +86,11 @@ export function InstallActions({ card }: InstallActionsProps) {
         created_by: userData.user?.id ?? null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [InstallActions] Erro ao salvar evento:', error);
+        throw error;
+      }
+      console.log('✅ [InstallActions] Evento salvo com sucesso');
 
       // Monta mensagem e envia para Edge Function
       const msgLines = [
@@ -89,24 +102,32 @@ export function InstallActions({ card }: InstallActionsProps) {
         motivo ? `💬 Motivo: ${motivo}` : ""
       ].filter(Boolean);
 
+      const payload = { message: msgLines.join("\n") };
+      console.log('📤 [InstallActions] Chamando edge function installation-notify', payload);
+
       const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
-        body: { message: msgLines.join("\n") }
+        body: payload
       });
+
+      console.log('📥 [InstallActions] Resposta da edge function:', { notifyResult, notifyError });
 
       // Verificar resultado do envio
       if (notifyError) {
+        console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
         toast({ 
           title: status === "reagendado" ? "Reagendado" : "Agendado", 
           description: `Salvo, mas falha ao enviar notificações: ${notifyError.message}`,
           variant: "destructive"
         });
       } else if (notifyResult?.summary?.failure > 0) {
+        console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
         toast({ 
           title: status === "reagendado" ? "Reagendado" : "Agendado", 
           description: `Salvo. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
           variant: "destructive"
         });
       } else {
+        console.log('✅ [InstallActions] Notificações enviadas com sucesso');
         toast({ 
           title: status === "reagendado" ? "Reagendado" : "Agendado", 
           description: "Notificações enviadas." 
@@ -118,6 +139,7 @@ export function InstallActions({ card }: InstallActionsProps) {
       setMotivo("");
       setFiles(null);
     } catch (err: any) {
+      console.error('💥 [InstallActions] Erro fatal ao agendar instalação:', err);
       toast({ 
         title: "Erro ao registrar instalação", 
         description: err.message, 
@@ -127,20 +149,29 @@ export function InstallActions({ card }: InstallActionsProps) {
   };
 
   const finalizeInstall = async () => {
+    console.log('🚀 [InstallActions] Iniciando finalização da instalação', { cardId: card.id });
+    
     try {
       if (!files || files.length === 0) {
+        console.warn('⚠️ [InstallActions] Nenhuma foto selecionada');
         toast({ title: "Adicione pelo menos uma foto", variant: "destructive" });
         return;
       }
 
+      console.log(`📸 [InstallActions] Iniciando upload de ${files.length} foto(s)`);
       const fotos = await uploadPhotos();
+      console.log(`✅ [InstallActions] Upload concluído: ${fotos.length} foto(s)`);
+      
       if (fotos.length === 0) {
+        console.error('❌ [InstallActions] Falha no upload das fotos');
         toast({ title: "Erro ao fazer upload das fotos", variant: "destructive" });
         return;
       }
 
       const { data: userData } = await supabase.auth.getUser();
+      console.log('👤 [InstallActions] Usuário autenticado:', userData.user?.id);
 
+      console.log('💾 [InstallActions] Salvando evento de instalação no banco');
       const { error } = await supabase.from("installation_events").insert({
         card_id: card.id,
         board_id: card.board_id,
@@ -151,14 +182,20 @@ export function InstallActions({ card }: InstallActionsProps) {
         created_by: userData.user?.id ?? null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [InstallActions] Erro ao salvar evento:', error);
+        throw error;
+      }
+      console.log('✅ [InstallActions] Evento salvo com sucesso');
 
       // Obter URLs públicas das fotos
+      console.log('🔗 [InstallActions] Gerando URLs públicas das fotos');
       const photoUrls = await Promise.all(
         fotos.map(async (path) => {
           const { data } = supabase.storage
             .from("install_photos")
             .getPublicUrl(path);
+          console.log(`🔗 URL gerada: ${data.publicUrl}`);
           return data.publicUrl;
         })
       );
@@ -172,27 +209,36 @@ export function InstallActions({ card }: InstallActionsProps) {
         `📸 ${photoUrls.length} foto(s) anexada(s)`
       ].filter(Boolean);
 
+      const payload = { 
+        message: msgLines.join("\n"),
+        photos: photoUrls
+      };
+      
+      console.log('📤 [InstallActions] Chamando edge function installation-notify', payload);
+      
       const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
-        body: { 
-          message: msgLines.join("\n"),
-          photos: photoUrls
-        }
+        body: payload
       });
+
+      console.log('📥 [InstallActions] Resposta da edge function:', { notifyResult, notifyError });
 
       // Verificar resultado do envio
       if (notifyError) {
+        console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
         toast({ 
           title: "Instalação registrada", 
           description: `Fotos salvas, mas falha ao enviar notificações: ${notifyError.message}`,
           variant: "destructive"
         });
       } else if (notifyResult?.summary?.failure > 0) {
+        console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
         toast({ 
           title: "Instalação registrada", 
           description: `Fotos salvas. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
           variant: "destructive"
         });
       } else {
+        console.log('✅ [InstallActions] Notificações enviadas com sucesso');
         toast({ 
           title: "Instalação finalizada", 
           description: "Notificações enviadas com fotos." 
@@ -202,6 +248,7 @@ export function InstallActions({ card }: InstallActionsProps) {
       setOpenFinalize(false);
       setFiles(null);
     } catch (err: any) {
+      console.error('💥 [InstallActions] Erro fatal ao finalizar instalação:', err);
       toast({ 
         title: "Erro ao finalizar instalação", 
         description: err.message, 
