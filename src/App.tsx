@@ -33,6 +33,7 @@ import AdminPrompts from "./pages/AdminPrompts";
 import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
 import FluxoAgente from "./pages/FluxoAgente";
 import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
+import GoLive from "./pages/GoLive";
 import AdminKanban from "./pages/AdminKanban";
 import PublicCalendar from "./pages/PublicCalendar";
 import { AuthGuard } from "./components/AuthGuard";
@@ -109,6 +110,7 @@ const App = () => {
                     <Route path="/apresentacao" element={<Apresentacao />} />
           <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
           <Route path="/manutencao" element={<NetworkMaintenance />} />
+          <Route path="/go-live" element={<GoLive />} />
           <Route path="/fluxo-luan" element={<Navigate to="/fluxo-agente?agent=support-tech-agent" replace />} />
                     <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
