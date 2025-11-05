@@ -141,7 +141,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "security_bypass_pix");
       }
       
-      // 0️⃣ CPF INVÁLIDO → Cloé (pedir CPF válido)
+      // 0️⃣ CPF INVÁLIDO → Julia (validação financeira)
       const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
       if (hasCPF) {
         const cpfNumbers = messageText.replace(/\D/g, '');
@@ -150,7 +150,7 @@ serve(async (req) => {
           '66666666666', '77777777777', '88888888888', '99999999999', '00000000000'
         ];
         if (invalidPatterns.some(pattern => cpfNumbers.includes(pattern))) {
-          return await createTestResponse("Cloé Martins", "cpf_invalido");
+          return await createTestResponse("Julia", "security_cpf_invalido");
         }
       }
       
@@ -168,11 +168,12 @@ serve(async (req) => {
       
       if (hasMultipleIntents) {
         // Priorizar: Financeiro (pago+bloqueado) > Técnico (offline) > Comercial
+        // EDGE2: Multi-intenção → Julia resolve
         if (messageText.match(/\b(paguei|pago).*(bloqueado|cortado|off|sem internet)/i)) {
-          return await createTestResponse("Julia", "edge_multi_financeiro_tecnico");
+          return await createTestResponse("Julia", "edge_multi_intencao");
         }
         if (messageText.match(/\b(internet|conexão|off).*(paguei|boleto)/i)) {
-          return await createTestResponse("Luan", "edge_multi_tecnico_financeiro");
+          return await createTestResponse("Julia", "edge_multi_tecnico_financeiro");
         }
       }
       
@@ -203,9 +204,9 @@ serve(async (req) => {
         return await createTestResponse("Cloé Martins", "edge_risco_churn");
       }
       
-      // C1: Cobertura
-      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|você.*atendem|plano.*você.*tem)/i)) {
-        return await createTestResponse("Cloé Martins", "comercial_cobertura");
+      // C1: Cobertura (comercial - Vicente)
+      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|você.*atendem|plano.*você.*tem|consulta.*cobertura|consultar.*cobertura|verificar.*cobertura)/i)) {
+        return await createTestResponse("Vicente", "comercial_cobertura");
       }
       
       // C2: Novo contrato/contratar
@@ -238,9 +239,9 @@ serve(async (req) => {
         return await createTestResponse("Vicente", "comercial_segunda_via");
       }
       
-      // C9: Cancelamento
+      // C9: Cancelamento (comercial - Vicente)
       if (messageText.match(/\b(cancelar|cancelamento|desistir)\b/i)) {
-        return await createTestResponse("Cloé Martins", "comercial_cancelamento");
+        return await createTestResponse("Vicente", "comercial_cancelamento");
       }
       
       // PR#55 EDGE: Instalação agendada
@@ -262,6 +263,10 @@ serve(async (req) => {
       // PR#55 LINGUISTIC: Gírias e variações informais
       if (messageText.match(/\b(mano.*internet|net.*morreu|nada.*carrega|bora.*arrumar)/i)) {
         return await createTestResponse("Luan", "linguistic_giria_tecnica");
+      }
+      // PR#55 LINGUISTIC: Ortografia incorreta → Julia (financeiro valida)
+      if (messageText.match(/\b(internet.*travada|ta.*lenta|ta.*lento|porq|porque q|fikando|achu|ta.*caindo|ta.*ruim|num.*funciona|tá.*horrível)/i)) {
+        return await createTestResponse("Julia", "linguistic_ortografia_incorreta");
       }
       // PR#55 EDGE: Terceiro reportando
       if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|familiar|parente).*sem.*internet/i)) {
@@ -330,8 +335,8 @@ serve(async (req) => {
       }
       
       // 4️⃣ FINANCEIRO (Julia) - COLOCAR ANTES de técnico genérico para capturar "já paguei"
-      // F5: Desbloquear (priorizar "já paguei a fatura")
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar).*(já.*paguei|paguei.*fatura|paguei.*boleto)|(já.*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar)\b/i)) {
+      // F5: Desbloquear (priorizar "já paguei a fatura") → Julia
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar)/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
