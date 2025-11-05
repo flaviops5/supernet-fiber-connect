@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { LucideIcon } from "lucide-react";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -16,7 +16,6 @@ import {
   Globe,
   TestTube,
   RefreshCw,
-  Play,
   Zap,
   Database,
   Activity
@@ -35,7 +34,7 @@ interface DeployStep {
   name: string;
   description: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
-  icon: any;
+  icon: LucideIcon;
 }
 
 export function Phase8DeployCoordinated() {

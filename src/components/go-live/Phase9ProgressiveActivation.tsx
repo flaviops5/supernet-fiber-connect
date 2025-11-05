@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlags, useUpdateFeatureFlag } from "@/hooks/useFeatureFlag";
 import { 
   CheckCircle2, 
   XCircle, 
@@ -37,6 +38,10 @@ interface ActivationStage {
 }
 
 export function Phase9ProgressiveActivation() {
+  const { toast } = useToast();
+  const { data: featureFlags } = useFeatureFlags();
+  const updateFlag = useUpdateFeatureFlag();
+  
   const [activating, setActivating] = useState(false);
   const [currentStage, setCurrentStage] = useState(0);
   const [stages, setStages] = useState<ActivationStage[]>([
@@ -94,8 +99,6 @@ export function Phase9ProgressiveActivation() {
     }
   ]);
 
-  const { toast } = useToast();
-
   const updateStageStatus = (stageId: string, status: ActivationStage['status'], metrics?: ActivationStage['metrics']) => {
     setStages(prev => prev.map(stage =>
       stage.id === stageId ? { ...stage, status, metrics } : stage
@@ -123,38 +126,58 @@ export function Phase9ProgressiveActivation() {
       description: `Iniciando ativação de ${stage.percentage}% dos clientes`
     });
 
-    // Simular processo de ativação
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Registrar ativação no banco (será ignorado se tabela não existir ainda)
+      const metrics = simulateMetrics(stage.percentage);
+      updateStageStatus(stage.id, "active", metrics);
 
-    // Simular métricas
-    const metrics = simulateMetrics(stage.percentage);
-    updateStageStatus(stage.id, "active", metrics);
+      // Criar ou atualizar feature flag
+      const flagKey = 'system_rollout';
+      const existingFlag = featureFlags?.find(f => f.flag_key === flagKey);
 
-    // Monitorar por alguns segundos
-    await new Promise(resolve => setTimeout(resolve, 3000));
+      if (existingFlag) {
+        await updateFlag.mutateAsync({
+          id: existingFlag.id,
+          updates: {
+            enabled: true,
+            rollout_percentage: stage.percentage,
+          },
+        });
+      }
 
-    // Validar métricas
-    const metricsOk = 
-      metrics.errorRate < 1 &&
-      metrics.avgResponseTime < 3000 &&
-      metrics.successRate > 95;
+      // Aguardar monitoramento
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-    if (metricsOk) {
-      updateStageStatus(stage.id, "completed", metrics);
-      setCurrentStage(stageIndex + 1);
-      
+      // Validar métricas
+      const metricsOk = 
+        metrics.errorRate < 1 &&
+        metrics.avgResponseTime < 3000 &&
+        metrics.successRate > 95;
+
+      if (metricsOk) {
+        updateStageStatus(stage.id, "completed", metrics);
+        setCurrentStage(stageIndex + 1);
+        
+        toast({
+          title: "✅ Ativação Concluída",
+          description: `${stage.name} ativo e estável`
+        });
+      } else {
+        updateStageStatus(stage.id, "failed", metrics);
+        toast({
+          title: "⚠️ Métricas Fora do Esperado",
+          description: "Revisar antes de prosseguir",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Activation error:', error);
       toast({
-        title: "✅ Ativação Concluída",
-        description: `${stage.name} ativo e estável - métricas dentro do esperado`
+        title: "Erro na ativação",
+        description: "Não foi possível ativar este estágio",
+        variant: "destructive",
       });
-    } else {
-      updateStageStatus(stage.id, "failed", metrics);
-      
-      toast({
-        title: "⚠️ Métricas Fora do Esperado",
-        description: "Revisar antes de prosseguir",
-        variant: "destructive"
-      });
+      updateStageStatus(stage.id, "pending");
     }
 
     setActivating(false);
@@ -175,15 +198,39 @@ export function Phase9ProgressiveActivation() {
     });
 
     setActivating(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    updateStageStatus(stage.id, "pending");
-    setCurrentStage(Math.max(0, stageIndex - 1));
-    
-    toast({
-      title: "✅ Rollback Concluído",
-      description: "Sistema revertido com sucesso"
-    });
+
+    try {
+      // Reverter feature flag
+      const flagKey = 'system_rollout';
+      const existingFlag = featureFlags?.find(f => f.flag_key === flagKey);
+
+      if (existingFlag && stageIndex > 0) {
+        const previousPercentage = stages[stageIndex - 1]?.percentage || 0;
+        await updateFlag.mutateAsync({
+          id: existingFlag.id,
+          updates: {
+            rollout_percentage: previousPercentage,
+          },
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      updateStageStatus(stage.id, "pending");
+      setCurrentStage(Math.max(0, stageIndex - 1));
+      
+      toast({
+        title: "✅ Rollback Concluído",
+        description: "Sistema revertido com sucesso"
+      });
+    } catch (error) {
+      console.error('Rollback error:', error);
+      toast({
+        title: "Erro no rollback",
+        description: "Não foi possível executar o rollback",
+        variant: "destructive",
+      });
+    }
     
     setActivating(false);
   };
