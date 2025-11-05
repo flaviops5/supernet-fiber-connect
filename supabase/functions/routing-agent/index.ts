@@ -149,7 +149,7 @@ serve(async (req) => {
           '11111111111', '22222222222', '33333333333', '44444444444', '55555555555',
           '66666666666', '77777777777', '88888888888', '99999999999', '00000000000'
         ];
-        if (invalidPatterns.some(pattern => cpfNumbers.includes(pattern))) {
+        if (invalidPatterns.some(pattern => cpfNumbers === pattern)) {
           return await createTestResponse("Julia", "security_cpf_invalido");
         }
       }
@@ -180,7 +180,7 @@ serve(async (req) => {
       }
       
       // PR#55 EDGE5: Escalação necessária (ANTES de edge_risco_churn para priorizar técnico)
-      if (messageText.match(/\b(liguei.*(?:não|n).*resolveram|já.*tentei.*tudo|ninguém.*consegue.*resolver|liguei.*\d+.*(?:e|mas).*(?:n|não).*resolve)/i)) {
+      if (messageText.match(/\b(liguei.*\d+.*(?:x|vez|vezes).*(?:e|mas)?.*(?:n|não).*resolve|liguei.*(?:não|n).*resolveram|já.*tentei.*tudo|ninguém.*consegue.*resolver)/i)) {
         return await createTestResponse("Luan", "edge_escalacao_necessaria");
       }
       
