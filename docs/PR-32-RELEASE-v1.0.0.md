@@ -44,7 +44,7 @@ Empacotar entrega v1.0.0 com changelog formal, tag Git, checklist de deploy e **
 - [ ] `stress-runner` deployada
 - [ ] Secrets configurados (IXC API, OpenAI, etc)
 - [ ] CORS habilitado em todas as functions
-- [ ] Logs estruturados funcionando
+- [x] **Logs estruturados funcionando** ✅ (Fase 0 completa: routing-agent + support-financial-agent migrados)
 
 ### 3. Frontend/Admin
 - [ ] Dashboard KPIs acessível (`/admin/kpi-dashboard`)
@@ -63,6 +63,8 @@ Empacotar entrega v1.0.0 com changelog formal, tag Git, checklist de deploy e **
 - [ ] Todos os PRs documentados (27-32)
 - [ ] Instruções de rollback claras
 - [ ] Variáveis de ambiente documentadas
+- [x] **Logger Migration tracking** ✅ (LOGGER-MIGRATION-TRACKING.md criado)
+- [x] **TypeScript Zero-Any tracking** ✅ (FASE-0.5-PROGRESSO.md - 5% completo, 7/130 any eliminados)
 
 ### 6. Cron/Jobs
 - [ ] `luan-auto-upgrade` agendado (diário, 3h UTC)
