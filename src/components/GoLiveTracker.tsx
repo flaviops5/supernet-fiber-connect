@@ -169,7 +169,7 @@ const initialPhases: Phase[] = [
       "Dashboard de logs funcionando"
     ],
     tasks: [
-      { id: "0.1", title: "Migrar routing-agent para logger estruturado", status: "pending", estimatedHours: 0.75 },
+      { id: "0.1", title: "Migrar routing-agent para logger estruturado", status: "completed", estimatedHours: 0.75 },
       { id: "0.2", title: "Migrar support-financial-agent (Julia) para logger", status: "pending", estimatedHours: 0.75 },
       { id: "0.3", title: "Migrar support-tech-agent (Luan) para logger", status: "pending", estimatedHours: 0.75 },
       { id: "0.4", title: "Migrar mass-outage-executor para logger", status: "pending", estimatedHours: 0.5 },
