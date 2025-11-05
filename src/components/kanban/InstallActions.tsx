@@ -89,14 +89,29 @@ export function InstallActions({ card }: InstallActionsProps) {
         motivo ? `💬 Motivo: ${motivo}` : ""
       ].filter(Boolean);
 
-      await supabase.functions.invoke("installation-notify", {
+      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
         body: { message: msgLines.join("\n") }
       });
 
-      toast({ 
-        title: status === "reagendado" ? "Reagendado" : "Agendado", 
-        description: "Notificações enviadas." 
-      });
+      // Verificar resultado do envio
+      if (notifyError) {
+        toast({ 
+          title: status === "reagendado" ? "Reagendado" : "Agendado", 
+          description: `Salvo, mas falha ao enviar notificações: ${notifyError.message}`,
+          variant: "destructive"
+        });
+      } else if (notifyResult?.summary?.failure > 0) {
+        toast({ 
+          title: status === "reagendado" ? "Reagendado" : "Agendado", 
+          description: `Salvo. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
+          variant: "destructive"
+        });
+      } else {
+        toast({ 
+          title: status === "reagendado" ? "Reagendado" : "Agendado", 
+          description: "Notificações enviadas." 
+        });
+      }
       
       setOpen(false);
       setDate("");
@@ -157,17 +172,32 @@ export function InstallActions({ card }: InstallActionsProps) {
         `📸 ${photoUrls.length} foto(s) anexada(s)`
       ].filter(Boolean);
 
-      await supabase.functions.invoke("installation-notify", {
+      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
         body: { 
           message: msgLines.join("\n"),
           photos: photoUrls
         }
       });
 
-      toast({ 
-        title: "Instalação finalizada", 
-        description: "Notificações enviadas com fotos." 
-      });
+      // Verificar resultado do envio
+      if (notifyError) {
+        toast({ 
+          title: "Instalação registrada", 
+          description: `Fotos salvas, mas falha ao enviar notificações: ${notifyError.message}`,
+          variant: "destructive"
+        });
+      } else if (notifyResult?.summary?.failure > 0) {
+        toast({ 
+          title: "Instalação registrada", 
+          description: `Fotos salvas. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
+          variant: "destructive"
+        });
+      } else {
+        toast({ 
+          title: "Instalação finalizada", 
+          description: "Notificações enviadas com fotos." 
+        });
+      }
       
       setOpenFinalize(false);
       setFiles(null);
