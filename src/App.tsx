@@ -57,12 +57,14 @@ const App = () => {
         
         <BrowserRouter>
           <Routes>
-            {/* Admin routes without header/footer */}
+            {/* Admin routes without header/footer - Alphabetically ordered */}
             <Route path="/admin/*" element={<AdminWrapper />} />
             <Route path="/admin/agentes" element={<AdminAgents />} />
+            <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
+            <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
+            <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
-            <Route path="/admin/testes" element={<AdminTestes />} />
-            <Route path="/admin/prompts" element={<AdminPrompts />} />
+            <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
             <Route 
               path="/admin/kpi-dashboard" 
               element={
@@ -71,49 +73,50 @@ const App = () => {
                 </AuthGuard>
               } 
             />
-            {/* Redirects for consolidated documentation */}
-            <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
-            <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
-            <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
-            <Route path="/monitoring/logs" element={<MonitoringLogs />} />
-            <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
-            <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
-            <Route path="/kanban" element={<AdminKanban />} />
-          <Route path="/atendimento" element={<Atendimento />} />
-          <Route path="/perfil-agente" element={<PerfilAgente />} />
-          <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
-            <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
-            <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
-          <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
-          <Route path="/admin/fluxo-luan" element={<Navigate to="/admin/fluxo-agentes" replace />} />
-          <Route path="/fluxo-agente" element={<FluxoAgente />} />
+            <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
+            <Route path="/admin/prompts" element={<AdminPrompts />} />
+            <Route path="/admin/testes" element={<AdminTestes />} />
+            
+            {/* Redirects for consolidated documentation */}
+            <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
+            <Route path="/admin/fluxo-luan" element={<Navigate to="/admin/fluxo-agentes" replace />} />
+            <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
+            <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
+            
+            {/* Other admin-related routes */}
+            <Route path="/atendimento" element={<Atendimento />} />
+            <Route path="/fluxo-agente" element={<FluxoAgente />} />
+            <Route path="/kanban" element={<AdminKanban />} />
+            <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
+            <Route path="/monitoring/logs" element={<MonitoringLogs />} />
+            <Route path="/perfil-agente" element={<PerfilAgente />} />
             
             {/* Public calendar route (no header/footer) */}
             <Route path="/instalacoes/:token" element={<PublicCalendar />} />
             
-            {/* Public routes with header/footer */}
+            {/* Public routes with header/footer - Alphabetically ordered */}
             <Route path="/*" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Index />} />
-                    <Route path="/contato" element={<Contact />} />
-                    <Route path="/telemedicina" element={<Telemedicina />} />
-                    <Route path="/automacao-residencial" element={<Automacao />} />
-                    <Route path="/blog" element={<Blog />} />
-            <Route path="/automacao" element={<Automacao />} />
-            <Route path="/system-metrics" element={<SystemMetrics />} />
-            <Route path="/hp_funcoes" element={<HPFuncoes />} />
-                    <Route path="/technical-docs" element={<Navigate to="/admin/documentacao" replace />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
-          <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
-          <Route path="/manutencao" element={<NetworkMaintenance />} />
-          <Route path="/go-live" element={<GoLive />} />
-          <Route path="/fluxo-luan" element={<Navigate to="/fluxo-agente?agent=support-tech-agent" replace />} />
-                    <Route path="/sobre" element={<Navigate to="/" replace />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/automacao" element={<Automacao />} />
+                    <Route path="/automacao-residencial" element={<Automacao />} />
+                    <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/contato" element={<Contact />} />
+                    <Route path="/fluxo-luan" element={<Navigate to="/fluxo-agente?agent=support-tech-agent" replace />} />
+                    <Route path="/go-live" element={<GoLive />} />
+                    <Route path="/hp_funcoes" element={<HPFuncoes />} />
+                    <Route path="/manutencao" element={<NetworkMaintenance />} />
+                    <Route path="/sobre" element={<Navigate to="/" replace />} />
+                    <Route path="/system-metrics" element={<SystemMetrics />} />
+                    <Route path="/technical-docs" element={<Navigate to="/admin/documentacao" replace />} />
+                    <Route path="/telemedicina" element={<Telemedicina />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
