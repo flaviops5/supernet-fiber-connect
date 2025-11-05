@@ -36,7 +36,7 @@ interface Phase {
 
 interface GoLiveCriterion {
   id: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
   requirements: string[];
@@ -407,7 +407,7 @@ const initialPhases: Phase[] = [
       "IDE performance melhorada"
     ],
     tasks: [
-      { id: "11.1", title: "Eliminar 'any' em components/", status: "pending", estimatedHours: 3 },
+      { id: "11.1", title: "Eliminar 'any' em components/", status: "in-progress", estimatedHours: 3 },
       { id: "11.2", title: "Eliminar 'any' em hooks/", status: "pending", estimatedHours: 2 },
       { id: "11.3", title: "Eliminar 'any' em utils/", status: "pending", estimatedHours: 2 },
       { id: "11.4", title: "Validar com ESLint @typescript-eslint/no-explicit-any", status: "pending", estimatedHours: 1 }
