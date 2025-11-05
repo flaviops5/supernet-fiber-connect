@@ -165,10 +165,11 @@ export function createProtectedHandler<T = JsonValue>(config: HandlerConfig<T>) 
         }
       );
 
-    } catch (error: any) {
-      errorMessage = error.message;
-      console.error(`❌ [${config.functionName}] Error:`, error);
-      return handleEdgeFunctionError(error, config.functionName);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      errorMessage = err.message;
+      console.error(`❌ [${config.functionName}] Error:`, err);
+      return handleEdgeFunctionError(err, config.functionName);
       
     } finally {
       // 7. Registrar métricas (não-bloqueante)

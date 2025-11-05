@@ -3,6 +3,7 @@
 // ============================================
 
 import { addHMACHeaders } from './hmac.ts';
+import type { JsonValue } from './types.ts';
 
 interface RetryConfig {
   maxRetries: number;
@@ -95,10 +96,10 @@ export async function callIxcWithRetry(
   proxyUrl: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
-  body?: any,
+  body?: JsonValue,
   query?: string,
   config: Partial<RetryConfig> = {}
-): Promise<any> {
+): Promise<JsonValue> {
   const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
   
   // Verificar circuit breaker

@@ -5,6 +5,7 @@
  */
 
 import { redactPII } from './pii-redaction.ts';
+import type { JsonValue, JsonObject } from './types.ts';
 
 // Campos que devem ser redacted em logs
 const SENSITIVE_FIELDS = [
@@ -33,7 +34,7 @@ const SENSITIVE_FIELDS = [
 /**
  * Sanitiza um objeto removendo dados sensíveis
  */
-export function sanitizeForLog(obj: any, depth = 0): any {
+export function sanitizeForLog(obj: JsonValue, depth = 0): JsonValue {
   // Prevenir recursão infinita
   if (depth > 10) return '[Max Depth]';
   
@@ -47,7 +48,7 @@ export function sanitizeForLog(obj: any, depth = 0): any {
   }
   
   // Objetos
-  const sanitized: Record<string, any> = {};
+  const sanitized: JsonObject = {};
   
   for (const [key, value] of Object.entries(obj)) {
     const lowerKey = key.toLowerCase();
@@ -83,19 +84,19 @@ export function truncateForLog(str: string, maxLength = 500): string {
  * Logger seguro que sanitiza automaticamente
  */
 export const safeLog = {
-  info: (message: string, data?: any) => {
+  info: (message: string, data?: JsonValue) => {
     const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     const sanitized = data ? sanitizeForLog(data) : undefined;
     console.log(redactedMessage, sanitized);
   },
   
-  warn: (message: string, data?: any) => {
+  warn: (message: string, data?: JsonValue) => {
     const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     const sanitized = data ? sanitizeForLog(data) : undefined;
     console.warn(redactedMessage, sanitized);
   },
   
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: Error | unknown) => {
     const redactedMessage = typeof message === 'string' ? redactPII(message, 'logs') : message;
     if (error instanceof Error) {
       console.error(redactedMessage, {
@@ -103,16 +104,18 @@ export const safeLog = {
         message: redactPII(error.message, 'logs'),
         stack: error.stack?.split('\n').slice(0, 5).join('\n') // Limitar stack trace
       });
-    } else {
-      const sanitized = error ? sanitizeForLog(error) : undefined;
+    } else if (error) {
+      const sanitized = sanitizeForLog(error as JsonValue);
       console.error(redactedMessage, sanitized);
+    } else {
+      console.error(redactedMessage);
     }
   },
   
   /**
    * Log de dados IXC com sanitização especial
    */
-  ixcData: (data: any) => {
+  ixcData: (data: JsonValue) => {
     const sanitized = sanitizeForLog(data);
     const json = JSON.stringify(sanitized);
     const truncated = truncateForLog(json, 500);
