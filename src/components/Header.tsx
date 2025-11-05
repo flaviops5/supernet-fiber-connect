@@ -157,11 +157,11 @@ const Header = () => {
             <Link to="/blog#blog" className="text-foreground hover:text-primary transition-colors">
               Blog
             </Link>
-            <Link to="/#sobre" className="text-foreground hover:text-primary transition-colors">
-              Sobre
-            </Link>
             <Link to="/contato#contato" className="text-foreground hover:text-primary transition-colors">
               Contato
+            </Link>
+            <Link to="/#sobre" className="text-foreground hover:text-primary transition-colors">
+              Sobre
             </Link>
           </nav>
 
@@ -223,11 +223,11 @@ const Header = () => {
               <Link to="/blog#blog" className="block text-foreground hover:text-primary transition-colors">
                 Blog
               </Link>
-              <Link to="/#sobre" className="block text-foreground hover:text-primary transition-colors">
-                Sobre
-              </Link>
               <Link to="/contato#contato" className="block text-foreground hover:text-primary transition-colors">
                 Contato
+              </Link>
+              <Link to="/#sobre" className="block text-foreground hover:text-primary transition-colors">
+                Sobre
               </Link>
               
               <Button 
