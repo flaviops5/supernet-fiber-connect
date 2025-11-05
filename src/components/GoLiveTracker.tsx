@@ -157,7 +157,7 @@ const goLiveCriteria: GoLiveCriterion[] = [
 
 
 // Versão do schema - incrementar quando houver mudanças importantes
-const TRACKER_VERSION = 2;
+const TRACKER_VERSION = 3;
 
 const initialPhases: Phase[] = [
   {
@@ -172,12 +172,13 @@ const initialPhases: Phase[] = [
       "Dashboard de logs funcionando"
     ],
     tasks: [
-      { id: "0.1", title: "Migrar routing-agent para logger estruturado", status: "completed", estimatedHours: 0.75 },
-      { id: "0.2", title: "Migrar support-financial-agent (Julia) para logger", status: "pending", estimatedHours: 0.75 },
+      { id: "0.1", title: "✅ Migrar routing-agent (Cloé) para logger estruturado", status: "completed", estimatedHours: 0.75 },
+      { id: "0.2", title: "✅ Migrar support-financial-agent (Julia) para logger", status: "completed", estimatedHours: 0.75 },
       { id: "0.3", title: "Migrar support-tech-agent (Luan) para logger", status: "pending", estimatedHours: 0.75 },
-      { id: "0.4", title: "Migrar mass-outage-executor para logger", status: "pending", estimatedHours: 0.5 },
-      { id: "0.5", title: "Migrar ixc-integration para logger", status: "pending", estimatedHours: 0.75 },
-      { id: "0.6", title: "Validar logs no monitoring_logs table", status: "pending", estimatedHours: 0.5 }
+      { id: "0.4", title: "Migrar sales-agent para logger", status: "pending", estimatedHours: 0.75 },
+      { id: "0.5", title: "Migrar automacao-agent para logger", status: "pending", estimatedHours: 0.5 },
+      { id: "0.6", title: "Migrar telemedicina-agent para logger", status: "pending", estimatedHours: 0.5 },
+      { id: "0.7", title: "Criar LOGGER-MIGRATION-TRACKING.md", status: "completed", estimatedHours: 0.25 }
     ]
   },
   {
@@ -192,12 +193,16 @@ const initialPhases: Phase[] = [
       "Autocomplete funcionando 100%"
     ],
     tasks: [
-      { id: "0.5.1", title: "Criar interfaces tipadas em _shared/types.ts", status: "pending", estimatedHours: 1 },
-      { id: "0.5.2", title: "Eliminar 'any' em routing-agent (16 ocorrências)", status: "pending", estimatedHours: 1.5, dependencies: ["0.5.1"] },
-      { id: "0.5.3", title: "Eliminar 'any' em support-financial-agent", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
-      { id: "0.5.4", title: "Eliminar 'any' em support-tech-agent", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
-      { id: "0.5.5", title: "Eliminar 'any' em ixc-integration", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
-      { id: "0.5.6", title: "Validar com TypeScript strict mode", status: "pending", estimatedHours: 0.5, dependencies: ["0.5.2", "0.5.3", "0.5.4", "0.5.5"] }
+      { id: "0.5.1", title: "✅ Migrar log-sanitizer.ts (5 any eliminados)", status: "completed", estimatedHours: 0.5 },
+      { id: "0.5.2", title: "✅ Migrar ixc-client.ts (2 any eliminados)", status: "completed", estimatedHours: 0.5 },
+      { id: "0.5.3", title: "✅ Migrar base-handler.ts (1 any eliminado)", status: "completed", estimatedHours: 0.5 },
+      { id: "0.5.4", title: "Migrar aging.ts (1 any)", status: "pending", estimatedHours: 0.25 },
+      { id: "0.5.5", title: "Migrar flow-state.ts (2 any)", status: "pending", estimatedHours: 0.5 },
+      { id: "0.5.6", title: "Migrar geo.ts (6 any) - MAIOR PENDENTE", status: "pending", estimatedHours: 1 },
+      { id: "0.5.7", title: "Migrar replies.ts (2 any)", status: "pending", estimatedHours: 0.5 },
+      { id: "0.5.8", title: "Migrar retests.ts (1 any)", status: "pending", estimatedHours: 0.25 },
+      { id: "0.5.9", title: "Migrar onu-tracker.ts (1 any)", status: "pending", estimatedHours: 0.25 },
+      { id: "0.5.10", title: "✅ Criar FASE-0.5-PROGRESSO.md", status: "completed", estimatedHours: 0.25 }
     ],
     dependencies: ["phase-0"]
   },
@@ -457,7 +462,8 @@ export function GoLiveTracker() {
     });
   });
 
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  // Abrir Fases 0 e 0.5 por padrão (críticas para go-live)
+  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(["phase-0", "phase-0.5"]));
 
   useEffect(() => {
     localStorage.setItem("go-live-tracker", JSON.stringify(phases));
