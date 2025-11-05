@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight, Shield, Phone, Brain, DollarSign, Radio, MessageSquare, BarChart3, Zap, Database, TrendingUp, Activity } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -701,6 +702,12 @@ export function GoLiveTracker() {
                         ))}
                       </ul>
                     </div>
+
+                    {phase.id === "phase-1" && (
+                      <div className="my-6">
+                        <InfrastructureValidator />
+                      </div>
+                    )}
 
                     <div>
                       <h4 className="font-semibold text-sm mb-3">Tarefas:</h4>
