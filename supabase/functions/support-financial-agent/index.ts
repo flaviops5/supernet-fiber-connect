@@ -5,6 +5,8 @@ import { redactPII } from '../_shared/pii-redaction.ts';
 import { logConversationAccess } from '../_shared/lgpd-logger.ts';
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
+import { MessageAttachment } from "../_shared/agent-types.ts";
+import { IXCContrato } from "../_shared/ixc-types.ts";
 
 interface Message {
   role: string;
@@ -514,7 +516,10 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
     let imageAnalysis = '';
     
     if (attachments && attachments.length > 0) {
-      console.log(`🔍 [${correlationId}] Analyzing ${attachments.length} image(s) with AI...`);
+      logger.info("Analyzing images with AI", { 
+        correlationId, 
+        imageCount: attachments.length 
+      });
       
       try {
         const imageMessages = attachments.map((att: MessageAttachment) => ({
@@ -547,7 +552,7 @@ INSTRUÇÃO CRÍTICA: Use essas informações na sua PRIMEIRA RESPOSTA ao client
         if (analysisResponse.ok) {
           const analysisData = await analysisResponse.json();
           imageAnalysis = analysisData.choices[0]?.message?.content || '';
-          console.log(`✅ [${correlationId}] Image analysis completed`);
+          logger.info("Image analysis completed", { correlationId });
           
           // Adicionar análise ao contexto
           if (imageAnalysis) {
@@ -563,10 +568,14 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
 `;
           }
         } else {
-          console.error(`❌ [${correlationId}] Error analyzing image:`, await analysisResponse.text());
+          const errorText = await analysisResponse.text();
+          logger.error("Error analyzing image", { correlationId, errorText });
         }
       } catch (error) {
-        console.error(`❌ [${correlationId}] Exception analyzing image:`, error);
+        logger.error("Exception analyzing image", 
+          error instanceof Error ? error : new Error(String(error)),
+          { correlationId }
+        );
       }
     }
 
@@ -620,7 +629,10 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
+      logger.error("AI Gateway error", new Error(`Status ${aiResponse.status}`), {
+        status: aiResponse.status,
+        errorText
+      });
       throw new Error(`AI Gateway error: ${aiResponse.status}`);
     }
 
@@ -635,7 +647,7 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
       if (toolCall.function.name === 'criar_atendimento_escalacao') {
         const args = JSON.parse(toolCall.function.arguments);
         
-        console.log('Creating escalation ticket with args:', args);
+        logger.info("Creating escalation ticket", { args });
         
         // 📝 Create action_log entry BEFORE IXC call
         const { data: escalationLog } = await supabase
@@ -676,7 +688,10 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
 
             for (let attempt = 0; attempt <= maxRetries; attempt++) {
               try {
-                console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} to create escalation ticket`);
+                logger.info("Attempting to create escalation ticket", {
+                  attempt: attempt + 1,
+                  maxAttempts: maxRetries + 1
+                });
                 
                 ixcResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-proxy`, {
                   method: 'POST',
@@ -706,7 +721,7 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
               const proxyData = await ixcResponse.json();
               const ticketData = proxyData.data;
               const ticketId = ticketData.id || ticketData.protocolo;
-              console.log('Escalation ticket created:', ticketId);
+              logger.info("Escalation ticket created", { ticketId });
               
               // 📝 Update action_log with result
               if (escalationLog) {
@@ -738,7 +753,9 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
               assistantMessage = `${assistantMessage}\n\n✅ Atendimento de escalação criado com sucesso! Protocolo: ${ticketId}. Nossa equipe administrativa entrará em contato com você em breve.`;
             } else {
               const errorText = await ixcResponse.text();
-              console.error('Error creating escalation ticket:', errorText);
+              logger.error("Error creating escalation ticket", new Error(errorText), {
+                status: ixcResponse?.status
+              });
               
               if (escalationLog) {
                 await supabase
@@ -752,7 +769,9 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
               assistantMessage = `${assistantMessage}\n\n⚠️ Identifiquei sua solicitação de escalação, mas tive um problema ao registrar. Por favor, entre em contato pelo telefone para falar diretamente com nossa equipe administrativa.`;
             }
           } catch (error) {
-            console.error('Error calling IXC API for escalation:', error);
+            logger.error("Error calling IXC API for escalation", 
+              error instanceof Error ? error : new Error(String(error))
+            );
             
             if (escalationLog) {
               await supabase
@@ -783,7 +802,11 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
     const shouldRouteBack = !hasFinancialIntent && (hasTechnicalIntent || hasSalesIntent);
     
     if (shouldRouteBack) {
-      console.log('🔄 Cliente mudou de assunto - sugerindo roteamento de volta para Cloé');
+      logger.info("Client changed subject - suggesting routing back", {
+        hasTechnicalIntent,
+        hasSalesIntent,
+        suggestedAgent: hasTechnicalIntent ? 'support_technical' : 'sales'
+      });
       return new Response(
         JSON.stringify({ 
           message: assistantMessage,
