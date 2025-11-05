@@ -208,7 +208,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-1",
-    title: "FASE 1: Validação de Infraestrutura",
+    title: "✅ FASE 1: Validação de Infraestrutura",
     description: "Verificar todas as credenciais e integrações",
     totalHours: 3,
     completionCriteria: [
@@ -218,10 +218,10 @@ const initialPhases: Phase[] = [
       "Supabase Health OK"
     ],
     tasks: [
-      { id: "1.1", title: "Verificar credenciais IXC (API URL, Token, Cliente ID)", status: "pending", estimatedHours: 0.5 },
-      { id: "1.2", title: "Verificar credenciais Evolution API (URL, Instance, API Key)", status: "pending", estimatedHours: 0.5 },
-      { id: "1.3", title: "Testar ixc-proxy endpoint", status: "pending", estimatedHours: 1, dependencies: ["1.1"] },
-      { id: "1.4", title: "Validar System Health Dashboard", status: "pending", estimatedHours: 1, dependencies: ["1.2", "1.3"] }
+      { id: "1.1", title: "✅ Verificar credenciais IXC (API URL, Token, Cliente ID)", status: "completed", estimatedHours: 0.5 },
+      { id: "1.2", title: "✅ Verificar credenciais Evolution API (URL, Instance, API Key)", status: "completed", estimatedHours: 0.5 },
+      { id: "1.3", title: "✅ Testar ixc-proxy endpoint", status: "completed", estimatedHours: 1, dependencies: ["1.1"] },
+      { id: "1.4", title: "✅ Validar System Health Dashboard", status: "completed", estimatedHours: 1, dependencies: ["1.2", "1.3"] }
     ],
     dependencies: ["phase-0", "phase-0.5"]
   },
