@@ -235,6 +235,14 @@ $$;
 ALTER TABLE public.qa_regression_cases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.qa_reports ENABLE ROW LEVEL SECURITY;
 
+-- Remover policies existentes para evitar conflitos
+DROP POLICY IF EXISTS "Admins manage qa_regression_cases" ON public.qa_regression_cases;
+DROP POLICY IF EXISTS "Admins manage qa_reports" ON public.qa_reports;
+DROP POLICY IF EXISTS "Editors view qa_regression_cases" ON public.qa_regression_cases;
+DROP POLICY IF EXISTS "Editors view qa_reports" ON public.qa_reports;
+DROP POLICY IF EXISTS "Service role full access qa_regression_cases" ON public.qa_regression_cases;
+DROP POLICY IF EXISTS "Service role full access qa_reports" ON public.qa_reports;
+
 -- Admins podem gerenciar tudo
 CREATE POLICY "Admins manage qa_regression_cases" ON public.qa_regression_cases
   FOR ALL USING (
