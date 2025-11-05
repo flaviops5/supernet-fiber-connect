@@ -63,6 +63,17 @@ interface UserProfile {
 
 const menuItems = [
   {
+    title: "Central de Atendimento",
+    url: "/atendimento",
+    icon: MessageSquare,
+    external: true,
+  },
+  {
+    title: "Configurar Departamentos",
+    url: "/admin/agentes",
+    icon: Users,
+  },
+  {
     title: "Dashboard",
     url: "/admin",
     icon: LayoutDashboard,
@@ -74,20 +85,9 @@ const menuItems = [
     icon: Kanban,
   },
   {
-    title: "Central de Atendimento",
-    url: "/atendimento",
-    icon: MessageSquare,
-    external: true,
-  },
-  {
     title: "Usuários & Agentes",
     url: "/admin/users",
     icon: User,
-  },
-  {
-    title: "Configurar Departamentos",
-    url: "/admin/agentes",
-    icon: Users,
   },
 ];
 
@@ -111,14 +111,14 @@ const documentationItems = [
     icon: Database,
   },
   {
-    title: "Prompts",
-    url: "/admin/prompts",
-    icon: Sparkles,
-  },
-  {
     title: "Documentos",
     url: "/admin/documents",
     icon: FolderOpen,
+  },
+  {
+    title: "Prompts",
+    url: "/admin/prompts",
+    icon: Sparkles,
   },
 ];
 
@@ -137,6 +137,11 @@ const agentsItems = [
     icon: Bot,
   },
   {
+    title: "Atlas Insights",
+    url: "/admin/atlas-insights",
+    icon: Brain,
+  },
+  {
     title: "Config. Atendimento",
     url: "/admin/atendimento-config",
     icon: MessageSquare,
@@ -147,11 +152,6 @@ const agentsItems = [
     icon: Activity,
   },
   {
-    title: "WhatsApp",
-    url: "/admin/whatsapp",
-    icon: MessageCircle,
-  },
-  {
     title: "Gerenciar Notificações",
     url: "/admin/notificacoes",
     icon: Bell,
@@ -160,16 +160,6 @@ const agentsItems = [
     title: "Integração IXC",
     url: "/admin/ixc-integration",
     icon: Database,
-  },
-  {
-    title: "Monitoramento Ativo",
-    url: "/admin/monitoramento",
-    icon: Monitor,
-  },
-  {
-    title: "Atlas Insights",
-    url: "/admin/atlas-insights",
-    icon: Brain,
   },
   {
     title: "Logs do Sistema",
@@ -187,9 +177,19 @@ const agentsItems = [
     icon: Activity,
   },
   {
+    title: "Monitoramento Ativo",
+    url: "/admin/monitoramento",
+    icon: Monitor,
+  },
+  {
     title: "Preparação Produção",
     url: "/admin/production-readiness",
     icon: Rocket,
+  },
+  {
+    title: "WhatsApp",
+    url: "/admin/whatsapp",
+    icon: MessageCircle,
   },
 ];
 
@@ -213,24 +213,9 @@ const financialItems = [
 
 const siteManagementItems = [
   {
-    title: "Planos",
-    url: "/admin/plans",
-    icon: CreditCard,
-  },
-  {
-    title: "Cobertura",
-    url: "/admin/coverage",
-    icon: MapPin,
-  },
-  {
-    title: "Hero Section",
-    url: "/admin/hero",
-    icon: Monitor,
-  },
-  {
-    title: "FAQ",
-    url: "/admin/faq",
-    icon: HelpCircle,
+    title: "Avaliações",
+    url: "/admin/reviews",
+    icon: Star,
   },
   {
     title: "Blog",
@@ -238,13 +223,33 @@ const siteManagementItems = [
     icon: FileText,
   },
   {
-    title: "Avaliações",
-    url: "/admin/reviews",
-    icon: Star,
+    title: "Cobertura",
+    url: "/admin/coverage",
+    icon: MapPin,
+  },
+  {
+    title: "FAQ",
+    url: "/admin/faq",
+    icon: HelpCircle,
+  },
+  {
+    title: "Hero Section",
+    url: "/admin/hero",
+    icon: Monitor,
+  },
+  {
+    title: "Planos",
+    url: "/admin/plans",
+    icon: CreditCard,
   },
 ];
 
 const profileItems = [
+  {
+    title: "Configurações",
+    url: "/admin/settings",
+    icon: Settings,
+  },
   {
     title: "Meu Perfil",
     url: "/perfil-agente",
@@ -256,11 +261,6 @@ const profileItems = [
     url: "/metricas-departamentos",
     icon: Activity,
     external: true,
-  },
-  {
-    title: "Configurações",
-    url: "/admin/settings",
-    icon: Settings,
   },
 ];
 
