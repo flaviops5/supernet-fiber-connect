@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
 import { Phase7ProductionReadiness } from "./go-live/Phase7ProductionReadiness";
 import { Phase8DeployCoordinated } from "./go-live/Phase8DeployCoordinated";
+import { Phase9ProgressiveActivation } from "./go-live/Phase9ProgressiveActivation";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -728,6 +729,12 @@ export function GoLiveTracker() {
                     {phase.id === "phase-8" && (
                       <div className="my-6">
                         <Phase8DeployCoordinated />
+                      </div>
+                    )}
+
+                    {phase.id === "phase-9" && (
+                      <div className="my-6">
+                        <Phase9ProgressiveActivation />
                       </div>
                     )}
 
