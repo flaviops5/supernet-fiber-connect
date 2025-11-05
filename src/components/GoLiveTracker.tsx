@@ -389,9 +389,9 @@ const initialPhases: Phase[] = [
       "On-call definido"
     ],
     tasks: [
-      { id: "10.1", title: "Configurar alertas críticos (Supabase, Graylog)", status: "pending", estimatedHours: 1 },
-      { id: "10.2", title: "Criar runbook de rollback", status: "pending", estimatedHours: 0.5 },
-      { id: "10.3", title: "Definir escala de on-call", status: "pending", estimatedHours: 0.5 }
+      { id: "10.1", title: "Configurar alertas críticos (Supabase, Graylog)", status: "completed", estimatedHours: 1 },
+      { id: "10.2", title: "Criar runbook de rollback", status: "completed", estimatedHours: 0.5 },
+      { id: "10.3", title: "Definir escala de on-call", status: "completed", estimatedHours: 0.5 }
     ],
     dependencies: ["phase-9"]
   },
