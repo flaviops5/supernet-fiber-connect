@@ -29,6 +29,47 @@ interface Phase {
 
 const initialPhases: Phase[] = [
   {
+    id: "phase-0",
+    title: "🔥 FASE 0: Logger Migration Completa (CRÍTICO)",
+    description: "Migrar todos console.log para logger estruturado - ESSENCIAL para debugar produção",
+    totalHours: 4,
+    completionCriteria: [
+      "Zero console.log em edge functions críticas",
+      "Todos os logs salvos em monitoring_logs",
+      "Logs estruturados com metadata adequada",
+      "Dashboard de logs funcionando"
+    ],
+    tasks: [
+      { id: "0.1", title: "Migrar routing-agent para logger estruturado", status: "pending", estimatedHours: 0.75 },
+      { id: "0.2", title: "Migrar support-financial-agent (Julia) para logger", status: "pending", estimatedHours: 0.75 },
+      { id: "0.3", title: "Migrar support-tech-agent (Luan) para logger", status: "pending", estimatedHours: 0.75 },
+      { id: "0.4", title: "Migrar mass-outage-executor para logger", status: "pending", estimatedHours: 0.5 },
+      { id: "0.5", title: "Migrar ixc-integration para logger", status: "pending", estimatedHours: 0.75 },
+      { id: "0.6", title: "Validar logs no monitoring_logs table", status: "pending", estimatedHours: 0.5 }
+    ]
+  },
+  {
+    id: "phase-0.5",
+    title: "🔥 FASE 0.5: TypeScript Zero-Any Backend (CRÍTICO)",
+    description: "Eliminar 'any' em Edge Functions críticas - prevenir crashes em produção",
+    totalHours: 6,
+    completionCriteria: [
+      "Zero 'any' em edge functions críticas",
+      "Tipos importados de _shared/types.ts",
+      "TypeScript strict mode passando",
+      "Autocomplete funcionando 100%"
+    ],
+    tasks: [
+      { id: "0.5.1", title: "Criar interfaces tipadas em _shared/types.ts", status: "pending", estimatedHours: 1 },
+      { id: "0.5.2", title: "Eliminar 'any' em routing-agent (16 ocorrências)", status: "pending", estimatedHours: 1.5, dependencies: ["0.5.1"] },
+      { id: "0.5.3", title: "Eliminar 'any' em support-financial-agent", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
+      { id: "0.5.4", title: "Eliminar 'any' em support-tech-agent", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
+      { id: "0.5.5", title: "Eliminar 'any' em ixc-integration", status: "pending", estimatedHours: 1, dependencies: ["0.5.1"] },
+      { id: "0.5.6", title: "Validar com TypeScript strict mode", status: "pending", estimatedHours: 0.5, dependencies: ["0.5.2", "0.5.3", "0.5.4", "0.5.5"] }
+    ],
+    dependencies: ["phase-0"]
+  },
+  {
     id: "phase-1",
     title: "FASE 1: Validação de Infraestrutura",
     description: "Verificar todas as credenciais e integrações",
@@ -44,7 +85,8 @@ const initialPhases: Phase[] = [
       { id: "1.2", title: "Verificar credenciais Evolution API (URL, Instance, API Key)", status: "pending", estimatedHours: 0.5 },
       { id: "1.3", title: "Testar ixc-proxy endpoint", status: "pending", estimatedHours: 1, dependencies: ["1.1"] },
       { id: "1.4", title: "Validar System Health Dashboard", status: "pending", estimatedHours: 1, dependencies: ["1.2", "1.3"] }
-    ]
+    ],
+    dependencies: ["phase-0", "phase-0.5"]
   },
   {
     id: "phase-2",
@@ -202,6 +244,45 @@ const initialPhases: Phase[] = [
       { id: "10.3", title: "Definir escala de on-call", status: "pending", estimatedHours: 0.5 }
     ],
     dependencies: ["phase-9"]
+  },
+  {
+    id: "phase-11",
+    title: "📊 FASE 11: TypeScript Zero-Any Frontend (PÓS-LIVE)",
+    description: "Eliminar 'any' restantes no frontend - melhoria contínua",
+    totalHours: 8,
+    completionCriteria: [
+      "Zero 'any' em frontend",
+      "ESLint passando sem warnings",
+      "Autocomplete 100% funcional",
+      "IDE performance melhorada"
+    ],
+    tasks: [
+      { id: "11.1", title: "Eliminar 'any' em components/", status: "pending", estimatedHours: 3 },
+      { id: "11.2", title: "Eliminar 'any' em hooks/", status: "pending", estimatedHours: 2 },
+      { id: "11.3", title: "Eliminar 'any' em utils/", status: "pending", estimatedHours: 2 },
+      { id: "11.4", title: "Validar com ESLint @typescript-eslint/no-explicit-any", status: "pending", estimatedHours: 1 }
+    ],
+    dependencies: ["phase-10"]
+  },
+  {
+    id: "phase-12",
+    title: "📊 FASE 12: Arquitetura Enterprise (PÓS-LIVE)",
+    description: "Refactoring completo para padrões enterprise - longo prazo",
+    totalHours: 12,
+    completionCriteria: [
+      "Padrões enterprise implementados",
+      "Code coverage > 80%",
+      "CI/CD pipeline funcionando",
+      "Documentação completa e atualizada"
+    ],
+    tasks: [
+      { id: "12.1", title: "Implementar Design Patterns (Factory, Strategy, Observer)", status: "pending", estimatedHours: 4 },
+      { id: "12.2", title: "Criar camada de Repository Pattern", status: "pending", estimatedHours: 3 },
+      { id: "12.3", title: "Implementar Unit Tests (>80% coverage)", status: "pending", estimatedHours: 3 },
+      { id: "12.4", title: "CI/CD com automated tests", status: "pending", estimatedHours: 1 },
+      { id: "12.5", title: "Documentação API completa", status: "pending", estimatedHours: 1 }
+    ],
+    dependencies: ["phase-11"]
   }
 ];
 
@@ -303,6 +384,9 @@ export function GoLiveTracker() {
           <h1 className="text-3xl font-bold">🚀 GO-LIVE MASTERPLAN</h1>
           <p className="text-muted-foreground mt-1">
             Roadmap Técnico-Operacional - Supernet Fiber Connect
+          </p>
+          <p className="text-sm text-orange-500 font-semibold mt-2">
+            ⚠️ FASES 0 e 0.5 são CRÍTICAS - sem elas, debugar produção será impossível
           </p>
         </div>
         <Button variant="outline" onClick={resetProgress} size="sm">
