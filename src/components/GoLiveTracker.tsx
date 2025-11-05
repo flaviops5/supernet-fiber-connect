@@ -11,6 +11,7 @@ import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
 import { Phase7ProductionReadiness } from "./go-live/Phase7ProductionReadiness";
 import { Phase8DeployCoordinated } from "./go-live/Phase8DeployCoordinated";
 import { Phase9ProgressiveActivation } from "./go-live/Phase9ProgressiveActivation";
+import { Phase10MonitoringRollback } from "./go-live/Phase10MonitoringRollback";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -735,6 +736,12 @@ export function GoLiveTracker() {
                     {phase.id === "phase-9" && (
                       <div className="my-6">
                         <Phase9ProgressiveActivation />
+                      </div>
+                    )}
+
+                    {phase.id === "phase-10" && (
+                      <div className="my-6">
+                        <Phase10MonitoringRollback />
                       </div>
                     )}
 
