@@ -116,7 +116,26 @@ export function FAQAccordion({
               {faq.question}
             </AccordionTrigger>
             <AccordionContent className="text-muted-foreground">
-              {faq.answer}
+              <div className="space-y-4">
+                <p className="whitespace-pre-line">{faq.answer}</p>
+                {faq.video_url && (
+                  <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-lg mt-4">
+                    <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span className="text-white/70 text-xs ml-2 font-mono">Vídeo Explicativo</span>
+                    </div>
+                    <iframe 
+                      src={faq.video_url} 
+                      title={`Vídeo explicativo: ${faq.question}`} 
+                      className="w-full h-64 border-0 mt-8" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen 
+                    />
+                  </div>
+                )}
+              </div>
             </AccordionContent>
           </AccordionItem>
         ))}

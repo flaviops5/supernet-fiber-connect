@@ -10,6 +10,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 
+// Helper function to convert YouTube URLs to embed format
+const convertToEmbedUrl = (url: string): string => {
+  if (!url || url.trim() === '') return '';
+  
+  // Already an embed URL
+  if (url.includes('/embed/')) return url;
+  
+  // Extract video ID from various YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return `https://www.youtube.com/embed/${match[1]}`;
+    }
+  }
+  
+  // If no match found, return original URL
+  return url;
+};
+
 const faqSchema = z.object({
   question: z.string().trim().min(1, "Pergunta é obrigatória").max(500, "Pergunta muito longa"),
   answer: z.string().trim().min(1, "Resposta é obrigatória").max(2000, "Resposta muito longa"),
@@ -97,11 +121,14 @@ export const FAQForm = ({ isOpen, onClose, faq, onSave }: FAQFormProps) => {
         displayOrder: Number(formData.displayOrder)
       });
 
+      // Convert YouTube URL to embed format
+      const embedUrl = formData.videoUrl ? convertToEmbedUrl(formData.videoUrl) : null;
+      
       const faqData = {
         question: validatedData.question,
         answer: validatedData.answer,
         icon: validatedData.icon,
-        video_url: formData.videoUrl || null,
+        video_url: embedUrl,
         display_order: validatedData.displayOrder,
         active: formData.active
       };
@@ -217,8 +244,11 @@ export const FAQForm = ({ isOpen, onClose, faq, onSave }: FAQFormProps) => {
               id="videoUrl"
               value={formData.videoUrl}
               onChange={(e) => setFormData({...formData, videoUrl: e.target.value})}
-              placeholder="https://www.youtube.com/embed/..."
+              placeholder="Cole qualquer URL do YouTube (será convertida automaticamente)"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Exemplo: https://www.youtube.com/watch?v=VIDEO_ID ou https://youtu.be/VIDEO_ID
+            </p>
           </div>
 
           <div className="flex items-center space-x-2">
