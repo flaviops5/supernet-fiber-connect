@@ -579,33 +579,56 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
       }
     }
 
-    // 🛠️ Tool for creating administrative escalation ticket
-    const tools = [{
-      type: "function",
-      function: {
-        name: "criar_atendimento_escalacao",
-        description: "Cria um atendimento de escalação administrativa quando o cliente solicita falar com supervisor, gerente ou diretor. Use quando a solicitação não pode ser resolvida no nível financeiro e requer intervenção administrativa.",
-        parameters: {
-          type: "object",
-          properties: {
-            motivo: {
-              type: "string",
-              description: "Motivo da escalação (ex: 'Cliente solicita falar com gerente', 'Reclamação que exige atenção administrativa')"
+    // 🛠️ Tools for financial agent
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "getAndSendBoleto",
+          description: "Busca e retorna dados de pagamento (boleto, PIX, código de barras) do cliente. Use quando cliente solicitar segunda via, boleto, PIX ou dados de pagamento. IMPORTANTE: Esta tool busca as informações mais recentes do IXC.",
+          parameters: {
+            type: "object",
+            properties: {
+              ixc_client_id: {
+                type: "string",
+                description: "ID do cliente no IXC (obrigatório para buscar títulos)"
+              },
+              prefer_overdue: {
+                type: "boolean",
+                description: "Se true, prioriza títulos vencidos. Se false, prioriza próximo a vencer. Default: true"
+              }
             },
-            urgencia: {
-              type: "string",
-              enum: ["normal", "alta", "urgente"],
-              description: "Nível de urgência da escalação"
+            required: ["ixc_client_id"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "criar_atendimento_escalacao",
+          description: "Cria um atendimento de escalação administrativa quando o cliente solicita falar com supervisor, gerente ou diretor. Use quando a solicitação não pode ser resolvida no nível financeiro e requer intervenção administrativa.",
+          parameters: {
+            type: "object",
+            properties: {
+              motivo: {
+                type: "string",
+                description: "Motivo da escalação (ex: 'Cliente solicita falar com gerente', 'Reclamação que exige atenção administrativa')"
+              },
+              urgencia: {
+                type: "string",
+                enum: ["normal", "alta", "urgente"],
+                description: "Nível de urgência da escalação"
+              },
+              detalhes: {
+                type: "string",
+                description: "Detalhes adicionais sobre o contexto da solicitação"
+              }
             },
-            detalhes: {
-              type: "string",
-              description: "Detalhes adicionais sobre o contexto da solicitação"
-            }
-          },
-          required: ["motivo", "urgencia"]
+            required: ["motivo", "urgencia"]
+          }
         }
       }
-    }];
+    ];
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -640,10 +663,161 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
     const choice = aiData.choices[0];
     let assistantMessage = choice.message.content as string;
 
-    // 🎫 Check if AI wants to create escalation ticket
+    // 🛠️ Handle tool calls
     if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
       const toolCall = choice.message.tool_calls[0];
       
+      // 📄 Handle getAndSendBoleto tool
+      if (toolCall.function.name === 'getAndSendBoleto') {
+        const args = JSON.parse(toolCall.function.arguments);
+        
+        logger.info("Fetching payment data", { 
+          ixc_client_id: args.ixc_client_id,
+          prefer_overdue: args.prefer_overdue 
+        });
+        
+        try {
+          // Buscar títulos financeiros
+          const titlesResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              action: 'getFinancialTitles',
+              params: { customerId: args.ixc_client_id }
+            })
+          });
+
+          if (titlesResponse.ok) {
+            const titlesData = await titlesResponse.json();
+            const titles = titlesData.data?.titles || [];
+            
+            if (titles.length > 0) {
+              logger.info("Financial titles found", { count: titles.length });
+              
+              // Ordenar títulos: vencidos primeiro (se prefer_overdue), depois mais próximos
+              const sortedTitles = titles.sort((a: any, b: any) => {
+                const dateA = new Date(a.data_vencimento);
+                const dateB = new Date(b.data_vencimento);
+                const now = new Date();
+                
+                if (args.prefer_overdue !== false) {
+                  // Priorizar vencidos
+                  const aOverdue = dateA < now;
+                  const bOverdue = dateB < now;
+                  if (aOverdue && !bOverdue) return -1;
+                  if (!aOverdue && bOverdue) return 1;
+                }
+                
+                // Ordenar por data mais recente
+                return dateA.getTime() - dateB.getTime();
+              });
+              
+              const firstTitle = sortedTitles[0];
+              
+              // Buscar QR Code PIX
+              const pixResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${supabaseKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  action: 'getPixQrCode',
+                  params: { titleId: firstTitle.id }
+                })
+              });
+
+              let paymentData = `
+📄 DADOS PARA PAGAMENTO:
+
+💵 Valor: R$ ${firstTitle.valor}
+📅 Vencimento: ${firstTitle.data_vencimento}`;
+
+              if (firstTitle.codbar) {
+                paymentData += `
+
+🔢 Código de Barras:
+${firstTitle.codbar}`;
+              }
+
+              if (pixResponse.ok) {
+                const pixData = await pixResponse.json();
+                if (pixData.data?.qrcode) {
+                  paymentData += `
+
+🏦 PIX COPIA E COLA:
+${pixData.data.qrcode}`;
+                }
+                
+                if (pixData.data?.qrcode_link) {
+                  paymentData += `
+
+🔗 Link de Pagamento: ${pixData.data.qrcode_link}`;
+                }
+              }
+
+              if (firstTitle.url_boleto) {
+                paymentData += `
+
+📎 Link do Boleto: ${firstTitle.url_boleto}`;
+              }
+
+              // Adicionar informações sobre outros títulos se houver
+              if (titles.length > 1) {
+                paymentData += `
+
+ℹ️ Você possui ${titles.length} título(s) em aberto. Este é o ${args.prefer_overdue !== false ? 'mais antigo' : 'próximo a vencer'}.`;
+              }
+
+              logger.info("Payment data prepared successfully", { 
+                title_id: firstTitle.id,
+                has_pix: !!pixData?.data?.qrcode,
+                has_barcode: !!firstTitle.codbar,
+                has_boleto_link: !!firstTitle.url_boleto
+              });
+              
+              // Adicionar dados de pagamento à mensagem do assistente
+              assistantMessage = `${assistantMessage}\n\n${paymentData}`;
+              
+              // Registrar no action_log
+              await supabase
+                .from('action_log')
+                .insert({
+                  agent_name: 'Julia',
+                  client_cpf: customerData?.cpf,
+                  action_type: 'send_boleto',
+                  action_payload: {
+                    title_id: firstTitle.id,
+                    valor: firstTitle.valor,
+                    vencimento: firstTitle.data_vencimento,
+                    has_pix: !!pixData?.data?.qrcode,
+                    customer_name: customerData?.name
+                  }
+                });
+              
+            } else {
+              logger.warn("No financial titles found", { ixc_client_id: args.ixc_client_id });
+              assistantMessage = `${assistantMessage}\n\n⚠️ Não encontrei títulos financeiros em aberto no momento. Se você acredita que há algum débito, por favor entre em contato pelo telefone para verificarmos.`;
+            }
+          } else {
+            const errorText = await titlesResponse.text();
+            logger.error("Error fetching financial titles", new Error(errorText), {
+              status: titlesResponse.status
+            });
+            assistantMessage = `${assistantMessage}\n\n⚠️ Tive um problema ao buscar os dados de pagamento no momento. Por favor, tente novamente em alguns instantes ou entre em contato pelo telefone.`;
+          }
+        } catch (error) {
+          logger.error("Error in getAndSendBoleto tool", 
+            error instanceof Error ? error : new Error(String(error))
+          );
+          assistantMessage = `${assistantMessage}\n\n⚠️ Desculpe, tive um problema ao buscar os dados de pagamento. Por favor, entre em contato pelo telefone para que possamos te ajudar.`;
+        }
+      }
+      
+      // 🎫 Handle criar_atendimento_escalacao tool
       if (toolCall.function.name === 'criar_atendimento_escalacao') {
         const args = JSON.parse(toolCall.function.arguments);
         

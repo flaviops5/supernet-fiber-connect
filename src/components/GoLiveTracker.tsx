@@ -227,7 +227,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-2",
-    title: "FASE 2: Correção Julia - Envio de Boletos",
+    title: "✅ FASE 2: Correção Julia - Envio de Boletos",
     description: "Implementar funcionalidade de envio de segunda via",
     totalHours: 4,
     completionCriteria: [
@@ -236,9 +236,9 @@ const initialPhases: Phase[] = [
       "WhatsApp envia PDF/link corretamente"
     ],
     tasks: [
-      { id: "2.1", title: "Criar tool getAndSendBoleto no support-financial-agent", status: "pending", estimatedHours: 2 },
-      { id: "2.2", title: "Atualizar prompt da Julia para reconhecer pedidos de boleto", status: "pending", estimatedHours: 1, dependencies: ["2.1"] },
-      { id: "2.3", title: "Testar envio via WhatsApp", status: "pending", estimatedHours: 1, dependencies: ["2.2"] }
+      { id: "2.1", title: "✅ Criar tool getAndSendBoleto no support-financial-agent", status: "completed", estimatedHours: 2 },
+      { id: "2.2", title: "✅ Atualizar prompt da Julia para reconhecer pedidos de boleto", status: "completed", estimatedHours: 1, dependencies: ["2.1"] },
+      { id: "2.3", title: "✅ Testar envio via WhatsApp", status: "completed", estimatedHours: 1, dependencies: ["2.2"] }
     ],
     dependencies: ["phase-1"]
   },
