@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight, Shield, Phone, Brain, DollarSign, Radio, MessageSquare, BarChart3 } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight, Shield, Phone, Brain, DollarSign, Radio, MessageSquare, BarChart3, Zap, Database, TrendingUp, Activity } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -40,27 +40,28 @@ interface GoLiveCriterion {
 
 const goLiveCriteria: GoLiveCriterion[] = [
   {
-    id: "whatsapp-oficial",
+    id: "comunicacao-canal",
     icon: Phone,
-    title: "📞 Comunicação Oficial via WhatsApp",
-    description: "WhatsApp Business API Meta integrado e funcional",
+    title: "🧩 I. Comunicação e Canal Oficial",
+    description: "Sistema conectado ao WhatsApp Business API da Meta",
     requirements: [
-      "Receber chamadas e mensagens via número oficial da Meta (Business API)",
-      "Enviar mensagens via canal oficial (Evolution + Meta HSM aprovados)",
-      "Status de entrega, leitura e falha rastreáveis por mensagem"
+      "1️⃣ Recebimento via WhatsApp Oficial - Sistema conectado ao número verificado da Meta (API Business)",
+      "2️⃣ Envio via WhatsApp Oficial - Mensagens enviadas pelo canal oficial (Evolution + HSM Meta)",
+      "3️⃣ Atalhos HSM - Botões de 'iniciar conversa' (💬 Falar com Suporte / 💵 Segunda Via / ⚡ Sem Internet)",
+      "4️⃣ Histórico de Conversas - Operadores e agentes IA visualizam todo o histórico no Omnichannel"
     ],
     validated: false,
-    relatedPhases: ["phase-1", "phase-8"]
+    relatedPhases: ["phase-1", "phase-8", "phase-9"]
   },
   {
     id: "roteamento-ia",
     icon: Brain,
-    title: "🧠 Roteamento Inteligente (Cloé Martins)",
-    description: "IA detecta intenção e roteia corretamente",
+    title: "🧠 II. Roteamento e Inteligência (Cloé Martins)",
+    description: "IA classifica e roteia automaticamente",
     requirements: [
-      "Detectar automaticamente se cliente precisa: Técnico (Luan) / Financeiro (Julia) / Vendas (Carlos)",
-      "Direcionar com base em CPF, status IXC e contexto da mensagem",
-      "Logs de roteamento auditáveis e métricas de precisão"
+      "5️⃣ Classificação automática - Detectar se cliente precisa de suporte técnico, financeiro ou comercial",
+      "6️⃣ Roteamento dinâmico - Encaminhar para agente certo (Luan, Julia/Sofia, Vicente) com base em CPF e contexto",
+      "7️⃣ Escalação humana - Transferência automática para atendente humano com contexto preservado"
     ],
     validated: false,
     relatedPhases: ["phase-0", "phase-0.5", "phase-6"]
@@ -68,14 +69,14 @@ const goLiveCriteria: GoLiveCriterion[] = [
   {
     id: "modulo-financeiro",
     icon: DollarSign,
-    title: "💰 Módulo Financeiro (Julia/Sofia)",
+    title: "💰 III. Módulo Financeiro (Julia/Sofia)",
     description: "Gestão completa de faturas e pagamentos",
     requirements: [
-      "Enviar segunda via de fatura em PDF gerado pelo IXC",
-      "Enviar link de pagamento via PIX dinâmico gerado pelo IXC",
-      "Detectar automaticamente clientes bloqueados/pendências",
-      "Executar liberação automática conforme regra de confiança",
-      "Enviar lembrete de vencimento antes da data"
+      "8️⃣ Segunda via de boleto (.PDF) - Gerar e enviar fatura em PDF diretamente via IXC",
+      "9️⃣ PIX dinâmico - Gerar PIX válido pelo IXC quando solicitado",
+      "🔟 Detecção de bloqueio/pendência - Verificar status financeiro do cliente",
+      "1️⃣1️⃣ Liberação de acesso - Aplicar regras de desbloqueio conforme política",
+      "1️⃣2️⃣ Lembrete de vencimento - Enviar lembrete automático antes da data limite"
     ],
     validated: false,
     relatedPhases: ["phase-2", "phase-4"]
@@ -83,41 +84,74 @@ const goLiveCriteria: GoLiveCriterion[] = [
   {
     id: "modulo-tecnico",
     icon: Radio,
-    title: "📡 Módulo Técnico (Luan/Érik)",
+    title: "⚙️ IV. Módulo Técnico (Luan/Érik)",
     description: "Diagnóstico e monitoramento de rede",
     requirements: [
-      "Verificar se cliente está ONLINE (SIM/NÃO) via GPON/IXC",
-      "Detectar e registrar mass outage (quedas em massa)",
-      "Agir conforme regra: notificar clientes e abrir ticket IXC automático"
+      "1️⃣3️⃣ Verificação de conexão - Mostrar status ONLINE = SIM/NÃO no painel do Omnichannel",
+      "1️⃣4️⃣ Abertura de atendimento técnico (IXC) - Criar automaticamente ticket técnico no IXC",
+      "1️⃣5️⃣ Integração GPON/IXC - Validar status ONU, IP PPPoE e CTO acessíveis",
+      "1️⃣6️⃣ Detecção de quedas em massa - Módulo mass-outage-helper ativo com notificações automáticas"
     ],
     validated: false,
     relatedPhases: ["phase-3", "phase-5", "phase-6"]
   },
   {
-    id: "fluxos-conversacao",
+    id: "omnichannel-integrado",
     icon: MessageSquare,
-    title: "💬 Fluxos de Conversa e Escalação",
-    description: "Transferência IA ↔ Humano com contexto",
+    title: "💬 V. Omnichannel Integrado",
+    description: "Integração total IXC ↔ Omnichannel",
     requirements: [
-      "Transferir conversas entre agentes IA e humanos preservando contexto",
-      "Logs de conversas persistidos e auditáveis",
-      "Histórico completo acessível para atendentes humanos"
+      "1️⃣7️⃣ Integração total IXC ↔ Omnichannel - Dados de cliente disponíveis em tempo real",
+      "1️⃣8️⃣ Abertura de tickets no IXC - Ação direta no chat: 'Abrir atendimento técnico/financeiro'",
+      "1️⃣9️⃣ Atualização bidirecional - Atualizações do IXC refletidas no chat e vice-versa",
+      "2️⃣0️⃣ Visão do cliente - Card com nome, CPF, status, IP, ONU online/offline, plano"
     ],
     validated: false,
     relatedPhases: ["phase-6", "phase-9"]
   },
   {
-    id: "metricas-monitoramento",
+    id: "dashboards-monitoramento",
     icon: BarChart3,
-    title: "📈 Métricas e Monitoramento",
-    description: "Observabilidade e controle de qualidade",
+    title: "📊 VI. Dashboards e Monitoramento",
+    description: "Painéis de controle em tempo real",
     requirements: [
-      "Acompanhamento de métricas (QA, latência, erros)",
-      "Controle de rollback e alertas automáticos",
-      "Sincronização de status entre dashboards e Supabase"
+      "2️⃣1️⃣ Dash Técnico - Exibir atendimentos, mass outage, auto-reboots, ONUs off",
+      "2️⃣2️⃣ Dash Financeiro - MRR, inadimplência, faturamento, liberações, PIX enviados",
+      "2️⃣3️⃣ Dash Omnichannel - Conversas ativas, agentes online, taxa de transferência IA → humano",
+      "2️⃣4️⃣ Dash de Performance - Tempo médio de resposta, latência edge functions, uptime geral"
     ],
     validated: false,
     relatedPhases: ["phase-7", "phase-10"]
+  },
+  {
+    id: "controle-producao",
+    icon: Shield,
+    title: "🧱 VII. Controle de Produção e Auditoria",
+    description: "Segurança e rastreabilidade total",
+    requirements: [
+      "2️⃣5️⃣ Structured Logging ativo - Nenhum console.log, todos os eventos via logger auditável",
+      "2️⃣6️⃣ QA Orchestrator diário - Execução automática com taxa ≥ 90%",
+      "2️⃣7️⃣ Rollback seguro - Mecanismo de reversão de deploy e alertas automáticos",
+      "2️⃣8️⃣ Certificação de Go-Live - Checklist 'Production Readiness' 100% concluído"
+    ],
+    validated: false,
+    relatedPhases: ["phase-0", "phase-0.5", "phase-7", "phase-10"]
+  },
+  {
+    id: "kpis-sucesso",
+    icon: TrendingUp,
+    title: "🧩 VIII. KPIs de Sucesso do Go-Live",
+    description: "Metas de desempenho operacional",
+    requirements: [
+      "📊 Latência média de resposta ≤ 3s",
+      "📊 Taxa de sucesso QA diário ≥ 90%",
+      "📊 Tempo médio de primeira resposta ≤ 15s",
+      "📊 Estabilidade de mensagens Meta ≥ 99% entrega",
+      "📊 Uptime das funções Edge ≥ 99,5%",
+      "📊 Erros críticos (Graylog) ≤ 0,5% das requisições"
+    ],
+    validated: false,
+    relatedPhases: ["phase-10"]
   }
 ];
 
@@ -500,7 +534,7 @@ export function GoLiveTracker() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {goLiveCriteria.map((criterion) => {
           const Icon = criterion.icon;
           const relatedPhasesCompleted = criterion.relatedPhases.every(phaseId => {
@@ -528,12 +562,18 @@ export function GoLiveTracker() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Requisitos:</p>
-                  <ul className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    {criterion.id === "kpis-sucesso" ? "Metas:" : "Requisitos:"}
+                  </p>
+                  <ul className="space-y-1.5">
                     {criterion.requirements.map((req, idx) => (
                       <li key={idx} className="text-xs flex items-start gap-2">
-                        <Circle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span>{req}</span>
+                        {criterion.id === "kpis-sucesso" ? (
+                          <Activity className="h-3 w-3 mt-0.5 flex-shrink-0 text-primary" />
+                        ) : (
+                          <CheckCircle2 className={`h-3 w-3 mt-0.5 flex-shrink-0 ${relatedPhasesCompleted ? "text-green-600" : "text-gray-400"}`} />
+                        )}
+                        <span className={relatedPhasesCompleted && criterion.id !== "kpis-sucesso" ? "text-green-700 font-medium" : ""}>{req}</span>
                       </li>
                     ))}
                   </ul>
