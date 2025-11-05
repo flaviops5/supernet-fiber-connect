@@ -19,6 +19,9 @@
  * - created_at, updated_at
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
+
 const VALID_FLOW_STATE_FIELDS = new Set([
   'conversation_id',
   'waiting_step',
@@ -37,9 +40,9 @@ const VALID_FLOW_STATE_FIELDS = new Set([
 ]);
 
 export async function updateFlowState(
-  supabaseAdmin: any,
-  ctx: { conversation_id: string; flowState?: any },
-  newState: Record<string, any>
+  supabaseAdmin: SupabaseClient,
+  ctx: { conversation_id: string; flowState?: JsonObject },
+  newState: JsonObject
 ) {
   const conversation_id = ctx.conversation_id;
   const currentFlowState = ctx.flowState || {};
@@ -63,7 +66,7 @@ export async function updateFlowState(
     .reduce((obj, key) => {
       obj[key] = newState[key];
       return obj;
-    }, {} as Record<string, any>);
+    }, {} as JsonObject);
 
   const mergedState = {
     ...currentFlowState,

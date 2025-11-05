@@ -2,6 +2,8 @@
  * Helpers para respostas padronizadas em Edge Functions
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
 import { updateFlowState } from "./flow-state.ts";
 
 export function textReply(message: string) {
@@ -29,10 +31,10 @@ export function jsonReply(payload: Record<string, unknown>) {
  * @param mediaContext - Contexto de mídia para salvar na mensagem (opcional)
  */
 export async function textReplyWithContext(
-  supabaseAdmin: any,
-  ctx: { conversation_id: string; flowState?: any } | string,
+  supabaseAdmin: SupabaseClient,
+  ctx: { conversation_id: string; flowState?: JsonObject } | string,
   message: string,
-  additionalContext?: Record<string, any>,
+  additionalContext?: JsonObject,
   mediaContext?: string
 ): Promise<Response> {
   // Normalizar contexto se for string
@@ -61,7 +63,7 @@ export async function textReplyWithContext(
   // >>> PR #15 vFINAL ✅ - Detecção robusta de perguntas
   try {
     if (isQuestion(message)) {
-      const updateData: Record<string, any> = {
+      const updateData: JsonObject = {
         last_agent_question: message,
         ...additionalContext
       };

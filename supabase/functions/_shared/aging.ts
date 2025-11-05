@@ -1,18 +1,21 @@
 // PR #19 — Aging Helper
 // C1 ✅: 100% fire-and-forget, não bloqueia fluxo principal
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
+
 /**
  * Marca evento de aging de forma non-blocking
  * NUNCA bloqueia o fluxo principal - fire and forget
  */
-export function markAgingEvent(supabaseAdmin: any, {
+export function markAgingEvent(supabaseAdmin: SupabaseClient, {
   conversation_id,
   step,
   meta = {}
 }: {
   conversation_id: string,
   step: string,
-  meta?: Record<string, any>
+  meta?: JsonObject
 }) {
   // C3 ✅: Validação de inputs
   if (!conversation_id?.trim()) {

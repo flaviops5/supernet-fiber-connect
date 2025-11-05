@@ -3,6 +3,8 @@
  * Sistema inteligente de captura de cidade/bairro para KPIs regionalizados
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
 import { updateFlowState } from "./flow-state.ts";
 import { logAudit } from "./audit-logger.ts";
 
@@ -25,8 +27,8 @@ export interface GeoData {
  * @returns GeoData com cidade, bairro e fonte dos dados
  */
 export async function ensureGeo(
-  supabaseAdmin: any,
-  ctx: { conversation_id: string; flowState?: any },
+  supabaseAdmin: SupabaseClient,
+  ctx: { conversation_id: string; flowState?: JsonObject },
   ixc_client_id?: string | null,
   customer_phone?: string | null
 ): Promise<GeoData> {
@@ -34,7 +36,7 @@ export async function ensureGeo(
 
   // ✅ 1. Cache já existe? Retorna imediatamente
   if (flowState?.geo?.cidade) {
-    return { ...flowState.geo, source: 'cache' };
+    return { ...flowState.geo, source: 'cache' } as GeoData;
   }
 
   // ✅ 2. Buscar no histórico (PRIORIDADE - 101 registros disponíveis!)
@@ -103,11 +105,11 @@ export async function ensureGeo(
  * Salva geo no flow_state e registra auditoria
  */
 async function saveGeoToFlowState(
-  supabaseAdmin: any,
-  ctx: { conversation_id: string; flowState?: any },
+  supabaseAdmin: SupabaseClient,
+  ctx: { conversation_id: string; flowState?: JsonObject },
   geo: GeoData
 ) {
-  await updateFlowState(supabaseAdmin, ctx, { geo });
+  await updateFlowState(supabaseAdmin, ctx, { geo: geo as unknown as JsonObject });
   
   await logAudit({
     action: 'geo_cached',
@@ -138,8 +140,8 @@ function extractCityFromAddress(address?: string): string | null {
  * @param flowState - Estado do fluxo contendo geo
  * @returns Objeto com detalhes + cidade + bairro
  */
-export function withGeo(detalhes: Record<string, any>, flowState: any): Record<string, any> {
-  const geo = flowState?.geo;
+export function withGeo(detalhes: JsonObject, flowState: JsonObject | undefined): JsonObject {
+  const geo = flowState?.geo as GeoData | undefined;
   if (!geo?.cidade) return detalhes;
   
   return {

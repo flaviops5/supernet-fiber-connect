@@ -1,11 +1,13 @@
 // PR #19 — ONU Tracker Helper
 // C1 ✅: 100% fire-and-forget, não bloqueia fluxo principal
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 /**
  * Registra snapshot de ONU de forma non-blocking
  * NUNCA bloqueia o fluxo principal - fire and forget
  */
-export function trackOnuSnapshot(supabaseAdmin: any, {
+export function trackOnuSnapshot(supabaseAdmin: SupabaseClient, {
   conversation_id,
   ixc_client_id,
   onu_serial,

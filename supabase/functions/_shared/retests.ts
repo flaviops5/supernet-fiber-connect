@@ -1,12 +1,14 @@
 // PR #19 — Retests Helper
 // C1 ✅: 100% fire-and-forget, não bloqueia fluxo principal
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 /**
  * Registra resultado de retest de forma non-blocking
  * NUNCA bloqueia o fluxo principal - fire and forget
  */
 export function logRetest(
-  supabaseAdmin: any,
+  supabaseAdmin: SupabaseClient,
   {
     conversation_id,
     ixc_client_id,
