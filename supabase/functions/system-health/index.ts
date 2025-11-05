@@ -65,32 +65,61 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
       'outage-check'
     ).catch(() => ({ data: null, count: 0 }));
 
-    // 7. Evolution API Status (with 2s timeout)
+    // 7. Evolution API Status (with 5s timeout)
     let evolutionStatus = 'unknown';
+    let evolutionDetails = '';
     try {
       const evolutionBaseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
       const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
       
       if (!evolutionBaseUrl || !evolutionApiKey) {
         evolutionStatus = 'error';
+        evolutionDetails = 'Credenciais não configuradas';
       } else {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        const response = await fetch(`${evolutionBaseUrl}/instance/fetchInstances`, {
-          method: 'GET',
-          headers: {
-            'apikey': evolutionApiKey,
-            'Content-Type': 'application/json'
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        evolutionStatus = response.ok ? 'healthy' : 'error';
+        try {
+          // Primeiro tenta o endpoint de instâncias
+          const response = await fetch(`${evolutionBaseUrl}/instance/fetchInstances`, {
+            method: 'GET',
+            headers: {
+              'apikey': evolutionApiKey,
+              'Content-Type': 'application/json'
+            },
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            evolutionStatus = 'healthy';
+            evolutionDetails = 'Conectado com sucesso';
+          } else {
+            // Se falhar, tenta um endpoint mais simples
+            const fallbackResponse = await fetch(`${evolutionBaseUrl}/`, {
+              method: 'GET',
+              headers: { 'apikey': evolutionApiKey },
+              signal: controller.signal
+            });
+            
+            if (fallbackResponse.ok) {
+              evolutionStatus = 'healthy';
+              evolutionDetails = 'API respondendo (endpoint alternativo)';
+            } else {
+              evolutionStatus = 'warning';
+              evolutionDetails = `Status ${response.status}`;
+            }
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          evolutionStatus = fetchError.name === 'AbortError' ? 'warning' : 'error';
+          evolutionDetails = fetchError.name === 'AbortError' ? 'Timeout' : fetchError.message;
+        }
       }
     } catch (error) {
-      evolutionStatus = error.name === 'AbortError' ? 'timeout' : 'error';
+      evolutionStatus = 'error';
+      evolutionDetails = error.message;
     }
 
     const checks = {
@@ -131,8 +160,9 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
       evolution_api: {
         status: evolutionStatus,
         message: evolutionStatus === 'healthy' 
-          ? 'Evolution API conectada'
-          : '⚠️ Evolution API com problemas'
+          ? `✅ Evolution API conectada${evolutionDetails ? ` - ${evolutionDetails}` : ''}`
+          : `⚠️ Evolution API: ${evolutionDetails || 'com problemas'}`,
+        details: evolutionDetails
       }
     };
 

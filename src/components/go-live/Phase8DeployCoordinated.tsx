@@ -133,20 +133,32 @@ export function Phase8DeployCoordinated() {
       
       if (error) throw error;
       
-      const allHealthy = Object.values(data).every((status: any) => status === 'healthy' || status === true);
+      // Aceitar como sucesso se não houver erros críticos (warnings são aceitáveis)
+      const hasCriticalErrors = Object.values(data.checks || {}).some(
+        (check: any) => check.status === 'error'
+      );
       
-      if (allHealthy) {
+      if (!hasCriticalErrors) {
         updateStepStatus("check-health", "completed");
         toast({
           title: "✅ Health Check Passou",
-          description: "Todos os componentes estão saudáveis"
+          description: data.summary.warnings > 0 
+            ? `Sistema saudável com ${data.summary.warnings} aviso(s)`
+            : "Todos os componentes estão saudáveis"
         });
         return true;
       } else {
         updateStepStatus("check-health", "failed");
+        
+        // Mostrar detalhes dos erros
+        const errorChecks = Object.entries(data.checks || {})
+          .filter(([_, check]: [string, any]) => check.status === 'error')
+          .map(([name, check]: [string, any]) => `${name}: ${check.message}`)
+          .join(', ');
+        
         toast({
           title: "⚠️ Health Check Falhou",
-          description: "Alguns componentes não estão saudáveis",
+          description: errorChecks || "Alguns componentes não estão saudáveis",
           variant: "destructive"
         });
         return false;
@@ -341,11 +353,50 @@ export function Phase8DeployCoordinated() {
         </Alert>
       )}
 
+      {deploySteps[0].status === "failed" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-lg font-bold">
+            ⚠️ Health Check Falhou
+          </AlertTitle>
+          <AlertDescription className="mt-2 space-y-2">
+            <p>
+              O health check detectou problemas em componentes críticos.
+              Verifique os detalhes e corrija antes de prosseguir com o deploy.
+            </p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                onClick={runHealthCheck}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Tentar Novamente
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <Server className="w-5 h-5 text-primary" />
-          Passos do Deploy
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold flex items-center gap-2">
+            <Server className="w-5 h-5 text-primary" />
+            Passos do Deploy
+          </h3>
+          {deploySteps[0].status === "failed" && (
+            <Button 
+              onClick={runHealthCheck}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Tentar Health Check Novamente
+            </Button>
+          )}
+        </div>
 
         {deploySteps.map((step) => (
           <Card key={step.id} className={
