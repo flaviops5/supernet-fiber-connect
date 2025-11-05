@@ -15,15 +15,23 @@ interface ValidationResult {
   details?: string;
 }
 
-Deno.serve(createProtectedHandler('validate-production-readiness', async (req, { supabase, user }) => {
-  const logger = createLogger('validate-production-readiness', req.headers.get('x-request-id') || undefined);
-  
-  // Verificar se é admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+Deno.serve(createProtectedHandler({
+  functionName: 'validate-production-readiness',
+  requireAuth: true,
+  handler: async (req, context) => {
+    const { supabase, user } = context;
+    const logger = createLogger('validate-production-readiness', req.headers.get('x-request-id') || undefined);
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+    
+    // Verificar se é admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
   
   if (profile?.role !== 'admin') {
     logger.warn('Tentativa de acesso não autorizado', { user_id: user.id });
@@ -292,4 +300,5 @@ Deno.serve(createProtectedHandler('validate-production-readiness', async (req, {
     results,
     timestamp: new Date().toISOString()
   };
+  }
 }));
