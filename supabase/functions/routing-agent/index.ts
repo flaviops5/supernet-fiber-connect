@@ -169,6 +169,11 @@ serve(async (req) => {
         return await createTestResponse("Cloé Martins", "sem_cpf");
       }
       
+      // 🔴 F5: FINANCEIRO (Julia) - DESBLOQUEIO (MÁXIMA PRIORIDADE antes de qualquer EDGE)
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar|reativação)/i)) {
+        return await createTestResponse("Julia", "financeiro_desbloquear");
+      }
+      
       // 🔥 MULTI-INTENÇÃO (PR#55 EDGE) - Detectar prompts com múltiplas intenções e priorizar
       const hasMultipleIntents = (
         (messageText.match(/internet|conexão|lenta|sinal|net/i) ? 1 : 0) +
@@ -209,11 +214,6 @@ serve(async (req) => {
         return await createTestResponse("Luan", "edge_conflito_pago_bloqueado");
       }
       
-      // 🔴 4️⃣ FINANCEIRO (Julia) - ALTA PRIORIDADE: desbloqueio após pagamento (antes de Comercial)
-      // F5: Desbloqueio simples OU com contexto de pagamento
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar)/i)) {
-        return await createTestResponse("Julia", "financeiro_desbloquear");
-      }
       // Também cobrir "paguei" mas ainda bloqueado (EDGE1 do PR#55)
       if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|já.*paguei.*bloqueado|internet.*caiu.*paguei)/i)) {
         return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
