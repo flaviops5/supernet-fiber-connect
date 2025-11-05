@@ -157,7 +157,7 @@ const goLiveCriteria: GoLiveCriterion[] = [
 
 
 // Versão do schema - incrementar quando houver mudanças importantes
-const TRACKER_VERSION = 3;
+const TRACKER_VERSION = 4;
 
 const initialPhases: Phase[] = [
   {
