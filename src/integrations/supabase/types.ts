@@ -4462,8 +4462,11 @@ export type Database = {
       }
       qa_regression_cases: {
         Row: {
+          active: boolean | null
+          case_group: string | null
           category: string
           created_at: string | null
+          description: string | null
           expected_agent: string
           id: string
           last_passed: boolean | null
@@ -4472,10 +4475,14 @@ export type Database = {
           prompt: string
           scenario_name: string
           updated_at: string | null
+          weight: number | null
         }
         Insert: {
+          active?: boolean | null
+          case_group?: string | null
           category: string
           created_at?: string | null
+          description?: string | null
           expected_agent: string
           id?: string
           last_passed?: boolean | null
@@ -4484,10 +4491,14 @@ export type Database = {
           prompt: string
           scenario_name: string
           updated_at?: string | null
+          weight?: number | null
         }
         Update: {
+          active?: boolean | null
+          case_group?: string | null
           category?: string
           created_at?: string | null
+          description?: string | null
           expected_agent?: string
           id?: string
           last_passed?: boolean | null
@@ -4496,6 +4507,7 @@ export type Database = {
           prompt?: string
           scenario_name?: string
           updated_at?: string | null
+          weight?: number | null
         }
         Relationships: []
       }

@@ -56,11 +56,11 @@ const AdminTestes = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
               <div className="text-left">
                 <div className="font-semibold flex items-center gap-2">
-                  QA Orchestrator - Baseline Regressiva
-                  <span className="text-xs px-2 py-0.5 bg-primary/20 rounded-full">PR#53</span>
+                  QA Orchestrator - Suite Expandida
+                  <span className="text-xs px-2 py-0.5 bg-primary/20 rounded-full">PR#55 Híbrido</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Suite de regressão fixa + exploratória opcional (Gemini-2.5-pro determinístico)
+                  61 casos: Wave 1 (edge+linguistic) + Wave 2 (segurança crítica) - Gemini-2.5-pro
                 </div>
               </div>
             </div>

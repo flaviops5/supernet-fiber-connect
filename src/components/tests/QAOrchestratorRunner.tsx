@@ -15,6 +15,8 @@ interface BaselineCase {
   last_passed: boolean | null;
   last_routing_score: number | null;
   last_run_at: string | null;
+  case_group?: string;
+  weight?: number;
 }
 
 interface QAReport {
@@ -164,6 +166,25 @@ export function QAOrchestratorRunner() {
   const notRunCount = baselineCases.filter((c) => c.last_passed === null).length;
   const successRate = baselineCases.length > 0 ? (passedCount / baselineCases.length) * 100 : 0;
 
+  // Agrupamento por case_group (PR#55)
+  const casesByGroup = baselineCases.reduce((acc, c) => {
+    const group = c.case_group || 'baseline';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(c);
+    return acc;
+  }, {} as Record<string, BaselineCase[]>);
+
+  const getGroupBadgeColor = (group: string) => {
+    switch (group) {
+      case "baseline": return "bg-slate-500/10 text-slate-500 border-slate-500/20";
+      case "edge": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+      case "linguistic": return "bg-cyan-500/10 text-cyan-500 border-cyan-500/20";
+      case "malicious": return "bg-red-500/10 text-red-500 border-red-500/20";
+      case "adversarial": return "bg-orange-500/10 text-orange-500 border-orange-500/20";
+      default: return "bg-gray-500/10 text-gray-500 border-gray-500/20";
+    }
+  };
+
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
       case "tecnico": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
@@ -191,11 +212,18 @@ export function QAOrchestratorRunner() {
         <div>
           <h3 className="text-2xl font-bold flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            QA Orchestrator - PR#53
+            QA Orchestrator - PR#55 Híbrido
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Suite de regressão fixa com {baselineCases.length} casos baseline
+            Suite expandida: {baselineCases.length} casos totais • Wave 1 (edge+linguistic) + Wave 2 (segurança) implementadas
           </p>
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {Object.entries(casesByGroup).map(([group, cases]) => (
+              <Badge key={group} variant="outline" className={getGroupBadgeColor(group)}>
+                {group}: {cases.length}
+              </Badge>
+            ))}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
@@ -346,9 +374,19 @@ export function QAOrchestratorRunner() {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  {testCase.case_group && (
+                    <Badge variant="outline" className={getGroupBadgeColor(testCase.case_group)}>
+                      {testCase.case_group}
+                    </Badge>
+                  )}
                   <Badge variant="outline" className={getCategoryBadgeColor(testCase.category)}>
                     {testCase.category}
                   </Badge>
+                  {testCase.weight && testCase.weight > 1 && (
+                    <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600">
+                      ⚡{testCase.weight}x
+                    </Badge>
+                  )}
                   {testCase.last_routing_score !== null && (
                     <Badge variant="secondary">
                       Score: {testCase.last_routing_score.toFixed(1)}
