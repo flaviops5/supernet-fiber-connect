@@ -141,7 +141,7 @@ serve(async (req) => {
         return await createTestResponse("Julia", "security_bypass_pix");
       }
       
-      // 0️⃣ CPF INVÁLIDO → Cloé (pedir CPF válido)
+      // 0️⃣ SEC5: CPF INVÁLIDO → Julia (validação de segurança)
       const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
       if (hasCPF) {
         const cpfNumbers = messageText.replace(/\D/g, '');
@@ -150,7 +150,7 @@ serve(async (req) => {
           '66666666666', '77777777777', '88888888888', '99999999999', '00000000000'
         ];
         if (invalidPatterns.some(pattern => cpfNumbers.includes(pattern))) {
-          return await createTestResponse("Cloé Martins", "cpf_invalido");
+          return await createTestResponse("Julia", "security_cpf_invalido");
         }
       }
       
@@ -166,36 +166,41 @@ serve(async (req) => {
       
       // 🔥 MULTI-INTENÇÃO (PR#55 EDGE) - Detectar prompts com múltiplas intenções e priorizar
       const hasMultipleIntents = (
-        (messageText.match(/internet|conexão|lenta|sinal/i) ? 1 : 0) +
-        (messageText.match(/paguei|boleto|fatura|bloqueado/i) ? 1 : 0) +
+        (messageText.match(/internet|conexão|lenta|sinal|net/i) ? 1 : 0) +
+        (messageText.match(/paguei|pago|boleto|fatura|bloqueado/i) ? 1 : 0) +
         (messageText.match(/contratar|cobertura|plano|upgrade/i) ? 1 : 0)
       ) > 1;
       
       if (hasMultipleIntents) {
         // Priorizar: Financeiro (pago+bloqueado) > Técnico (offline) > Comercial
         // EDGE2: Multi-intenção → Julia resolve
-        if (messageText.match(/\b(paguei|pago).*(bloqueado|cortado|off|sem internet)|internet.*(paguei|boleto|fatura)|conexão.*(paguei|boleto)/i)) {
+        if (messageText.match(/\b(paguei|pago|tá pago|ta pago).*(bloqueado|cortado|off|sem internet|sem net)/i)) {
           return await createTestResponse("Julia", "edge_multi_intencao");
         }
       }
       
       // PR#55 EDGE5: Escalação necessária (ANTES de edge_risco_churn para priorizar técnico)
-      if (messageText.match(/\b(liguei.*não.*resolveram|já.*tentei.*tudo|ninguém.*consegue.*resolver)/i)) {
+      if (messageText.match(/\b(liguei.*(?:não|n).*resolveram|já.*tentei.*tudo|ninguém.*consegue.*resolver|liguei.*\d+.*(?:e|mas).*(?:n|não).*resolve)/i)) {
         return await createTestResponse("Luan", "edge_escalacao_necessaria");
       }
       
       // PR#55 ADV1: Intent overload (múltiplos problemas simultâneos)
-      if (messageText.match(/\b(internet.*off.*roteador.*queimou|sem.*net.*e.*técnico.*vem|problema.*e.*outro)/i)) {
+      if (messageText.match(/\b((?:internet|net).*(?:off|ta off).*(?:e|tbm).*roteador.*queimou|sem.*net.*e.*técnico.*vem|problema.*e.*outro)/i)) {
         return await createTestResponse("Luan", "adversarial_intent_overload");
       }
       
       // PR#55 EDGE4: Terceiro reportando
-      if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|meu.*filho|familiar|parente).*sem.*internet/i)) {
+      if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|meu.*filho|familiar|parente).*(?:sem|ta sem|tá sem).*(internet|net)/i)) {
         return await createTestResponse("Luan", "edge_terceiro_reportando");
       }
       
-      // PR#55 EDGE1: Conflito pago/bloqueado → Luan (técnico resolve)
-      if (messageText.match(/\b(pix.*pago.*ainda.*off|pagou.*continua.*sem|paguei.*mas.*off|pago.*e.*bloqueado)/i)) {
+      // PR#55 ADV2: Multi-agent Conflict (PIX pago mas ainda offline) → Julia (financeiro valida pagamento)
+      if (messageText.match(/\b(pix.*pago.*(?:mas|ainda).*off|pix.*pago.*(?:mas|ainda).*offline)/i)) {
+        return await createTestResponse("Julia", "adversarial_multiagent_conflict");
+      }
+      
+      // PR#55 EDGE1: Conflito pago/bloqueado → Luan (técnico investiga após pagamento)
+      if (messageText.match(/\b(internet.*caiu.*(?:mas|e).*(?:já|ja).*paguei|paguei.*(?:boleto|ontem).*(?:mas|e).*(?:caiu|off)|pagou.*continua.*sem|pago.*e.*bloqueado)/i)) {
         return await createTestResponse("Luan", "edge_conflito_pago_bloqueado");
       }
       
