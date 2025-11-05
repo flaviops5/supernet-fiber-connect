@@ -8,6 +8,7 @@ import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight, Sh
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
+import { Phase7ProductionReadiness } from "./go-live/Phase7ProductionReadiness";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -714,6 +715,12 @@ export function GoLiveTracker() {
                     {phase.id === "phase-1" && (
                       <div className="my-6">
                         <InfrastructureValidator />
+                      </div>
+                    )}
+
+                    {phase.id === "phase-7" && (
+                      <div className="my-6">
+                        <Phase7ProductionReadiness />
                       </div>
                     )}
 
