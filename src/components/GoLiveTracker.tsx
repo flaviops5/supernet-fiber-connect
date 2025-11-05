@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
 import { Phase7ProductionReadiness } from "./go-live/Phase7ProductionReadiness";
+import { Phase8DeployCoordinated } from "./go-live/Phase8DeployCoordinated";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -721,6 +722,12 @@ export function GoLiveTracker() {
                     {phase.id === "phase-7" && (
                       <div className="my-6">
                         <Phase7ProductionReadiness />
+                      </div>
+                    )}
+
+                    {phase.id === "phase-8" && (
+                      <div className="my-6">
+                        <Phase8DeployCoordinated />
                       </div>
                     )}
 
