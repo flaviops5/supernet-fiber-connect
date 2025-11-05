@@ -263,7 +263,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-4",
-    title: "FASE 4: Desbloqueio Automático - Validação",
+    title: "✅ FASE 4: Desbloqueio Automático - Validação",
     description: "Garantir que Julia desbloqueia após pagamento",
     totalHours: 3,
     completionCriteria: [
@@ -272,9 +272,9 @@ const initialPhases: Phase[] = [
       "Cliente recebe confirmação via WhatsApp"
     ],
     tasks: [
-      { id: "4.1", title: "Validar fluxo de pagamento → trigger → Julia", status: "pending", estimatedHours: 1.5 },
-      { id: "4.2", title: "Testar ixc-integration endpoint /unblock", status: "pending", estimatedHours: 1, dependencies: ["4.1"] },
-      { id: "4.3", title: "QA end-to-end com cliente teste", status: "pending", estimatedHours: 0.5, dependencies: ["4.2"] }
+      { id: "4.1", title: "✅ Validar fluxo de pagamento → trigger → Julia", status: "completed", estimatedHours: 1.5 },
+      { id: "4.2", title: "✅ Testar ixc-integration endpoint /unblock", status: "completed", estimatedHours: 1, dependencies: ["4.1"] },
+      { id: "4.3", title: "✅ QA end-to-end com cliente teste", status: "completed", estimatedHours: 0.5, dependencies: ["4.2"] }
     ],
     dependencies: ["phase-1", "phase-2"]
   },
