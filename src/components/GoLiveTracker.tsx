@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle2, Circle, Clock, AlertCircle, ChevronDown, ChevronRight, Shield, Phone, Brain, DollarSign, Radio, MessageSquare, BarChart3 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
 
@@ -26,6 +27,100 @@ interface Phase {
   tasks: SubTask[];
   dependencies?: string[];
 }
+
+interface GoLiveCriterion {
+  id: string;
+  icon: any;
+  title: string;
+  description: string;
+  requirements: string[];
+  validated: boolean;
+  relatedPhases: string[];
+}
+
+const goLiveCriteria: GoLiveCriterion[] = [
+  {
+    id: "whatsapp-oficial",
+    icon: Phone,
+    title: "📞 Comunicação Oficial via WhatsApp",
+    description: "WhatsApp Business API Meta integrado e funcional",
+    requirements: [
+      "Receber chamadas e mensagens via número oficial da Meta (Business API)",
+      "Enviar mensagens via canal oficial (Evolution + Meta HSM aprovados)",
+      "Status de entrega, leitura e falha rastreáveis por mensagem"
+    ],
+    validated: false,
+    relatedPhases: ["phase-1", "phase-8"]
+  },
+  {
+    id: "roteamento-ia",
+    icon: Brain,
+    title: "🧠 Roteamento Inteligente (Cloé Martins)",
+    description: "IA detecta intenção e roteia corretamente",
+    requirements: [
+      "Detectar automaticamente se cliente precisa: Técnico (Luan) / Financeiro (Julia) / Vendas (Carlos)",
+      "Direcionar com base em CPF, status IXC e contexto da mensagem",
+      "Logs de roteamento auditáveis e métricas de precisão"
+    ],
+    validated: false,
+    relatedPhases: ["phase-0", "phase-0.5", "phase-6"]
+  },
+  {
+    id: "modulo-financeiro",
+    icon: DollarSign,
+    title: "💰 Módulo Financeiro (Julia/Sofia)",
+    description: "Gestão completa de faturas e pagamentos",
+    requirements: [
+      "Enviar segunda via de fatura em PDF gerado pelo IXC",
+      "Enviar link de pagamento via PIX dinâmico gerado pelo IXC",
+      "Detectar automaticamente clientes bloqueados/pendências",
+      "Executar liberação automática conforme regra de confiança",
+      "Enviar lembrete de vencimento antes da data"
+    ],
+    validated: false,
+    relatedPhases: ["phase-2", "phase-4"]
+  },
+  {
+    id: "modulo-tecnico",
+    icon: Radio,
+    title: "📡 Módulo Técnico (Luan/Érik)",
+    description: "Diagnóstico e monitoramento de rede",
+    requirements: [
+      "Verificar se cliente está ONLINE (SIM/NÃO) via GPON/IXC",
+      "Detectar e registrar mass outage (quedas em massa)",
+      "Agir conforme regra: notificar clientes e abrir ticket IXC automático"
+    ],
+    validated: false,
+    relatedPhases: ["phase-3", "phase-5", "phase-6"]
+  },
+  {
+    id: "fluxos-conversacao",
+    icon: MessageSquare,
+    title: "💬 Fluxos de Conversa e Escalação",
+    description: "Transferência IA ↔ Humano com contexto",
+    requirements: [
+      "Transferir conversas entre agentes IA e humanos preservando contexto",
+      "Logs de conversas persistidos e auditáveis",
+      "Histórico completo acessível para atendentes humanos"
+    ],
+    validated: false,
+    relatedPhases: ["phase-6", "phase-9"]
+  },
+  {
+    id: "metricas-monitoramento",
+    icon: BarChart3,
+    title: "📈 Métricas e Monitoramento",
+    description: "Observabilidade e controle de qualidade",
+    requirements: [
+      "Acompanhamento de métricas (QA, latência, erros)",
+      "Controle de rollback e alertas automáticos",
+      "Sincronização de status entre dashboards e Supabase"
+    ],
+    validated: false,
+    relatedPhases: ["phase-7", "phase-10"]
+  }
+];
+
 
 const initialPhases: Phase[] = [
   {
@@ -392,6 +487,69 @@ export function GoLiveTracker() {
         <Button variant="outline" onClick={resetProgress} size="sm">
           Reset Progress
         </Button>
+      </div>
+
+      {/* Critérios Obrigatórios de Go-Live */}
+      <Alert className="border-red-500 bg-red-50">
+        <Shield className="h-5 w-5 text-red-600" />
+        <AlertTitle className="text-red-900 font-bold">
+          ⚠️ CRITÉRIOS OBRIGATÓRIOS DE GO-LIVE
+        </AlertTitle>
+        <AlertDescription className="text-red-800 text-sm mt-2">
+          O sistema <strong>NÃO PODE</strong> ser colocado em produção até que TODOS os critérios abaixo estejam 100% validados.
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {goLiveCriteria.map((criterion) => {
+          const Icon = criterion.icon;
+          const relatedPhasesCompleted = criterion.relatedPhases.every(phaseId => {
+            const phase = phases.find(p => p.id === phaseId);
+            return phase && getPhaseProgress(phase) === 100;
+          });
+
+          return (
+            <Card key={criterion.id} className={relatedPhasesCompleted ? "border-green-500" : "border-orange-500"}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-6 w-6 ${relatedPhasesCompleted ? "text-green-600" : "text-orange-600"}`} />
+                    <div>
+                      <CardTitle className="text-base">{criterion.title}</CardTitle>
+                      <CardDescription className="text-sm">{criterion.description}</CardDescription>
+                    </div>
+                  </div>
+                  {relatedPhasesCompleted ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-orange-600" />
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Requisitos:</p>
+                  <ul className="space-y-1">
+                    {criterion.requirements.map((req, idx) => (
+                      <li key={idx} className="text-xs flex items-start gap-2">
+                        <Circle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      Fases relacionadas: {criterion.relatedPhases.map(id => {
+                        const phase = phases.find(p => p.id === id);
+                        return phase?.title.split(':')[0];
+                      }).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
