@@ -10,6 +10,7 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { massOutageContext, setMassOutageStatus } from "../_shared/mass-outage-helper.ts";
 import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
+import { createLogger } from "../_shared/logger.ts";
 
 /**
  * Detecta tipo de entrada (CPF, telefone ou desconhecido)
@@ -88,14 +89,15 @@ export interface SanitizedMetadata {
  * @returns CPF válido formatado ou null
  */
 export function extractCPF(message: string): string | null {
+  const logger = createLogger("routing-agent-helpers");
   const result = validateAndMaskCPF(message);
   
   if (result.isValid && result.cleanCPF) {
-    console.log("🔍 CPF extraído e validado:", result.maskedCPF);
+    logger.debug("CPF extraído e validado", { maskedCPF: result.maskedCPF });
     return result.cleanCPF;
   }
   
-  console.log("❌ CPF não encontrado ou inválido:", result.error || "formato incorreto");
+  logger.debug("CPF não encontrado ou inválido", { error: result.error || "formato incorreto" });
   return null;
 }
 
@@ -133,10 +135,14 @@ export async function getClientRoutingStatus(
   supabase: SupabaseClient,
   message: string
 ): Promise<ClientRoutingStatus> {
+  const logger = createLogger("routing-agent-helpers");
+  const timer = logger.time("getClientRoutingStatus");
+  
   // 1. Extrair CPF
   const cpf = extractCPF(message);
   if (!cpf) {
-    console.log("❌ CPF não identificado na mensagem");
+    logger.warn("CPF não identificado na mensagem");
+    timer();
     return {
       found: false,
       isBlocked: false,
@@ -146,16 +152,13 @@ export async function getClientRoutingStatus(
     };
   }
 
-  // 🔍 Log detalhado para debug
-  console.log("📞 Buscando cliente no IXC", { 
+  logger.info("Buscando cliente no IXC", { 
     cpf_redacted: `***${cpf.slice(-3)}`,
-    cpfLength: cpf.length,
-    cpfType: typeof cpf
+    cpfLength: cpf.length
   });
 
   // 2. Buscar cliente no IXC
   try {
-    console.log("🔍 Buscando cliente no IXC com CPF:", cpf);
     
     const { data: searchResult, error: searchError } = await supabase.functions.invoke(
       "ixc-integration",
@@ -167,37 +170,38 @@ export async function getClientRoutingStatus(
       }
     );
 
-    console.log("📊 IXC searchCustomers response:", {
+    logger.debug("IXC searchCustomers response", {
       hasError: !!searchError,
-      hasData: !!searchResult,
       success: searchResult?.success,
-      dataExists: !!searchResult?.data,
       dataLength: Array.isArray(searchResult?.data) ? searchResult.data.length : 0,
     });
 
     // ✅ Validação defensiva de resposta nula
     if (!searchResult || searchError) {
-      console.warn("⚠️ IXC searchCustomers retornou resultado nulo ou erro", { searchError });
+      logger.warn("IXC searchCustomers retornou resultado nulo ou erro", { searchError });
+      timer();
       return await getFallbackFromHistory(supabase, cpf);
     }
 
     // Validação explícita de resposta (evita mascaramento de erros)
     if (!searchResult.success) {
-      console.warn("⚠️ IXC searchCustomers falhou, tentando fallback histórico");
+      logger.warn("IXC searchCustomers falhou, tentando fallback histórico");
+      timer();
       return await getFallbackFromHistory(supabase, cpf);
     }
 
     // 🔧 FIX: ixc-integration retorna array direto em 'data', não em 'data.registros'
     const clientes = Array.isArray(searchResult.data) ? searchResult.data : [];
-    console.log("👥 Clientes encontrados:", clientes.length);
+    logger.info("Clientes encontrados no IXC", { count: clientes.length });
     
     if (clientes.length === 0) {
-      console.log("❌ Nenhum cliente encontrado no IXC");
+      logger.info("Nenhum cliente encontrado no IXC");
+      timer();
       return await getFallbackFromHistory(supabase, cpf);
     }
 
     const cliente = clientes[0];
-    console.log("✅ Cliente encontrado:", { id: cliente.id, nome: cliente.razao });
+    logger.info("Cliente encontrado", { id: cliente.id, nome: cliente.razao });
 
     // 3. Buscar status detalhado
     const { data: statusResult, error: statusError } = await supabase.functions.invoke(
@@ -211,7 +215,8 @@ export async function getClientRoutingStatus(
     );
 
     if (statusError || !statusResult?.success || !statusResult?.data) {
-      console.warn("⚠️ IXC getCustomerStatus falhou");
+      logger.warn("IXC getCustomerStatus falhou");
+      timer();
       return {
         found: true,
         cpf,
@@ -230,17 +235,19 @@ export async function getClientRoutingStatus(
     // 🔧 FIX: Campo correto é isOnline (boolean), não conexao
     let isOffline = status.isOnline === false; // Cliente offline quando isOnline é false
     if (massOutageContext.active && isOffline) {
-      console.log("🚨 Pane em massa ativa - ajustando status offline");
+      logger.info("Pane em massa ativa - ajustando status offline");
       isOffline = false; // Cliente não vai para técnico durante pane massiva
     }
 
-    console.log("📊 Status do cliente processado:", {
+    logger.info("Status do cliente processado", {
       isOnline: status.isOnline,
       isOffline,
       pppoeLogin: status.pppoeLogin,
       lastConnection: status.lastConnection
     });
 
+    timer();
+    
     // 5. Retornar status completo
     return {
       found: true,
@@ -255,7 +262,8 @@ export async function getClientRoutingStatus(
       suggestAutoReboot: isOffline && !massOutageContext.active, // 🆕 Sugerir reboot se offline e sem pane massiva
     };
   } catch (err) {
-    console.error("❌ Erro ao buscar cliente IXC:", err instanceof Error ? err.message : 'Unknown error');
+    logger.error("Erro ao buscar cliente IXC", err);
+    timer();
     return await getFallbackFromHistory(supabase, cpf);
   }
 }
@@ -273,6 +281,8 @@ async function getFallbackFromHistory(
   supabase: SupabaseClient,
   cpf: string
 ): Promise<ClientRoutingStatus> {
+  const logger = createLogger("routing-agent-helpers");
+  
   try {
     const { data: history, error } = await supabase
       .from("customer_contact_history")
@@ -283,7 +293,7 @@ async function getFallbackFromHistory(
       .maybeSingle();
 
     if (!error && history) {
-      console.log("📋 Cliente encontrado no histórico local");
+      logger.info("Cliente encontrado no histórico local", { cpf_redacted: redactCPF(cpf) });
       return {
         found: true,
         cpf,
@@ -295,9 +305,11 @@ async function getFallbackFromHistory(
       };
     }
   } catch (err) {
-    console.warn("⚠️ Erro ao buscar histórico:", err instanceof Error ? err.message : 'Unknown error');
+    logger.warn("Erro ao buscar histórico", err);
   }
 
+  logger.info("Cliente não encontrado no IXC nem no histórico");
+  
   return {
     found: false,
     cpf,

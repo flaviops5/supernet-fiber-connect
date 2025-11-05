@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ROUTING_AGENT_CONFIG } from "./config.ts";
 import { CLOE_MARTINS_SYSTEM_PROMPT, ROUTING_AGENT_SYSTEM_PROMPT } from "./prompts.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
-import { createLogger } from "../_shared/structured-logger.ts";
+import { createLogger, createLoggerFromRequest } from "../_shared/logger.ts";
 import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
 import type { JsonValue, JsonObject } from "../_shared/error-types.ts";
 import type { LovableAIResponse, AgentRequest } from "../_shared/agent-types.ts";
@@ -25,10 +25,10 @@ import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const logger = createLoggerFromRequest("routing-agent", req);
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const logger = createLogger("routing-agent", req);
 
   try {
     // Parse seguro do body
