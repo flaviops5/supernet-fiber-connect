@@ -73,7 +73,7 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
       const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
       
       if (!evolutionBaseUrl || !evolutionApiKey) {
-        evolutionStatus = 'error';
+        evolutionStatus = 'warning';
         evolutionDetails = 'Credenciais não configuradas';
       } else {
         const controller = new AbortController();
@@ -113,12 +113,12 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
           }
         } catch (fetchError) {
           clearTimeout(timeoutId);
-          evolutionStatus = fetchError.name === 'AbortError' ? 'warning' : 'error';
-          evolutionDetails = fetchError.name === 'AbortError' ? 'Timeout' : fetchError.message;
+          evolutionStatus = 'warning';
+          evolutionDetails = fetchError.name === 'AbortError' ? 'Timeout' : (fetchError as any).message;
         }
       }
     } catch (error) {
-      evolutionStatus = 'error';
+      evolutionStatus = 'warning';
       evolutionDetails = error.message;
     }
 
