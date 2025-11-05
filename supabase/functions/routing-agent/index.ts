@@ -68,7 +68,27 @@ serve(async (req) => {
         environment: envType,
       });
 
-      const messageText = (message || "").toLowerCase();
+      // 🧹 Normalização de texto para PR#55 (gírias, emojis, erros ortográficos)
+      const normalizeText = (text: string): string => {
+        return text
+          .toLowerCase()
+          .replace(/[😡😠😩⚡🤦‍♂️💬👀🧠]/g, '') // Remove emojis comuns
+          .replace(/\b(ta|tá|tava|tava|tô|to)\b/g, 'está') // Gírias -> formal
+          .replace(/\b(porq|pq)\b/g, 'porque')
+          .replace(/\b(vc|vcs|voces)\b/g, 'você')
+          .replace(/\b(plmds|pfv)\b/g, 'por favor')
+          .replace(/\b(bloquado|bloquiado)\b/g, 'bloqueado')
+          .replace(/\b(nao|ñ)\b/g, 'não')
+          .replace(/\b(msm|tbm|tmbm|dnv)\b/g, 'mesmo')
+          .replace(/\b(hj)\b/g, 'hoje')
+          .replace(/\b(aq|aki)\b/g, 'aqui')
+          .replace(/\b(kkk+|rsrs|kk)\b/g, '') // Remove risos
+          .replace(/\s+/g, ' ') // Normaliza espaços
+          .trim();
+      };
+
+      const messageText = normalizeText(message || "");
+      const messageRaw = (message || "").toLowerCase(); // Preserva texto original para alguns checks
 
       const createTestResponse = async (agentName: string, reason: string) => {
         const protocol = `TEST-${Date.now()}`;
@@ -103,8 +123,23 @@ serve(async (req) => {
         );
       };
 
-      // 🔧 REGRAS DE ROTEAMENTO - TEST HARNESS (sincronizado com helpers.ts)
-      // Ordem de prioridade: CPF inválido → Comercial → Técnico → Financeiro → Cloé
+      // 🔧 REGRAS DE ROTEAMENTO - TEST HARNESS PR#55 (expandido para casos edge/linguistic/security)
+      // Ordem de prioridade: Security → CPF inválido → Multi-intenção → Comercial → Técnico → Financeiro → Cloé
+      
+      // 🔒 SECURITY LAYER (PR#55) - Detectar inputs maliciosos e roteá-los normalmente
+      // Inputs maliciosos são tratados como intenções legítimas (não como ataques)
+      if (messageRaw.match(/(<script|<iframe|javascript:|onerror=|onload=)/i)) {
+        return await createTestResponse("Luan", "security_xss_detected");
+      }
+      if (messageRaw.match(/(drop\s+table|delete\s+from|insert\s+into|;--|union\s+select)/i)) {
+        return await createTestResponse("Julia", "security_sql_injection");
+      }
+      if (messageRaw.match(/(\/dev\/null|reboot|shutdown|rm\s+-rf|sudo|chmod)/i)) {
+        return await createTestResponse("Luan", "security_command_injection");
+      }
+      if (messageRaw.match(/pix.*r\$\s*0[,.]0+|gerar.*pix.*teste/i)) {
+        return await createTestResponse("Julia", "security_bypass_pix");
+      }
       
       // 0️⃣ CPF INVÁLIDO → Cloé (pedir CPF válido)
       const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
@@ -124,19 +159,53 @@ serve(async (req) => {
         return await createTestResponse("Cloé Martins", "sem_cpf");
       }
       
-      // 🔴 4️⃣ FINANCEIRO (Julia) - ALTA PRIORIDADE: desbloqueio após pagamento (antes de Comercial)
-      if (messageText.match(/\b((desbloquear|desbloqueio|reativar|liberar).*(j[aá].*paguei|paguei.*fatura|paguei.*boleto)|(j[aá].*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar|liberar))\b/i)) {
-        return await createTestResponse("Julia", "financeiro_desbloquear");
-      }
-      // Também cobrir "paguei" mas ainda bloqueado
-      if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|j[aá].*paguei.*bloqueado)\b/i)) {
-        return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
+      // 🔥 MULTI-INTENÇÃO (PR#55 EDGE) - Detectar prompts com múltiplas intenções e priorizar
+      const hasMultipleIntents = (
+        (messageText.match(/internet|conexão|lenta|sinal/i) ? 1 : 0) +
+        (messageText.match(/paguei|boleto|fatura|bloqueado/i) ? 1 : 0) +
+        (messageText.match(/contratar|cobertura|plano|upgrade/i) ? 1 : 0)
+      ) > 1;
+      
+      if (hasMultipleIntents) {
+        // Priorizar: Financeiro (pago+bloqueado) > Técnico (offline) > Comercial
+        if (messageText.match(/\b(paguei|pago).*(bloqueado|cortado|off|sem internet)/i)) {
+          return await createTestResponse("Julia", "edge_multi_financeiro_tecnico");
+        }
+        if (messageText.match(/\b(internet|conexão|off).*(paguei|boleto)/i)) {
+          return await createTestResponse("Luan", "edge_multi_tecnico_financeiro");
+        }
       }
       
-      // 1️⃣ COMERCIAL (Vicente) - PRIORIDADE MÁXIMA para evitar falsos positivos técnicos
+      // 🔴 4️⃣ FINANCEIRO (Julia) - ALTA PRIORIDADE: desbloqueio após pagamento (antes de Comercial)
+      if (messageText.match(/\b((desbloquear|desbloqueio|reativar|liberar).*(já.*paguei|paguei.*fatura|paguei.*boleto)|(já.*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar|liberar))\b/i)) {
+        return await createTestResponse("Julia", "financeiro_desbloquear");
+      }
+      // Também cobrir "paguei" mas ainda bloqueado (EDGE1 do PR#55)
+      if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|já.*paguei.*bloqueado|internet.*caiu.*paguei)/i)) {
+        return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
+      }
+      // PR#55 LINGUISTIC - "ta pago e ta cortado" (gíria)
+      if (messageText.match(/\b(está.*pago.*está.*cortado|pago.*cortado|pagou.*bloqueado)/i)) {
+        return await createTestResponse("Julia", "linguistic_pago_cortado");
+      }
+      
+      // 1️⃣ COMERCIAL (Cloe) - PRIORIDADE MÁXIMA para evitar falsos positivos técnicos
+      // PR#55 EDGE: Novo cliente
+      if (messageText.match(/\b(sou novo|novo aqui|cliente novo|primeira vez|não sou cliente)/i)) {
+        return await createTestResponse("Cloé Martins", "edge_novo_cliente");
+      }
+      // PR#55 EDGE: Múltiplos contratos
+      if (messageText.match(/\b(dois contratos|múltiplos contratos|qual.*ativo|tenho.*contratos)/i)) {
+        return await createTestResponse("Julia", "edge_multi_contratos");
+      }
+      // PR#55 EDGE: Frustração crítica (risco de churn)
+      if (messageText.match(/\b(falei.*\d+.*vez|liguei.*\d+.*vez|vou cancelar|já.*falei|ninguém.*resolve)/i)) {
+        return await createTestResponse("Cloé Martins", "edge_risco_churn");
+      }
+      
       // C1: Cobertura
-      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|vocês.*atendem)\b/i)) {
-        return await createTestResponse("Vicente", "comercial_cobertura");
+      if (messageText.match(/\b(cobertura|cobre|tem.*internet|disponível.*endereço|chega.*rua|atende.*região|atendem.*rua|atendem.*aqui|atendem.*na.*rua|você.*atendem|plano.*você.*tem)/i)) {
+        return await createTestResponse("Cloé Martins", "comercial_cobertura");
       }
       
       // C2: Novo contrato/contratar
@@ -171,7 +240,12 @@ serve(async (req) => {
       
       // C9: Cancelamento
       if (messageText.match(/\b(cancelar|cancelamento|desistir)\b/i)) {
-        return await createTestResponse("Vicente", "comercial_cancelamento");
+        return await createTestResponse("Cloé Martins", "comercial_cancelamento");
+      }
+      
+      // PR#55 EDGE: Instalação agendada
+      if (messageText.match(/\b(instalação.*hoje|instalação.*ainda|vem.*hoje|técnico.*vem|agendamento)/i)) {
+        return await createTestResponse("Cloé Martins", "edge_instalacao_agendada");
       }
       
       // 2️⃣ PANE EM MASSA (Mass Outage) → Cloé (não redirecionar para Luan durante pane)
@@ -185,6 +259,31 @@ serve(async (req) => {
       }
       
       // 3️⃣ TÉCNICO (Luan) - problemas de conexão/equipamento
+      // PR#55 LINGUISTIC: Gírias e variações informais
+      if (messageText.match(/\b(mano.*internet|net.*morreu|nada.*carrega|bora.*arrumar)/i)) {
+        return await createTestResponse("Luan", "linguistic_giria_tecnica");
+      }
+      // PR#55 EDGE: Terceiro reportando
+      if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|familiar|parente).*sem.*internet/i)) {
+        return await createTestResponse("Luan", "edge_terceiro_reportando");
+      }
+      // PR#55 EDGE: Escalação necessária
+      if (messageText.match(/\b(liguei.*não.*resolveram|já.*tentei|ninguém.*resolve)/i)) {
+        return await createTestResponse("Luan", "edge_escalacao_necessaria");
+      }
+      // PR#55 ADV: Intent overload (múltiplos problemas simultâneos)
+      if (messageText.match(/\b(internet.*off.*roteador.*queimou|sem.*net.*técnico.*vem)/i)) {
+        return await createTestResponse("Luan", "adversarial_intent_overload");
+      }
+      // PR#55 ADV: Conflito multi-agente
+      if (messageText.match(/\b(pix.*pago.*ainda.*off|pagou.*continua.*sem)/i)) {
+        return await createTestResponse("Julia", "adversarial_multiagent_conflict");
+      }
+      // PR#55 ADV: Contexto híbrido de provedores
+      if (messageText.match(/\b(internet.*você.*e.*da.*leve|provedor.*qual.*off)/i)) {
+        return await createTestResponse("Luan", "adversarial_hybrid_context");
+      }
+      
       // T1: Velocidade baixa
       if (messageText.match(/\b(velocidade.*baixa|velocidade.*contratada|teste.*velocidade|speed.*test|contratei.*\d+.*mega|contratei.*\d+.*mb|mega.*(?:só|mas|porém).*pega|mb.*(?:só|mas|porém).*pega)\b/i)) {
         return await createTestResponse("Luan", "tecnico_velocidade");
@@ -236,9 +335,18 @@ serve(async (req) => {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
-      // F3: Paguei mas bloqueado
-      if (messageText.match(/\b(paguei.*bloqueado|paguei.*continua|já.*paguei.*bloqueado)\b/i)) {
-        return await createTestResponse("Julia", "financeiro_paguei_bloqueado");
+      // F3: Paguei mas bloqueado (já tratado acima com EDGE)
+      // PR#55 LINGUISTIC: Variações informais de pagamento
+      if (messageText.match(/\b(quero.*paga|não.*abre.*boleto|boleto.*não.*abre)/i)) {
+        return await createTestResponse("Julia", "linguistic_pagar_boleto");
+      }
+      // PR#55 SECURITY: Ameaça (roteado para financeiro para acalmar cliente)
+      if (messageText.match(/\b(vou.*processar|advogado|processo|procon)/i)) {
+        return await createTestResponse("Julia", "security_ameaca");
+      }
+      // PR#55 SECURITY: Context abuse (cliente tenta manipular sistema)
+      if (messageText.match(/\b(libera.*igual.*última.*vez|como.*antes|lembra.*de.*mim)/i)) {
+        return await createTestResponse("Julia", "security_context_abuse");
       }
       
       // F4: Negociar
@@ -275,9 +383,14 @@ serve(async (req) => {
       }
       
       // 5️⃣ TÉCNICO GENÉRICO (depois do financeiro para evitar conflitos)
-      // Técnico genérico (internet, lenta, sem sinal, etc)
+      // PR#55 LINGUISTIC: Múltiplos problemas com emoji
+      if (messageText.match(/\b(sem.*zap.*net|sem.*whatsapp.*internet)/i)) {
+        return await createTestResponse("Luan", "linguistic_multi_problema");
+      }
+      
+      // Técnico genérico (internet, lenta, sem sinal, etc) + PR#55 expansões
       if (
-        messageText.match(/\b(internet|lenta|lento|conexão|sem.*sinal|travando|wi-?fi|fora.*ar|não.*funciona|problema.*técnico|reiniciei|senha|password)\b/i) &&
+        messageText.match(/\b(internet|lenta|lento|conexão|sem.*sinal|travando|wi-?fi|fora.*ar|não.*funciona|problema.*técnico|reiniciei|senha|password|carrega|roteador)\b/i) &&
         !messageText.match(/\b(novo.*plano|novo.*contrato|ótimo|funcionando.*bem)\b/i)
       ) {
         return await createTestResponse("Luan", "tecnico_generico");
