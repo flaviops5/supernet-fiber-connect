@@ -407,10 +407,10 @@ const initialPhases: Phase[] = [
       "IDE performance melhorada"
     ],
     tasks: [
-      { id: "11.1", title: "Eliminar 'any' em components/", status: "in-progress", estimatedHours: 3 },
-      { id: "11.2", title: "Eliminar 'any' em hooks/", status: "pending", estimatedHours: 2 },
-      { id: "11.3", title: "Eliminar 'any' em utils/", status: "pending", estimatedHours: 2 },
-      { id: "11.4", title: "Validar com ESLint @typescript-eslint/no-explicit-any", status: "pending", estimatedHours: 1 }
+      { id: "11.1", title: "Eliminar 'any' em components/", status: "completed", estimatedHours: 3 },
+      { id: "11.2", title: "Eliminar 'any' em hooks/", status: "completed", estimatedHours: 2 },
+      { id: "11.3", title: "Eliminar 'any' em utils/", status: "completed", estimatedHours: 2 },
+      { id: "11.4", title: "Validar com ESLint @typescript-eslint/no-explicit-any", status: "completed", estimatedHours: 1 }
     ],
     dependencies: ["phase-10"]
   },

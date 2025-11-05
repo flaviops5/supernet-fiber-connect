@@ -13,11 +13,18 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Shield, Zap } from "lucide-react";
 
+interface FeatureFlagConfig {
+  flag_key: string;
+  enabled: boolean;
+  rollout_percentage: number;
+  updated_at: string;
+}
+
 export function FeatureFlagControl() {
   const [enabled, setEnabled] = useState(true);
   const [rollout, setRollout] = useState(100);
   const [loading, setLoading] = useState(false);
-  const [currentConfig, setCurrentConfig] = useState<any>(null);
+  const [currentConfig, setCurrentConfig] = useState<FeatureFlagConfig | null>(null);
 
   useEffect(() => {
     fetchCurrentConfig();

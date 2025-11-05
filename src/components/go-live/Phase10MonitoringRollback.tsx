@@ -45,10 +45,21 @@ interface Alert {
   resolved: boolean;
 }
 
+interface SystemHealthCheck {
+  status: 'healthy' | 'warning' | 'critical';
+  message: string;
+  [key: string]: unknown;
+}
+
+interface SystemHealth {
+  checks: Record<string, SystemHealthCheck>;
+  [key: string]: unknown;
+}
+
 export function Phase10MonitoringRollback() {
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [systemHealth, setSystemHealth] = useState<any>(null);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   
   const [metrics, setMetrics] = useState<MetricData[]>([
@@ -149,10 +160,11 @@ export function Phase10MonitoringRollback() {
       
       setActiveAlerts(newAlerts);
       
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro ao buscar métricas",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -423,7 +435,7 @@ export function Phase10MonitoringRollback() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {systemHealth?.checks && Object.entries(systemHealth.checks).map(([key, check]: [string, any]) => (
+                {systemHealth?.checks && Object.entries(systemHealth.checks).map(([key, check]: [string, SystemHealthCheck]) => (
                   <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {check.status === 'healthy' ? (

@@ -26,13 +26,13 @@ export function ClientsByRegionTable() {
       if (error) throw error;
       
       // Map the data to AffectedCustomer type
-      const customers: AffectedCustomer[] = (data || []).map((row: any) => ({
+      const customers: AffectedCustomer[] = (data || []).map((row: Partial<AffectedCustomer>) => ({
         cidade: row.cidade || "Desconhecido",
         bairro: row.bairro || null,
         nome: row.nome || null,
         cpf: row.cpf || null,
         ixc_client_id: row.ixc_client_id || null,
-        last_event: row.last_event,
+        last_event: row.last_event || new Date().toISOString(),
       }));
       
       setItems(customers);

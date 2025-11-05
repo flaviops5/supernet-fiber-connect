@@ -223,7 +223,7 @@ export function WhatsAppApiTester() {
               <div className="space-y-2">
                 <Label>Instâncias encontradas: {instances.length}</Label>
                 <div className="max-h-48 overflow-auto space-y-2">
-                  {instances.map((instance: any, idx: number) => (
+                  {instances.map((instance: { instanceName?: string; name?: string; state?: string; status?: string }, idx: number) => (
                     <div key={idx} className="p-2 border rounded text-sm">
                       <div><strong>{instance.instanceName || instance.name}</strong></div>
                       <div className="text-xs text-muted-foreground">

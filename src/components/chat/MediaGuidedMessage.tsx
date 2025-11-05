@@ -6,8 +6,12 @@ import { Loader2, AlertCircle, Play, Volume2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Tipo temporário (TODO: Migrar para @/types/media.types)
-type MediaAssetWithUrl = any;
+interface MediaAssetWithUrl {
+  kind: 'video' | 'audio';
+  url: string;
+  description?: string;
+  duration_seconds?: number;
+}
 
 interface MediaGuidedMessageProps {
   step: string;

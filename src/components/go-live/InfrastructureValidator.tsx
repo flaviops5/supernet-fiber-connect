@@ -12,7 +12,7 @@ interface ValidationResult {
   check: string;
   status: "pass" | "fail" | "warning";
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export function InfrastructureValidator() {
@@ -40,7 +40,7 @@ export function InfrastructureValidator() {
           details: prodError
         }]);
       } else {
-        const validationResults: ValidationResult[] = prodReadiness.results.map((r: any) => ({
+        const validationResults: ValidationResult[] = prodReadiness.results.map((r: { category: string; check: string; status: "pass" | "fail" | "warning"; message: string; details?: Record<string, unknown> }) => ({
           category: r.category,
           check: r.check,
           status: r.status,
@@ -63,12 +63,12 @@ export function InfrastructureValidator() {
           message: healthError.message
         }]);
       } else {
-        const healthResults: ValidationResult[] = Object.entries(healthData.checks).map(([key, value]: [string, any]) => ({
+        const healthResults: ValidationResult[] = Object.entries(healthData.checks).map(([key, value]: [string, { status: string; message?: string }]) => ({
           category: "System Health",
           check: key,
           status: value.status === "healthy" ? "pass" : value.status === "warning" ? "warning" : "fail",
           message: value.message || "OK",
-          details: value
+          details: value as Record<string, unknown>
         }));
         setResults(prev => [...prev, ...healthResults]);
       }
@@ -111,14 +111,15 @@ export function InfrastructureValidator() {
         toast.success("Validação concluída com sucesso!");
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast.error("Erro ao executar validação");
       console.error("Validation error:", error);
       setResults(prev => [...prev, {
         category: "System",
         check: "Validation Execution",
         status: "fail",
-        message: error.message || "Erro desconhecido"
+        message: errorMessage
       }]);
       setOverallStatus("fail");
     } finally {

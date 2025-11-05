@@ -14,7 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { 
-  MediaAsset, 
+  MediaAsset,
+  MediaContext,
   logMediaUsage, 
   recordMediaFeedback,
   checkMediaAvailability 
@@ -26,7 +27,7 @@ interface MediaGuidedMessageProps {
   text: string;
   conversationId: string;
   agentName: string;
-  mediaContext: string;
+  mediaContext: MediaContext;
   showFeedback?: boolean;
 }
 
@@ -51,7 +52,7 @@ export function MediaGuidedMessage({
           conversation_id: conversationId,
           agent_name: agentName,
           media_type: mediaAsset.type,
-          media_context: mediaContext as any,
+          media_context: mediaContext,
           media_url: mediaAsset.url,
           displayed_successfully: true
         });
@@ -64,7 +65,7 @@ export function MediaGuidedMessage({
           conversation_id: conversationId,
           agent_name: agentName,
           media_type: mediaAsset.type,
-          media_context: mediaContext as any,
+          media_context: mediaContext,
           media_url: mediaAsset.url,
           displayed_successfully: false
         });
@@ -73,7 +74,7 @@ export function MediaGuidedMessage({
   }, [mediaAsset.url, conversationId, agentName, mediaAsset.type, mediaContext]);
 
   const handleFeedback = async (helped: boolean) => {
-    await recordMediaFeedback(conversationId, mediaContext as any, helped);
+    await recordMediaFeedback(conversationId, mediaContext, helped);
     setFeedbackGiven(true);
   };
 

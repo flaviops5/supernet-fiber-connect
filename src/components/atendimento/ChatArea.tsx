@@ -245,7 +245,7 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
                     text={message.content}
                     conversationId={conversationId || ''}
                     agentName={message.sender_name}
-                    mediaContext={message.media_context}
+                    mediaContext={message.media_context as MediaContext}
                     showFeedback={true}
                   />
                 </div>

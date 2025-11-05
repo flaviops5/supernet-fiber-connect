@@ -29,7 +29,7 @@ interface FileCategory {
   filesWithAny: number;
   anyCount: number;
   status: 'pending' | 'in-progress' | 'completed';
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export function Phase11TypeScriptZeroAny() {
