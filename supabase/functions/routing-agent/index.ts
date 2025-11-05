@@ -170,7 +170,7 @@ serve(async (req) => {
       }
       
       // 🔴 F5: FINANCEIRO (Julia) - DESBLOQUEIO (MÁXIMA PRIORIDADE antes de qualquer EDGE)
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar|reativação)/i)) {
+      if (messageText.match(/\b(desbloque\S*|reativ\S*|liber\S*)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
@@ -353,7 +353,7 @@ serve(async (req) => {
       
       // 4️⃣ FINANCEIRO (Julia) - COLOCAR ANTES de técnico genérico para capturar "já paguei"
       // F5: Desbloquear (priorizar "já paguei a fatura") → Julia
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar)/i)) {
+      if (messageText.match(/\b(desbloque\S*|reativ\S*|liber\S*)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
@@ -377,7 +377,7 @@ serve(async (req) => {
       }
       
       // F5: Desbloquear genérico (sem "já paguei")
-      if (messageText.match(/\b(desbloquear|desbloqueio|reativar)\b/i)) {
+      if (messageText.match(/\b(desbloque\S*|reativ\S*|liber\S*)\b/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       
