@@ -190,7 +190,7 @@ serve(async (req) => {
       }
       
       // PR#55 EDGE4: Terceiro reportando
-      if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|meu.*filho|familiar|parente).*(?:sem|ta sem|tá sem).*(internet|net)/i)) {
+      if (messageText.match(/\b(minha.*vó|meu.*pai|minha.*mãe|meu.*filho|familiar|parente).*(sem|ta|tá).*(net|internet)/i)) {
         return await createTestResponse("Luan", "edge_terceiro_reportando");
       }
       
@@ -200,7 +200,7 @@ serve(async (req) => {
       }
       
       // PR#55 EDGE1: Conflito pago/bloqueado → Luan (técnico investiga após pagamento)
-      if (messageText.match(/\b(internet.*caiu.*(?:mas|e).*(?:já|ja).*paguei|paguei.*(?:boleto|ontem).*(?:mas|e).*(?:caiu|off)|pagou.*continua.*sem|pago.*e.*bloqueado)/i)) {
+      if (messageText.match(/\b(internet.*caiu.*(?:mas|e).*(?:já|ja).*paguei|(?:já|ja).*paguei.*(?:boleto|ontem|fatura).*(?:mas|e)?.*(?:internet.*caiu)?|pagou.*continua.*sem|pago.*e.*bloqueado)/i)) {
         return await createTestResponse("Luan", "edge_conflito_pago_bloqueado");
       }
       
