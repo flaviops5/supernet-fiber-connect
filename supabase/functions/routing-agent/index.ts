@@ -141,7 +141,12 @@ serve(async (req) => {
         return await createTestResponse("Julia", "security_bypass_pix");
       }
       
-      // 0️⃣ SEC5: CPF INVÁLIDO → Julia (validação de segurança)
+      // F9: Cliente inexistente no sistema → Cloé (validação e busca alternativa)
+      if (messageText.match(/\b(cliente.*não.*encontrado|cpf.*não.*cadastrado|não.*consta.*sistema|não.*está.*cadastrado)/i)) {
+        return await createTestResponse("Cloé Martins", "cliente_inexistente");
+      }
+      
+      // C10/F9: CPF INVÁLIDO em contexto comercial/financeiro → Cloé (validação e orientação)
       const hasCPF = messageText.match(/\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/);
       if (hasCPF) {
         const cpfNumbers = messageText.replace(/\D/g, '');
@@ -150,6 +155,11 @@ serve(async (req) => {
           '66666666666', '77777777777', '88888888888', '99999999999', '00000000000'
         ];
         if (invalidPatterns.some(pattern => cpfNumbers === pattern)) {
+          // Se tem contexto comercial/financeiro normal, Cloé valida
+          if (messageText.match(/\b(consultar|contratar|fatura|boleto|plano|quero)/i)) {
+            return await createTestResponse("Cloé Martins", "cpf_invalido_contexto_normal");
+          }
+          // Apenas contexto de segurança/malicioso vai para Julia (SEC5)
           return await createTestResponse("Julia", "security_cpf_invalido");
         }
       }
@@ -157,11 +167,6 @@ serve(async (req) => {
       // Sem CPF detectado → Cloé
       if (messageText.match(/não sei meu cpf|sem cpf|esqueci o cpf/i)) {
         return await createTestResponse("Cloé Martins", "sem_cpf");
-      }
-      
-      // F9: Cliente inexistente no sistema → Cloé (validação e busca alternativa)
-      if (messageText.match(/\b(cliente.*não.*encontrado|cpf.*não.*cadastrado|não.*consta.*sistema|não.*está.*cadastrado)/i)) {
-        return await createTestResponse("Cloé Martins", "cliente_inexistente");
       }
       
       // 🔥 MULTI-INTENÇÃO (PR#55 EDGE) - Detectar prompts com múltiplas intenções e priorizar
