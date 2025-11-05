@@ -297,7 +297,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-6",
-    title: "FASE 6: Teste End-to-End Completo",
+    title: "✅ FASE 6: Teste End-to-End Completo",
     description: "Validar todos os fluxos críticos integrados",
     totalHours: 4,
     completionCriteria: [
@@ -307,10 +307,10 @@ const initialPhases: Phase[] = [
       "Novo contrato → campanha → follow-up"
     ],
     tasks: [
-      { id: "6.1", title: "Cenário: Cliente bloqueado → Julia desbloqueia", status: "pending", estimatedHours: 1 },
-      { id: "6.2", title: "Cenário: Cliente offline → Luan diagnostica", status: "pending", estimatedHours: 1 },
-      { id: "6.3", title: "Cenário: Queda massa → notificações automáticas", status: "pending", estimatedHours: 1 },
-      { id: "6.4", title: "Validar integridade de logs e métricas", status: "pending", estimatedHours: 1 }
+      { id: "6.1", title: "✅ Cenário: Cliente bloqueado → Julia desbloqueia", status: "completed", estimatedHours: 1 },
+      { id: "6.2", title: "✅ Cenário: Cliente offline → Luan diagnostica", status: "completed", estimatedHours: 1 },
+      { id: "6.3", title: "✅ Cenário: Queda massa → notificações automáticas", status: "completed", estimatedHours: 1 },
+      { id: "6.4", title: "✅ Validar integridade de logs e métricas", status: "completed", estimatedHours: 1 }
     ],
     dependencies: ["phase-2", "phase-3", "phase-4", "phase-5"]
   },
