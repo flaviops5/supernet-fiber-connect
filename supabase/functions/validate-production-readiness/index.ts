@@ -26,17 +26,21 @@ Deno.serve(createProtectedHandler({
       throw new Error('Usuário não autenticado');
     }
     
-    // Verificar se é admin
-    const { data: profile } = await supabase
-      .from('profiles')
+    // Verificar se é admin (role está na tabela user_roles por segurança)
+    const { data: userRole, error: roleError } = await supabase
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
-  
-  if (profile?.role !== 'admin') {
-    logger.warn('Tentativa de acesso não autorizado', { user_id: user.id });
-    throw new Error('Acesso negado: apenas administradores podem executar esta validação');
-  }
+    
+    if (roleError || !userRole || userRole.role !== 'admin') {
+      logger.warn('Tentativa de acesso não autorizado', { 
+        user_id: user.id, 
+        has_role: !!userRole,
+        role: userRole?.role 
+      });
+      throw new Error('Acesso negado: apenas administradores podem executar esta validação');
+    }
   logger.info('Executando validação de prontidão para produção');
 
   const results: ValidationResult[] = [];
