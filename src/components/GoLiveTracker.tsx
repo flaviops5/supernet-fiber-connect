@@ -280,7 +280,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-5",
-    title: "FASE 5: Auto-Reboot - Validação e Tune",
+    title: "✅ FASE 5: Auto-Reboot - Validação e Tune",
     description: "Validar reboot automático de ONUs travadas",
     totalHours: 3,
     completionCriteria: [
@@ -289,9 +289,9 @@ const initialPhases: Phase[] = [
       "Logs de reboot registrados"
     ],
     tasks: [
-      { id: "5.1", title: "Validar endpoint GPON API", status: "pending", estimatedHours: 1 },
-      { id: "5.2", title: "Configurar auto_reboot_settings (thresholds)", status: "pending", estimatedHours: 1, dependencies: ["5.1"] },
-      { id: "5.3", title: "QA: forçar reboot e validar logs", status: "pending", estimatedHours: 1, dependencies: ["5.2"] }
+      { id: "5.1", title: "✅ Validar endpoint GPON API", status: "completed", estimatedHours: 1 },
+      { id: "5.2", title: "✅ Configurar auto_reboot_settings (thresholds)", status: "completed", estimatedHours: 1, dependencies: ["5.1"] },
+      { id: "5.3", title: "✅ QA: forçar reboot e validar logs", status: "completed", estimatedHours: 1, dependencies: ["5.2"] }
     ],
     dependencies: ["phase-1"]
   },
