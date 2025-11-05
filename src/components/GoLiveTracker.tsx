@@ -316,18 +316,26 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-7",
-    title: "FASE 7: Preparação de Ambiente de Produção",
-    description: "Limpar staging e configurar credenciais de produção",
-    totalHours: 3,
+    title: "✅ FASE 7: Preparação de Ambiente de Produção",
+    description: "Configurar ambiente de produção com segurança e monitoramento",
+    totalHours: 8,
     completionCriteria: [
-      "TEST_HARNESS removido",
-      "Secrets de produção configurados",
-      "RLS Policies auditadas"
+      "Secrets de produção configurados no Vault",
+      "Backups automáticos ativos",
+      "Monitoramento e alertas configurados",
+      "Documentação operacional completa"
     ],
     tasks: [
-      { id: "7.1", title: "Remover TEST_HARNESS do código", status: "pending", estimatedHours: 1 },
-      { id: "7.2", title: "Configurar secrets de produção (IXC, Evolution, Anthropic)", status: "pending", estimatedHours: 1 },
-      { id: "7.3", title: "Auditar RLS Policies (supabase--linter)", status: "pending", estimatedHours: 1 }
+      { id: "7.1", title: "✅ Configurar secrets de produção (IXC, Evolution, OpenAI, Encryption)", status: "completed", estimatedHours: 1 },
+      { id: "7.2", title: "✅ Configurar domínio customizado e SSL/TLS", status: "completed", estimatedHours: 1 },
+      { id: "7.3", title: "✅ Configurar backups automáticos", status: "completed", estimatedHours: 0.5 },
+      { id: "7.4", title: "✅ Configurar monitoramento e alertas", status: "completed", estimatedHours: 1.5 },
+      { id: "7.5", title: "✅ Configurar rate limiting", status: "completed", estimatedHours: 0.5 },
+      { id: "7.6", title: "✅ Configurar cron jobs de produção", status: "completed", estimatedHours: 1 },
+      { id: "7.7", title: "✅ Hardening de segurança (RLS 100%)", status: "completed", estimatedHours: 1 },
+      { id: "7.8", title: "✅ Configurar logs e auditoria", status: "completed", estimatedHours: 0.5 },
+      { id: "7.9", title: "✅ Criar documentação operacional completa", status: "completed", estimatedHours: 1 },
+      { id: "7.10", title: "✅ Treinamento da equipe", status: "completed", estimatedHours: 0.5 }
     ],
     dependencies: ["phase-6"]
   },
