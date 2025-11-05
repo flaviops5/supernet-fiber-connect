@@ -210,7 +210,8 @@ serve(async (req) => {
       }
       
       // 🔴 4️⃣ FINANCEIRO (Julia) - ALTA PRIORIDADE: desbloqueio após pagamento (antes de Comercial)
-      if (messageText.match(/\b((desbloquear|desbloqueio|reativar|liberar).*(já.*paguei|paguei.*fatura|paguei.*boleto)|(já.*paguei|paguei.*fatura|paguei.*boleto).*(desbloquear|desbloqueio|reativar|liberar))\b/i)) {
+      // F5: Desbloqueio simples OU com contexto de pagamento
+      if (messageText.match(/\b(desbloquear|desbloqueio|reativar|liberar)/i)) {
         return await createTestResponse("Julia", "financeiro_desbloquear");
       }
       // Também cobrir "paguei" mas ainda bloqueado (EDGE1 do PR#55)
