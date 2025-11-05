@@ -244,7 +244,7 @@ const initialPhases: Phase[] = [
   },
   {
     id: "phase-3",
-    title: "FASE 3: Mass Outage - Automação Completa",
+    title: "✅ FASE 3: Mass Outage - Automação Completa",
     description: "Configurar detecção e notificação automática de quedas",
     totalHours: 5,
     completionCriteria: [
@@ -254,10 +254,10 @@ const initialPhases: Phase[] = [
       "Tickets IXC criados automaticamente"
     ],
     tasks: [
-      { id: "3.1", title: "Criar Supabase Cron Job para detect-mass-outage", status: "pending", estimatedHours: 2 },
-      { id: "3.2", title: "Validar mass-outage-executor (notificações)", status: "pending", estimatedHours: 1.5, dependencies: ["3.1"] },
-      { id: "3.3", title: "Validar criação de tickets IXC", status: "pending", estimatedHours: 1, dependencies: ["3.2"] },
-      { id: "3.4", title: "Teste completo: simular → detectar → notificar", status: "pending", estimatedHours: 0.5, dependencies: ["3.3"] }
+      { id: "3.1", title: "✅ Criar Supabase Cron Job para detect-mass-outage", status: "completed", estimatedHours: 2 },
+      { id: "3.2", title: "✅ Validar mass-outage-executor (notificações)", status: "completed", estimatedHours: 1.5, dependencies: ["3.1"] },
+      { id: "3.3", title: "✅ Validar criação de tickets IXC", status: "completed", estimatedHours: 1, dependencies: ["3.2"] },
+      { id: "3.4", title: "✅ Teste completo: simular → detectar → notificar", status: "completed", estimatedHours: 0.5, dependencies: ["3.3"] }
     ],
     dependencies: ["phase-1"]
   },
