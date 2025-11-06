@@ -486,24 +486,27 @@ serve(async (req) => {
         throw routingError;
       }
 
-      // Debug COMPLETO da resposta RAW
-      logger.info('📨 Raw agent response', { 
-        routingResponse: JSON.stringify(routingResponse),
-        type: typeof routingResponse,
-        isNull: routingResponse === null,
-        isUndefined: routingResponse === undefined
-      });
+      // Parse JSON se necessário
+      let parsedResponse = routingResponse;
+      if (typeof routingResponse === 'string') {
+        try {
+          parsedResponse = JSON.parse(routingResponse);
+          logger.info('📨 JSON parsed from string response');
+        } catch (e) {
+          logger.error('Failed to parse routing response', { error: e });
+          throw new Error('Invalid routing agent response format');
+        }
+      }
 
       logger.info('📨 Agent response received', { 
-        hasMessage: !!routingResponse?.message,
-        messageType: typeof routingResponse?.message,
-        messageValue: routingResponse?.message,
-        responseKeys: routingResponse ? Object.keys(routingResponse) : [],
-        fullResponse: routingResponse
+        hasMessage: !!parsedResponse?.message,
+        messageLength: parsedResponse?.message?.length,
+        responseKeys: Object.keys(parsedResponse || {}),
+        needsCPF: parsedResponse?.needsCPF
       });
 
       // Salvar e enviar mensagem apenas se houver conteúdo
-      if (routingResponse.message && routingResponse.message.trim() !== '') {
+      if (parsedResponse.message && parsedResponse.message.trim() !== '') {
         // Salvar mensagem do agente ANTES de tentar enviar
         const { error: saveAgentMsgError } = await supabase
           .from('conversation_messages')
@@ -511,7 +514,7 @@ serve(async (req) => {
             conversation_id: conversationId,
             sender_type: 'agent',
             sender_name: 'Cloé Martins',
-            content: routingResponse.message,
+            content: parsedResponse.message,
             ai_suggestion: true
           });
 
@@ -526,7 +529,7 @@ serve(async (req) => {
       // Encerra quando:
       // 1. autoClose explícito = true (rate limit, transferência para vendas por falha de CPF)
       // 2. Transferiu para agente especializado que já respondeu (Julia/Luan já atendeu)
-      const shouldAutoClose = routingResponse.autoClose === true;
+      const shouldAutoClose = parsedResponse.autoClose === true;
       
       if (shouldAutoClose) {
         logger.info('✅ Auto-closing conversation based on agent response');
@@ -537,8 +540,8 @@ serve(async (req) => {
             resolved_at: new Date().toISOString(),
             metadata: {
               auto_closed: true,
-              close_reason: routingResponse.rateLimited ? 'rate_limited' : 
-                          routingResponse.routeReason === 'cpf_validation_failed' ? 'transferred_sales' :
+              close_reason: parsedResponse.rateLimited ? 'rate_limited' : 
+                          parsedResponse.routeReason === 'cpf_validation_failed' ? 'transferred_sales' :
                           'info_provided'
             }
           })
@@ -546,13 +549,13 @@ serve(async (req) => {
       }
       
       // 📊 Se transferiu para agente especializado (Julia/Luan), atualizar o agente responsável mas manter conversa aberta
-      if (routingResponse.autoRouted && !shouldAutoClose) {
+      if (parsedResponse.autoRouted && !shouldAutoClose) {
         const agentDepartmentMap = {
           'support_financial': 'financeiro',
           'support_tech': 'tecnico'
         };
         
-        const department = agentDepartmentMap[routingResponse.agent];
+        const department = agentDepartmentMap[parsedResponse.agent];
         if (department) {
           logger.info('📍 Updating conversation department', { department });
           await supabase
@@ -567,11 +570,11 @@ serve(async (req) => {
 
       // Tentar enviar resposta via WhatsApp (apenas se houver mensagem)
       let messageSent = false;
-      if (routingResponse.message && routingResponse.message.trim() !== '') {
+      if (parsedResponse.message && parsedResponse.message.trim() !== '') {
         const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
           body: {
             phone: customerPhone,
-            message: routingResponse.message
+            message: parsedResponse.message
           }
         });
 
