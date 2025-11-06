@@ -488,19 +488,24 @@ serve(async (req) => {
 
       logger.info('📨 Agent response received', { hasMessage: !!routingResponse?.message });
 
-      // Salvar mensagem do agente ANTES de tentar enviar
-      const { error: saveAgentMsgError } = await supabase
-        .from('conversation_messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_type: 'agent',
-          sender_name: 'Cloé Martins',
-          content: routingResponse.message,
-          ai_suggestion: true
-        });
+      // Salvar e enviar mensagem apenas se houver conteúdo
+      if (routingResponse.message && routingResponse.message.trim() !== '') {
+        // Salvar mensagem do agente ANTES de tentar enviar
+        const { error: saveAgentMsgError } = await supabase
+          .from('conversation_messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_type: 'agent',
+            sender_name: 'Cloé Martins',
+            content: routingResponse.message,
+            ai_suggestion: true
+          });
 
-      if (saveAgentMsgError) {
-        logger.error('⚠️ Error saving agent message', { error: saveAgentMsgError });
+        if (saveAgentMsgError) {
+          logger.error('⚠️ Error saving agent message', { error: saveAgentMsgError });
+        }
+      } else {
+        logger.info('⏭️ Skipping message save (empty or handled by specialist agent)');
       }
 
       // 🔄 AUTO-ENCERRAMENTO: Verificar se conversa deve ser encerrada
@@ -546,21 +551,26 @@ serve(async (req) => {
         }
       }
 
-      // Tentar enviar resposta via WhatsApp (não crítico)
+      // Tentar enviar resposta via WhatsApp (apenas se houver mensagem)
       let messageSent = false;
-      const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
-        body: {
-          phone: customerPhone,
-          message: routingResponse.message || 'Olá! Em breve nossa equipe entrará em contato.'
-        }
-      });
+      if (routingResponse.message && routingResponse.message.trim() !== '') {
+        const { error: sendError } = await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            phone: customerPhone,
+            message: routingResponse.message
+          }
+        });
 
-      if (sendError) {
-        logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendError });
-        messageSent = false;
+        if (sendError) {
+          logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendError });
+          messageSent = false;
+        } else {
+          logger.info('✅ WhatsApp message sent successfully');
+          messageSent = true;
+        }
       } else {
-        logger.info('✅ WhatsApp message sent successfully');
-        messageSent = true;
+        logger.info('⏭️ Skipping WhatsApp send (message handled by specialist agent)');
+        messageSent = true; // Considera enviado pois foi tratado pelo agente
       }
 
       return new Response(

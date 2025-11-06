@@ -118,6 +118,7 @@ serve(async (req) => {
             testHarness: true,
             routeReason: reason,
             confidence: 0.95,
+            message: "" // Test harness não envia mensagem real
           }),
           { headers: corsHeaders, status: 200 },
         );
@@ -489,7 +490,12 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
 
       logger.info("Solicitação de CPF enviada");
       return new Response(
-        JSON.stringify({ ok: true, protocol, needsCPF: true }),
+        JSON.stringify({ 
+          ok: true, 
+          protocol, 
+          needsCPF: true,
+          message: askCPFMessage
+        }),
         { headers: corsHeaders, status: 200 }
       );
     }
@@ -623,7 +629,13 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
               // Não transferir para Luan - sucesso!
               logger.info("Reboot bem-sucedido - cliente voltou online");
               return new Response(
-                JSON.stringify({ ok: true, protocol, targetDepartment: "cloe", reboot_success: true }),
+                JSON.stringify({ 
+                  ok: true, 
+                  protocol, 
+                  targetDepartment: "cloe", 
+                  reboot_success: true,
+                  message: "✅ Pronto! Seu equipamento voltou online!\n\nTesta aí pra mim? Consegue navegar?"
+                }),
                 { headers: corsHeaders, status: 200 }
               );
             }
@@ -686,7 +698,12 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
       
       logger.info("Roteamento concluído", { protocol, targetDepartment });
       return new Response(
-        JSON.stringify({ ok: true, protocol, targetDepartment }),
+        JSON.stringify({ 
+          ok: true, 
+          protocol, 
+          targetDepartment,
+          message: "" // Mensagem será gerada pelo agente especializado
+        }),
         { headers: corsHeaders, status: 200 }
       );
     }
@@ -778,7 +795,12 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });
     return new Response(
-      JSON.stringify({ ok: true, protocol, targetDepartment }),
+      JSON.stringify({ 
+        ok: true, 
+        protocol, 
+        targetDepartment,
+        message: transferMessage
+      }),
       { headers: corsHeaders, status: 200 }
     );
   } catch (err) {
