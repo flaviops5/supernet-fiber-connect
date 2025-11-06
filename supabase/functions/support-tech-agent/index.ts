@@ -1469,10 +1469,10 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       const lastClarificationStep = (currentConversation?.metadata as any)?.last_clarification_step;
       
       // Se já tentou clarificar 2x no mesmo step → transferir para humano
-      if (clarificationAttempts >= 2 && lastClarificationStep === flowState) {
+      if (clarificationAttempts >= 2 && lastClarificationStep === continueFlowState) {
         logger.info("⚠️ Limite de clarificações atingido", {
           attempts: clarificationAttempts,
-          step: flowState
+          step: continueFlowState
         });
         
         responseMessage = `${customerName}, estou tendo dificuldade em entender suas respostas. 😅\n\nVou te transferir para um atendente humano que pode te ajudar melhor!\n\nSó um momento! ⏳`;
@@ -1513,14 +1513,15 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
       const currentMessage = message.toLowerCase();
+      const lastUserMessage = message;
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
       // Detectar Cenário A pelo flowState (mais confiável que scenario)
-      const isCenarioA = (typeof flowState === "string" && flowState.startsWith("cenario_a")) || scenario === "A";
+      const isCenarioA = (typeof continueFlowState === "string" && continueFlowState.startsWith("cenario_a")) || scenario === "A";
       
-      if (isCenarioA && flowState) {
+      if (isCenarioA && continueFlowState) {
         logger.info("Processando Cenário A - Fluxo de Energia", { 
-          flowState,
+          flowState: continueFlowState,
           scenario,
           approvedVariations: approvedExamples.length || 0,
           context: "Seguindo protocolo de energia com variações aprovadas como referência"
