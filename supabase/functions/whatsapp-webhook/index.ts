@@ -518,22 +518,13 @@ serve(async (req) => {
 
           let messageSent = false;
           if (reply && reply.trim() !== '') {
-            const { error: saveErr } = await supabase
-              .from('conversation_messages')
-              .insert({
-                conversation_id: conversationId,
-                sender_type: 'agent',
-                sender_name: 'Luan Silva',
-                content: reply,
-                ai_suggestion: true
-              });
-            if (saveErr) logger.error('⚠️ Error saving agent message', { error: saveErr });
-
+            // ✅ NÃO salvar mensagem - o support-tech-agent já salvou
+            // Apenas enviar via WhatsApp
             const { error: sendErr } = await supabase.functions.invoke('send-whatsapp-message', {
               body: { phone: customerPhone, message: reply }
             });
             if (sendErr) {
-              logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendErr });
+              logger.error('⚠️ Failed to send WhatsApp message', { error: sendErr });
             } else {
               logger.info('✅ WhatsApp message sent successfully');
               messageSent = true;
@@ -567,22 +558,13 @@ serve(async (req) => {
 
           let messageSent = false;
           if (reply && reply.trim() !== '') {
-            const { error: saveErr } = await supabase
-              .from('conversation_messages')
-              .insert({
-                conversation_id: conversationId,
-                sender_type: 'agent',
-                sender_name: 'Julia Santos',
-                content: reply,
-                ai_suggestion: true
-              });
-            if (saveErr) logger.error('⚠️ Error saving agent message', { error: saveErr });
-
+            // ✅ NÃO salvar mensagem - o support-financial-agent já salvou
+            // Apenas enviar via WhatsApp
             const { error: sendErr } = await supabase.functions.invoke('send-whatsapp-message', {
               body: { phone: customerPhone, message: reply }
             });
             if (sendErr) {
-              logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendErr });
+              logger.error('⚠️ Failed to send WhatsApp message', { error: sendErr });
             } else {
               logger.info('✅ WhatsApp message sent successfully');
               messageSent = true;
