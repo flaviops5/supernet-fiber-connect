@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     // Obter credenciais da Evolution API (nomes corretos conforme documentação)
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
+    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_BASE_URL')?.replace(/\/+$/, ''); // Remove trailing slashes
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
     const evolutionInstance = 'SDR2'; // Hardcoded conforme padrão do sistema
 
