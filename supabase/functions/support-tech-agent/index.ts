@@ -1516,7 +1516,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
       // Detectar Cenário A pelo flowState (mais confiável que scenario)
-      const isCenarioA = flowState?.startsWith("cenario_a") || scenario === "A";
+      const isCenarioA = (typeof flowState === "string" && flowState.startsWith("cenario_a")) || scenario === "A";
       
       if (isCenarioA && flowState) {
         logger.info("Processando Cenário A - Fluxo de Energia", { 
