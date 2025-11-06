@@ -477,6 +477,111 @@ serve(async (req) => {
         }).catch(err => logger.error('Auto-tag error', { error: err }));
       }
 
+      // Se já existe um departamento definido para a conversa, envie diretamente ao agente especializado
+      let currentDepartment: string | null = existingConversation?.department ?? null;
+      if (!currentDepartment && conversationId) {
+        const { data: convDept } = await supabase
+          .from('conversations')
+          .select('department')
+          .eq('id', conversationId)
+          .maybeSingle();
+        currentDepartment = convDept?.department ?? null;
+      }
+
+      // Roteamento direto para agentes especializados quando aplicável
+      if (currentDepartment === 'tecnico') {
+        logger.info('🤖 Routing directly to support-tech-agent (Luan)', { conversationId });
+        const { data: techResponse, error: techError } = await supabase.functions.invoke('support-tech-agent', {
+          body: {
+            conversation_id: conversationId,
+            message: messageContent,
+            attachments: attachments.length > 0 ? attachments : undefined
+          }
+        });
+        if (techError) {
+          logger.error('Support-tech-agent error', { error: techError });
+          throw techError;
+        }
+        const parsed = typeof techResponse === 'string' ? JSON.parse(techResponse) : techResponse;
+        const reply = parsed?.message || '';
+
+        let messageSent = false;
+        if (reply && reply.trim() !== '') {
+          const { error: saveErr } = await supabase
+            .from('conversation_messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_name: 'Luan Silva',
+              content: reply,
+              ai_suggestion: true
+            });
+          if (saveErr) logger.error('⚠️ Error saving agent message', { error: saveErr });
+
+          const { error: sendErr } = await supabase.functions.invoke('send-whatsapp-message', {
+            body: { phone: customerPhone, message: reply }
+          });
+          if (sendErr) {
+            logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendErr });
+          } else {
+            logger.info('✅ WhatsApp message sent successfully');
+            messageSent = true;
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true, conversationId, processed: true, messageSent, isReopen }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      if (currentDepartment === 'financeiro') {
+        logger.info('🤖 Routing directly to support-financial-agent (Julia)', { conversationId });
+        const { data: finResponse, error: finError } = await supabase.functions.invoke('support-financial-agent', {
+          body: {
+            conversationId: conversationId,
+            messages: [{ role: 'user', content: messageContent }],
+            customerData: { name: customerName, phone: customerPhone },
+            attachments: attachments.length > 0 ? attachments : undefined
+          }
+        });
+        if (finError) {
+          logger.error('Support-financial-agent error', { error: finError });
+          throw finError;
+        }
+        const parsed = typeof finResponse === 'string' ? JSON.parse(finResponse) : finResponse;
+        const reply = parsed?.message || '';
+
+        let messageSent = false;
+        if (reply && reply.trim() !== '') {
+          const { error: saveErr } = await supabase
+            .from('conversation_messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_name: 'Julia Santos',
+              content: reply,
+              ai_suggestion: true
+            });
+          if (saveErr) logger.error('⚠️ Error saving agent message', { error: saveErr });
+
+          const { error: sendErr } = await supabase.functions.invoke('send-whatsapp-message', {
+            body: { phone: customerPhone, message: reply }
+          });
+          if (sendErr) {
+            logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendErr });
+          } else {
+            logger.info('✅ WhatsApp message sent successfully');
+            messageSent = true;
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true, conversationId, processed: true, messageSent, isReopen }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
       // Chamar agente de roteamento (Cloé) para processar e responder
       logger.info('🤖 Calling routing agent...');
       const { data: routingResponse, error: routingError } = await supabase.functions.invoke('routing-agent', {
