@@ -486,7 +486,14 @@ serve(async (req) => {
         throw routingError;
       }
 
-      logger.info('📨 Agent response received', { hasMessage: !!routingResponse?.message });
+      // Debug completo da resposta
+      logger.info('📨 Agent response received', { 
+        hasMessage: !!routingResponse?.message,
+        messageType: typeof routingResponse?.message,
+        messagePreview: routingResponse?.message?.substring(0, 50),
+        responseKeys: Object.keys(routingResponse || {}),
+        fullResponse: routingResponse
+      });
 
       // Salvar e enviar mensagem apenas se houver conteúdo
       if (routingResponse.message && routingResponse.message.trim() !== '') {
