@@ -75,13 +75,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         number,
-        options: {
-          presence: 'composing',
-          linkPreview: false
-        },
-        textMessage: {
-          text: message
-        }
+        text: message
       })
     });
 
