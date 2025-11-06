@@ -246,9 +246,53 @@ serve(async (req) => {
         );
       }
 
+      // 🔄 RESET COMMAND: Reiniciar fluxo do zero com a Cloé
+      const resetCommands = ['/RESET', 'RESET', '/REINICIAR', 'REINICIAR', '/RECOMECAR'];
+      const normalizedMessage = messageContent.toUpperCase().trim();
+      
+      if (resetCommands.includes(normalizedMessage)) {
+        logger.info('🔄 Reset requested', { customerPhone: redactPII(customerPhone, 'logs') });
+        
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('customer_phone', customerPhone)
+          .eq('channel', 'whatsapp')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (conversation) {
+          await supabase
+            .from('conversations')
+            .update({
+              department: null,
+              status: 'waiting',
+              metadata: { reset_requested: true, reset_at: new Date().toISOString() }
+            })
+            .eq('id', conversation.id);
+          
+          await supabase
+            .from('agent_flow_states')
+            .delete()
+            .eq('conversation_id', conversation.id);
+        }
+
+        await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            phone: customerPhone,
+            message: '✅ Conversa reiniciada! Agora pode começar do zero.\n\nEnvie sua mensagem para iniciar um novo atendimento.'
+          }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, reset: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       // 🚫 OPT-OUT LGPD: Verificar comandos de cancelamento
       const optOutCommands = ['SAIR', 'RECUSAR', 'PARAR', 'STOP', 'CANCELAR', 'NAO QUERO'];
-      const normalizedMessage = messageContent.toUpperCase().trim();
       
       if (optOutCommands.includes(normalizedMessage)) {
         logger.info('🚫 Opt-out requested', { customerPhone: redactPII(customerPhone, 'logs') });
