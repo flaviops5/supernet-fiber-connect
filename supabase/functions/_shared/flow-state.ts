@@ -10,12 +10,11 @@
  * - Loga warnings para campos inexistentes
  * - Previne erros silenciosos
  * 
- * Campos válidos em agent_flow_states:
+ * Campos válidos em agent_flow_states (colunas reais):
  * - conversation_id (PK)
- * - waiting_step, context_warnings, transferred_to_human
- * - scenario_started, scenario_completed, irritation_score
- * - loop_count, transfer_reason, hybrid_mode_active
- * - ixc_client_id, last_agent_question
+ * - waiting_step, context_warnings
+ * - transferred_to_human, hybrid_mode_active
+ * - scenario_started, last_agent_question
  * - created_at, updated_at
  */
 
@@ -28,13 +27,8 @@ const VALID_FLOW_STATE_FIELDS = new Set([
   'context_warnings',
   'transferred_to_human',
   'scenario_started',
-  'scenario_completed',
-  'irritation_score',
-  'loop_count',
-  'transfer_reason',
-  'hybrid_mode_active',
-  'ixc_client_id',
   'last_agent_question',
+  'hybrid_mode_active',
   'created_at',
   'updated_at'
 ]);
@@ -60,7 +54,7 @@ export async function updateFlowState(
     );
   }
 
-  // Filtrar apenas campos válidos
+  // Filtrar apenas campos válidos da atualização
   const validNewState = Object.keys(newState)
     .filter(field => VALID_FLOW_STATE_FIELDS.has(field))
     .reduce((obj, key) => {
@@ -68,10 +62,27 @@ export async function updateFlowState(
       return obj;
     }, {} as JsonObject);
 
+  // Também sanitizar o estado atual em memória (evita colunas inexistentes como 'continue')
+  const invalidCurrentFields = Object.keys(currentFlowState || {}).filter(
+    field => !VALID_FLOW_STATE_FIELDS.has(field)
+  );
+  if (invalidCurrentFields.length > 0) {
+    console.warn(
+      '⚠️ updateFlowState: Removendo campos inválidos do estado atual (não existem na tabela agent_flow_states):',
+      invalidCurrentFields
+    );
+  }
+  const sanitizedCurrentState = Object.keys(currentFlowState || {})
+    .filter(field => VALID_FLOW_STATE_FIELDS.has(field))
+    .reduce((obj, key) => {
+      obj[key] = (currentFlowState as JsonObject)[key];
+      return obj;
+    }, {} as JsonObject);
+
   const mergedState = {
-    ...currentFlowState,
+    ...sanitizedCurrentState,
     ...validNewState,
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   };
 
   const { error } = await supabaseAdmin
