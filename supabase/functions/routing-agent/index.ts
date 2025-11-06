@@ -679,7 +679,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         has_onu_signal: !!onuSignal
       });
       
-      const { error: techError } = await supabase.functions.invoke("support-tech-agent", {
+      const { data: techData, error: techError } = await supabase.functions.invoke("support-tech-agent", {
         body: {
           conversation_id: conversationId,
           customer_cpf: clientStatus.cpf ?? null,
@@ -693,16 +693,23 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           attachments: attachments, // 🖼️ Passar imagens para o Luan
         },
       });
-      if (techError) logger.error("Erro ao chamar Luan", { error: techError });
-      else logger.info("✅ Luan invocado com sucesso");
       
-      logger.info("Roteamento concluído", { protocol, targetDepartment });
+      if (techError) {
+        logger.error("Erro ao chamar Luan", { error: techError });
+      } else {
+        logger.info("✅ Luan invocado com sucesso");
+      }
+      
+      // Capturar mensagem do Luan (se houver)
+      const luanMessage = techData?.message || "";
+      
+      logger.info("Roteamento concluído", { protocol, targetDepartment, hasLuanMessage: !!luanMessage });
       return new Response(
         JSON.stringify({ 
           ok: true, 
           protocol, 
           targetDepartment,
-          message: "" // Mensagem será gerada pelo agente especializado
+          message: luanMessage // ✅ Passar mensagem do Luan para o webhook
         }),
         { headers: corsHeaders, status: 200 }
       );
