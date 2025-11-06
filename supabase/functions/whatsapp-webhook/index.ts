@@ -486,12 +486,19 @@ serve(async (req) => {
         throw routingError;
       }
 
-      // Debug completo da resposta
+      // Debug COMPLETO da resposta RAW
+      logger.info('📨 Raw agent response', { 
+        routingResponse: JSON.stringify(routingResponse),
+        type: typeof routingResponse,
+        isNull: routingResponse === null,
+        isUndefined: routingResponse === undefined
+      });
+
       logger.info('📨 Agent response received', { 
         hasMessage: !!routingResponse?.message,
         messageType: typeof routingResponse?.message,
-        messagePreview: routingResponse?.message?.substring(0, 50),
-        responseKeys: Object.keys(routingResponse || {}),
+        messageValue: routingResponse?.message,
+        responseKeys: routingResponse ? Object.keys(routingResponse) : [],
         fullResponse: routingResponse
       });
 
