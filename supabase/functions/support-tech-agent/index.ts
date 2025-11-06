@@ -79,6 +79,48 @@ async function getApprovedSimulations(supabase: any, subject: string): Promise<a
   return messages;
 }
 
+// Evita salvar mensagens duplicadas do agente (ex.: mesma resposta em milissegundos)
+async function insertAgentMessageOnce(supabase: any, conversation_id: string, content: string) {
+  try {
+    if (!content || !conversation_id) return { skipped: true };
+
+    const { data: last } = await supabase
+      .from('conversation_messages')
+      .select('id, content, created_at, sender_name, sender_type')
+      .eq('conversation_id', conversation_id)
+      .eq('sender_type', 'agent')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const now = Date.now();
+    if (last && last.sender_name === 'Luan Silva' && last.content === content) {
+      const diff = now - new Date(last.created_at).getTime();
+      if (diff < 5000) {
+        console.warn('🔁 Duplicate agent message detected, skipping insert', { conversation_id });
+        return { skipped: true };
+      }
+    }
+
+    return await supabase.from('conversation_messages').insert({
+      conversation_id,
+      sender_type: 'agent',
+      sender_name: 'Luan Silva',
+      content,
+      ai_suggestion: false
+    });
+  } catch (e) {
+    console.error('insertAgentMessageOnce error', e);
+    return await supabase.from('conversation_messages').insert({
+      conversation_id,
+      sender_type: 'agent',
+      sender_name: 'Luan Silva',
+      content,
+      ai_suggestion: false
+    });
+  }
+}
+
 /**
  * C0: Detectar sinal fraco baseado em TX/RX
  */
@@ -2229,17 +2271,11 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         
         // Inserir mensagem do Cenário A
         if (responseMessage) {
-          const { error: insertErr } = await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          const { error: insertErr } = await insertAgentMessageOnce(supabase, conversation_id, responseMessage);
           
           if (insertErr) {
-            logger.error("Erro ao inserir mensagem do Cenário A", { error: insertErr.message });
-            throw insertErr;
+            logger.error("Erro ao inserir mensagem do Cenário A", { error: (insertErr as any).message });
+            throw insertErr as any;
           }
           
           logger.info("Luan respondeu ao cliente no Cenário A", { flowState });
@@ -4633,17 +4669,11 @@ Me responde com:
       
       // Inserir mensagem apenas se não foi inserida no Cenário A
       if (scenario !== "A" && responseMessage) {
-        const { error: insertErr } = await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        const { error: insertErr } = await insertAgentMessageOnce(supabase, conversation_id, responseMessage);
         
         if (insertErr) {
-          logger.error("Erro ao inserir mensagem de continuação", { error: insertErr.message });
-          throw insertErr;
+          logger.error("Erro ao inserir mensagem de continuação", { error: (insertErr as any).message });
+          throw insertErr as any;
         }
 
         logger.info("Luan respondeu ao cliente no fluxo genérico");
