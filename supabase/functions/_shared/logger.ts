@@ -61,7 +61,10 @@ function formatLogForConsole(entry: LogEntry): string {
     critical: '🔥'
   }[entry.level];
 
-  const contextStr = `[${entry.context.functionName}${entry.context.requestId ? `:${entry.context.requestId.slice(0, 8)}` : ''}]`;
+  const requestIdStr = entry.context.requestId 
+    ? `:${String(entry.context.requestId).slice(0, 8)}`
+    : '';
+  const contextStr = `[${entry.context.functionName}${requestIdStr}]`;
   
   return `${emoji} ${contextStr} ${entry.message}`;
 }
