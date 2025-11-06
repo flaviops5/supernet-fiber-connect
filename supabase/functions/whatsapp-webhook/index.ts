@@ -34,16 +34,14 @@ function generateCorrelationId(): string {
 serve(async (req) => {
   const correlationId = generateCorrelationId();
   const startTime = Date.now();
-  const logger = createLogger('whatsapp-webhook', req);
   
-  logger.info('Webhook endpoint hit', {
+  console.log(`📥 [${correlationId}] Webhook endpoint hit`, {
     method: req.method,
-    url: req.url,
-    correlationId
+    url: req.url
   });
 
   if (req.method === 'OPTIONS') {
-    logger.debug('OPTIONS request handled', { correlationId });
+    console.log(`✅ [${correlationId}] OPTIONS request handled`);
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -58,13 +56,10 @@ serve(async (req) => {
     if (hmacSecret) {
       const hmacValidation = await validateHMACRequest(req.clone(), hmacSecret);
       if (!hmacValidation.valid) {
-        logger.warn('HMAC validation failed', { 
-          correlationId, 
-          error: hmacValidation.error 
-        });
+        console.warn(`⚠️ [${correlationId}] HMAC validation failed:`, hmacValidation.error);
         // Não bloqueia por compatibilidade, apenas loga
       } else {
-        logger.debug('HMAC validated successfully', { correlationId });
+        console.log(`✅ [${correlationId}] HMAC validated successfully`);
       }
     }
 
