@@ -1389,9 +1389,16 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       const continueFlowState = (currentConversation?.metadata as any)?.flow_state;
       const scenario = (currentConversation?.metadata as any)?.scenario;
 
+      // Normaliza flow_state para avaliação segura
+      const flowStateHasEnergia = Array.isArray(continueFlowState)
+        ? continueFlowState.includes("energia")
+        : typeof continueFlowState === "string"
+          ? continueFlowState.includes("energia")
+          : false;
+
       // Carregar exemplos aprovados de energia se estiver no cenário A
       let approvedExamples = "";
-      if (scenario === "A" || continueFlowState?.includes("energia")) {
+      if (scenario === "A" || flowStateHasEnergia) {
         approvedExamples = await getApprovedSimulations(supabase, "energia");
         logger.info("Exemplos de energia carregados", { 
           hasExamples: approvedExamples.length > 0,
@@ -1408,7 +1415,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         }
       }
 
-      logger.info("Estado do fluxo", { flowState, scenario });
+      logger.info("Estado do fluxo", { flowState: continueFlowState, scenario });
 
       // 🚨 DETECTOR DE FRUSTRAÇÃO (Priority #2)
       const frustration = detectFrustration(message);
