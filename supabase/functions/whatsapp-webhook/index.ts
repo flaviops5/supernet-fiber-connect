@@ -84,6 +84,11 @@ serve(async (req) => {
 
       webhookData = JSON.parse(rawBody);
       logger.info('📥 Webhook data received', { keys: Object.keys(webhookData) });
+      logger.info('🔍 Full webhook event', { 
+        event: webhookData.event,
+        instance: webhookData.instance,
+        dataKeys: webhookData.data ? Object.keys(webhookData.data) : []
+      });
 
     } catch (e) {
       logger.error('❌ Failed to parse JSON body', { error: e });
@@ -126,6 +131,12 @@ serve(async (req) => {
 
     // Evolution API envia diferentes tipos de eventos
     const eventType = webhookData.event;
+    
+    logger.info('🔔 Event type received', { 
+      eventType, 
+      hasData: !!webhookData.data,
+      dataKeys: webhookData.data ? Object.keys(webhookData.data) : []
+    });
 
     // Processar apenas mensagens recebidas
     if (eventType === 'messages.upsert') {
