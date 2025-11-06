@@ -53,15 +53,14 @@ serve(async (req) => {
     // Normalizar URL: remover barras finais e garantir formato correto
     const evolutionApiUrl = evolutionApiBaseUrl.replace(/\/+$/, '').trim();
 
-    // Formatar número de telefone (remover caracteres não numéricos)
-    const cleanPhone = phone.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
+    // Formatar número de telefone para Evolution API (somente dígitos, E.164 sem "+")
+    const number = phone.replace(/\D/g, '');
 
     // Construir URL completa
     const fullUrl = `${evolutionApiUrl}/message/sendText/${evolutionInstance}`;
     
     console.log('📤 Enviando mensagem WhatsApp:', {
-      phone: formattedPhone,
+      number,
       messageLength: message.length,
       instance: evolutionInstance,
       url: fullUrl
@@ -75,8 +74,14 @@ serve(async (req) => {
         'apikey': evolutionApiKey
       },
       body: JSON.stringify({
-        number: formattedPhone,
-        text: message
+        number,
+        options: {
+          presence: 'composing',
+          linkPreview: false
+        },
+        textMessage: {
+          text: message
+        }
       })
     });
 
@@ -91,14 +96,14 @@ serve(async (req) => {
 
     const evolutionData = await evolutionResponse.json();
     console.log('✅ Mensagem enviada com sucesso:', {
-      phone: formattedPhone,
+      number,
       messageId: evolutionData.key?.id
     });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        phone: formattedPhone,
+        number,
         messageId: evolutionData.key?.id
       }),
       { 
