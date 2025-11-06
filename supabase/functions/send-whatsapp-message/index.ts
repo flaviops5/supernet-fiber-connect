@@ -32,11 +32,17 @@ serve(async (req) => {
     }
 
     // Obter credenciais da Evolution API (nomes corretos conforme documentação)
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_BASE_URL')?.replace(/\/+$/, ''); // Remove trailing slashes
+    const evolutionApiBaseUrl = Deno.env.get('EVOLUTION_API_BASE_URL');
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
     const evolutionInstance = 'SDR2'; // Hardcoded conforme padrão do sistema
 
-    if (!evolutionApiUrl || !evolutionApiKey) {
+    console.log('🔧 Evolution API Config:', {
+      baseUrl: evolutionApiBaseUrl,
+      hasApiKey: !!evolutionApiKey,
+      instance: evolutionInstance
+    });
+
+    if (!evolutionApiBaseUrl || !evolutionApiKey) {
       console.error('❌ Evolution API não configurada');
       return new Response(
         JSON.stringify({ error: 'Evolution API not configured (missing EVOLUTION_API_BASE_URL or EVOLUTION_API_KEY)' }),
@@ -44,18 +50,25 @@ serve(async (req) => {
       );
     }
 
+    // Normalizar URL: remover barras finais e garantir formato correto
+    const evolutionApiUrl = evolutionApiBaseUrl.replace(/\/+$/, '').trim();
+
     // Formatar número de telefone (remover caracteres não numéricos)
     const cleanPhone = phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
 
+    // Construir URL completa
+    const fullUrl = `${evolutionApiUrl}/message/sendText/${evolutionInstance}`;
+    
     console.log('📤 Enviando mensagem WhatsApp:', {
       phone: formattedPhone,
       messageLength: message.length,
-      instance: evolutionInstance
+      instance: evolutionInstance,
+      url: fullUrl
     });
 
     // Enviar mensagem via Evolution API
-    const evolutionResponse = await fetch(`${evolutionApiUrl}/message/sendText/${evolutionInstance}`, {
+    const evolutionResponse = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
