@@ -610,6 +610,9 @@ serve(async (req) => {
       rx
     } = body;
 
+    // Define lastUserMessage globalmente para uso em todo o handler
+    const lastUserMessage = message || "";
+
     // >>> MODE TEST-RUNNER: Bypass normal flow for testing
     if (testHarness === true) {
       logger.info("🧪 Test mode activated", { tx, rx });
@@ -1513,7 +1516,6 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
       const currentMessage = message.toLowerCase();
-      const lastUserMessage = message;
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
       // Detectar Cenário A pelo flowState (mais confiável que scenario)
