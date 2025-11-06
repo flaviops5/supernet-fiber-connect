@@ -1251,7 +1251,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             const fullMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`;
             
             await textReplyWithContext(
-              supabaseAdmin,
+              supabase,
               conversation_id,
               fullMessage,
               { scenario: "A", waiting_step: "scenario_a_check_power" },
@@ -2307,7 +2307,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           const replyText = "Obrigado 🙏\n\nAgora, consegue ver para mim:\n\n🚨 A luz **LOS (vermelha)** está **PISCANDO**?\n\nIsso me ajuda a saber se o problema está na fibra 👍";
           
           await textReplyWithContext(
-            supabaseAdmin,
+            supabase,
             conversation_id,
             replyText,
             { waiting_step: "scenario_a_check_los" },
@@ -2351,7 +2351,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           const replyTextLos = "Entendi ✅ A luz LOS piscando indica que a fibra pode estar solta.\n\nVeja como reconectar o conector verde com cuidado 👇";
           
           await textReplyWithContext(
-            supabaseAdmin,
+            supabase,
             conversation_id,
             replyTextLos,
             { waiting_step: "scenario_a_optical" },
@@ -2382,7 +2382,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           const replyTextFiber = "Vamos conferir o conector verde para garantir a fibra ✅\n\nVeja como reconectar com cuidado 👇";
           
           await textReplyWithContext(
-            supabaseAdmin,
+            supabase,
             conversation_id,
             replyTextFiber,
             { media_context: "fiber_reconnect" }
@@ -2453,7 +2453,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             responseMessage = "Perfeito ✅ Pode testar a navegação agora e me dizer se voltou?";
             
             // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
-            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            await updateFlowState(supabase, { conversation_id, flowState }, {
               last_agent_question: "A internet voltou a funcionar?"
             });
           } else {
@@ -3061,7 +3061,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
 
       // Aumenta pontuação em cada sinal de frustração
       if (frustrationDetected) {
-        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        await updateFlowState(supabase, { conversation_id, flowState }, {
           irritation_score: (flowState?.irritation_score || 0) + 1
         });
 
@@ -3073,7 +3073,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             msg: lastUserMessage,
             irritation_score: (flowState?.irritation_score || 0) + 1
           }, flowState),
-          supabaseClient: supabaseAdmin
+          supabaseClient: supabase
         });
       }
       // <<< PR #12A ✅
@@ -3082,7 +3082,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
       if ((flowState?.irritation_score || 0) >= 4) {
         const clientName = currentConversation?.customer_name?.split(' ')[0] || "amigo";
 
-        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        await updateFlowState(supabase, { conversation_id, flowState }, {
           waiting_step: null,
           scenario_completed: "HUMANO",
           transferred_to_human: true,
@@ -3090,7 +3090,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         });
 
         // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
-        await supabaseAdmin
+        await supabase
           .from("conversations")
           .update({ status: "awaiting_human" })
           .eq("id", conversation_id);
@@ -3103,7 +3103,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             score: flowState?.irritation_score,
             client_name: clientName
           }, flowState),
-          supabaseClient: supabaseAdmin
+          supabaseClient: supabase
         });
 
         // KPI: Transferência por frustração
@@ -3136,7 +3136,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
                         previousMessages.slice(-2).every(m => m === normalized);
       
       // Sempre atualizar histórico de mensagens recentes (últimas 5)
-      await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+      await updateFlowState(supabase, { conversation_id, flowState }, {
         recent_messages: [...previousMessages.slice(-4), normalized]
       });
       
@@ -3144,7 +3144,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
       if (isLowInfo || isRepeated) {
         const loopCount = (flowState?.loop_count || 0) + 1;
         
-        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        await updateFlowState(supabase, { conversation_id, flowState }, {
           loop_count: loopCount
         });
         
@@ -3158,14 +3158,14 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             is_low_info: isLowInfo,
             is_repeated: isRepeated
           }, flowState),
-          supabaseClient: supabaseAdmin
+          supabaseClient: supabase
         });
         
         // Após 5 loops, transferir para humano
         if (loopCount >= 5) {
           const clientName = currentConversation?.customer_name?.split(' ')[0] || "amigo";
           
-          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          await updateFlowState(supabase, { conversation_id, flowState }, {
             waiting_step: null,
             scenario_completed: "HUMANO",
             transferred_to_human: true,
@@ -3174,7 +3174,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           });
           
           // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
-          await supabaseAdmin
+          await supabase
             .from("conversations")
             .update({ status: "awaiting_human" })
             .eq("id", conversation_id);
@@ -3187,7 +3187,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
               loop_count: loopCount,
               client_name: clientName
             }, flowState),
-            supabaseClient: supabaseAdmin
+            supabaseClient: supabase
           });
           
           // KPI: Transferência por loop
@@ -3216,7 +3216,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         }
       } else {
         // Mensagem válida - resetar contador de loop
-        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        await updateFlowState(supabase, { conversation_id, flowState }, {
           loop_count: 0
         });
       }
@@ -3240,14 +3240,14 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
 
           const warnings = (flowState?.context_warnings || 0) + 1;
 
-          await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+          await updateFlowState(supabase, { conversation_id, flowState }, {
             context_warnings: warnings
           });
 
           // 1️⃣ Primeira tentativa: gentilmente redirecionar
           if (warnings === 1) {
             return await textReplyWithContext(
-              supabaseAdmin,
+              supabase,
               { conversation_id, flowState },
               `Já te ajudo com isso 👌\n\nMas antes preciso **finalizar este teste** aqui.\n\nPode me confirmar o que pedi na última mensagem? 😊`
             );
@@ -3257,7 +3257,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           if (warnings === 2) {
             const lastQuestion = flowState?.last_agent_question || "o que pedi antes";
             return await textReplyWithContext(
-              supabaseAdmin,
+              supabase,
               { conversation_id, flowState },
               `Prometo que vamos falar disso! 🤝\n\nMas só consigo continuar se você me responder:\n\n👉 ${lastQuestion}`
             );
@@ -3265,14 +3265,14 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
 
           // 3️⃣ Terceira vez: transferência humana
           if (warnings >= 3) {
-            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            await updateFlowState(supabase, { conversation_id, flowState }, {
               waiting_step: null,
               transferred_to_human: true,
               transfer_reason: "context_escape"
             });
 
             // Atualizar apenas status da conversation (transferred_to_human já está em agent_flow_states)
-            await supabaseAdmin
+            await supabase
               .from("conversations")
               .update({ status: "awaiting_human" })
               .eq("id", conversation_id);
@@ -3286,7 +3286,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
                 scenarioStarted: flowState?.scenario_started,
                 warnings
               }, flowState),
-              supabaseClient: supabaseAdmin
+              supabaseClient: supabase
             });
 
             // KPI: Transferência por fuga de contexto
@@ -3301,7 +3301,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             }).catch(() => {}); // Non-blocking
 
             return await textReplyWithContext(
-              supabaseAdmin,
+              supabase,
               { conversation_id, flowState },
               `Vou te transferir para um atendente humano, ok? 👨‍💼`
             );
@@ -3311,7 +3311,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           const previousWarnings = flowState?.context_warnings || 0;
           
           if (previousWarnings > 0) {
-            await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+            await updateFlowState(supabase, { conversation_id, flowState }, {
               context_warnings: 0
             });
 
@@ -3398,13 +3398,13 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           `Depois teste abrindo um site ou aplicativo e me confirma se voltou?`;
         
         responseMessage = await textReplyWithContext(
-          supabaseAdmin,
+          supabase,
           { conversation_id, flowState },
           responseMessage
         ).then(r => r.json()).then(j => j.reply);
         
         // ✅ CORREÇÃO #1: Salvar pergunta para anti-fuga
-        await updateFlowState(supabaseAdmin, { conversation_id, flowState }, {
+        await updateFlowState(supabase, { conversation_id, flowState }, {
           last_agent_question: "Já reiniciou o roteador e testou se voltou?"
         });
         
@@ -3649,7 +3649,7 @@ Me responde com:
             `Pode testar abrindo um site, Netflix ou YouTube pra confirmar!`;
           
           responseMessage = await textReplyWithContext(
-            supabaseAdmin,
+            supabase,
             { conversation_id, flowState },
             questionText
           ).then(r => r.json()).then(j => j.reply);
@@ -3677,7 +3677,7 @@ Me responde com:
           `Vou pedir ajuda da nossa equipe técnica então 👇`;
         
         responseMessage = await textReplyWithContext(
-          supabaseAdmin,
+          supabase,
           { conversation_id, flowState },
           questionText
         ).then(r => r.json()).then(j => j.reply);
@@ -3818,7 +3818,7 @@ Me responde com:
           "Você percebe que a conexão cai e volta, ou fica muito lenta em alguns momentos?";
         
         responseMessage = await textReplyWithContext(
-          supabaseAdmin,
+          supabase,
           { conversation_id, flowState },
           questionText
         ).then(r => r.json()).then(j => j.reply);
@@ -3900,7 +3900,7 @@ Me responde com:
               .eq("id", conversation_id);
 
             responseMessage = await textReplyWithContext(
-              supabaseAdmin,
+              supabase,
               { conversation_id, flowState },
               "Obrigado! 🙌\n\nAgora me diz:\n\n🚨 A luz **LOS** (vermelha) está **piscando**?\n\n(piscando = falha na fibra)"
             ).then(r => r.json()).then(j => j.reply);
@@ -4043,7 +4043,7 @@ Me responde com:
               });
 
               responseMessage = await textReplyWithContext(
-                supabaseAdmin,
+                supabase,
                 { conversation_id, flowState },
                 "Ótimo! ✅\n\nAgora pode testar a navegação e ver se estabilizou, por favor?"
               ).then(r => r.json()).then(j => j.reply);
@@ -4062,7 +4062,7 @@ Me responde com:
                 .eq("id", conversation_id);
 
               responseMessage = await textReplyWithContext(
-                supabaseAdmin,
+                supabase,
                 { conversation_id, flowState },
                 "Ainda instável? Vou pedir para nossa equipe técnica verificar melhor 🔧"
               ).then(r => r.json()).then(j => j.reply);
