@@ -19,7 +19,7 @@ import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction
 import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
-import { createLogger } from '../_shared/logger.ts';
+import { createLoggerFromRequest } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,16 +32,16 @@ function generateCorrelationId(): string {
 }
 
 serve(async (req) => {
-  const correlationId = generateCorrelationId();
+  const logger = createLoggerFromRequest('whatsapp-webhook', req);
   const startTime = Date.now();
   
-  console.log(`📥 [${correlationId}] Webhook endpoint hit`, {
+  logger.info('📥 Webhook endpoint hit', {
     method: req.method,
     url: req.url
   });
 
   if (req.method === 'OPTIONS') {
-    console.log(`✅ [${correlationId}] OPTIONS request handled`);
+    logger.info('✅ OPTIONS request handled');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -56,10 +56,10 @@ serve(async (req) => {
     if (hmacSecret) {
       const hmacValidation = await validateHMACRequest(req.clone(), hmacSecret);
       if (!hmacValidation.valid) {
-        console.warn(`⚠️ [${correlationId}] HMAC validation failed:`, hmacValidation.error);
+        logger.warn('⚠️ HMAC validation failed', { error: hmacValidation.error });
         // Não bloqueia por compatibilidade, apenas loga
       } else {
-        console.log(`✅ [${correlationId}] HMAC validated successfully`);
+        logger.info('✅ HMAC validated successfully');
       }
     }
 
@@ -71,28 +71,27 @@ serve(async (req) => {
       const contentType = req.headers.get('content-type') || '';
 
       if (!contentType.includes('application/json')) {
-        console.warn(`⚠️ [${correlationId}] Unexpected Content-Type: ${contentType}`);
+        logger.warn('⚠️ Unexpected Content-Type', { contentType });
       }
 
       if (!rawBody || rawBody.trim() === '') {
-        console.error(`❌ [${correlationId}] Empty body received from webhook`);
+        logger.error('❌ Empty body received from webhook');
         return new Response(
-          JSON.stringify({ success: false, error: 'Empty request body', correlationId }),
+          JSON.stringify({ success: false, error: 'Empty request body' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
       }
 
       webhookData = JSON.parse(rawBody);
-      console.log(`📥 [${correlationId}] Webhook keys:`, Object.keys(webhookData));
+      logger.info('📥 Webhook data received', { keys: Object.keys(webhookData) });
 
     } catch (e) {
-      console.error(`❌ [${correlationId}] Failed to parse JSON body:`, e);
+      logger.error('❌ Failed to parse JSON body', { error: e });
       return new Response(
         JSON.stringify({
           success: false,
           error: 'Invalid JSON format',
           details: e instanceof Error ? e.message : 'Unknown error',
-          correlationId,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
@@ -108,9 +107,9 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingWebhook) {
-      console.log(`⏭️ [${correlationId}] Webhook já processado (idempotência): ${webhookId}`);
+      logger.info('⏭️ Webhook já processado (idempotência)', { webhookId });
       return new Response(
-        JSON.stringify({ success: true, status: 'already_processed', correlationId }),
+        JSON.stringify({ success: true, status: 'already_processed' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -122,7 +121,7 @@ serve(async (req) => {
       request_signature: req.headers.get('x-hmac-signature'),
       request_timestamp: req.headers.get('x-hmac-timestamp') ? 
         parseInt(req.headers.get('x-hmac-timestamp')!) : null,
-      metadata: { correlationId, rawBodyLength: rawBody.length },
+      metadata: { rawBodyLength: rawBody.length },
     });
 
     // Evolution API envia diferentes tipos de eventos
@@ -134,7 +133,7 @@ serve(async (req) => {
       
       // Ignorar mensagens enviadas por nós mesmos
       if (messageData.key?.fromMe) {
-        console.log('⏭️ Ignoring message from self');
+        logger.info('⏭️ Ignoring message from self');
         return new Response(JSON.stringify({ success: true, ignored: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -193,12 +192,16 @@ serve(async (req) => {
       }
 
       // Sprint 1: Log com PII redaction
-      console.log(`📞 [${correlationId}] Message from ${redactPII(customerName, 'logs')} (${redactPII(customerPhone, 'logs')}): ${redactPII(messageContent, 'ai')}`);
+      logger.info('📞 Message received', {
+        customerName: redactPII(customerName, 'logs'),
+        customerPhone: redactPII(customerPhone, 'logs'),
+        messagePreview: redactPII(messageContent, 'ai').substring(0, 50)
+      });
 
       // Sprint 1: Extrai CPF da mensagem (se houver)
       const extractedCPF = extractCPF(messageContent);
       if (extractedCPF) {
-        console.log(`🆔 [${correlationId}] CPF detectado na mensagem (mascarado)`);
+        logger.info('🆔 CPF detectado na mensagem (mascarado)');
       }
 
       // 🛡️ RATE LIMITING: Verificar limite de mensagens
@@ -213,7 +216,10 @@ serve(async (req) => {
         .ilike('metadata->>customer_phone', customerPhone);
 
       if (!rateLimitError && recentMessages && recentMessages.length >= maxMessagesPerWindow) {
-        console.warn(`⚠️ [${correlationId}] Rate limit exceeded for ${redactPII(customerPhone, 'logs')}`);
+        logger.warn('⚠️ Rate limit exceeded', { 
+          customerPhone: redactPII(customerPhone, 'logs'),
+          messageCount: recentMessages.length
+        });
         
         // Enviar mensagem de aviso
         await supabase.functions.invoke('send-whatsapp-message', {
@@ -224,7 +230,7 @@ serve(async (req) => {
         });
 
         return new Response(
-          JSON.stringify({ success: true, rateLimited: true, correlationId }),
+          JSON.stringify({ success: true, rateLimited: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -234,7 +240,7 @@ serve(async (req) => {
       const normalizedMessage = messageContent.toUpperCase().trim();
       
       if (optOutCommands.includes(normalizedMessage)) {
-        console.log(`🚫 [${correlationId}] Opt-out requested by ${redactPII(customerPhone, 'logs')}`);
+        logger.info('🚫 Opt-out requested', { customerPhone: redactPII(customerPhone, 'logs') });
         
         // Marcar opt-out na conversa
         const { data: conversation } = await supabase
@@ -255,7 +261,7 @@ serve(async (req) => {
               status: 'resolved',
               resolved_at: new Date().toISOString(),
               lgpd_consent: false,
-              metadata: { opt_out_reason: 'user_request', correlationId }
+              metadata: { opt_out_reason: 'user_request' }
             })
             .eq('id', conversation.id);
 
@@ -279,7 +285,7 @@ serve(async (req) => {
         });
 
         return new Response(
-          JSON.stringify({ success: true, optOut: true, correlationId }),
+          JSON.stringify({ success: true, optOut: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -308,7 +314,7 @@ serve(async (req) => {
               metadata: { source: 'whatsapp_auto' }
             });
 
-          console.log(`⭐ Feedback registered: ${rating} stars`);
+          logger.info('⭐ Feedback registered', { rating });
           
           // Send thank you message
           await supabase.functions.invoke('send-whatsapp-message', {
@@ -352,7 +358,7 @@ serve(async (req) => {
         .maybeSingle();
       
       if (searchError) {
-        console.error('Error searching conversation:', searchError);
+        logger.error('Error searching conversation', { error: searchError });
       }
 
       let conversationId = existingConversation?.id;
@@ -361,7 +367,7 @@ serve(async (req) => {
       // Se não existe conversação ativa, criar ou reabrir
       if (!conversationId && recentResolved) {
         // Reabrir conversa recente atualizando a resolvida
-        console.log('🔄 Reopening recent resolved conversation:', recentResolved.id);
+        logger.info('🔄 Reopening recent resolved conversation', { conversationId: recentResolved.id });
         const { data: reopenedConv, error: reopenError } = await supabase
           .from('conversations')
           .update({
@@ -381,7 +387,7 @@ serve(async (req) => {
           .single();
 
         if (reopenError) {
-          console.error('Error reopening conversation:', reopenError);
+          logger.error('Error reopening conversation', { error: reopenError });
         } else {
           conversationId = reopenedConv.id;
           isReopen = true;
@@ -389,7 +395,7 @@ serve(async (req) => {
       }
       
       if (!conversationId) {
-        console.log('🆕 Creating new conversation');
+        logger.info('🆕 Creating new conversation');
         
         // UPSERT: criar nova ou atualizar se já existir
         const { data: newConversation, error: createError } = await supabase
@@ -412,13 +418,13 @@ serve(async (req) => {
           .single();
 
         if (createError) {
-          console.error('Error creating/updating conversation:', createError);
+          logger.error('Error creating/updating conversation', { error: createError });
           throw createError;
         }
 
         conversationId = newConversation.id;
       } else {
-        console.log('♻️ Using existing conversation:', conversationId);
+        logger.info('♻️ Using existing conversation', { conversationId });
         // Atualizar última mensagem
         await supabase
           .from('conversations')
@@ -446,7 +452,7 @@ serve(async (req) => {
         });
 
       if (messageError) {
-        console.error('Error saving message:', messageError);
+        logger.error('Error saving message', { error: messageError });
         throw messageError;
       }
 
@@ -457,11 +463,11 @@ serve(async (req) => {
             conversation_id: conversationId,
             message_content: messageContent 
           }
-        }).catch(err => console.error('Auto-tag error:', err));
+        }).catch(err => logger.error('Auto-tag error', { error: err }));
       }
 
       // Chamar agente de roteamento (Cloé) para processar e responder
-      console.log('🤖 Calling routing agent...');
+      logger.info('🤖 Calling routing agent...');
       const { data: routingResponse, error: routingError } = await supabase.functions.invoke('routing-agent', {
         body: {
           message: messageContent,
@@ -476,11 +482,11 @@ serve(async (req) => {
       });
 
       if (routingError) {
-        console.error('Routing agent error:', routingError);
+        logger.error('Routing agent error', { error: routingError });
         throw routingError;
       }
 
-      console.log('📨 Agent response:', routingResponse);
+      logger.info('📨 Agent response received', { hasMessage: !!routingResponse?.message });
 
       // Salvar mensagem do agente ANTES de tentar enviar
       const { error: saveAgentMsgError } = await supabase
@@ -494,7 +500,7 @@ serve(async (req) => {
         });
 
       if (saveAgentMsgError) {
-        console.error('⚠️ Error saving agent message:', saveAgentMsgError);
+        logger.error('⚠️ Error saving agent message', { error: saveAgentMsgError });
       }
 
       // 🔄 AUTO-ENCERRAMENTO: Verificar se conversa deve ser encerrada
@@ -504,7 +510,7 @@ serve(async (req) => {
       const shouldAutoClose = routingResponse.autoClose === true;
       
       if (shouldAutoClose) {
-        console.log('✅ Auto-closing conversation based on agent response');
+        logger.info('✅ Auto-closing conversation based on agent response');
         await supabase
           .from('conversations')
           .update({
@@ -529,7 +535,7 @@ serve(async (req) => {
         
         const department = agentDepartmentMap[routingResponse.agent];
         if (department) {
-          console.log(`📍 Updating conversation department to: ${department}`);
+          logger.info('📍 Updating conversation department', { department });
           await supabase
             .from('conversations')
             .update({
@@ -550,10 +556,10 @@ serve(async (req) => {
       });
 
       if (sendError) {
-        console.error('⚠️ Failed to send WhatsApp message (conversation saved):', sendError);
+        logger.error('⚠️ Failed to send WhatsApp message (conversation saved)', { error: sendError });
         messageSent = false;
       } else {
-        console.log('✅ WhatsApp message sent successfully');
+        logger.info('✅ WhatsApp message sent successfully');
         messageSent = true;
       }
 
@@ -579,7 +585,7 @@ serve(async (req) => {
       success: true,
       duration_ms: Date.now() - startTime,
       metadata: { event_type: eventType }
-    }).catch(console.error);
+    }).catch(err => logger.error('Metric error', { error: err }));
     
     return new Response(
       JSON.stringify({ success: true, eventType: eventType, processed: false }),
@@ -590,7 +596,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Webhook error:', error);
+    logger.error('❌ Webhook error', { error });
     
     // Registrar métrica de erro
     recordMetric({
@@ -599,7 +605,7 @@ serve(async (req) => {
       success: false,
       duration_ms: Date.now() - startTime,
       error_message: error.message || 'Unknown error'
-    }).catch(console.error);
+    }).catch(err => logger.error('Metric error', { error: err }));
     
     return handleEdgeFunctionError(error, 'whatsapp-webhook');
   }
