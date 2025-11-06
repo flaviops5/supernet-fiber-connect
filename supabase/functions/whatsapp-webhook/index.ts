@@ -495,7 +495,8 @@ serve(async (req) => {
       }
 
       // Se já existe um departamento definido E conversa está ativa/waiting, envie diretamente ao agente especializado
-      if (currentDepartment && (conversationStatus === 'active' || conversationStatus === 'waiting')) {
+      const isGreeting = /^(ol[aá]|oi|bom dia|boa tarde|boa noite)$/i.test((messageContent || '').trim());
+      if (currentDepartment && (conversationStatus === 'active' || conversationStatus === 'waiting') && !isGreeting) {
         
         if (currentDepartment === 'tecnico') {
           logger.info('🤖 Routing directly to support-tech-agent (Luan)', { conversationId });

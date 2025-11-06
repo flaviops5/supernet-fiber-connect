@@ -196,6 +196,7 @@ export type Database = {
           context_warnings: number | null
           conversation_id: string
           created_at: string | null
+          hybrid_mode_active: boolean
           last_agent_question: string | null
           scenario_started: string | null
           transferred_to_human: boolean | null
@@ -206,6 +207,7 @@ export type Database = {
           context_warnings?: number | null
           conversation_id: string
           created_at?: string | null
+          hybrid_mode_active?: boolean
           last_agent_question?: string | null
           scenario_started?: string | null
           transferred_to_human?: boolean | null
@@ -216,6 +218,7 @@ export type Database = {
           context_warnings?: number | null
           conversation_id?: string
           created_at?: string | null
+          hybrid_mode_active?: boolean
           last_agent_question?: string | null
           scenario_started?: string | null
           transferred_to_human?: boolean | null
