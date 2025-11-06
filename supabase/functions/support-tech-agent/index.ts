@@ -724,7 +724,17 @@ serve(async (req) => {
       .eq("id", conversation_id)
       .single();
 
-    let flowState = (convWithPhone?.metadata as any)?.flow_state || {};
+    // Normalizar flow_state para evitar espalhar string em chaves '0','1',...
+    const rawFlowState = (convWithPhone?.metadata as any)?.flow_state;
+    const normalizeFlowState = (fs: any) => {
+      if (typeof fs === "string") return { continue: fs };
+      if (!fs || typeof fs !== "object" || Array.isArray(fs)) return {};
+      return fs;
+    };
+
+    let flowState = normalizeFlowState(rawFlowState);
+    // Disponibiliza a versão string (quando existir) para detecção de cenário
+    const continueFlowState = typeof rawFlowState === "string" ? rawFlowState : (flowState?.continue || "");
     
     if (ixc_client_id) {
       const geoData = await ensureGeo(
@@ -757,6 +767,7 @@ serve(async (req) => {
         }
       })
       .eq("id", conversation_id);
+
 
     await logAudit({
       action: "hybrid_test_assignment",
