@@ -59,12 +59,14 @@ function formatLogForConsole(entry: LogEntry): string {
     warn: '⚠️',
     error: '❌',
     critical: '🔥'
-  }[entry.level];
+  }[entry.level] ?? '📋';
 
-  const requestIdStr = entry.context.requestId 
-    ? `:${String(entry.context.requestId).slice(0, 8)}`
-    : '';
-  const contextStr = `[${entry.context.functionName}${requestIdStr}]`;
+  const requestId = entry.context?.requestId 
+    ? String(entry.context.requestId).slice(0, 8)
+    : 'no-id';
+  
+  const functionName = entry.context?.functionName ?? 'unknown';
+  const contextStr = `[${functionName}:${requestId}]`;
   
   return `${emoji} ${contextStr} ${entry.message}`;
 }
