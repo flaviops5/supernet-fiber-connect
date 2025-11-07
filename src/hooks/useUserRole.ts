@@ -6,6 +6,7 @@ export const useUserRole = () => {
     queryKey: ["user-role"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔐 useUserRole - User:', user?.email, user?.id);
       if (!user) return { role: "viewer" as const };
 
       // Prefer RPC to avoid RLS recursion and minimize queries
@@ -20,17 +21,29 @@ export const useUserRole = () => {
 
       // Try admin -> gestor -> editor -> viewer
       try {
-        if (await checkRole("admin")) return { role: "admin" as const };
-        if (await checkRole("gestor")) return { role: "gestor" as const };
-        if (await checkRole("editor")) return { role: "editor" as const };
+        if (await checkRole("admin")) {
+          console.log('✅ useUserRole - Role: admin');
+          return { role: "admin" as const };
+        }
+        if (await checkRole("gestor")) {
+          console.log('✅ useUserRole - Role: gestor');
+          return { role: "gestor" as const };
+        }
+        if (await checkRole("editor")) {
+          console.log('✅ useUserRole - Role: editor');
+          return { role: "editor" as const };
+        }
+        console.log('⚠️ useUserRole - Role: viewer (default)');
         return { role: "viewer" as const };
       } catch (e) {
+        console.error('❌ useUserRole - RPC failed, using fallback:', e);
         // Fallback to direct table read if RPC fails
         const { data } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
           .maybeSingle();
+        console.log('🔄 useUserRole - Fallback role:', data?.role || 'viewer');
         return { role: (data?.role as "admin" | "editor" | "viewer" | "gestor") || "viewer" };
       }
     },

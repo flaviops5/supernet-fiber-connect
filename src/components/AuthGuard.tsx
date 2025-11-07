@@ -73,11 +73,19 @@ export const AuthGuard = ({ children, requiredRoles = ['admin', 'editor'] }: Aut
   // Check authorization whenever role changes
   useEffect(() => {
     if (!roleLoading && user) {
+      console.log('🛡️ AuthGuard - Checking authorization:', { 
+        userRole, 
+        requiredRoles, 
+        userId: user.id,
+        userEmail: user.email 
+      });
       const rolesString = requiredRoles.join(',');
       if (requiredRoles.includes(userRole)) {
+        console.log('✅ AuthGuard - Access granted');
         setAuthorized(true);
         setError(null);
       } else {
+        console.log('❌ AuthGuard - Access denied');
         setError(`Acesso negado. Você precisa ter permissão de ${requiredRoles.join(' ou ')} para acessar esta área.`);
         setAuthorized(false);
       }
