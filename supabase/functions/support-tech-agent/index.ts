@@ -20,6 +20,9 @@ import { markAgingEvent } from "../_shared/aging.ts";
 import { trackOnuSnapshot } from "../_shared/onu-tracker.ts";
 import { logRetest } from "../_shared/retests.ts";
 // <<< PR19
+// >>> FLOW-MANAGER: Sistema dinâmico de flows do banco de dados
+import { getStepMessage, getScenarioConfig } from "../_shared/flow-adapter.ts";
+// <<< FLOW-MANAGER
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
@@ -1301,7 +1304,15 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               })
               .eq("id", conversation_id);
             
-            const fullMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`;
+            // >>> FLOW-MANAGER: Buscar mensagem do banco ou usar fallback
+            const fullMessage = await getStepMessage(
+              supabase,
+              'support-tech-agent',
+              'cenario_a_verificar_luzes',
+              `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar seu equipamento, mas detectei que o sinal óptico está **zerado** (TX/RX: 0.00/0.00).\n\nIsso indica problema de energia ou no cabo de fibra.\n\n🔍 Confirme pra mim se o equipamento está com as luzes acesas igual nesta imagem 👇`,
+              { customer_name: customerName }
+            );
+            // <<< FLOW-MANAGER
             
             await textReplyWithContext(
               supabase,
@@ -1320,7 +1331,15 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           } else if (rx >= -23 && rx <= -18 && tx >= -1 && tx <= 2) {
             // CENÁRIO B: Sinal normal mas offline (equipamento travado)
             scenario = "B";
-            scenarioMessage = `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nVerifiquei o sinal da ONU e está **dentro dos padrões** (RX: ${rx} dBm / TX: ${tx} dBm).\n\n🔧 Vamos desligar e ligar o roteador da tomada e aguardar 1 minuto, por favor.`;
+            // >>> FLOW-MANAGER: Buscar mensagem do banco ou usar fallback
+            scenarioMessage = await getStepMessage(
+              supabase,
+              'support-tech-agent',
+              'scenario_b_wait_restart',
+              `Olá ${customerName}! Sou o **Luan Silva**, do Suporte Técnico. 👋\n\nA Cloé tentou reiniciar remotamente, mas você ainda está offline.\n\nVerifiquei o sinal da ONU e está **dentro dos padrões** (RX: ${rx} dBm / TX: ${tx} dBm).\n\n🔧 Vamos desligar e ligar o roteador da tomada e aguardar 1 minuto, por favor.`,
+              { customer_name: customerName, rx, tx }
+            );
+            // <<< FLOW-MANAGER
             
             // PATCH 3: Registrar estado inicial do Cenário B
             await supabase
