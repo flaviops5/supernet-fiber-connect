@@ -87,6 +87,7 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
   const loadMessages = useCallback(async () => {
     if (!conversationId) return;
 
+    console.log('📥 Carregando mensagens para conversa:', conversationId);
     const { data, error } = await supabase
       .from('conversation_messages')
       .select('*')
@@ -94,10 +95,11 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error loading messages:', error);
+      console.error('❌ Erro ao carregar mensagens:', error);
       return;
     }
 
+    console.log('✅ Mensagens carregadas:', data?.length || 0);
     setMessages(data || []);
   }, [conversationId]);
 
@@ -122,10 +124,16 @@ const messagesEndRef = useRef<HTMLDivElement>(null);
           filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
+          console.log('🔔 Nova mensagem recebida via realtime:', payload.new);
           setMessages((prev) => [...prev, payload.new as Message]);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status da subscrição:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime conectado para conversa:', conversationId);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
