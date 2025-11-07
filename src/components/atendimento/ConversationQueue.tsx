@@ -73,11 +73,12 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
   }, []);
 
   const loadConversations = useCallback(async () => {
+    console.log('🔄 Carregando conversas...', { filter, agentDepartment, searchQuery, selectedTags });
     let query = supabase
       .from('conversations')
       .select('*')
       .order('priority', { ascending: false })
-      .order('created_at', { ascending: true });
+      .order('last_message_at', { ascending: false });
 
     // Filtrar por departamento do agente
     if (agentDepartment && agentDepartment !== 'todos') {
@@ -109,10 +110,16 @@ export default function ConversationQueue({ selectedConversation, onSelectConver
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error loading conversations:', error);
+      console.error('❌ Erro ao carregar conversas:', error);
       return;
     }
 
+    console.log('✅ Conversas carregadas:', data?.length || 0, data?.map(c => ({ 
+      id: c.id.substring(0, 8), 
+      name: c.customer_name, 
+      status: c.status, 
+      last_msg: c.last_message_at 
+    })));
     setConversations(data || []);
   }, [agentDepartment, filter, searchQuery, selectedTags]);
 
