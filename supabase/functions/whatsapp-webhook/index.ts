@@ -544,6 +544,49 @@ serve(async (req) => {
         
         if (currentDepartment === 'tecnico') {
           logger.info('🤖 Routing directly to support-tech-agent (Luan)', { conversationId });
+
+          // 🧭 Mensagem de transferência da Cloé antes do especialista (uma vez, com idempotência)
+          const firstName = (customerName || 'Cliente').split(' ')[0];
+          const transferMsg = `Perfeito, ${firstName}! Vou te transferir para o Suporte Técnico. Um momento! ⏳`;
+
+          const { data: lastAgentMsg } = await supabase
+            .from('conversation_messages')
+            .select('id, content, created_at')
+            .eq('conversation_id', conversationId)
+            .eq('sender_type', 'agent')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          const isDupTransfer = !!(lastAgentMsg && lastAgentMsg.content === transferMsg &&
+            Date.now() - new Date(lastAgentMsg.created_at as string).getTime() < 10_000);
+
+          if (!isDupTransfer) {
+            const { error: saveTransferErr } = await supabase
+              .from('conversation_messages')
+              .insert({
+                conversation_id: conversationId,
+                sender_type: 'agent',
+                sender_name: 'Cloé Martins',
+                content: transferMsg,
+                ai_suggestion: true
+              });
+            if (saveTransferErr) {
+              logger.error('⚠️ Error saving transfer message', { error: saveTransferErr });
+            }
+
+            const { error: sendTransferErr } = await supabase.functions.invoke('send-whatsapp-message', {
+              body: { phone: customerPhone, message: transferMsg }
+            });
+            if (sendTransferErr) {
+              logger.error('⚠️ Failed to send transfer message', { error: sendTransferErr });
+            } else {
+              logger.info('✅ Transfer message sent before specialist routing');
+            }
+          } else {
+            logger.info('⏭️ Skipping duplicate transfer message');
+          }
+
           const { data: techResponse, error: techError } = await supabase.functions.invoke('support-tech-agent', {
             body: {
               conversation_id: conversationId,

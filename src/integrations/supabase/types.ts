@@ -194,10 +194,13 @@ export type Database = {
       agent_flow_states: {
         Row: {
           context_warnings: number | null
+          continue: string | null
           conversation_id: string
           created_at: string | null
           hybrid_mode_active: boolean
           last_agent_question: string | null
+          loop_count: number
+          recent_messages: Json
           scenario_started: string | null
           transferred_to_human: boolean | null
           updated_at: string | null
@@ -205,10 +208,13 @@ export type Database = {
         }
         Insert: {
           context_warnings?: number | null
+          continue?: string | null
           conversation_id: string
           created_at?: string | null
           hybrid_mode_active?: boolean
           last_agent_question?: string | null
+          loop_count?: number
+          recent_messages?: Json
           scenario_started?: string | null
           transferred_to_human?: boolean | null
           updated_at?: string | null
@@ -216,10 +222,13 @@ export type Database = {
         }
         Update: {
           context_warnings?: number | null
+          continue?: string | null
           conversation_id?: string
           created_at?: string | null
           hybrid_mode_active?: boolean
           last_agent_question?: string | null
+          loop_count?: number
+          recent_messages?: Json
           scenario_started?: string | null
           transferred_to_human?: boolean | null
           updated_at?: string | null
