@@ -661,21 +661,46 @@ serve(async (req) => {
         needsCPF: parsedResponse?.needsCPF
       });
 
-      // Salvar e enviar mensagem apenas se houver conteúdo
       if (parsedResponse.message && parsedResponse.message.trim() !== '') {
-        // Salvar mensagem do agente ANTES de tentar enviar
-        const { error: saveAgentMsgError } = await supabase
-          .from('conversation_messages')
-          .insert({
-            conversation_id: conversationId,
-            sender_type: 'agent',
-            sender_name: 'Cloé Martins',
-            content: parsedResponse.message,
-            ai_suggestion: true
-          });
+        // Determinar autor correto da mensagem (evita salvar fala do Luan/Julia como se fosse da Cloé)
+        let authorName = 'Cloé Martins';
+        const msg = parsedResponse.message as string;
+        const dept = (parsedResponse.targetDepartment || '').toString();
+        if (dept === 'tecnico' || /Luan\s+Silva/i.test(msg)) {
+          authorName = 'Luan Silva';
+        } else if (dept === 'financeiro' || /Julia/i.test(msg)) {
+          authorName = 'Julia Martins';
+        }
 
-        if (saveAgentMsgError) {
-          logger.error('⚠️ Error saving agent message', { error: saveAgentMsgError });
+        // Idempotência: pular se a última mensagem de agente for idêntica nos últimos 10s
+        const { data: lastAgentMsg } = await supabase
+          .from('conversation_messages')
+          .select('id, content, created_at')
+          .eq('conversation_id', conversationId)
+          .eq('sender_type', 'agent')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const isDuplicate = !!(lastAgentMsg && lastAgentMsg.content === msg &&
+          Date.now() - new Date(lastAgentMsg.created_at as string).getTime() < 10_000);
+
+        if (!isDuplicate) {
+          const { error: saveAgentMsgError } = await supabase
+            .from('conversation_messages')
+            .insert({
+              conversation_id: conversationId,
+              sender_type: 'agent',
+              sender_name: authorName,
+              content: msg,
+              ai_suggestion: true
+            });
+
+          if (saveAgentMsgError) {
+            logger.error('⚠️ Error saving agent message', { error: saveAgentMsgError });
+          }
+        } else {
+          logger.info('⏭️ Skipping duplicate agent message save');
         }
       } else {
         logger.info('⏭️ Skipping message save (empty or handled by specialist agent)');
