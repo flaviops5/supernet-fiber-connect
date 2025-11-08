@@ -806,6 +806,49 @@ serve(async (req) => {
         needsCPF: parsedResponse?.needsCPF
       });
 
+      // ============================================
+      // SALVAR RESULTADO DO ROUTING EM METADATA (Prioridade Importante #2)
+      // ============================================
+      try {
+        // 1️⃣ Buscar metadata atual
+        const { data: currentConv } = await supabase
+          .from('conversations')
+          .select('metadata')
+          .eq('id', conversationId)
+          .single();
+
+        // 2️⃣ Merge com novo routing info
+        const existingMetadata = currentConv?.metadata || {};
+        const updatedMetadata = {
+          ...existingMetadata,
+          last_routing: {
+            timestamp: new Date().toISOString(),
+            agent: parsedResponse?.agent || 'routing-agent',
+            targetDepartment: parsedResponse?.targetDepartment,
+            autoRouted: parsedResponse?.autoRouted,
+            routeReason: parsedResponse?.routeReason,
+            needsCPF: parsedResponse?.needsCPF,
+            rateLimited: parsedResponse?.rateLimited,
+            hasMessage: !!parsedResponse?.message,
+            messageLength: parsedResponse?.message?.length || 0
+          }
+        };
+
+        // 3️⃣ Update não-bloqueante
+        const { error: metadataError } = await supabase
+          .from('conversations')
+          .update({ metadata: updatedMetadata })
+          .eq('id', conversationId);
+
+        if (metadataError) {
+          logger.warn('⚠️ Failed to save routing metadata', { error: metadataError });
+        } else {
+          logger.info('✅ Routing metadata saved to conversation');
+        }
+      } catch (metaErr) {
+        logger.warn('⚠️ Error saving routing metadata', { error: metaErr });
+      }
+
       // 🔁 AUTO-ROUTING: Transfer message + invoke specialist agent
       if (parsedResponse?.autoRouted && !parsedResponse?.autoClose) {
         try {
