@@ -31,22 +31,64 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    // Parse seguro do body
-    const body = await req.json().catch(() => ({}));
-    const message = body.message ?? body.message_content ?? "";
-    const conversationId = body.conversationId ?? body.conversation_id ?? null;
-    const customerData = body.customerData ?? {};
-    const attachments = body.attachments ?? [];
-
-    if (!conversationId || !message) {
-      logger.error("conversationId ou message ausente", { body });
+    // ============================================
+    // PARSE SEGURO DO BODY (Prioridade Crítica #1 e #8)
+    // ============================================
+    let body: any = {};
+    
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      logger.error("❌ Failed to parse request body", { error: jsonError });
       return new Response(
-        JSON.stringify({ ok: false, error: "conversationId e message são obrigatórios", body }),
+        JSON.stringify({ 
+          ok: false, 
+          error: "Invalid JSON in request body",
+          details: jsonError instanceof Error ? jsonError.message : 'Unknown error'
+        }),
         { headers: corsHeaders, status: 400 }
       );
     }
 
-    logger.info("Routing Agent iniciado", { conversationId });
+    // Normalizar campos (aceitar ambos os formatos para compatibilidade)
+    const message = body.message ?? body.message_content ?? "";
+    const conversationId = body.conversationId ?? body.conversation_id ?? null;
+    
+    // Normalizar customerData (aceitar context ou customerData)
+    const customerData = body.customerData ?? body.context ?? {};
+    const attachments = body.attachments ?? [];
+
+    // Validação básica de campos obrigatórios
+    if (!conversationId) {
+      logger.error("❌ conversationId ausente", { body });
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: "conversationId é obrigatório",
+          providedFields: Object.keys(body)
+        }),
+        { headers: corsHeaders, status: 400 }
+      );
+    }
+
+    if (!message || typeof message !== 'string' || message.trim() === '') {
+      logger.error("❌ message ausente ou inválida", { body });
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          error: "message é obrigatória e deve ser uma string não vazia",
+          providedFields: Object.keys(body)
+        }),
+        { headers: corsHeaders, status: 400 }
+      );
+    }
+
+    logger.info("✅ Routing Agent iniciado", { 
+      conversationId,
+      messageLength: message.length,
+      hasCustomerData: !!customerData && Object.keys(customerData).length > 0,
+      hasAttachments: attachments.length > 0
+    });
 
     // ===========================================================
     // 🧪 TEST HARNESS MODE (Fail-Safe) — roteamento por intenção

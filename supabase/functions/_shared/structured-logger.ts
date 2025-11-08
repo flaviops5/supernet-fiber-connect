@@ -23,19 +23,33 @@ export function createLogger(agentName: string, req?: Request) {
         console.warn("⚠️ Supabase não inicializado — log não persistido:", message);
         return;
       }
+      
+      // Sanitizar metadata para garantir que seja serializável
+      const sanitizedMetadata = sanitizeMetadata(metadata);
+      
       await supabase
         .from("monitoring_logs")
         .insert([
           {
             level,
             message,
-            metadata,
+            metadata: sanitizedMetadata,
             agent_name: agentName,
             timestamp: new Date().toISOString(),
           },
         ]);
     } catch (err) {
       console.error("❌ Falha ao salvar log:", err instanceof Error ? err.message : 'Unknown error');
+    }
+  }
+
+  // Helper para sanitizar metadata
+  function sanitizeMetadata(meta: JsonObject): JsonObject {
+    try {
+      return JSON.parse(JSON.stringify(meta));
+    } catch (err) {
+      console.warn("⚠️ Failed to sanitize metadata:", err);
+      return { error: 'Failed to sanitize metadata' };
     }
   }
 

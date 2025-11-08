@@ -14,12 +14,36 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { validateHMACRequest } from '../_shared/hmac.ts';
 import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction.ts';
 import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLoggerFromRequest } from '../_shared/logger.ts';
+
+// ============================================
+// SCHEMA VALIDATION (Prioridade Crítica #1)
+// ============================================
+const RoutingAgentPayloadSchema = z.object({
+  message: z.string().min(1, "Message cannot be empty"),
+  conversationId: z.string().uuid("Invalid conversation ID"),
+  customerData: z.object({
+    name: z.string().min(1),
+    phone: z.string().regex(/^\d{10,15}$/, "Invalid phone format"),
+    channel: z.literal('whatsapp')
+  }),
+  attachments: z.array(z.object({
+    type: z.string(),
+    url: z.string().url(),
+    mime_type: z.string().optional(),
+    mimeType: z.string().optional(),
+    caption: z.string().optional(),
+    filename: z.string().optional()
+  })).optional()
+});
+
+type RoutingAgentPayload = z.infer<typeof RoutingAgentPayloadSchema>;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -665,36 +689,114 @@ serve(async (req) => {
         }
       }
 
-      // Chamar agente de roteamento (Cloé) para processar e responder
+      // ============================================
+      // CHAMAR ROUTING-AGENT COM VALIDAÇÃO (Prioridade Crítica #1 e #4)
+      // ============================================
       logger.info('🤖 Calling routing agent...');
-      const { data: routingResponse, error: routingError } = await supabase.functions.invoke('routing-agent', {
-        body: {
-          message: messageContent,
-          conversationId: conversationId,
-          attachments: attachments.length > 0 ? attachments : undefined,
-          context: {
-            name: customerName,
-            phone: customerPhone,
-            channel: 'whatsapp'
-          }
-        }
-      });
+      
+      // 1️⃣ Construir payload normalizado
+      const routingPayload: RoutingAgentPayload = {
+        message: messageContent,
+        conversationId: conversationId,
+        customerData: {
+          name: customerName,
+          phone: customerPhone,
+          channel: 'whatsapp'
+        },
+        attachments: attachments.length > 0 ? attachments : undefined
+      };
 
+      // 2️⃣ Validar schema antes de enviar (Prioridade Crítica #1)
+      try {
+        RoutingAgentPayloadSchema.parse(routingPayload);
+        logger.info('✅ Payload validation passed');
+      } catch (validationError) {
+        logger.error('❌ Payload validation failed', { 
+          error: validationError,
+          payload: {
+            ...routingPayload,
+            customerData: {
+              ...routingPayload.customerData,
+              phone: redactPII(routingPayload.customerData.phone, 'logs')
+            }
+          }
+        });
+        throw new Error(`Invalid payload for routing-agent: ${validationError.message}`);
+      }
+
+      // 3️⃣ Chamar routing-agent com try/catch robusto (Prioridade Crítica #4)
+      let routingResponse: any;
+      let routingError: any;
+      
+      try {
+        const result = await supabase.functions.invoke('routing-agent', {
+          body: routingPayload
+        });
+        
+        routingResponse = result.data;
+        routingError = result.error;
+        
+        // Verificar se erro está em .context.error (Prioridade Crítica #8)
+        if (!routingError && result.data?.context?.error) {
+          routingError = result.data.context.error;
+          logger.warn('⚠️ Error detected in response context', { error: routingError });
+        }
+      } catch (fetchError) {
+        logger.error('❌ Network error calling routing-agent', { 
+          error: fetchError,
+          conversationId 
+        });
+        throw new Error(`Failed to connect to routing-agent: ${fetchError.message}`);
+      }
+
+      // 4️⃣ Tratar erro do routing-agent (Prioridade Crítica #4)
       if (routingError) {
-        logger.error('Routing agent error', { error: routingError });
+        logger.error('❌ Routing agent error', { 
+          error: routingError,
+          conversationId,
+          errorType: typeof routingError,
+          errorKeys: routingError ? Object.keys(routingError) : []
+        });
+        
+        // Enviar mensagem de erro ao cliente
+        await supabase.functions.invoke('send-whatsapp-message', {
+          body: {
+            phone: customerPhone,
+            message: '⚠️ Desculpe, estamos com dificuldades técnicas momentâneas. Por favor, tente novamente em alguns instantes ou ligue: (61) 99947-5886'
+          }
+        }).catch(err => logger.error('Failed to send error message', { error: err }));
+        
         throw routingError;
       }
 
-      // Parse JSON se necessário
+      // 5️⃣ Validar resposta do routing-agent (Prioridade Crítica #1)
+      if (!routingResponse) {
+        logger.error('❌ Empty response from routing-agent', { conversationId });
+        throw new Error('Routing agent returned empty response');
+      }
+
+      // Parse JSON se necessário (com validação)
       let parsedResponse = routingResponse;
       if (typeof routingResponse === 'string') {
         try {
           parsedResponse = JSON.parse(routingResponse);
           logger.info('📨 JSON parsed from string response');
-        } catch (e) {
-          logger.error('Failed to parse routing response', { error: e });
+        } catch (parseError) {
+          logger.error('❌ Failed to parse routing response', { 
+            error: parseError,
+            responsePreview: routingResponse?.substring(0, 200) 
+          });
           throw new Error('Invalid routing agent response format');
         }
+      }
+
+      // Validar estrutura mínima da resposta
+      if (typeof parsedResponse !== 'object' || parsedResponse === null) {
+        logger.error('❌ Invalid response type from routing-agent', { 
+          type: typeof parsedResponse,
+          conversationId 
+        });
+        throw new Error('Routing agent returned invalid response type');
       }
 
       logger.info('📨 Agent response received', { 
