@@ -704,6 +704,65 @@ serve(async (req) => {
         needsCPF: parsedResponse?.needsCPF
       });
 
+      // 🔁 Ensure transfer message is sent BEFORE first specialist message when auto-routing
+      try {
+        if (parsedResponse?.autoRouted && !parsedResponse?.autoClose) {
+          const targetDept = parsedResponse.agent === 'support_tech'
+            ? 'tecnico'
+            : parsedResponse.agent === 'support_financial'
+              ? 'financeiro'
+              : null;
+
+          if (targetDept) {
+            const firstName = (customerName || 'Cliente').split(' ')[0];
+            const transferMsg = targetDept === 'tecnico'
+              ? `Perfeito, ${firstName}! Vou te transferir para o Suporte Técnico. Um momento! ⏳`
+              : `Perfeito, ${firstName}! Vou te transferir para o Suporte Financeiro. Um momento! ⏳`;
+
+            // Evitar duplicidade em janela de 10s
+            const { data: lastAgentMsg } = await supabase
+              .from('conversation_messages')
+              .select('id, content, created_at')
+              .eq('conversation_id', conversationId)
+              .eq('sender_type', 'agent')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            const isDupTransfer = !!(lastAgentMsg && lastAgentMsg.content === transferMsg &&
+              Date.now() - new Date(lastAgentMsg.created_at as string).getTime() < 10_000);
+
+            if (!isDupTransfer) {
+              const { error: saveTransferErr } = await supabase
+                .from('conversation_messages')
+                .insert({
+                  conversation_id: conversationId,
+                  sender_type: 'agent',
+                  sender_name: 'Cloé Martins',
+                  content: transferMsg,
+                  ai_suggestion: true
+                });
+              if (saveTransferErr) {
+                logger.error('⚠️ Error saving transfer message', { error: saveTransferErr });
+              }
+
+              const { error: sendTransferErr } = await supabase.functions.invoke('send-whatsapp-message', {
+                body: { phone: customerPhone, message: transferMsg }
+              });
+              if (sendTransferErr) {
+                logger.error('⚠️ Failed to send transfer message', { error: sendTransferErr });
+              } else {
+                logger.info('✅ Transfer message sent before specialist routing');
+              }
+            } else {
+              logger.info('⏭️ Skipping duplicate transfer message');
+            }
+          }
+        }
+      } catch (err) {
+        logger.error('⚠️ Failed to pre-send transfer message', { error: err });
+      }
+
       if (parsedResponse.message && parsedResponse.message.trim() !== '') {
         // Determinar autor correto da mensagem (evita salvar fala do Luan/Julia como se fosse da Cloé)
         let authorName = 'Cloé Martins';
