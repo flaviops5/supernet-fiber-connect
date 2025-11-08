@@ -704,9 +704,9 @@ serve(async (req) => {
         needsCPF: parsedResponse?.needsCPF
       });
 
-      // 🔁 Ensure transfer message is sent BEFORE first specialist message when auto-routing
-      try {
-        if (parsedResponse?.autoRouted && !parsedResponse?.autoClose) {
+      // 🔁 AUTO-ROUTING: Transfer message + invoke specialist agent
+      if (parsedResponse?.autoRouted && !parsedResponse?.autoClose) {
+        try {
           const targetDept = parsedResponse.agent === 'support_tech'
             ? 'tecnico'
             : parsedResponse.agent === 'support_financial'
@@ -719,7 +719,7 @@ serve(async (req) => {
               ? `Perfeito, ${firstName}! Vou te transferir para o Suporte Técnico. Um momento! ⏳`
               : `Perfeito, ${firstName}! Vou te transferir para o Suporte Financeiro. Um momento! ⏳`;
 
-            // Evitar duplicidade em janela de 10s
+            // 1️⃣ Send transfer message
             const { data: lastAgentMsg } = await supabase
               .from('conversation_messages')
               .select('id, content, created_at')
@@ -733,34 +733,61 @@ serve(async (req) => {
               Date.now() - new Date(lastAgentMsg.created_at as string).getTime() < 10_000);
 
             if (!isDupTransfer) {
-              const { error: saveTransferErr } = await supabase
-                .from('conversation_messages')
-                .insert({
-                  conversation_id: conversationId,
-                  sender_type: 'agent',
-                  sender_name: 'Cloé Martins',
-                  content: transferMsg,
-                  ai_suggestion: true
-                });
-              if (saveTransferErr) {
-                logger.error('⚠️ Error saving transfer message', { error: saveTransferErr });
-              }
+              await supabase.from('conversation_messages').insert({
+                conversation_id: conversationId,
+                sender_type: 'agent',
+                sender_name: 'Cloé Martins',
+                content: transferMsg,
+                ai_suggestion: true
+              });
 
-              const { error: sendTransferErr } = await supabase.functions.invoke('send-whatsapp-message', {
+              await supabase.functions.invoke('send-whatsapp-message', {
                 body: { phone: customerPhone, message: transferMsg }
               });
-              if (sendTransferErr) {
-                logger.error('⚠️ Failed to send transfer message', { error: sendTransferErr });
-              } else {
-                logger.info('✅ Transfer message sent before specialist routing');
-              }
+              
+              logger.info('✅ Transfer message sent');
+            }
+
+            // 2️⃣ Invoke specialist agent immediately
+            logger.info(`🚀 Invoking ${targetDept} specialist agent after transfer`);
+            
+            const specialistFn = targetDept === 'tecnico' ? 'support-tech-agent' : 'support-financial-agent';
+            const { data: specialistResponse, error: specialistError } = await supabase.functions.invoke(specialistFn, {
+              body: targetDept === 'tecnico' 
+                ? { conversation_id: conversationId, message: messageContent, attachments }
+                : { conversationId, messages: [{ role: 'user', content: messageContent }], customerData: { name: customerName, phone: customerPhone }, attachments }
+            });
+
+            if (specialistError) {
+              logger.error(`❌ ${specialistFn} invocation failed`, { error: specialistError });
             } else {
-              logger.info('⏭️ Skipping duplicate transfer message');
+              const specialistParsed = typeof specialistResponse === 'string' ? JSON.parse(specialistResponse) : specialistResponse;
+              const specialistMsg = specialistParsed?.message || specialistParsed?.reply || '';
+
+              if (specialistMsg && specialistMsg.trim() !== '') {
+                // Specialist already saved message, just send via WhatsApp
+                await supabase.functions.invoke('send-whatsapp-message', {
+                  body: { phone: customerPhone, message: specialistMsg }
+                });
+                logger.info(`✅ ${targetDept} specialist message sent`);
+              }
             }
           }
+        } catch (err) {
+          logger.error('⚠️ Auto-routing failed', { error: err });
         }
-      } catch (err) {
-        logger.error('⚠️ Failed to pre-send transfer message', { error: err });
+
+        // Skip remaining processing - specialist handled it
+        return new Response(JSON.stringify({ 
+          success: true, 
+          conversationId,
+          processed: true,
+          messageSent: true,
+          handledBySpecialist: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
       }
 
       if (parsedResponse.message && parsedResponse.message.trim() !== '') {
