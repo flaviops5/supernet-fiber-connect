@@ -968,30 +968,95 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       (new Date().getTime() - lastInteraction.getTime()) / 60000
     );
 
-    // ✅ TIMEOUT PROTOCOL: Cliente sem resposta há 10 minutos
-    if (!isFirstMessage && minutesWithoutReply >= 10) {
-      logger.info("Timeout: Cliente sem resposta há mais de 10 minutos", {
-        minutesWithoutReply,
-        conversation_id
-      });
+    // ✅ TIMEOUT PROTOCOL: Timeouts escalonados conforme documentação
+    // 1ª tentativa: 1:30min | 2ª tentativa: 5min | 3ª tentativa: 15min (fechar)
+    if (!isFirstMessage && minutesWithoutReply >= 1.5) {
+      const timeoutAttempts = (currentFlowState?.timeout_attempts || 0);
+      
+      // ⏱️ Timeout intermediário 1: 1:30min (primeira tentativa)
+      if (minutesWithoutReply >= 1.5 && minutesWithoutReply < 5 && timeoutAttempts === 0) {
+        logger.info("Timeout 1ª tentativa: Cliente sem resposta há 1:30min", {
+          minutesWithoutReply,
+          conversation_id
+        });
 
-      const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...currentFlowState,
+                timeout_attempts: 1,
+                last_timeout_at: new Date().toISOString()
+              }
+            }
+          })
+          .eq("id", conversation_id);
 
-      await supabase
-        .from("conversations")
-        .update({
-          status: "closed",
-          metadata: {
-            ...(currentConversation?.metadata as any || {}),
-            closed_reason: "timeout",
-            closed_at: new Date().toISOString()
-          }
-        })
-        .eq("id", conversation_id);
+        const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+        return textReply(
+          `${customerName}, ainda está aí? Aguardo seu retorno para continuar o atendimento 🙂`
+        );
+      }
+      
+      // ⏱️ Timeout intermediário 2: 5min (segunda tentativa)
+      if (minutesWithoutReply >= 5 && minutesWithoutReply < 15 && timeoutAttempts === 1) {
+        logger.info("Timeout 2ª tentativa: Cliente sem resposta há 5min", {
+          minutesWithoutReply,
+          conversation_id
+        });
 
-      return textReply(
-        `${customerName}, estou finalizando aqui por falta de retorno. Se precisar, é só me chamar novamente! 👋`
-      );
+        await supabase
+          .from("conversations")
+          .update({
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...currentFlowState,
+                timeout_attempts: 2,
+                last_timeout_at: new Date().toISOString()
+              }
+            }
+          })
+          .eq("id", conversation_id);
+
+        const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+        return textReply(
+          `${customerName}, preciso do seu retorno para continuar te ajudando. Está aí?`
+        );
+      }
+      
+      // ⏱️ Timeout final: 15min (fechar interação)
+      if (minutesWithoutReply >= 15) {
+        logger.info("Timeout final: Cliente sem resposta há 15min - fechando interação", {
+          minutesWithoutReply,
+          conversation_id
+        });
+
+        const customerName = (currentConversation?.customer_name || "cliente").split(' ')[0];
+
+        await supabase
+          .from("conversations")
+          .update({
+            status: "closed",
+            metadata: {
+              ...(currentConversation?.metadata as any || {}),
+              flow_state: {
+                ...currentFlowState,
+                timeout_attempts: 3,
+                closed_reason: "timeout_15min"
+              },
+              closed_reason: "timeout",
+              closed_at: new Date().toISOString()
+            }
+          })
+          .eq("id", conversation_id);
+
+        return textReply(
+          `${customerName}, estou finalizando aqui por falta de retorno. Se precisar, é só me chamar novamente! 👋`
+        );
+      }
     }
 
     // >>> PR7: DETECÇÃO AUTOMÁTICA DE ENTRADA NO CENÁRIO B
