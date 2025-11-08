@@ -150,7 +150,7 @@ serve(async (req) => {
           lastError = error;
           if (i < maxRetries - 1) {
             const delay = Math.min(baseDelay * Math.pow(2, i), MAX_BACKOFF_MS);
-            console.log(`⚠️ Retry ${i + 1}/${maxRetries} após ${delay}ms...`);
+            logger.warn(`Retry ${i + 1}/${maxRetries} após ${delay}ms`);
             await delayWithJitter(delay);
           }
         }
@@ -238,7 +238,7 @@ serve(async (req) => {
               equipData = { data: { registros: [] } };
             } catch (error) {
               // Se falhou completamente, tentar pelo menos buscar o cliente
-              console.warn(`⚠️ Erro ao buscar dados completos do cliente ${clientId}, tentando apenas dados básicos`);
+              logger.warn(`Erro ao buscar dados completos do cliente ${clientId}, tentando apenas dados básicos`);
               try {
                 clientData = await callIxcWithRetry(
                   IXC_PROXY_URL,
@@ -315,10 +315,10 @@ serve(async (req) => {
               
               // Log de dados inválidos para monitoramento
               if (equip.pon_porta && !isValidPonComponent(rawPonPorta)) {
-                console.warn(`⚠️ PON porta com formato inválido: ${equip.pon_porta}`);
+                logger.warn(`PON porta com formato inválido: ${equip.pon_porta}`);
               }
               if (equip.cto && !isValidPonComponent(rawCto)) {
-                console.warn(`⚠️ CTO com formato inválido: ${equip.cto}`);
+                logger.warn(`CTO com formato inválido: ${equip.cto}`);
               }
               
               if (ponPort) break;
@@ -331,7 +331,7 @@ serve(async (req) => {
               bairro: bairro || undefined
             };
           } catch (error) {
-            console.error(`❌ Erro ao buscar dados do cliente ${clientId}:`, error);
+            logger.error(`Erro ao buscar dados do cliente ${clientId}`, { error });
             return { user };
           }
         })
@@ -340,10 +340,10 @@ serve(async (req) => {
       clientsWithPon.push(...chunkResults);
     }
 
-    console.log(`📊 Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
+    logger.info(`Clientes com dados PON: ${clientsWithPon.filter(c => c.ponPort).length}/${clientsWithPon.length}`);
 
     // Verificar Dying Gasp (sinal de perda de energia da ONU) no IXC
-    console.log('🔍 Verificando eventos Dying Gasp (perda de energia)...');
+    logger.info('Verificando eventos Dying Gasp (perda de energia)...');
     const dyingGaspEvents = new Map<string, { count: number; onus: string[]; lastEvent?: string }>();
     
     try {
@@ -369,7 +369,7 @@ serve(async (req) => {
         ? ponEventData.data.registros
         : (ponEventData?.data?.registros ? Object.values(ponEventData.data.registros) : []);
 
-        console.log(`📊 Total de eventos PON encontrados: ${ponEvents.length}`);
+        logger.info(`Total de eventos PON encontrados: ${ponEvents.length}`);
 
         // Processar eventos Dying Gasp nas últimas 2 horas (indicam perda de energia recente)
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -406,18 +406,16 @@ serve(async (req) => {
               const gasps = dyingGaspEvents.get(groupKey)!;
               gasps.count++;
               if (onuSerial) gasps.onus.push(onuSerial);
-              
-              console.log(`⚡ Dying Gasp detectado: ${groupKey} - ONU: ${onuSerial || 'N/A'}`);
+              logger.info('Dying Gasp detectado', { groupKey, onuSerial: onuSerial || 'N/A' });
             }
           }
         }
-        
-      console.log(`⚡ Total de grupos com Dying Gasp: ${dyingGaspEvents.size}`);
+      logger.info(`Total de grupos com Dying Gasp: ${dyingGaspEvents.size}`);
       for (const [key, data] of dyingGaspEvents) {
-        console.log(`   ${key}: ${data.count} ONUs com perda de energia`);
+        logger.info(`Dying Gasp group: ${key} - ${data.count} ONUs`);
       }
     } catch (error) {
-      console.error('Erro ao verificar Dying Gasp:', error);
+      logger.error('Erro ao verificar Dying Gasp', { error });
     }
 
     // Agrupar por porta PON (quando disponível) ou por CTO/padrão de login
@@ -527,7 +525,7 @@ serve(async (req) => {
       
       // VALIDAÇÃO: Uma porta PON tem capacidade máxima de 128 clientes
       if (clientsData.length > MAX_CLIENTS_PER_PON) {
-        console.warn(`⚠️ ALERTA: PON ${groupKey} tem ${clientsData.length} clientes (máx: ${MAX_CLIENTS_PER_PON}). Possível erro no agrupamento!`);
+        logger.warn(`PON ${groupKey} tem ${clientsData.length} clientes (máx: ${MAX_CLIENTS_PER_PON})`);
       }
       
       if (clientsData.length >= threshold) {
@@ -553,7 +551,7 @@ serve(async (req) => {
       // Verificar se este CTO faz parte de uma PON que já tem evento
       const parentPon = ctoToPonMap.get(ctoKey);
       if (parentPon && ponEventsDetected.has(parentPon)) {
-        console.log(`⏩ Ignorando CTO ${ctoKey} - já coberto por PON ${parentPon}`);
+        logger.info(`Ignorando CTO ${ctoKey} - coberto por PON ${parentPon}`);
         continue;
       }
       
@@ -641,7 +639,10 @@ serve(async (req) => {
       const causeType = powerOutageCause 
         ? `⚡ FALTA DE ENERGIA (${dyingGaspCount} ONUs com Dying Gasp)` 
         : '❓ Causa desconhecida';
-      console.log(`🚨 QUEDA EM MASSA detectada (${groupType}): ${groupIdentifier} - ${clientsData.length} clientes afetados - ${causeType}`);
+      logger.warn(`QUEDA EM MASSA: ${groupType} ${groupIdentifier}`, { 
+        affectedClients: clientsData.length,
+        cause: causeType 
+      });
 
       // Buscar evento existente
       const { data: existingEvent } = await supabase
@@ -734,7 +735,7 @@ serve(async (req) => {
             })
             .eq('id', event.id);
           
-          console.log(`✅ Evento resolvido: ${groupKey}`);
+          logger.info(`Evento resolvido: ${groupKey}`);
           
           // RESOLUÇÃO CRUZADA: Se resolveu PON, resolver também CTOs e Regiões filhos
           if (isPonGroup) {
@@ -775,7 +776,7 @@ serve(async (req) => {
                     })
                     .eq('id', childEvent.id);
                   
-                  console.log(`✅ Evento filho resolvido automaticamente: ${childEvent.event_key} (pai: ${groupKey})`);
+                  logger.info(`Evento filho resolvido: ${childEvent.event_key} (pai: ${groupKey})`);
                 }
               }
             }
@@ -812,7 +813,7 @@ serve(async (req) => {
                     })
                     .eq('id', childEvent.id);
                   
-                  console.log(`✅ Evento filho resolvido automaticamente: ${childEvent.event_key} (pai: ${groupKey})`);
+                  logger.info(`Evento filho resolvido: ${childEvent.event_key} (pai: ${groupKey})`);
                 }
               }
             }
@@ -859,7 +860,7 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error('Erro ao detectar quedas em massa:', getErrorMessage(error));
+    logger.error('Erro ao detectar quedas em massa', { error: getErrorMessage(error) });
     return new Response(
       JSON.stringify({ error: getErrorMessage(error), success: false }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

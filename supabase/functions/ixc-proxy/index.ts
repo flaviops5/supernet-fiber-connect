@@ -5,6 +5,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
 import { validateHMACRequest } from "../_shared/hmac.ts";
 import { safeLog, sanitizeForLog } from "../_shared/log-sanitizer.ts";
+import { createLogger } from "../_shared/unified-logger.ts";
 import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
 
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -13,6 +14,7 @@ const CACHE_TTL = 30000; // 30 segundos
 Deno.serve(createPublicHandler(
   'ixc-proxy',
   async (req, { supabase }) => {
+    const logger = createLogger('ixc-proxy');
     const startTime = Date.now();
     // Ler corpo PRIMEIRO (só pode ser lido uma vez)
     const requestBody = await req.json() as IXCProxyRequest;
@@ -26,7 +28,7 @@ Deno.serve(createPublicHandler(
       
       if (!hmacSignature || !hmacTimestamp) {
         // Fallback: permitir sem HMAC para não bloquear ambiente de teste/UI
-        console.warn('🔐 HMAC headers ausentes - prosseguindo em modo compatibilidade');
+        logger.warn('HMAC headers ausentes - prosseguindo em modo compatibilidade');
       } else {
         // Validar timestamp (não mais de 5 minutos)
         const timestamp = parseInt(hmacTimestamp);
@@ -34,7 +36,7 @@ Deno.serve(createPublicHandler(
         const FIVE_MINUTES = 5 * 60 * 1000;
         
         if (Math.abs(now - timestamp) > FIVE_MINUTES) {
-          console.error('🔐 HMAC validation failed: Timestamp expired');
+          logger.error('HMAC validation failed: Timestamp expired');
           throw new Error('Unauthorized: Timestamp expired');
         }
 
@@ -43,22 +45,22 @@ Deno.serve(createPublicHandler(
         const expectedSignature = await signPayload(JSON.stringify(requestBody), HMAC_SECRET);
         
         if (hmacSignature !== expectedSignature) {
-          console.error('🔐 HMAC validation failed: Invalid signature');
+          logger.error('HMAC validation failed: Invalid signature');
           throw new Error('Unauthorized: Invalid signature');
         }
         
-        console.log('✅ HMAC validated');
+        logger.info('HMAC validated');
       }
     }
  
-    console.log(`📡 IXC Proxy: ${method} ${path}${query ? '?' + query : ''}`);
+    logger.info(`IXC Proxy request: ${method} ${path}`, { query });
 
     // Verificar cache para GET requests
     const cacheKey = `${method}:${path}:${query || ''}`;
     if (method === 'GET') {
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log('💾 Cache HIT:', cacheKey);
+        logger.info('Cache HIT', { cacheKey });
         const duration = Date.now() - startTime;
         return { 
           ok: true, 
@@ -75,7 +77,11 @@ Deno.serve(createPublicHandler(
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
-    console.log(`🔧 Config: URL=${!!IXC_BASE_URL}, USER=${!!IXC_USERNAME}, PASS=${!!IXC_PASSWORD}`);
+    logger.info('IXC Config loaded', { 
+      hasUrl: !!IXC_BASE_URL, 
+      hasUser: !!IXC_USERNAME, 
+      hasPass: !!IXC_PASSWORD 
+    });
 
     if (!IXC_BASE_URL || !IXC_USERNAME || !IXC_PASSWORD) {
       throw new Error('IXC credentials not configured');
@@ -95,8 +101,11 @@ Deno.serve(createPublicHandler(
       ? incomingAuth
       : `Basic ${btoa(`${IXC_USERNAME}:${IXC_PASSWORD}`)}`;
     
-    console.log(`🔐 Auth usado: ${useIncomingBasic ? 'da requisição' : 'das env vars'} (${ixcAuthHeader.slice(0, 15)}...)`);
-    console.log(`🌐 URL completa: ${url}`);
+    logger.info('Auth configured', { 
+      source: useIncomingBasic ? 'request' : 'env',
+      authPreview: ixcAuthHeader.slice(0, 15)
+    });
+    logger.info('IXC URL', { url });
     
     const ixcHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -160,22 +169,26 @@ Deno.serve(createPublicHandler(
     }
 
     const duration = Date.now() - startTime;
-    console.log(`✅ IXC Response: ${ixcResponse.status} (${duration}ms)`);
+    logger.info(`IXC Response: ${ixcResponse.status}`, { duration });
     
     // Log para debug de dados parseados (sanitizado)
-    console.log('🔍 ixcData type:', typeof ixcData, '| is null:', ixcData === null, '| is undefined:', ixcData === undefined);
-    if (rawText) console.log('📄 rawText preview:', rawText.slice(0, 300));
+    logger.info('Response data type', { 
+      type: typeof ixcData, 
+      isNull: ixcData === null, 
+      isUndefined: ixcData === undefined 
+    });
+    if (rawText) logger.info('Raw text preview', { preview: rawText.slice(0, 300) });
     
     // Log adicional para erros de autenticação
     if (ixcResponse.status === 401) {
-      console.error('🚫 IXC retornou 401 - Verifique credenciais ou permissões do usuário da API');
-      if (rawText) console.error('📄 Resposta:', rawText.slice(0, 300));
+      logger.error('IXC returned 401 - Check credentials');
+      if (rawText) logger.error('Response', { preview: rawText.slice(0, 300) });
     }
 
     // Armazenar em cache se GET bem-sucedido com JSON
     if (method === 'GET' && ixcResponse.ok && ixcData) {
       cache.set(cacheKey, { data: ixcData, timestamp: Date.now() });
-      console.log('💾 Cache STORED:', cacheKey);
+      logger.info('Cache stored', { cacheKey });
     }
 
     const ok = ixcResponse.ok && !!ixcData;

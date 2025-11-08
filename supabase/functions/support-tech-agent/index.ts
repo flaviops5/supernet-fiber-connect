@@ -100,7 +100,7 @@ async function insertAgentMessageOnce(supabase: any, conversation_id: string, co
     if (last && last.sender_name === 'Luan Silva' && last.content === content) {
       const diff = now - new Date(last.created_at).getTime();
       if (diff < 5000) {
-        console.warn('🔁 Duplicate agent message detected, skipping insert', { conversation_id });
+        logger.warn('Duplicate agent message detected, skipping', { conversation_id });
         return { skipped: true };
       }
     }
@@ -113,7 +113,7 @@ async function insertAgentMessageOnce(supabase: any, conversation_id: string, co
       ai_suggestion: false
     });
   } catch (e) {
-    console.error('insertAgentMessageOnce error', e);
+    logger.error('insertAgentMessageOnce error', { error: e });
     return await supabase.from('conversation_messages').insert({
       conversation_id,
       sender_type: 'agent',
