@@ -6,31 +6,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, RefreshCw, Calendar, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search, RefreshCw, Calendar, Filter, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { BackButton } from "@/components/BackButton";
 
 interface MonitoringLog {
   id: string;
-  source: string;
+  log_timestamp: string;
   level: string;
   message: string;
-  context: Record<string, unknown> | null;
-  duration_ms: number | null;
+  context: string;
+  correlation_id: string | null;
+  environment: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
-  created_by: string | null;
 }
 
 const MonitoringLogs = () => {
   const [logs, setLogs] = useState<MonitoringLog[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<MonitoringLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [contextFilter, setContextFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [sources, setSources] = useState<string[]>([]);
+  const [contexts, setContexts] = useState<string[]>([]);
   const { toast } = useToast();
 
   const fetchLogs = async () => {
@@ -39,12 +42,12 @@ const MonitoringLogs = () => {
       let query = supabase
         .from("monitoring_logs")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("log_timestamp", { ascending: false })
         .limit(500);
 
       // Filtros
-      if (sourceFilter !== "all") {
-        query = query.eq("source", sourceFilter);
+      if (contextFilter !== "all") {
+        query = query.eq("context", contextFilter);
       }
 
       if (levelFilter !== "all") {
@@ -52,32 +55,35 @@ const MonitoringLogs = () => {
       }
 
       if (startDate) {
-        query = query.gte("created_at", new Date(startDate).toISOString());
+        query = query.gte("log_timestamp", new Date(startDate).toISOString());
       }
 
       if (endDate) {
         const endDateTime = new Date(endDate);
         endDateTime.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", endDateTime.toISOString());
+        query = query.lte("log_timestamp", endDateTime.toISOString());
       }
 
       if (searchText) {
-        query = query.ilike("message", `%${searchText}%`);
+        query = query.or(`message.ilike.%${searchText}%,context.ilike.%${searchText}%`);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      setLogs((data || []).map(log => ({
+      const transformedLogs = (data || []).map(log => ({
         ...log,
-        context: log.context as Record<string, unknown>
-      })));
+        metadata: (log.metadata as Record<string, unknown>) || {},
+      })) as MonitoringLog[];
 
-      // Extrair sources únicos
-      const uniqueSources = [...new Set((data || []).map((log) => log.source))];
-      setSources(uniqueSources);
-    } catch (error) {
+      setLogs(transformedLogs);
+      setFilteredLogs(transformedLogs);
+
+      // Extrair contexts únicos
+      const uniqueContexts = [...new Set(transformedLogs.map((log) => log.context))];
+      setContexts(uniqueContexts);
+    } catch (error: any) {
       console.error("Erro ao buscar logs:", error);
       toast({
         title: "Erro ao carregar logs",
@@ -91,16 +97,18 @@ const MonitoringLogs = () => {
 
   useEffect(() => {
     fetchLogs();
-  }, [sourceFilter, levelFilter, startDate, endDate]);
+  }, [contextFilter, levelFilter, startDate, endDate]);
 
-  const getLevelBadgeVariant = (level: string) => {
-    switch (level) {
-      case "INFO":
+  const getLevelVariant = (level: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (level.toLowerCase()) {
+      case "info":
         return "default";
-      case "WARN":
+      case "warn":
         return "secondary";
-      case "ERROR":
+      case "error":
         return "destructive";
+      case "debug":
+        return "outline";
       default:
         return "outline";
     }
@@ -108,7 +116,7 @@ const MonitoringLogs = () => {
 
   const clearFilters = () => {
     setSearchText("");
-    setSourceFilter("all");
+    setContextFilter("all");
     setLevelFilter("all");
     setStartDate("");
     setEndDate("");
@@ -119,9 +127,9 @@ const MonitoringLogs = () => {
       <BackButton />
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Logs de Monitoramento</h1>
+          <h1 className="text-3xl font-bold">Logs Unificados</h1>
           <p className="text-muted-foreground">
-            Visualização centralizada de logs do sistema
+            Sistema de logging centralizado - Frontend + Edge Functions
           </p>
         </div>
         <Button onClick={fetchLogs} disabled={loading}>
@@ -142,11 +150,11 @@ const MonitoringLogs = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Busca por texto */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Buscar mensagem</label>
+              <label className="text-sm font-medium">Buscar</label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Digite para buscar..."
+                  placeholder="Mensagem ou contexto..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && fetchLogs()}
@@ -155,18 +163,18 @@ const MonitoringLogs = () => {
               </div>
             </div>
 
-            {/* Filtro de origem */}
+            {/* Filtro de contexto */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Origem</label>
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <label className="text-sm font-medium">Contexto</label>
+              <Select value={contextFilter} onValueChange={setContextFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todas as origens" />
+                  <SelectValue placeholder="Todos os contextos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as origens</SelectItem>
-                  {sources.map((source) => (
-                    <SelectItem key={source} value={source}>
-                      {source}
+                  <SelectItem value="all">Todos os contextos</SelectItem>
+                  {contexts.map((ctx) => (
+                    <SelectItem key={ctx} value={ctx}>
+                      {ctx}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -175,16 +183,17 @@ const MonitoringLogs = () => {
 
             {/* Filtro de nível */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Severidade</label>
+              <label className="text-sm font-medium">Nível</label>
               <Select value={levelFilter} onValueChange={setLevelFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os níveis" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os níveis</SelectItem>
-                  <SelectItem value="INFO">INFO</SelectItem>
-                  <SelectItem value="WARN">WARN</SelectItem>
-                  <SelectItem value="ERROR">ERROR</SelectItem>
+                  <SelectItem value="debug">Debug</SelectItem>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warn">Warn</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -234,7 +243,7 @@ const MonitoringLogs = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {logs.length} log{logs.length !== 1 ? "s" : ""} encontrado{logs.length !== 1 ? "s" : ""}
+            {filteredLogs.length} log{filteredLogs.length !== 1 ? "s" : ""} encontrado{filteredLogs.length !== 1 ? "s" : ""}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -242,11 +251,11 @@ const MonitoringLogs = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Data/Hora</TableHead>
+                  <TableHead className="w-[180px]">Timestamp</TableHead>
                   <TableHead className="w-[100px]">Nível</TableHead>
-                  <TableHead className="w-[200px]">Origem</TableHead>
+                  <TableHead className="w-[200px]">Contexto</TableHead>
                   <TableHead>Mensagem</TableHead>
-                  <TableHead className="w-[100px] text-right">Duração</TableHead>
+                  <TableHead className="w-[80px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,43 +265,70 @@ const MonitoringLogs = () => {
                       Carregando logs...
                     </TableCell>
                   </TableRow>
-                ) : logs.length === 0 ? (
+                ) : filteredLogs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       Nenhum log encontrado com os filtros selecionados
                     </TableCell>
                   </TableRow>
                 ) : (
-                  logs.map((log) => (
+                  filteredLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-mono text-xs">
-                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss")}
+                        {format(new Date(log.log_timestamp), 'dd/MM/yyyy HH:mm:ss')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getLevelBadgeVariant(log.level)}>
-                          {log.level}
+                        <Badge variant={getLevelVariant(log.level)}>
+                          {log.level.toUpperCase()}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.source}
-                      </TableCell>
+                      <TableCell className="font-medium">{log.context}</TableCell>
+                      <TableCell className="max-w-md truncate">{log.message}</TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm">{log.message}</p>
-                          {Object.keys(log.context || {}).length > 0 && (
-                            <details className="text-xs text-muted-foreground">
-                              <summary className="cursor-pointer hover:text-foreground">
-                                Ver contexto
-                              </summary>
-                              <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-x-auto">
-                                {JSON.stringify(log.context, null, 2)}
-                              </pre>
-                            </details>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-xs">
-                        {log.duration_ms ? `${log.duration_ms}ms` : "-"}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Detalhes do Log</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm font-medium">Timestamp</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {format(new Date(log.log_timestamp), 'dd/MM/yyyy HH:mm:ss')}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Context</p>
+                                <p className="text-sm text-muted-foreground">{log.context}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Correlation ID</p>
+                                <p className="text-sm text-muted-foreground font-mono">
+                                  {log.correlation_id || 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Environment</p>
+                                <p className="text-sm text-muted-foreground">{log.environment || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Message</p>
+                                <p className="text-sm text-muted-foreground">{log.message}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium">Metadata</p>
+                                <pre className="mt-2 rounded-lg bg-muted p-4 text-xs overflow-auto max-h-96">
+                                  {JSON.stringify(log.metadata, null, 2)}
+                                </pre>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   ))

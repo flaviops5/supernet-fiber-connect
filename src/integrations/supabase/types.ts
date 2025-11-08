@@ -3734,34 +3734,37 @@ export type Database = {
       }
       monitoring_logs: {
         Row: {
-          context: Json | null
-          created_at: string | null
-          created_by: string | null
-          duration_ms: number | null
+          context: string
+          correlation_id: string | null
+          created_at: string
+          environment: string | null
           id: string
           level: string
+          log_timestamp: string
           message: string
-          source: string
+          metadata: Json | null
         }
         Insert: {
-          context?: Json | null
-          created_at?: string | null
-          created_by?: string | null
-          duration_ms?: number | null
+          context: string
+          correlation_id?: string | null
+          created_at?: string
+          environment?: string | null
           id?: string
           level: string
+          log_timestamp?: string
           message: string
-          source: string
+          metadata?: Json | null
         }
         Update: {
-          context?: Json | null
-          created_at?: string | null
-          created_by?: string | null
-          duration_ms?: number | null
+          context?: string
+          correlation_id?: string | null
+          created_at?: string
+          environment?: string | null
           id?: string
           level?: string
+          log_timestamp?: string
           message?: string
-          source?: string
+          metadata?: Json | null
         }
         Relationships: []
       }
@@ -5610,6 +5613,7 @@ export type Database = {
       cleanup_expired_cache: { Args: never; Returns: number }
       cleanup_expired_data: { Args: never; Returns: undefined }
       cleanup_expired_webhooks: { Args: never; Returns: number }
+      cleanup_monitoring_logs: { Args: never; Returns: number }
       cleanup_old_logs: { Args: never; Returns: undefined }
       create_installation_appointment:
         | {
