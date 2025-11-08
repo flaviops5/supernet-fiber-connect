@@ -2386,6 +2386,23 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           }), { headers: corsHeaders });
           // <<< PR #14 ✅
         }
+        
+        // Cliente informou que equipamento está DESLIGADO
+        else if (interpretation.intent === "denied") {
+          await supabase.from("registros_de_monitoramento").insert({
+            acao: "scenario_a_power_denied",
+            fluxo: "support-tech",
+            conversation_id,
+            detalhes: withGeo({ confidence: interpretation.confidence }, flowState)
+          });
+
+          // Manter no mesmo step para aguardar cliente ligar o equipamento
+          const replyText = "Ok, por favor, **LIGUE o equipamento na tomada** e certifique-se de que o botão Power está ligado (se houver).\n\nAguarde 1-2 minutos para o equipamento sincronizar com a rede.\n\nVeja se alguma luz acendeu no aparelho e me avise 🙏";
+          
+          return new Response(JSON.stringify({
+            reply: replyText
+          }), { headers: corsHeaders });
+        }
       }
       
       else if (scenarioAStep === "scenario_a_check_los") {
