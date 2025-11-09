@@ -164,6 +164,10 @@ const agentsItems = [
   {
     title: "Logs do Sistema",
     url: "/monitoring/logs",
+  },
+  {
+    title: "Analytics de Logs",
+    url: "/monitoring/analytics",
     icon: FileText,
   },
   {

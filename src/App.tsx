@@ -26,6 +26,7 @@ import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
 import AdminTestes from "./pages/AdminTestes";
 import MonitoringLogs from "./pages/MonitoringLogs";
+import LogAnalyticsDashboard from "./pages/LogAnalyticsDashboard";
 import AtlasInsights from "./pages/AtlasInsights";
 import ProductionReadiness from "./pages/ProductionReadiness";
 import NotFound from "./pages/NotFound";
@@ -90,6 +91,7 @@ const App = () => {
             <Route path="/kanban" element={<AdminKanban />} />
             <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
+            <Route path="/monitoring/analytics" element={<LogAnalyticsDashboard />} />
             <Route path="/perfil-agente" element={<PerfilAgente />} />
             
             {/* Public calendar route (no header/footer) */}
