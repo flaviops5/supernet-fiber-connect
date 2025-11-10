@@ -18,11 +18,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
-import { hybridInterpret } from "../utils/hybrid-interpret.ts";
-import { isWeakFromTxRx, isGoodSignal } from "../diagnostics/signal-helpers.ts";
-import { executeConfiguredTools } from "../tools/tool-executor.ts";
-import { getApprovedSimulations } from "../tools/approved-simulations.ts";
-import { sanitizePII } from "../utils/message-helpers.ts";
+import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
+import { sanitizePII } from "../../_shared/message-helpers.ts";
 
 interface ScenarioCContext {
   conversationId: string;
