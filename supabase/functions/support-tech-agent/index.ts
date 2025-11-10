@@ -655,7 +655,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { 
+    let { 
       conversation_id, 
       customer_cpf, 
       message, 
@@ -679,6 +679,16 @@ serve(async (req) => {
     
     if (testHarness === true) {
       logger.info("🧪 Test mode activated", { tx, rx, message });
+      
+      // Criar IDs mock para evitar erros de NOT NULL constraints
+      if (!conversation_id) {
+        conversation_id = crypto.randomUUID();
+        logger.info("🧪 Mock conversation_id created", { conversation_id });
+      }
+      if (!customer_cpf) {
+        customer_cpf = `test-cpf-${Date.now()}`;
+        logger.info("🧪 Mock customer_cpf created", { customer_cpf });
+      }
       
       // Determine scenario based on tx/rx values OR message content
       let scenario = "unknown";
@@ -709,18 +719,11 @@ serve(async (req) => {
         scenarioDescription = "Critical RX - Fiber optic problem";
       }
       
+      testModeScenario = scenario !== "unknown" ? scenario : null;
+      
       logger.info("🎯 Test scenario determined", { scenario, tx, rx, message, description: scenarioDescription });
       
-      // Retornar imediatamente com o cenário detectado (não executar lógica de DB)
-      return new Response(
-        JSON.stringify({
-          scenario,
-          description: scenarioDescription,
-          usedRefactored: false, // Test mode usa lógica simplificada
-          testMode: true
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // NÃO retornar aqui - deixar o fluxo continuar para testar código refatorado
     }
     // <<< MODE TEST-RUNNER
 
