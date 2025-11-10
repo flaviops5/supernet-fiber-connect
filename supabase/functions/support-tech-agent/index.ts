@@ -1186,6 +1186,7 @@ Me avise quando ligar, por favor.
     }
     
     let responseMessage = "";
+    let scenario: string | undefined = undefined;
 
     // Se é a primeira mensagem, enviar saudação
     if (isFirstMessage) {
@@ -1425,7 +1426,6 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
           logger.info("Luan: Analisando sinal ONU após reboot falho", { tx, rx });
 
           // Determinar cenário baseado em TX/RX
-          let scenario = "";
           let scenarioMessage = "";
 
           if (tx === 0 && rx === 0) {
@@ -1596,7 +1596,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         .single();
 
       const continueFlowState = (currentConversation?.metadata as any)?.flow_state;
-      const scenario = (currentConversation?.metadata as any)?.scenario;
+      scenario = (currentConversation?.metadata as any)?.scenario;
 
       // Normaliza flow_state para avaliação segura
       const flowStateHasEnergia = Array.isArray(continueFlowState)
