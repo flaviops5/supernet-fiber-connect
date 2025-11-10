@@ -677,6 +677,7 @@ serve(async (req) => {
     // >>> MODE TEST-RUNNER: Enhanced to test refactored scenarios
     let testModeScenario: string | null = null;
     const SKIP_DB_OPS = testHarness === true;
+    let scenario: string | undefined = undefined;
     
     if (testHarness === true) {
       logger.info("🧪 Test mode activated - SKIP_DB_OPS enabled", { tx, rx, message });
@@ -692,7 +693,7 @@ serve(async (req) => {
       }
       
       // Determine scenario based on tx/rx values OR message content
-      let scenario = "unknown";
+      scenario = "unknown";
       let scenarioDescription = "";
       
       const txNum = Number(tx);
@@ -1186,7 +1187,6 @@ Me avise quando ligar, por favor.
     }
     
     let responseMessage = "";
-    let scenario: string | undefined = undefined;
 
     // Se é a primeira mensagem, enviar saudação
     if (isFirstMessage) {
