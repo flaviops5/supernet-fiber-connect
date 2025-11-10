@@ -31,7 +31,7 @@ Transformar o codebase de monolítico para modular, com foco em:
 
 ## 🔧 Passo 2: Refatorar support-tech-agent (60h)
 
-### Status: ✅ EM ANDAMENTO
+### Status: ✅ 20% COMPLETO (Cenário A Migrado)
 
 **Problema:**
 - `index.ts` com 4798 linhas
@@ -69,6 +69,19 @@ supabase/functions/support-tech-agent/
     ├── conversation-service.ts     # CRUD de conversas
     └── notification-service.ts     # Alertas e notificações
 ```
+
+**Status da Migração:**
+- ✅ **Cenário A** (TX/RX zero) - COMPLETO
+  - 8 etapas de fluxo implementadas
+  - Integrado com ConversationService e IXCService
+  - Usa hybridInterpret para detecção de intenção
+  - Executa tools configuradas do banco
+  - Sistema de clarificação robusto
+  - ~450 linhas (vs ~800 no monólito)
+- ⏳ Cenário B (sinal bom + offline)
+- ⏳ Cenário C (sinal fraco)
+- ⏳ Cenário D (RX crítico)
+- ⏳ Cenário E (WAN/Wi-Fi)
 
 **Benefícios:**
 - Arquivos focados (~100-200 linhas cada)
@@ -138,9 +151,11 @@ export class ConversationService {
 1. ✅ Executar migração de console.log
 2. ✅ Criar estrutura modular do support-tech-agent
 3. ✅ Implementar camada de serviços
-4. ⏳ Migrar código existente para novos módulos
-5. ⏳ Testes de regressão
-6. ⏳ Deploy gradual (feature flags)
+4. ✅ **Migrar Cenário A** (TX/RX zero) - **COMPLETO**
+5. ⏳ Migrar Cenários B, C, D, E
+6. ⏳ Atualizar index.ts para usar módulo do Cenário A
+7. ⏳ Testes de regressão
+8. ⏳ Deploy gradual com feature flag
 
 ---
 
