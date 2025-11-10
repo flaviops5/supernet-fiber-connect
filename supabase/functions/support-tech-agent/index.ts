@@ -24,6 +24,16 @@ import { logRetest } from "../_shared/retests.ts";
 import { getStepMessage, getScenarioConfig } from "../_shared/flow-adapter.ts";
 // <<< FLOW-MANAGER
 
+// >>> REFACTORED SCENARIOS - Modular architecture
+import type { ScenarioContext, ScenarioResult, ScenarioType } from "./types/scenario-context.ts";
+import { detectScenario, shouldUseRefactoredScenario } from "./detection/scenario-detector.ts";
+import { handleScenarioA } from "./scenarios/scenario-a.ts";
+import { handleScenarioB } from "./scenarios/scenario-b.ts";
+import { handleScenarioC } from "./scenarios/scenario-c.ts";
+import { handleScenarioD } from "./scenarios/scenario-d.ts";
+import { handleScenarioE } from "./scenarios/scenario-e.ts";
+// <<< REFACTORED SCENARIOS
+
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
 const simulationCache = new Map<string, { data: any, timestamp: number }>();
 
