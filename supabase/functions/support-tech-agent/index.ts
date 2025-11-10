@@ -674,18 +674,28 @@ serve(async (req) => {
     // Define lastUserMessage globalmente para uso em todo o handler
     const lastUserMessage = message || "";
 
-    // >>> MODE TEST-RUNNER: Bypass normal flow for testing
+    // >>> MODE TEST-RUNNER: Enhanced to test refactored scenarios
+    let testModeScenario: string | null = null;
+    
     if (testHarness === true) {
-      logger.info("🧪 Test mode activated", { tx, rx });
+      logger.info("🧪 Test mode activated", { tx, rx, message });
       
-      // Determine scenario based on tx/rx values
+      // Determine scenario based on tx/rx values OR message content
       let scenario = "unknown";
       let scenarioDescription = "";
       
       const txNum = Number(tx);
       const rxNum = Number(rx);
       
-      if (txNum === 0 && rxNum === 0) {
+      // Prioridade 1: Detectar Cenário E baseado em mensagem
+      const msgLower = (message || "").toLowerCase();
+      const cancelKeywords = ["cancelar", "cancela", "desistir", "quero sair"];
+      if (cancelKeywords.some(kw => msgLower.includes(kw))) {
+        scenario = "E";
+        scenarioDescription = "Atypical interaction - Customer wants to cancel or exit";
+      }
+      // Prioridade 2: Detectar cenários A-D baseados em sinal
+      else if (txNum === 0 && rxNum === 0) {
         scenario = "A";
         scenarioDescription = "TX/RX zero - Equipment disconnected or powered off";
       } else if (rxNum > -24 && txNum > 0) {
@@ -699,22 +709,12 @@ serve(async (req) => {
         scenarioDescription = "Critical RX - Fiber optic problem";
       }
       
-      logger.info("🎯 Test scenario determined", { scenario, tx, rx, description: scenarioDescription });
+      logger.info("🎯 Test scenario determined", { scenario, tx, rx, message, description: scenarioDescription });
       
-      return new Response(
-        JSON.stringify({ 
-          ok: true, 
-          scenario,
-          description: scenarioDescription,
-          test_mode: true,
-          signal: { tx: txNum, rx: rxNum },
-          usedRefactored: false
-        }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      // Armazenar cenário detectado para uso posterior
+      testModeScenario = scenario !== "unknown" ? scenario : null;
+      
+      // NÃO retornar aqui - deixar o fluxo continuar para testar código refatorado
     }
     // <<< MODE TEST-RUNNER
 
@@ -1679,20 +1679,90 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       const USE_REFACTORED_SCENARIOS = true; // ✅ Ativado - usando cenários refatorados
       
       if (USE_REFACTORED_SCENARIOS) {
+        // 🔍 DETECTOR DE CENÁRIO AUTOMÁTICO
+        // Prioridade 1: Usar cenário do modo de teste se disponível
+        // Prioridade 2: Usar cenário já definido no metadata
+        // Prioridade 3: Detectar baseado em sinal e contexto
+        let detectedScenario: string | null = testModeScenario || scenario || null;
+        
+        logger.info("🔍 Detector de cenário", {
+          testModeScenario,
+          scenario,
+          detectedScenario,
+          hasOnuSignal: !!onu_signal,
+          testHarness
+        });
+        
+        if (!detectedScenario && onu_signal) {
+          const txNum = Number(onu_signal.tx_power || 0);
+          const rxNum = Number(onu_signal.rx_power || 0);
+          
+          // Lógica de detecção baseada em sinal
+          if (txNum === 0 && rxNum === 0) {
+            detectedScenario = "A"; // Sem sinal = problema de energia
+          } else if (txNum >= -5 && txNum <= 2 && rxNum >= -24) {
+            // Sinal bom mas cliente reclama
+            const problemKeywords = ["lent", "trav", "não carrega", "não abre", "demora", "ruim"];
+            if (problemKeywords.some(kw => message.toLowerCase().includes(kw))) {
+              detectedScenario = "B";
+            }
+          } else if (txNum > -5 && rxNum >= -28 && rxNum < -24) {
+            detectedScenario = "C"; // Sinal fraco
+          } else if (rxNum < -28) {
+            detectedScenario = "D"; // RX crítico
+          }
+        }
+        
+        // Detectar Cenário E - interações atípicas
+        if (!detectedScenario) {
+          const cancelKeywords = ["cancelar", "cancela", "desistir", "quero sair"];
+          if (cancelKeywords.some(kw => message.toLowerCase().includes(kw))) {
+            detectedScenario = "E";
+          }
+        }
+        
         // Detectar cenário ativo
-        const activeScenario = scenario as ScenarioType | null;
+        const activeScenario = detectedScenario as ScenarioType | null;
         
         if (activeScenario && ['A', 'B', 'C', 'D', 'E'].includes(activeScenario)) {
           logger.info("🔀 Roteamento para cenário refatorado", {
             scenario: activeScenario,
-            conversationId: conversation_id
+            conversationId: conversation_id,
+            testMode: testHarness
           });
           
           try {
+            // 🧪 MODO DE TESTE: Criar dados mock quando necessário
+            if (testHarness === true) {
+              // Criar sinal mock baseado no cenário
+              if (!onu_signal) {
+                const mockSignals: Record<string, any> = {
+                  'A': { tx_power: 0, rx_power: 0, status: 'offline' },
+                  'B': { tx_power: 0.5, rx_power: -20, status: 'online' },
+                  'C': { tx_power: -2, rx_power: -27, status: 'online' },
+                  'D': { tx_power: -5, rx_power: -31, status: 'online' },
+                  'E': { tx_power: -3, rx_power: -25, status: 'online' }
+                };
+                onu_signal = mockSignals[activeScenario];
+                logger.info("🧪 Mock ONU signal created", { scenario: activeScenario, signal: onu_signal });
+              }
+              
+              // Criar conversação mock se não existir
+              if (!currentConversation) {
+                currentConversation = {
+                  id: conversation_id || 'test-conversation',
+                  customer_name: 'Cliente Teste',
+                  customer_phone: '(11) 99999-9999',
+                  metadata: { scenario: activeScenario }
+                } as any;
+                logger.info("🧪 Mock conversation created");
+              }
+            }
+            
             // Montar contexto inline para adaptação
             const inlineData: InlineContextData = {
-              conversationId: conversation_id,
-              customerId: customer_id,
+              conversationId: conversation_id || 'test-conversation',
+              customerId: customer_id || 'test-customer',
               customerName: currentConversation?.customer_name || "Cliente",
               customerPhone: currentConversation?.customer_phone || "",
               flowState: continueFlowState,
