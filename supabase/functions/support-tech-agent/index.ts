@@ -1675,7 +1675,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       // ============================================================================
       
       // Feature flag para controlar uso de código refatorado (gradual rollout)
-      const USE_REFACTORED_SCENARIOS = false; // TODO: Mudar para true quando validado
+      const USE_REFACTORED_SCENARIOS = true; // ✅ Ativado - usando cenários refatorados
       
       if (USE_REFACTORED_SCENARIOS) {
         // Detectar cenário ativo
