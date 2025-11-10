@@ -734,7 +734,7 @@ serve(async (req) => {
     );
 
     // 🧪 Helper function to insert messages with SKIP_DB_OPS support
-    const insertAgentMessage = async (content: string, senderName = "Luan Silva") => {
+    const insertAgentMessage = async (conversationId: string, content: string, senderName = "Luan Silva") => {
       if (SKIP_DB_OPS) {
         logger.info("🧪 SKIP_DB_OPS: Mensagem não inserida", { 
           content: content.substring(0, 50),
@@ -743,7 +743,7 @@ serve(async (req) => {
         return { error: null };
       }
       return await supabase.from("conversation_messages").insert({
-        conversation_id,
+        conversation_id: conversationId,
         sender_type: "agent",
         sender_name: senderName,
         content,
@@ -1387,13 +1387,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
                       { waiting_step: "fast_path_check_experience" }
                     );
 
-                    await supabase.from("conversation_messages").insert({
-                      conversation_id,
-                      sender_type: "agent",
-                      sender_name: "Luan Silva",
-                      content: responseMessage,
-                      ai_suggestion: false
-                    });
+                    await insertAgentMessage(conversation_id, responseMessage);
 
                     logger.info("PR#17: Fast-path ativado - aguardando confirmação do cliente");
                     
@@ -1582,21 +1576,11 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         }
       }
 
-      if (!SKIP_DB_OPS) {
-        const { error: insertErr } = await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
-        
-        if (insertErr) {
-          logger.error("Erro ao inserir mensagem", { error: insertErr.message });
-          throw insertErr;
-        }
-      } else {
-        logger.info("🧪 SKIP_DB_OPS: Mensagem não inserida no DB", { responseMessage: responseMessage.substring(0, 50) });
+      const { error: insertErr } = await insertAgentMessage(conversation_id, responseMessage);
+      
+      if (insertErr) {
+        logger.error("Erro ao inserir mensagem", { error: insertErr.message });
+        throw insertErr;
       }
 
       logger.info("Mensagem inicial do Luan enviada");
@@ -3242,13 +3226,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
         
         // Inserir mensagem do Cenário B
         if (responseMessage && typeof responseMessage === "string") {
-          const { error: insertErr } = await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          const { error: insertErr } = await insertAgentMessage(conversation_id, responseMessage);
           
           if (insertErr) {
             logger.error("Erro ao inserir mensagem do Cenário B", { error: insertErr.message });
@@ -3321,13 +3299,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           "Desligue e ligue o roteador da tomada e espere 1 minuto 👍\n" +
           "Me avise quando estiver pronto!";
 
-        const { error: insertErr } = await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        const { error: insertErr } = await insertAgentMessage(conversation_id, responseMessage);
         
         if (insertErr) {
           logger.error("Erro ao inserir mensagem do Cenário B", { error: insertErr.message });
@@ -3373,13 +3345,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           "Vou acionar nossa equipe técnica AGORA ⚠️\n\n" +
           "Só um instante… 🔧";
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -3452,13 +3418,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             "Nossa equipe técnica vai atuar com urgência! 🚀";
         }
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -3834,13 +3794,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
           last_agent_question: "Já reiniciou o roteador e testou se voltou?"
         });
         
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
         
         logger.info("Cenário B detectado - sinal bom mas cliente reclama", {
           tx: scenarioBSignal?.tx,
@@ -3887,13 +3841,7 @@ Nossa equipe técnica vai atuar na sua linha. 🔧`
             { waiting_step: "diagnosing_full", scenario: null }
           );
 
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          await insertAgentMessage(conversation_id, responseMessage);
 
           return textReply(responseMessage);
           
@@ -3947,13 +3895,7 @@ Qualquer coisa, pode me chamar! 👋`;
             })
             .eq("id", conversation_id);
 
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          await insertAgentMessage(conversation_id, responseMessage);
 
           return textReply(responseMessage);
           
@@ -3966,60 +3908,7 @@ Me responde com:
 - **"Está funcionando"** se tudo OK  
 - **"Tem problema"** se algo não funciona`;
 
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
-
-          // Mantém no mesmo step
-          return textReply(responseMessage);
-        }
-      }
-      
-      // ===== B2: CONFIRMAÇÃO DO REBOOT (CENÁRIO B) =====
-      if (flowState?.waiting_step === "scenario_b_confirm_reboot") {
-        const userMsgRebootConfirm = message || "";
-        
-        const interpret = await hybridInterpret(userMsgRebootConfirm, {
-          regexDetectors: {
-            refused: /(n[ãa]o quero|desiste|desisto|p[áa]ra|chama humano|atendente|falar com algu[ée]m)/i,
-            confirmed: /(ok|sim|vou|voltou|j[áa] fiz|pronto|feito|reiniciei|deu certo)/i
-          }
-        });
-        
-        if (interpret.intent === "refused") {
-          await logAudit({
-            fluxo: "support-tech",
-            acao: "scenario_b_refused",
-            conversation_id,
-            detalhes: { message: lastUserMessage },
-            supabaseClient: supabase
-          });
-          
-          await updateFlowState(
-            supabase,
-            { conversation_id, flowState },
-            { 
-              waiting_step: null,
-              needs_human: true,
-              scenario_completed: "B_refused"
-            }
-          );
-          
-          responseMessage = 
-            `Sem problemas! 👍\n\n` +
-            `Vou transferir você para um atendente humano que vai te ajudar melhor.`;
-          
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          await insertAgentMessage(conversation_id, responseMessage);
           
           return textReply(responseMessage);
         }
@@ -4080,13 +3969,7 @@ Me responde com:
             questionText
           ).then(r => r.json()).then(j => j.reply);
           
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          await insertAgentMessage(conversation_id, responseMessage);
           
           return textReply(responseMessage);
         }
@@ -4108,15 +3991,9 @@ Me responde com:
           questionText
         ).then(r => r.json()).then(j => j.reply);
         
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
-        
-        return textReply(responseMessage);
+          await insertAgentMessage(conversation_id, responseMessage);
+          
+          return textReply(responseMessage);
       }
       
       // ===== B3: CRIAR TICKET (CENÁRIO B) =====
@@ -4192,13 +4069,7 @@ Me responde com:
           }
         }
         
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
         
         return textReply(responseMessage);
       }
@@ -4251,13 +4122,7 @@ Me responde com:
         
         // Inserir mensagem e retornar
         if (responseMessage) {
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          await insertAgentMessage(conversation_id, responseMessage);
           
           return new Response(JSON.stringify({ message: responseMessage }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -4557,13 +4422,7 @@ Me responde com:
         
         // Inserir mensagem do Cenário C
         if (responseMessage && typeof responseMessage === "string") {
-          const { error: insertErr } = await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
+          const { error: insertErr } = await insertAgentMessage(conversation_id, responseMessage);
           
           if (insertErr) {
             logger.error("Erro ao inserir mensagem do Cenário C", { error: insertErr.message });
@@ -4662,15 +4521,9 @@ Me responde com:
           // 🔧 Bug #4 Fix: Usar textReply diretamente
           responseMessage = "Vamos checar rapidinho o **Wi-Fi do roteador** e o cabo que liga a **porta WAN** (a porta que vai pra caixa da fibra).";
 
-          await supabase.from("conversation_messages").insert({
-            conversation_id,
-            sender_type: "agent",
-            sender_name: "Luan Silva",
-            content: responseMessage,
-            ai_suggestion: false
-          });
-
-          return textReply(responseMessage);
+        await insertAgentMessage(conversation_id, responseMessage);
+        
+        return textReply(responseMessage);
         }
       }
 
@@ -4687,13 +4540,7 @@ Me responde com:
           "E as luzes do **Wi-Fi** no roteador estão **acesas**?\n\n" +
           "Me diga como está, por favor.";
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -4713,13 +4560,7 @@ Me responde com:
           "3) Olhe se a luz/ícone de **Internet/WAN** do roteador acende\n\n" +
           "⚠️ Importante: **não** troque esse cabo para uma porta LAN — LAN é para rede interna e **não funciona** como WAN.";
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -4739,13 +4580,7 @@ Me responde com:
           "• Ligue novamente e aguarde **1 minuto**\n\n" +
           "Depois teste a navegação e me avise.";
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -4815,13 +4650,7 @@ Me responde com:
           responseMessage = "Ainda sem navegação? Vou abrir um atendimento técnico para verificar **porta WAN, cabo ou configuração**.";
         }
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
@@ -4876,13 +4705,7 @@ Me responde com:
           ? `✅ Protocolo IXC: **${ticketId}**. Nossa equipe vai verificar a porta WAN/cabo/config do roteador.`
           : "✅ Atendimento registrado! Nossa equipe vai verificar a porta WAN/cabo/config do roteador.";
 
-        await supabase.from("conversation_messages").insert({
-          conversation_id,
-          sender_type: "agent",
-          sender_name: "Luan Silva",
-          content: responseMessage,
-          ai_suggestion: false
-        });
+        await insertAgentMessage(conversation_id, responseMessage);
 
         return textReply(responseMessage);
       }
