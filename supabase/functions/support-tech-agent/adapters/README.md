@@ -299,33 +299,39 @@ console.log(context.signalData.rx); // -30.0 (não "-30.0")
 
 ## 🚀 Roadmap
 
-### Fase 1: Isolado (ATUAL)
+### ✅ Fase 1: Isolado (Concluída)
 - ✅ Função adaptadora criada
 - ✅ Testes unitários completos
 - ✅ Documentação
 
-### Fase 2: Integração no index.ts
-- ⏳ Adicionar roteamento feature-flagged
-- ⏳ Deploy em staging com 10% rollout
-- ⏳ Monitorar métricas A/B
+### ✅ Fase 2: Integração no index.ts (Concluída)
+- ✅ **Routing layer adicionado (linha 1673-1786 do index.ts)**
+- ✅ **Feature flag `USE_REFACTORED_SCENARIOS`**
+- ✅ **Fallback automático para código inline em caso de erro**
+- ✅ **Logging detalhado de performance**
+- 📋 **PRÓXIMO:** Deploy em staging e testes E2E
 
-### Fase 3: Rollout Completo
-- ⏳ 10% → 25% → 50% → 75% → 100%
-- ⏳ Validar KPIs em cada fase
+### 📅 Fase 3: Validação e Rollout
+- [ ] Ativar `USE_REFACTORED_SCENARIOS = true` para testes
+- [ ] Executar testes E2E para todos os cenários
+- [ ] Comparar métricas inline vs refatorado
+- [ ] Rollout gradual: 10% → 25% → 50% → 75% → 100%
+- [ ] Validar KPIs em cada fase
 
-### Fase 4: Limpeza
-- ⏳ Remover código inline (~3000 linhas)
-- ⏳ Simplificar adaptador (se possível)
-- ⏳ Atualizar documentação final
+### 🚀 Fase 4: Limpeza e Otimização
+- [ ] Remover código inline dos cenários migrados (~3000 linhas)
+- [ ] Refatorar helpers compartilhados
+- [ ] Simplificar ou deprecar adapter
+- [ ] Atualizar documentação final
 
 ---
 
 ## 📚 Referências
 
-- [Plano de Refatoração](../../docs/INDEX-REFACTORING-PLAN.md)
-- [Análise do Código Monolítico](../../docs/INTEGRATION-ANALYSIS.md)
-- [Cenário A - Usage Guide](../../docs/SCENARIO-A-USAGE.md)
-- [Cenário B - Usage Guide](../../docs/SCENARIO-B-USAGE.md)
-- [Cenário C - Usage Guide](../../docs/SCENARIO-C-USAGE.md)
-- [Cenário D - Usage Guide](../../docs/SCENARIO-D-USAGE.md)
-- [Cenário E - Usage Guide](../../docs/SCENARIO-E-USAGE.md)
+- **[ROUTING-REFATORADO.md](../../../docs/ROUTING-REFATORADO.md)** ⭐ **Como ativar e testar**
+- [INDEX-REFACTORING-PLAN.md](../../../docs/INDEX-REFACTORING-PLAN.md) - Plano completo
+- [CENARIO-A-COMPLETO.md](../../../docs/CENARIO-A-COMPLETO.md) - Spec Cenário A
+- [CENARIO-B-COMPLETO.md](../../../docs/CENARIO-B-COMPLETO.md) - Spec Cenário B  
+- [CENARIO-C-COMPLETO.md](../../../docs/CENARIO-C-COMPLETO.md) - Spec Cenário C
+- [CENARIO-D-COMPLETO.md](../../../docs/CENARIO-D-COMPLETO.md) - Spec Cenário D
+- [CENARIO-E-COMPLETO.md](../../../docs/CENARIO-E-COMPLETO.md) - Spec Cenário E

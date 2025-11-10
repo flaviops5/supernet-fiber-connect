@@ -32,6 +32,12 @@ import { handleScenarioB } from "./scenarios/scenario-b.ts";
 import { handleScenarioC } from "./scenarios/scenario-c.ts";
 import { handleScenarioD } from "./scenarios/scenario-d.ts";
 import { handleScenarioE } from "./scenarios/scenario-e.ts";
+import { 
+  buildScenarioContext, 
+  adaptScenarioResult, 
+  validateInlineContext,
+  type InlineContextData 
+} from "./adapters/context-adapter.ts";
 // <<< REFACTORED SCENARIOS
 
 // Cache de simulações aprovadas (5 minutos - reduzido para refletir mudanças mais rápido)
@@ -1663,6 +1669,125 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       // Analisar contexto baseado no histórico
       const conversationContext = messageHistory.map(m => m.content.toLowerCase()).join(" ");
       const currentMessage = message.toLowerCase();
+
+      // ============================================================================
+      // 🚀 ROUTING LAYER - Refactored vs Inline Scenarios
+      // ============================================================================
+      
+      // Feature flag para controlar uso de código refatorado (gradual rollout)
+      const USE_REFACTORED_SCENARIOS = false; // TODO: Mudar para true quando validado
+      
+      if (USE_REFACTORED_SCENARIOS) {
+        // Detectar cenário ativo
+        const activeScenario = scenario as ScenarioType | null;
+        
+        if (activeScenario && ['A', 'B', 'C', 'D', 'E'].includes(activeScenario)) {
+          logger.info("🔀 Roteamento para cenário refatorado", {
+            scenario: activeScenario,
+            conversationId: conversation_id
+          });
+          
+          try {
+            // Montar contexto inline para adaptação
+            const inlineData: InlineContextData = {
+              conversationId: conversation_id,
+              customerId: customer_id,
+              customerName: currentConversation?.customer_name || "Cliente",
+              customerPhone: currentConversation?.customer_phone || "",
+              flowState: continueFlowState,
+              waitingStep: waitingStep,
+              currentMessage: message,
+              messageHistory,
+              signalData: {
+                tx: onuTx,
+                rx: onuRx,
+                status: onuStatus || "unknown"
+              },
+              analysisResult: {
+                scenario,
+                needsEscalation: false,
+                hasImages: userImages.length > 0,
+                imageAnalysis
+              }
+            };
+            
+            // Validar contexto
+            const validation = validateInlineContext(activeScenario, inlineData);
+            if (!validation.valid) {
+              logger.warn("⚠️ Contexto inválido para cenário refatorado - usando inline", {
+                scenario: activeScenario,
+                missing: validation.missing
+              });
+              // Continuar com código inline (não fazer nada, vai cair nos ifs abaixo)
+            } else {
+              // Construir contexto específico do cenário
+              const scenarioContext = buildScenarioContext(activeScenario, inlineData);
+              
+              // Chamar handler refatorado apropriado
+              let scenarioResult: ScenarioResult;
+              const startTime = Date.now();
+              
+              switch (activeScenario) {
+                case 'A':
+                  scenarioResult = await handleScenarioA(scenarioContext, supabase, logger);
+                  break;
+                case 'B':
+                  scenarioResult = await handleScenarioB(scenarioContext, supabase, logger);
+                  break;
+                case 'C':
+                  scenarioResult = await handleScenarioC(scenarioContext, supabase, logger);
+                  break;
+                case 'D':
+                  scenarioResult = await handleScenarioD(scenarioContext, supabase, logger);
+                  break;
+                case 'E':
+                  scenarioResult = await handleScenarioE(scenarioContext, supabase, logger);
+                  break;
+                default:
+                  throw new Error(`Cenário não suportado: ${activeScenario}`);
+              }
+              
+              const executionTime = Date.now() - startTime;
+              
+              // Adaptar resultado de volta para formato inline
+              const adaptedResult = adaptScenarioResult(activeScenario, scenarioResult);
+              
+              // Log de performance
+              logger.info("✅ Cenário refatorado executado com sucesso", {
+                scenario: activeScenario,
+                executionTime,
+                nextStep: adaptedResult.nextFlowState,
+                messageLength: adaptedResult.message?.length || 0
+              });
+              
+              // Retornar resposta
+              return new Response(
+                JSON.stringify({ 
+                  ok: true, 
+                  agent: "support_tech",
+                  message: adaptedResult.message,
+                  scenario: activeScenario,
+                  refactored: true
+                }),
+                { 
+                  status: 200, 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+                }
+              );
+            }
+          } catch (refactoredError) {
+            logger.error("❌ Erro no cenário refatorado - fallback para inline", {
+              scenario: activeScenario,
+              error: refactoredError instanceof Error ? refactoredError.message : String(refactoredError)
+            });
+            // Continuar com código inline (não fazer nada, vai cair nos ifs abaixo)
+          }
+        }
+      }
+      
+      // ============================================================================
+      // 📜 INLINE SCENARIOS - Original monolithic code (fallback)
+      // ============================================================================
 
       // 🔴 CENÁRIO A: Fluxo de diagnóstico de energia
       // Detectar Cenário A pelo flowState (mais confiável que scenario)
