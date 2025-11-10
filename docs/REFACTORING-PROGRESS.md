@@ -1,6 +1,6 @@
 # 📊 Progresso da Refatoração
 
-## Status Geral: 60% Completo
+## Status Geral: 80% Completo
 
 ---
 
@@ -90,17 +90,23 @@
 - ✅ Tool executor
 - ✅ Sistema de clarificação
 
-### 4. Cenário D - RX Crítico (0%)
-**Status:** Não iniciado
-**Complexidade:** Baixa
-**Estimativa:** 4h
+### 4. Cenário D - RX Crítico (100%)
+**Arquivo:** `scenarios/scenario-d.ts`
+**Linhas:** 550 (vs 300 no monólito)
+**Redução:** -83% (mais detalhado em mensagens ao cliente)
 
-**Fluxo:**
-- Detectar RX < -30 dBm
-- Identificar problema crítico na fibra
-- Criar ticket urgente
-- Agendar visita técnica
-- Escalação imediata
+**Etapas Implementadas:**
+- ✅ Detecção de RX crítico (< -30 dBm)
+- ✅ Informação ao cliente sobre gravidade
+- ✅ Criação automática de ticket urgente
+- ✅ Instruções para visita técnica
+- ✅ Escalação imediata para agendamento
+- ✅ Fluxo linear automatizado (2-3 min)
+
+**Integrações:**
+- ✅ ConversationService
+- ✅ IXCService (ticket creation)
+- ✅ Transferência automática
 
 ### 5. Cenário E - WAN/Wi-Fi (0%)
 **Status:** Não iniciado
@@ -127,12 +133,12 @@
 | **Cenário A** | 800 | 450 | 43% |
 | **Cenário B** | 900 | 550 | 38% |
 | **Cenário C** | 600 | 880 | -46%* |
-| **Cenário D** | 300 | - | - |
+| **Cenário D** | 300 | 550 | -83%* |
 | **Cenário E** | 700 | - | - |
 | **Infraestrutura** | 1498 | 800 | 46% |
-| **TOTAL** | 4798 | 2680 | **44%** |
+| **TOTAL** | 4798 | 3230 | **33%** |
 
-*Nota: Cenário C ficou maior devido a instruções detalhadas por tipo de luz LOS e sistema de clarificação robusto
+*Nota: Cenários C e D ficaram maiores devido a mensagens detalhadas ao cliente e instruções passo-a-passo
 
 ### Complexidade Ciclomática
 
