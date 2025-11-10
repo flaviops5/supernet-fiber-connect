@@ -711,10 +711,16 @@ serve(async (req) => {
       
       logger.info("🎯 Test scenario determined", { scenario, tx, rx, message, description: scenarioDescription });
       
-      // Armazenar cenário detectado para uso posterior
-      testModeScenario = scenario !== "unknown" ? scenario : null;
-      
-      // NÃO retornar aqui - deixar o fluxo continuar para testar código refatorado
+      // Retornar imediatamente com o cenário detectado (não executar lógica de DB)
+      return new Response(
+        JSON.stringify({
+          scenario,
+          description: scenarioDescription,
+          usedRefactored: false, // Test mode usa lógica simplificada
+          testMode: true
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     // <<< MODE TEST-RUNNER
 
