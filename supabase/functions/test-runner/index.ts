@@ -38,6 +38,12 @@ const CASES: TestCase[] = [
     payload: { tx: -5, rx: -31, testHarness: true }, 
     targetFn: "support-tech-agent",
     expectedScenario: "D"
+  },
+  { 
+    name: "Scenario E – Interação Atípica", 
+    payload: { message: "Quero cancelar", testHarness: true }, 
+    targetFn: "support-tech-agent",
+    expectedScenario: "E"
   }
 ];
 
@@ -57,6 +63,7 @@ async function runCase(supabase: any, tc: TestCase) {
       scenario: data?.scenario || "unknown",
       expected: tc.expectedScenario,
       match: data?.scenario === tc.expectedScenario,
+      usedRefactored: data?.usedRefactored || false,
       error: error?.message 
     };
   } catch (e) {
@@ -94,6 +101,7 @@ serve(async (req) => {
 
     const avg = results.reduce((a, r) => a + r.ms, 0) / results.length;
     const passed = results.filter(r => r.ok && r.match).length;
+    const refactoredCount = results.filter(r => r.usedRefactored).length;
     
     // Alertas progressivos
     let severity = "info";
@@ -118,6 +126,7 @@ serve(async (req) => {
     }
 
     console.log(`📊 Média: ${Math.round(avg)}ms | Aprovados: ${passed}/${CASES.length}`);
+    console.log(`🔄 Cenários refatorados: ${refactoredCount}/${CASES.length}`);
 
     return new Response(
       JSON.stringify({ 
@@ -125,6 +134,8 @@ serve(async (req) => {
         avg_ms: Math.round(avg), 
         passed,
         total: CASES.length,
+        refactoredCount,
+        refactoredPercentage: Math.round((refactoredCount / CASES.length) * 100),
         severity,
         results 
       }), 

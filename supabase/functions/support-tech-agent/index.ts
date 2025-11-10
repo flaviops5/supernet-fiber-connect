@@ -707,7 +707,8 @@ serve(async (req) => {
           scenario,
           description: scenarioDescription,
           test_mode: true,
-          signal: { tx: txNum, rx: rxNum }
+          signal: { tx: txNum, rx: rxNum },
+          usedRefactored: false
         }),
         { 
           status: 200, 
@@ -1767,7 +1768,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
                   agent: "support_tech",
                   message: adaptedResult.message,
                   scenario: activeScenario,
-                  refactored: true
+                  usedRefactored: true
                 }),
                 { 
                   status: 200, 
@@ -4920,7 +4921,9 @@ Me responde com:
       JSON.stringify({ 
         ok: true, 
         agent: "support_tech",
-        message: responseMessage
+        message: responseMessage,
+        scenario,
+        usedRefactored: false
       }),
       { 
         status: 200, 
