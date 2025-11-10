@@ -14,9 +14,10 @@ export interface KanbanBoard {
 export interface KanbanColumn {
   id: string;
   board_id: string;
-  title: string;
+  name: string;
+  color?: string;
   position: number;
-  limit?: number;
+  limit_cards?: number | null;
   created_at: string;
   updated_at: string;
 }
