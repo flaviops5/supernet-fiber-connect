@@ -19,7 +19,6 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
 import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
-import { sanitizePII } from "../../_shared/message-helpers.ts";
 
 interface ScenarioCContext {
   conversationId: string;
