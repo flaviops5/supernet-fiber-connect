@@ -676,9 +676,10 @@ serve(async (req) => {
 
     // >>> MODE TEST-RUNNER: Enhanced to test refactored scenarios
     let testModeScenario: string | null = null;
+    const SKIP_DB_OPS = testHarness === true;
     
     if (testHarness === true) {
-      logger.info("🧪 Test mode activated", { tx, rx, message });
+      logger.info("🧪 Test mode activated - SKIP_DB_OPS enabled", { tx, rx, message });
       
       // Criar IDs mock para evitar erros de NOT NULL constraints
       if (!conversation_id) {
@@ -731,6 +732,24 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // 🧪 Helper function to insert messages with SKIP_DB_OPS support
+    const insertAgentMessage = async (content: string, senderName = "Luan Silva") => {
+      if (SKIP_DB_OPS) {
+        logger.info("🧪 SKIP_DB_OPS: Mensagem não inserida", { 
+          content: content.substring(0, 50),
+          senderName 
+        });
+        return { error: null };
+      }
+      return await supabase.from("conversation_messages").insert({
+        conversation_id,
+        sender_type: "agent",
+        sender_name: senderName,
+        content,
+        ai_suggestion: false
+      });
+    };
 
     logger.info("Luan atendendo", { 
       conversation_id, 
@@ -789,11 +808,22 @@ serve(async (req) => {
     }
 
     // >>> PR10A - Captura geolocalização
-    const { data: convWithPhone } = await supabase
-      .from("conversations")
-      .select("metadata, customer_phone")
-      .eq("id", conversation_id)
-      .single();
+    let convWithPhone;
+    if (!SKIP_DB_OPS) {
+      const { data } = await supabase
+        .from("conversations")
+        .select("metadata, customer_phone")
+        .eq("id", conversation_id)
+        .single();
+      convWithPhone = data;
+    } else {
+      // Mock data for test mode
+      convWithPhone = {
+        metadata: { flow_state: {} },
+        customer_phone: "+5511999999999"
+      };
+      logger.info("🧪 Mock convWithPhone created");
+    }
 
     // Normalizar flow_state para evitar espalhar string em chaves '0','1',...
     const rawFlowState = (convWithPhone?.metadata as any)?.flow_state;
@@ -807,7 +837,7 @@ serve(async (req) => {
     // Disponibiliza a versão string (quando existir) para detecção de cenário
     const continueFlowState = typeof rawFlowState === "string" ? rawFlowState : (flowState?.continue || "");
     
-    if (ixc_client_id) {
+    if (ixc_client_id && !SKIP_DB_OPS) {
       const geoData = await ensureGeo(
         supabase,
         { conversation_id, flowState },
@@ -826,29 +856,31 @@ serve(async (req) => {
       ? existingFlowState.hybrid_mode_active
       : Math.random() < 0.5; // 50% dos atendimentos
 
-    await supabase
-      .from("conversations")
-      .update({
-        metadata: {
-          ...(convWithPhone?.metadata as any || {}),
-          flow_state: {
-            ...existingFlowState,
-            hybrid_mode_active: isHybridEnabled
+    if (!SKIP_DB_OPS) {
+      await supabase
+        .from("conversations")
+        .update({
+          metadata: {
+            ...(convWithPhone?.metadata as any || {}),
+            flow_state: {
+              ...existingFlowState,
+              hybrid_mode_active: isHybridEnabled
+            }
           }
-        }
-      })
-      .eq("id", conversation_id);
+        })
+        .eq("id", conversation_id);
 
 
-    await logAudit({
-      action: "hybrid_test_assignment",
-      conversation_id,
-      detalhes: {
-        hybrid_mode: isHybridEnabled ? "hybrid" : "deterministic",
-        assigned_at: new Date().toISOString()
-      },
-      supabaseClient: supabase
-    });
+      await logAudit({
+        action: "hybrid_test_assignment",
+        conversation_id,
+        detalhes: {
+          hybrid_mode: isHybridEnabled ? "hybrid" : "deterministic",
+          assigned_at: new Date().toISOString()
+        },
+        supabaseClient: supabase
+      });
+    }
 
     logger.info("Modo híbrido definido", { 
       isHybridEnabled,
@@ -960,11 +992,19 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
     }
 
     // Buscar histórico de mensagens da conversa
-    const { data: messageHistory } = await supabase
-      .from("conversation_messages")
-      .select("sender_type, content")
-      .eq("conversation_id", conversation_id)
-      .order("created_at", { ascending: true });
+    let messageHistory;
+    if (!SKIP_DB_OPS) {
+      const { data } = await supabase
+        .from("conversation_messages")
+        .select("sender_type, content")
+        .eq("conversation_id", conversation_id)
+        .order("created_at", { ascending: true });
+      messageHistory = data;
+    } else {
+      // Mock empty history for test mode
+      messageHistory = [];
+      logger.info("🧪 Mock messageHistory created (empty)");
+    }
 
     const hasHistory = messageHistory && messageHistory.length > 0;
 
@@ -980,11 +1020,26 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
     });
 
     // 🔥 HÍBRIDO SEGURO: Buscar flowState para timeout e intent detection
-    const { data: currentConversation } = await supabase
-      .from("conversations")
-      .select("customer_name, metadata, updated_at")
-      .eq("id", conversation_id)
-      .single();
+    let currentConversation;
+    if (!SKIP_DB_OPS) {
+      const { data } = await supabase
+        .from("conversations")
+        .select("customer_name, metadata, updated_at")
+        .eq("id", conversation_id)
+        .single();
+      currentConversation = data;
+    } else {
+      // Mock conversation for test mode
+      currentConversation = {
+        customer_name: "Test Customer",
+        metadata: {
+          flow_state: {},
+          signal_data: { tx: Number(tx) || 0, rx: Number(rx) || 0 }
+        },
+        updated_at: new Date().toISOString()
+      };
+      logger.info("🧪 Mock currentConversation created");
+    }
 
     const currentFlowState = (currentConversation?.metadata as any)?.flow_state;
     const lastInteraction = currentConversation?.updated_at 
@@ -1527,17 +1582,21 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         }
       }
 
-      const { error: insertErr } = await supabase.from("conversation_messages").insert({
-        conversation_id,
-        sender_type: "agent",
-        sender_name: "Luan Silva",
-        content: responseMessage,
-        ai_suggestion: false
-      });
-      
-      if (insertErr) {
-        logger.error("Erro ao inserir mensagem", { error: insertErr.message });
-        throw insertErr;
+      if (!SKIP_DB_OPS) {
+        const { error: insertErr } = await supabase.from("conversation_messages").insert({
+          conversation_id,
+          sender_type: "agent",
+          sender_name: "Luan Silva",
+          content: responseMessage,
+          ai_suggestion: false
+        });
+        
+        if (insertErr) {
+          logger.error("Erro ao inserir mensagem", { error: insertErr.message });
+          throw insertErr;
+        }
+      } else {
+        logger.info("🧪 SKIP_DB_OPS: Mensagem não inserida no DB", { responseMessage: responseMessage.substring(0, 50) });
       }
 
       logger.info("Mensagem inicial do Luan enviada");
@@ -1643,29 +1702,33 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         
         responseMessage = `${customerName}, estou tendo dificuldade em entender suas respostas. 😅\n\nVou te transferir para um atendente humano que pode te ajudar melhor!\n\nSó um momento! ⏳`;
         
-        await supabase
-          .from("conversations")
-          .update({
-            status: "active",
-            department: "tecnico",
-            assigned_agent_id: null,
-            metadata: {
-              ...(currentConversation?.metadata as any || {}),
-              needs_human_transfer: true,
-              transfer_reason: "clarification_limit_exceeded",
-              clarification_attempts: clarificationAttempts
-            }
-          })
-          .eq("id", conversation_id);
-        
-        // Salvar resposta e retornar
-        await supabase
-          .from("conversation_messages")
-          .insert({
-            conversation_id,
-            sender_type: "agent",
-            content: responseMessage
-          });
+        if (!SKIP_DB_OPS) {
+          await supabase
+            .from("conversations")
+            .update({
+              status: "active",
+              department: "tecnico",
+              assigned_agent_id: null,
+              metadata: {
+                ...(currentConversation?.metadata as any || {}),
+                needs_human_transfer: true,
+                transfer_reason: "clarification_limit_exceeded",
+                clarification_attempts: clarificationAttempts
+              }
+            })
+            .eq("id", conversation_id);
+          
+          // Salvar resposta e retornar
+          await supabase
+            .from("conversation_messages")
+            .insert({
+              conversation_id,
+              sender_type: "agent",
+              content: responseMessage
+            });
+        } else {
+          logger.info("🧪 SKIP_DB_OPS: Transferência para humano não executada");
+        }
         
         return new Response(JSON.stringify({ 
           message: responseMessage,
