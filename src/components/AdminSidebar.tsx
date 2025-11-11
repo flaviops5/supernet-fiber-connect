@@ -111,6 +111,11 @@ const documentationItems = [
     icon: Database,
   },
   {
+    title: "IA Corporativa (RAG)",
+    url: "/admin/ia-corporativa",
+    icon: Brain,
+  },
+  {
     title: "Documentos",
     url: "/admin/documents",
     icon: FolderOpen,

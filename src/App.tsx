@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
 import AdminFluxoAgentes from "./pages/AdminFluxoAgentes";
 import FluxoAgente from "./pages/FluxoAgente";
+import CorporateAI from "./components/CorporateAI";
 import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
 import GoLive from "./pages/GoLive";
 import AdminKanban from "./pages/AdminKanban";
@@ -79,8 +80,18 @@ const App = () => {
             <Route path="/admin/prompts" element={<AdminPrompts />} />
             <Route path="/admin/testes" element={<AdminTestes />} />
             
+            {/* AI RAG - Dedicated route */}
+            <Route 
+              path="/admin/ia-corporativa" 
+              element={
+                <div className="min-h-screen bg-background p-6">
+                  <CorporateAI />
+                </div>
+              } 
+            />
+            
             {/* Redirects for consolidated documentation */}
-            <Route path="/admin/corporate-ai" element={<Navigate to="/admin/documentacao" replace />} />
+            <Route path="/admin/corporate-ai" element={<Navigate to="/admin/ia-corporativa" replace />} />
             <Route path="/admin/fluxo-luan" element={<Navigate to="/admin/fluxo-agentes" replace />} />
             <Route path="/admin/knowledge" element={<Navigate to="/admin/documentacao" replace />} />
             <Route path="/admin/omnichannel-codes" element={<Navigate to="/admin/documentacao" replace />} />
