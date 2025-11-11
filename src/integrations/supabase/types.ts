@@ -5847,24 +5847,43 @@ export type Database = {
         }
         Returns: string
       }
-      match_knowledge: {
-        Args: {
-          query_embedding: string
-          similarity_threshold?: number
-          top_k?: number
-        }
-        Returns: {
-          category: string
-          content: string
-          content_type: string
-          id: string
-          metadata: Json
-          similarity: number
-          source_id: string
-          tags: string[]
-          title: string
-        }[]
-      }
+      match_knowledge:
+        | {
+            Args: {
+              query_embedding: string
+              similarity_threshold?: number
+              top_k?: number
+            }
+            Returns: {
+              category: string
+              content: string
+              content_type: string
+              id: string
+              metadata: Json
+              similarity: number
+              source_id: string
+              tags: string[]
+              title: string
+            }[]
+          }
+        | {
+            Args: {
+              query_embedding: string
+              similarity_threshold?: number
+              top_k?: number
+            }
+            Returns: {
+              category: string
+              content: string
+              content_type: string
+              id: string
+              metadata: Json
+              similarity: number
+              source_id: string
+              tags: string[]
+              title: string
+            }[]
+          }
       validate_calendar_token: {
         Args: { p_token: string }
         Returns: {
