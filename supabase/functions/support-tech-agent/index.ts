@@ -660,6 +660,198 @@ Me avise quando ligar, por favor.
             .eq("id", conversation_id);
         }
 
+      // ============================================================================
+      // 🚀 ROUTING LAYER - Refactored vs Inline Scenarios (MOVED UP - Priority 1)
+      // ============================================================================
+      
+      // Feature flag para controlar uso de código refatorado (gradual rollout)
+      const USE_REFACTORED_SCENARIOS = await shouldUseRefactoredScenarios(
+        supabase, 
+        conversation_id
+      );
+      
+      // Log status do rollout para debug
+      const rolloutStatus = await getRefactoringRolloutStatus(supabase);
+      logger.info("🎚️ Refactoring rollout status", {
+        useRefactored: USE_REFACTORED_SCENARIOS,
+        flagEnabled: rolloutStatus.enabled,
+        rolloutPercentage: rolloutStatus.rollout_percentage,
+        conversationId: conversation_id
+      });
+      
+      if (USE_REFACTORED_SCENARIOS) {
+        // 🔍 DETECTOR DE CENÁRIO AUTOMÁTICO
+        let detectedScenario: string | null = testModeScenario || scenario || null;
+        
+        logger.info("🔍 Detector de cenário", {
+          testModeScenario,
+          scenario,
+          detectedScenario,
+          hasOnuSignal: !!onu_signal,
+          testHarness
+        });
+        
+        if (!detectedScenario && onu_signal) {
+          const txNum = Number(onu_signal.tx_power || 0);
+          const rxNum = Number(onu_signal.rx_power || 0);
+          
+          // Lógica de detecção baseada em sinal
+          if (txNum === 0 && rxNum === 0) {
+            detectedScenario = "A";
+          } else if (txNum >= -5 && txNum <= 2 && rxNum >= -24) {
+            const problemKeywords = ["lent", "trav", "não carrega", "não abre", "demora", "ruim"];
+            if (problemKeywords.some(kw => message.toLowerCase().includes(kw))) {
+              detectedScenario = "B";
+            }
+          } else if (txNum > -5 && rxNum >= -28 && rxNum < -24) {
+            detectedScenario = "C";
+          } else if (rxNum < -28) {
+            detectedScenario = "D";
+          }
+        }
+        
+        if (!detectedScenario) {
+          const cancelKeywords = ["cancelar", "cancela", "desistir", "quero sair"];
+          if (cancelKeywords.some(kw => message.toLowerCase().includes(kw))) {
+            detectedScenario = "E";
+          }
+        }
+        
+        const activeScenario = detectedScenario as ScenarioType | null;
+        
+        if (activeScenario && ['A', 'B', 'C', 'D', 'E'].includes(activeScenario)) {
+          logger.info("🔀 Roteamento para cenário refatorado", {
+            scenario: activeScenario,
+            conversationId: conversation_id,
+            testMode: testHarness
+          });
+          
+          try {
+            // 🧪 MODO DE TESTE: Criar dados mock
+            if (testHarness === true) {
+              if (!onu_signal) {
+                const mockSignals: Record<string, any> = {
+                  'A': { tx_power: 0, rx_power: 0, status: 'offline' },
+                  'B': { tx_power: 0.5, rx_power: -20, status: 'online' },
+                  'C': { tx_power: -2, rx_power: -27, status: 'online' },
+                  'D': { tx_power: -5, rx_power: -31, status: 'online' },
+                  'E': { tx_power: -3, rx_power: -25, status: 'online' }
+                };
+                onu_signal = mockSignals[activeScenario];
+                logger.info("🧪 Mock ONU signal created", { scenario: activeScenario, signal: onu_signal });
+              }
+              
+              if (!currentConversation) {
+                currentConversation = {
+                  id: conversation_id || 'test-conversation',
+                  customer_name: 'Cliente Teste',
+                  customer_phone: '(11) 99999-9999',
+                  metadata: { scenario: activeScenario }
+                } as any;
+                logger.info("🧪 Mock conversation created");
+              }
+            }
+            
+            // Montar contexto inline para adaptação
+            const inlineData: InlineContextData = {
+              conversationId: conversation_id || 'test-conversation',
+              customerId: customer_id || 'test-customer',
+              customerName: currentConversation?.customer_name || "Cliente",
+              customerPhone: currentConversation?.customer_phone || "",
+              flowState: continueFlowState,
+              waitingStep: waitingStep,
+              currentMessage: message,
+              messageHistory,
+              signalData: {
+                tx: onuTx,
+                rx: onuRx,
+                status: onuStatus || "unknown"
+              },
+              analysisResult: {
+                scenario,
+                needsEscalation: false,
+                hasImages: userImages.length > 0,
+                imageAnalysis
+              },
+              ragContext
+            };
+            
+            // Validar contexto
+            const validation = validateInlineContext(activeScenario, inlineData);
+            if (!validation.valid) {
+              logger.warn("⚠️ Contexto inválido para cenário refatorado - usando inline", {
+                scenario: activeScenario,
+                missing: validation.missing
+              });
+            } else {
+              // Construir contexto específico do cenário
+              const scenarioContext = buildScenarioContext(activeScenario, inlineData);
+              
+              // Chamar handler refatorado apropriado
+              let scenarioResult: ScenarioResult;
+              const startTime = Date.now();
+              
+              switch (activeScenario) {
+                case 'A':
+                  scenarioResult = await handleScenarioA(scenarioContext, supabase, logger);
+                  break;
+                case 'B':
+                  scenarioResult = await handleScenarioB(scenarioContext, supabase, logger);
+                  break;
+                case 'C':
+                  scenarioResult = await handleScenarioC(scenarioContext, supabase, logger);
+                  break;
+                case 'D':
+                  scenarioResult = await handleScenarioD(scenarioContext, supabase, logger);
+                  break;
+                case 'E':
+                  scenarioResult = await handleScenarioE(scenarioContext, supabase, logger);
+                  break;
+                default:
+                  throw new Error(`Cenário não suportado: ${activeScenario}`);
+              }
+              
+              const executionTime = Date.now() - startTime;
+              
+              // Adaptar resultado de volta para formato inline
+              const adaptedResult = adaptScenarioResult(activeScenario, scenarioResult);
+              
+              // Log de performance
+              logger.info("✅ Cenário refatorado executado com sucesso", {
+                scenario: activeScenario,
+                executionTime,
+                nextStep: adaptedResult.nextFlowState,
+                messageLength: adaptedResult.message?.length || 0
+              });
+              
+              // Retornar resposta IMEDIATAMENTE
+              return new Response(
+                JSON.stringify({ 
+                  ok: true, 
+                  agent: "support_tech",
+                  message: adaptedResult.message,
+                  scenario: activeScenario,
+                  usedRefactored: true
+                }),
+                { 
+                  status: 200, 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+                }
+              );
+            }
+          } catch (refactoredError) {
+            logger.error("❌ Erro no cenário refatorado - fallback para inline", {
+              scenario: activeScenario,
+              error: refactoredError instanceof Error ? refactoredError.message : String(refactoredError)
+            });
+          }
+        }
+      }
+      
+      // ============================================================================
+      // CÓDIGO INLINE (Fallback quando não usa refatorado)
+      // ============================================================================
+      
       // =============================================================================
       // PR#17 - FAST-PATH: Detecção rápida para clientes com bom sinal + conectividade
       // =============================================================================
