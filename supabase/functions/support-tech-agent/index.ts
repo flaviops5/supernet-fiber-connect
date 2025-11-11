@@ -681,7 +681,10 @@ Me avise quando ligar, por favor.
       
       if (USE_REFACTORED_SCENARIOS) {
         // 🔍 DETECTOR DE CENÁRIO AUTOMÁTICO
-        let detectedScenario: string | null = testModeScenario || scenario || null;
+        let detectedScenario: string | null =
+          (testModeScenario && testModeScenario !== 'unknown') ? testModeScenario :
+          (scenario && scenario !== 'unknown') ? scenario :
+          null;
         
         logger.info("🔍 Detector de cenário", {
           testModeScenario,
@@ -718,7 +721,7 @@ Me avise quando ligar, por favor.
         }
         
         const activeScenario = detectedScenario as ScenarioType | null;
-        
+        logger.info("🧭 Pós-detecção", { detectedScenario, activeScenario, hasOnuSignal: !!onu_signal });
         if (activeScenario && ['A', 'B', 'C', 'D', 'E'].includes(activeScenario)) {
           logger.info("🔀 Roteamento para cenário refatorado", {
             scenario: activeScenario,
@@ -1335,7 +1338,10 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         // Prioridade 1: Usar cenário do modo de teste se disponível
         // Prioridade 2: Usar cenário já definido no metadata
         // Prioridade 3: Detectar baseado em sinal e contexto
-        let detectedScenario: string | null = testModeScenario || scenario || null;
+         let detectedScenario: string | null =
+           (testModeScenario && testModeScenario !== 'unknown') ? testModeScenario :
+           (scenario && scenario !== 'unknown') ? scenario :
+           null;
         
         logger.info("🔍 Detector de cenário", {
           testModeScenario,
