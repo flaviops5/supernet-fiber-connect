@@ -7,6 +7,7 @@ import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/
 import { createLogger } from "../_shared/structured-logger.ts";
 import { MessageAttachment } from "../_shared/agent-types.ts";
 import { IXCContrato } from "../_shared/ixc-types.ts";
+import { kpiLog } from "../_shared/kpi.ts";
 
 interface Message {
   role: string;
@@ -339,6 +340,18 @@ Seu serviço já foi desbloqueado temporariamente. Por favor, efetue o pagamento
                     })
                     .eq('id', actionLog.id);
                 }
+                
+                // KPI: Desbloqueio de confiança realizado
+                kpiLog({
+                  action: "trust_unblock_success",
+                  fluxo: "support-financial",
+                  conversation_id: conversationId || 'unknown',
+                  extras: {
+                    contract_id: blockedContract.id,
+                    customer_cpf: customerData?.cpf,
+                    ixc_client_id: customerData?.ixc_client_id
+                  }
+                });
                 
                 // Buscar títulos financeiros pendentes
                 const titlesResponse = await fetch(`${supabaseUrl}/functions/v1/ixc-integration`, {

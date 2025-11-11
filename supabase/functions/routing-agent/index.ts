@@ -20,6 +20,7 @@ import {
 } from "./helpers.ts";
 import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
 import { retrieveKnowledgeContext } from "../_shared/rag-helper.ts";
+import { kpiLog } from "../_shared/kpi.ts";
 
 // CORS headers imported from error-handler
 
@@ -746,6 +747,18 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
       // Capturar mensagem do Luan (se houver)
       const luanMessage = techData?.message || "";
       
+      // KPI: Roteamento para Luan após reboot
+      kpiLog({
+        action: "routing_to_luan",
+        fluxo: "routing-agent",
+        conversation_id: conversationId,
+        extras: {
+          reboot_attempted: true,
+          reboot_success: rebootResult?.is_online,
+          target: "support-tech-agent"
+        }
+      });
+
       logger.info("Roteamento concluído", { protocol, targetDepartment, hasLuanMessage: !!luanMessage });
       return new Response(
         JSON.stringify({ 
@@ -850,6 +863,18 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         content: cloeMessage,
       });
 
+      // KPI: Cloé gerou resposta
+      kpiLog({
+        action: "cloe_response",
+        fluxo: "routing-agent",
+        conversation_id: conversationId,
+        extras: {
+          has_customer: clientStatus.found,
+          is_offline: clientStatus.isOffline,
+          message_length: cloeMessage.length
+        }
+      });
+
       logger.info("Resposta da Cloé gerada", { messagePreview: cloeMessage.slice(0, 50) });
       
       return new Response(
@@ -871,6 +896,17 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
       sender_type: "agent",
       sender_name: "Cloé Martins",
       content: transferMessage,
+    });
+
+    // KPI: Transferência para outro departamento
+    kpiLog({
+      action: "routing_transfer",
+      fluxo: "routing-agent",
+      conversation_id: conversationId,
+      extras: {
+        target_department: targetDepartment,
+        has_customer: clientStatus.found
+      }
     });
 
     logger.info("Roteamento concluído", { protocol, targetDepartment });

@@ -6,6 +6,7 @@ import { redactPII } from '../_shared/pii-redaction.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLogger } from '../_shared/structured-logger.ts';
+import { kpiLog } from '../_shared/kpi.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -538,6 +539,18 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
               available_plans: coverage?.cep_plans?.map((cp: any) => cp.plan) || []
             })
           });
+          
+          // KPI: Verificação de CEP
+          kpiLog({
+            action: "cep_check",
+            fluxo: "sales-agent",
+            conversation_id: correlationId,
+            extras: {
+              cep: args.cep,
+              has_coverage: !!coverage,
+              region: coverage?.region_name
+            }
+          });
         } else if (functionName === 'create_installation_order') {
           // Busca dados do plano
           const { data: plan } = await supabase
@@ -643,6 +656,20 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             if (error) {
               console.error('Erro ao criar registro local:', error);
             }
+
+            // KPI: Pedido de instalação criado
+            kpiLog({
+              action: "installation_order_created",
+              fluxo: "sales-agent",
+              conversation_id: correlationId,
+              extras: {
+                plan_name: plan.name,
+                plan_price: plan.price,
+                customer_cpf: args.customer_cpf,
+                ixc_customer_id: customerId,
+                ixc_atendimento_id: atendimentoId
+              }
+            });
 
             toolResults.push({
               tool_call_id: toolCall.id,
