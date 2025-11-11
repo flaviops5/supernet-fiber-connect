@@ -49,6 +49,7 @@ import { isWeakFromTxRx, isGoodSignal, isZeroSignal } from "./diagnostics/signal
 import { sanitizeRedLightQuestion, detectIntentAndMood, withEffortAck } from "./utils/message-helpers.ts";
 import { FastPathCircuitBreaker } from "./circuit-breakers/fast-path-circuit-breaker.ts";
 import { isFastPathEnabled, hasStableSignal } from "./feature-flags/fast-path-flag.ts";
+import { shouldUseRefactoredScenarios, getRefactoringRolloutStatus } from "./feature-flags/refactoring-rollout-flag.ts";
 import { logB } from "./logging/scenario-logging.ts";
 import { safeTestConnectivity } from "./services/connectivity-service.ts";
 import { executeConfiguredTools } from "./tools/tool-executor.ts";
@@ -1123,7 +1124,19 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       // ============================================================================
       
       // Feature flag para controlar uso de código refatorado (gradual rollout)
-      const USE_REFACTORED_SCENARIOS = true; // ✅ Ativado - usando cenários refatorados
+      const USE_REFACTORED_SCENARIOS = await shouldUseRefactoredScenarios(
+        supabase, 
+        conversation_id
+      );
+      
+      // Log status do rollout para debug
+      const rolloutStatus = await getRefactoringRolloutStatus(supabase);
+      logger.info("🎚️ Refactoring rollout status", {
+        useRefactored: USE_REFACTORED_SCENARIOS,
+        flagEnabled: rolloutStatus.enabled,
+        rolloutPercentage: rolloutStatus.rollout_percentage,
+        conversationId: conversation_id
+      });
       
       if (USE_REFACTORED_SCENARIOS) {
         // 🔍 DETECTOR DE CENÁRIO AUTOMÁTICO
