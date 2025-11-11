@@ -674,6 +674,39 @@ serve(async (req) => {
     // Define lastUserMessage globalmente para uso em todo o handler
     const lastUserMessage = message || "";
 
+    // 🆕 RAG: Buscar contexto relevante da base vetorizada
+    let ragContext = '';
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (openaiApiKey && lastUserMessage && !testHarness) {
+      try {
+        const { retrieveKnowledgeContext } = await import('../_shared/rag-helper.ts');
+        const ragResult = await retrieveKnowledgeContext(
+          createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+          ),
+          lastUserMessage,
+          openaiApiKey,
+          {
+            top_k: 3,
+            similarity_threshold: 0.5,
+            agentTypes: ['support-tech-agent', 'luan', 'tecnico']
+          }
+        );
+        
+        if (ragResult.success) {
+          ragContext = `\n\n${ragResult.contextText}\n`;
+          logger.info('✅ RAG ativado no support-tech-agent', { 
+            method: ragResult.searchMethod,
+            docsFound: ragResult.documents.length 
+          });
+        }
+      } catch (ragError) {
+        logger.error('Erro no RAG (support-tech-agent)', { error: ragError });
+      }
+    }
+
     // >>> MODE TEST-RUNNER: Enhanced to test refactored scenarios
     let testModeScenario: string | null = null;
     const SKIP_DB_OPS = testHarness === true;
@@ -1835,7 +1868,8 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
                 needsEscalation: false,
                 hasImages: userImages.length > 0,
                 imageAnalysis
-              }
+              },
+              ragContext // 🆕 Adicionar contexto RAG
             };
             
             // Validar contexto

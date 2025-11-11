@@ -374,6 +374,39 @@ serve(async (req) => {
       .select('company_whatsapp')
       .single();
 
+    // 🆕 RAG: Buscar contexto relevante da base vetorizada
+    let ragContext = '';
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const lastUserMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+    
+    if (openaiApiKey && lastUserMessage) {
+      try {
+        const { retrieveKnowledgeContext } = await import('../_shared/rag-helper.ts');
+        const ragResult = await retrieveKnowledgeContext(
+          supabase,
+          lastUserMessage,
+          openaiApiKey,
+          {
+            top_k: 3,
+            similarity_threshold: 0.5,
+            agentTypes: ['sales-agent', 'vicente']
+          }
+        );
+        
+        if (ragResult.success) {
+          ragContext = `\n\n${ragResult.contextText}\n`;
+          logger.info('✅ RAG ativado no sales-agent', { 
+            method: ragResult.searchMethod,
+            docsFound: ragResult.documents.length 
+          });
+        }
+      } catch (ragError) {
+        logger.error('Erro no RAG (sales-agent)', 
+          ragError instanceof Error ? ragError : new Error(String(ragError))
+        );
+      }
+    }
+
     // Extrai protocolo se disponível  
     const protocol = (userContext as any)?.protocol;
     const protocolMsg = protocol ? `\n\nProtocolo de atendimento: ${protocol}` : '';
@@ -383,7 +416,7 @@ serve(async (req) => {
 SEU OBJETIVO: Vender planos de internet e agendar instalação de forma CONVERSACIONAL.${protocolMsg}
 
 PLANOS DISPONÍVEIS:
-${plans?.map(p => `- ${p.name}: ${p.speed} por R$ ${p.price}/mês - ${p.description || ''}`).join('\n')}
+${plans?.map(p => `- ${p.name}: ${p.speed} por R$ ${p.price}/mês - ${p.description || ''}`).join('\n')}${ragContext}
 
 PROCESSO DE VENDA (CONVERSACIONAL):
 1. Cumprimente o cliente de forma amigável

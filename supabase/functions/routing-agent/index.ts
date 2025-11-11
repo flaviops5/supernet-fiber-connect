@@ -19,6 +19,7 @@ import {
   detectInputType,
 } from "./helpers.ts";
 import { validateAndMaskCPF } from "../_shared/validateAndMaskCPF.ts";
+import { retrieveKnowledgeContext } from "../_shared/rag-helper.ts";
 
 // CORS headers imported from error-handler
 
@@ -778,10 +779,40 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         ? `[CONTEXTO INTERNO - Cliente encontrado: ${clientStatus.name}, CPF ${clientStatus.cpf_masked}, ${clientStatus.isBlocked ? 'BLOQUEADO' : 'ativo'}, ${clientStatus.isOffline ? 'OFFLINE' : 'online'}. Use estas informações para personalizar o atendimento.]`
         : `[CONTEXTO INTERNO - Cliente NÃO encontrado no sistema com este CPF]`;
 
+      // 🆕 RAG: Buscar contexto relevante da base vetorizada
+      let ragContext = '';
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      if (openaiApiKey && message) {
+        try {
+          const ragResult = await retrieveKnowledgeContext(
+            supabase,
+            message,
+            openaiApiKey,
+            {
+              top_k: 3,
+              similarity_threshold: 0.5,
+              agentTypes: ['routing-agent', 'cloe']
+            }
+          );
+          
+          if (ragResult.success) {
+            ragContext = `\n\n${ragResult.contextText}\n`;
+            logger.info('✅ RAG ativado no routing-agent', { 
+              method: ragResult.searchMethod,
+              docsFound: ragResult.documents.length 
+            });
+          }
+        } catch (ragError) {
+          logger.error('Erro no RAG (routing-agent)', { error: ragError });
+        }
+      }
+
       // Gerar resposta da Cloé usando Lovable AI com fallback
       let cloeMessage = "Como posso ajudar?";
       
       try {
+        const enrichedSystemPrompt = `${ROUTING_AGENT_SYSTEM_PROMPT}${ragContext}`;
+        
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -791,7 +822,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
           body: JSON.stringify({
             model: ROUTING_AGENT_CONFIG.model,
             messages: [
-              { role: "system", content: ROUTING_AGENT_SYSTEM_PROMPT },
+              { role: "system", content: enrichedSystemPrompt },
               ...conversationHistory.slice(-ROUTING_AGENT_CONFIG.maxMessagesInContext),
               { role: "system", content: contextMessage }, // 🆕 Adiciona contexto atual
             ],

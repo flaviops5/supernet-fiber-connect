@@ -53,6 +53,9 @@ export interface InlineContextData {
   // Análise de imagens
   imageAnalysis?: string;
   
+  // 🆕 RAG Context
+  ragContext?: string;
+  
   // Mass Outage
   massOutageActive?: boolean;
   massOutageData?: any;

@@ -61,15 +61,50 @@ serve(async (req) => {
       }
     }
 
-    // Get financial knowledge base (specific to support_financial or shared)
-    const { data: financialKnowledge } = await supabase
-      .from('knowledge_base')
-      .select('title, content, category')
-      .in('category', ['financeiro', 'cobranca', 'pagamento', 'ixc_endpoints'])
-      .or('agent_type.eq.support_financial,agent_type.is.null')
-      .eq('is_active', true);
+    // 🆕 RAG: Buscar contexto relevante da base vetorizada
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const lastUserMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+    let knowledgeContext = '';
+    
+    if (openaiApiKey && lastUserMessage) {
+      try {
+        const { retrieveKnowledgeContext } = await import('../_shared/rag-helper.ts');
+        const ragResult = await retrieveKnowledgeContext(
+          supabase,
+          lastUserMessage,
+          openaiApiKey,
+          {
+            top_k: 5,
+            similarity_threshold: 0.5,
+            agentTypes: ['support-financial-agent', 'julia', 'financeiro']
+          }
+        );
+        
+        if (ragResult.success) {
+          knowledgeContext = ragResult.contextText;
+          logger.info('✅ RAG ativado no support-financial-agent', { 
+            method: ragResult.searchMethod,
+            docsFound: ragResult.documents.length 
+          });
+        }
+      } catch (ragError) {
+        logger.error('Erro no RAG (support-financial-agent)', 
+          ragError instanceof Error ? ragError : new Error(String(ragError))
+        );
+      }
+    }
+    
+    // Fallback: buscar da knowledge_base diretamente se RAG falhou
+    if (!knowledgeContext) {
+      const { data: financialKnowledge } = await supabase
+        .from('knowledge_base')
+        .select('title, content, category')
+        .in('category', ['financeiro', 'cobranca', 'pagamento', 'ixc_endpoints'])
+        .or('agent_type.eq.support_financial,agent_type.is.null')
+        .eq('is_active', true);
 
-    const knowledgeContext = financialKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
+      knowledgeContext = financialKnowledge?.map(k => `[${k.category}] ${k.title}\n${k.content}`).join('\n\n') || '';
+    }
     
     const ixcToolsNote = `
 
