@@ -766,9 +766,9 @@ Me avise quando ligar, por favor.
               currentMessage: message,
               messageHistory,
               signalData: {
-                tx: onuTx,
-                rx: onuRx,
-                status: onuStatus || "unknown"
+                tx: onu_signal?.tx_power || 0,
+                rx: onu_signal?.rx_power || 0,
+                status: onu_signal?.status || "unknown"
               },
               analysisResult: {
                 scenario,
@@ -1428,9 +1428,9 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               currentMessage: message,
               messageHistory,
               signalData: {
-                tx: onuTx,
-                rx: onuRx,
-                status: onuStatus || "unknown"
+                tx: onu_signal?.tx_power || 0,
+                rx: onu_signal?.rx_power || 0,
+                status: onu_signal?.status || "unknown"
               },
               analysisResult: {
                 scenario,
