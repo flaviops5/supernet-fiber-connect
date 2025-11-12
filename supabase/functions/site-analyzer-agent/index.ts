@@ -2,7 +2,11 @@ import { createPublicHandler } from "../_shared/base-handler.ts";
 
 Deno.serve(createPublicHandler('site-analyzer-agent', async (req) => {
     const { message, conversationHistory } = await req.json();
-    const GOOGLE_API_KEY = 'AIzaSyDp7M8qcIlYVKVBMNMfLbzgHWpxjd2sOb0';
+    
+    const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+    if (!GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY não configurada nas variáveis de ambiente');
+    }
 
     const systemPrompt = `Você é um analista experiente de desenvolvimento web especializado em React, TypeScript, Supabase e Tailwind CSS.
 
