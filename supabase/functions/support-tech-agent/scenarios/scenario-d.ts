@@ -173,7 +173,7 @@ export async function handleScenarioD(
 
     await conversationService.transferConversation(
       context.conversationId,
-      "technical",
+      "tecnico",
       "Error in Scenario D flow - critical RX",
       { error: error.message, scenario: "D", rx: context.signalData?.rx }
     );
@@ -439,7 +439,7 @@ Obrigado pela compreensão! 🙏`,
   // Transfer to scheduling/technical department
   await conversationService.transferConversation(
     context.conversationId,
-    "technical",
+    "tecnico",
     "Critical RX - Requires urgent on-site visit",
     {
       scenario: "D",

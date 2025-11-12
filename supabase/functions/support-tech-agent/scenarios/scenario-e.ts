@@ -19,6 +19,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
 import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
+import { redactPII } from "../../_shared/pii-redaction.ts";
 
 interface ScenarioEContext {
   conversationId: string;
@@ -99,7 +100,7 @@ export async function handleScenarioE(
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
     const userMessage = lastUserMessage?.content || "";
-    const sanitizedMessage = sanitizePII(userMessage);
+    const sanitizedMessage = redactPII(userMessage, "ai");
 
     // Stage 1: Ask Connection Type
     if (currentStage === FLOW_STAGES.ASK_CONNECTION_TYPE) {
@@ -421,7 +422,7 @@ Me diga quais luzes você vê acesas.`,
 
     await conversationService.transferConversation(
       context.conversationId,
-      "technical",
+      "tecnico",
       "Error in Scenario E flow",
       { error: error.message, scenario: "E" }
     );
@@ -505,7 +506,7 @@ async function handleWaitWanFix(
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   const userMessage = lastUserMessage?.content || "";
-  const sanitizedMessage = sanitizePII(userMessage);
+  const sanitizedMessage = redactPII(userMessage, "ai");
 
   const confirmationIntent = await hybridInterpret(
     sanitizedMessage,
@@ -797,7 +798,7 @@ async function handleVerifyNavigation(
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   const userMessage = lastUserMessage?.content || "";
-  const sanitizedMessage = sanitizePII(userMessage);
+  const sanitizedMessage = redactPII(userMessage, "ai");
 
   const navigationIntent = await hybridInterpret(
     sanitizedMessage,
@@ -962,7 +963,7 @@ Requer verificação de configuração de rede ou equipamento adicional.`,
   // Transfer conversation
   await conversationService.transferConversation(
     context.conversationId,
-    "technical",
+    "tecnico",
     escalationReason,
     {
       scenario: "E",

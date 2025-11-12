@@ -19,6 +19,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
 import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
+import { redactPII } from "../../_shared/pii-redaction.ts";
 
 interface ScenarioCContext {
   conversationId: string;
@@ -94,7 +95,7 @@ export async function handleScenarioC(
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
     const userMessage = lastUserMessage?.content || "";
-    const sanitizedMessage = sanitizePII(userMessage);
+    const sanitizedMessage = redactPII(userMessage, "ai");
 
     // Stage 1: Detect Instability
     if (currentStage === FLOW_STAGES.DETECT_INSTABILITY) {
@@ -485,7 +486,7 @@ Me avise quando concluir!`;
 
     await conversationService.transferConversation(
       context.conversationId,
-      "technical",
+      "tecnico",
       "Error in Scenario C flow",
       { error: error.message, scenario: "C" }
     );
@@ -734,7 +735,7 @@ async function handleVerifyNavigation(
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   const userMessage = lastUserMessage?.content || "";
-  const sanitizedMessage = sanitizePII(userMessage);
+  const sanitizedMessage = redactPII(userMessage, "ai");
 
   const navigationIntent = await hybridInterpret(
     sanitizedMessage,
@@ -904,7 +905,7 @@ Cliente necessita visita técnica para verificação da conexão óptica.`,
   // Transfer conversation
   await conversationService.transferConversation(
     context.conversationId,
-    "technical",
+    "tecnico",
     escalationReason,
     {
       scenario: "C",
