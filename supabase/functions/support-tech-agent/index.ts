@@ -773,7 +773,7 @@ Me avise quando ligar, por favor.
               analysisResult: {
                 scenario,
                 needsEscalation: false,
-                hasImages: userImages.length > 0,
+                hasImages: (attachments?.length || 0) > 0,
                 imageAnalysis
               },
               ragContext
@@ -1435,7 +1435,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               analysisResult: {
                 scenario,
                 needsEscalation: false,
-                hasImages: userImages.length > 0,
+                hasImages: (attachments?.length || 0) > 0,
                 imageAnalysis
               },
               ragContext // 🆕 Adicionar contexto RAG
