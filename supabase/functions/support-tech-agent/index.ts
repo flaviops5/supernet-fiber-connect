@@ -758,7 +758,7 @@ Me avise quando ligar, por favor.
             // Montar contexto inline para adaptação
             const inlineData: InlineContextData = {
               conversationId: conversation_id || 'test-conversation',
-              customerId: customer_id || 'test-customer',
+              customerId: ixc_client_id || 'test-client',
               customerName: currentConversation?.customer_name || "Cliente",
               customerPhone: currentConversation?.customer_phone || "",
               flowState: continueFlowState,
@@ -1420,7 +1420,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             // Montar contexto inline para adaptação
             const inlineData: InlineContextData = {
               conversationId: conversation_id || 'test-conversation',
-              customerId: customer_id || 'test-customer',
+              customerId: ixc_client_id || 'test-client',
               customerName: currentConversation?.customer_name || "Cliente",
               customerPhone: currentConversation?.customer_phone || "",
               flowState: continueFlowState,
