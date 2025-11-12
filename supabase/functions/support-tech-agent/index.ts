@@ -792,19 +792,19 @@ Me avise quando ligar, por favor.
               
               switch (activeScenario) {
                 case 'A':
-                  scenarioResult = await handleScenarioA(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioA(supabase, logger, scenarioContext);
                   break;
                 case 'B':
-                  scenarioResult = await handleScenarioB(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioB(supabase, logger, scenarioContext);
                   break;
                 case 'C':
-                  scenarioResult = await handleScenarioC(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioC(supabase, logger, scenarioContext);
                   break;
                 case 'D':
-                  scenarioResult = await handleScenarioD(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioD(supabase, logger, scenarioContext);
                   break;
                 case 'E':
-                  scenarioResult = await handleScenarioE(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioE(supabase, logger, scenarioContext);
                   break;
                 default:
                   throw new Error(`Cenário não suportado: ${activeScenario}`);
@@ -1451,19 +1451,19 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               
               switch (activeScenario) {
                 case 'A':
-                  scenarioResult = await handleScenarioA(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioA(supabase, logger, scenarioContext);
                   break;
                 case 'B':
-                  scenarioResult = await handleScenarioB(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioB(supabase, logger, scenarioContext);
                   break;
                 case 'C':
-                  scenarioResult = await handleScenarioC(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioC(supabase, logger, scenarioContext);
                   break;
                 case 'D':
-                  scenarioResult = await handleScenarioD(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioD(supabase, logger, scenarioContext);
                   break;
                 case 'E':
-                  scenarioResult = await handleScenarioE(scenarioContext, supabase, logger);
+                  scenarioResult = await handleScenarioE(supabase, logger, scenarioContext);
                   break;
                 default:
                   throw new Error(`Cenário não suportado: ${activeScenario}`);
