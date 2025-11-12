@@ -757,25 +757,21 @@ Me avise quando ligar, por favor.
             
             // Montar contexto inline para adaptação
             const inlineData: InlineContextData = {
-              conversationId: conversation_id || 'test-conversation',
-              customerId: ixc_client_id || 'test-client',
-              customerName: currentConversation?.customer_name || "Cliente",
-              customerPhone: currentConversation?.customer_phone || "",
-              flowState: continueFlowState,
-              waitingStep: waitingStep,
-              currentMessage: message,
+              conversation_id: conversation_id || 'test-conversation',
+              customer_name: currentConversation?.customer_name || "Cliente",
+              customer_cpf,
+              customer_phone: currentConversation?.customer_phone || "",
+              ixc_client_id: ixc_client_id || (currentFlowState?.ixc_client_id) || (testHarness ? 'test-client' : undefined),
+              flowState: currentFlowState || {},
+              signal: {
+                tx: onu_signal?.tx_power || Number(tx) || 0,
+                rx: onu_signal?.rx_power || Number(rx) || 0,
+                serial: (onu_signal as any)?.serial || (onu_signal as any)?.onu_serial
+              },
+              message: message || "",
+              normalizedMessage: message ? normalizeText(message) : undefined,
               messageHistory,
-              signalData: {
-                tx: onu_signal?.tx_power || 0,
-                rx: onu_signal?.rx_power || 0,
-                status: onu_signal?.status || "unknown"
-              },
-              analysisResult: {
-                scenario,
-                needsEscalation: false,
-                hasImages: (attachments?.length || 0) > 0,
-                imageAnalysis
-              },
+              imageAnalysis,
               ragContext
             };
             
@@ -1419,25 +1415,21 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             
             // Montar contexto inline para adaptação
             const inlineData: InlineContextData = {
-              conversationId: conversation_id || 'test-conversation',
-              customerId: ixc_client_id || 'test-client',
-              customerName: currentConversation?.customer_name || "Cliente",
-              customerPhone: currentConversation?.customer_phone || "",
-              flowState: continueFlowState,
-              waitingStep: waitingStep,
-              currentMessage: message,
+              conversation_id: conversation_id || 'test-conversation',
+              customer_name: currentConversation?.customer_name || "Cliente",
+              customer_cpf,
+              customer_phone: currentConversation?.customer_phone || "",
+              ixc_client_id: ixc_client_id || (currentFlowState?.ixc_client_id) || (testHarness ? 'test-client' : undefined),
+              flowState: currentFlowState || {},
+              signal: {
+                tx: onu_signal?.tx_power || Number(tx) || 0,
+                rx: onu_signal?.rx_power || Number(rx) || 0,
+                serial: (onu_signal as any)?.serial || (onu_signal as any)?.onu_serial
+              },
+              message: message || "",
+              normalizedMessage: message ? normalizeText(message) : undefined,
               messageHistory,
-              signalData: {
-                tx: onu_signal?.tx_power || 0,
-                rx: onu_signal?.rx_power || 0,
-                status: onu_signal?.status || "unknown"
-              },
-              analysisResult: {
-                scenario,
-                needsEscalation: false,
-                hasImages: (attachments?.length || 0) > 0,
-                imageAnalysis
-              },
+              imageAnalysis,
               ragContext // 🆕 Adicionar contexto RAG
             };
             
