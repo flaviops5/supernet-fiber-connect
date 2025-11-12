@@ -22,14 +22,20 @@ import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
 
 interface ScenarioEContext {
   conversationId: string;
-  clientData: any;
+  ixcClientId?: string;
+  customerName: string;
+  currentMessage: string;
+  flowState: any;
   signalData: {
     tx?: number;
     rx?: number;
-    distance?: number;
-  };
-  parallelDiagnostics?: any;
-  userId?: string;
+    serial?: string;
+    status?: string;
+  } | null;
+  messageHistory: any[];
+  waitingStep?: string | null;
+  wanIssue?: boolean;
+  wifiIssue?: boolean;
 }
 
 interface ScenarioEResult {
@@ -64,9 +70,9 @@ export async function handleScenarioE(
   
   logger.info("🔵 [Scenario E] Starting WAN/Wi-Fi diagnosis flow", {
     conversationId: context.conversationId,
-    rx: context.signalData.rx,
-    tx: context.signalData.tx,
-    clientId: context.clientData?.id
+    rx: context.signalData?.rx,
+    tx: context.signalData?.tx,
+    clientId: context.ixcClientId
   });
 
   const conversationService = new ConversationService(supabase, logger);
@@ -566,7 +572,7 @@ async function handleRetestConnectivity(
   logger.info("🔄 [Scenario E] Stage 6: Retesting connectivity");
 
   try {
-    const connectivityResult = await ixcService.testConnectivity(context.clientData?.id);
+    const connectivityResult = await ixcService.testConnectivity(context.ixcClientId);
     
     logger.info("📡 [Scenario E] Connectivity result", {
       ping: connectivityResult.ping,
@@ -927,7 +933,7 @@ Vou transferir para um técnico especializado.`;
   // Create IXC ticket
   try {
     const ticketResult = await ixcService.createTicket({
-      client_id: context.clientData?.id,
+      client_id: context.ixcClientId,
       title: `[Cenário E] Problema de ${flowState.connection_type === 'wifi' ? 'Wi-Fi' : 'WAN'}`,
       description: `Problema: Sinal óptico OK mas problemas de rede
       

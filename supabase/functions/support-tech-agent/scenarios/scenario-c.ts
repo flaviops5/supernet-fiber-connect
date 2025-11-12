@@ -22,14 +22,17 @@ import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
 
 interface ScenarioCContext {
   conversationId: string;
-  clientData: any;
+  ixcClientId?: string;
+  customerName: string;
+  currentMessage: string;
+  flowState: any;
   signalData: {
     tx?: number;
     rx?: number;
-    distance?: number;
-  };
-  parallelDiagnostics?: any;
-  userId?: string;
+    serial?: string;
+  } | null;
+  messageHistory: any[];
+  waitingStep?: string | null;
 }
 
 interface ScenarioCResult {
@@ -62,9 +65,9 @@ export async function handleScenarioC(
   
   logger.info("🟡 [Scenario C] Starting weak signal flow", {
     conversationId: context.conversationId,
-    rx: context.signalData.rx,
-    tx: context.signalData.tx,
-    clientId: context.clientData?.id
+    rx: context.signalData?.rx,
+    tx: context.signalData?.tx,
+    clientId: context.ixcClientId
   });
 
   const conversationService = new ConversationService(supabase, logger);
@@ -100,7 +103,7 @@ export async function handleScenarioC(
       await conversationService.insertMessage(context.conversationId, {
         sender_type: "agent",
         sender_name: "Suporte Técnico",
-        content: `Detectei que o sinal óptico está um pouco fraco (RX: ${context.signalData.rx} dBm). 
+        content: `Detectei que o sinal óptico está um pouco fraco (RX: ${context.signalData?.rx || 'N/A'} dBm).
 
 Você está tendo algum destes problemas?
 • Internet lenta ou travando
@@ -517,16 +520,16 @@ async function handleRetestSignal(
       logger,
       context.conversationId,
       ["get_onu_signal_status"],
-      { client_id: context.clientData?.id }
+      { client_id: context.ixcClientId }
     );
 
     const signalResult = toolResults.find((r: any) => r.tool === "get_onu_signal_status");
     const newSignal = signalResult?.result?.signal || {};
 
     logger.info("📊 [Scenario C] New signal readings", {
-      old_rx: context.signalData.rx,
+      old_rx: context.signalData?.rx,
       new_rx: newSignal.rx,
-      old_tx: context.signalData.tx,
+      old_tx: context.signalData?.tx,
       new_tx: newSignal.tx
     });
 
@@ -544,7 +547,7 @@ async function handleRetestSignal(
         sender_name: "Suporte Técnico",
         content: `Excelente! O sinal melhorou bastante! 📶
 
-**Sinal anterior:** RX ${context.signalData.rx} dBm
+**Sinal anterior:** RX ${context.signalData?.rx || 'N/A'} dBm
 **Sinal atual:** RX ${newSignal.rx} dBm
 
 Agora vou testar se a internet está funcionando...`,
@@ -650,7 +653,7 @@ async function handleTestConnectivity(
   logger.info("🌐 [Scenario C] Stage 6: Testing connectivity");
 
   try {
-    const connectivityResult = await ixcService.testConnectivity(context.clientData?.id);
+    const connectivityResult = await ixcService.testConnectivity(context.ixcClientId);
     
     logger.info("📡 [Scenario C] Connectivity result", {
       ping: connectivityResult.ping,
@@ -871,12 +874,12 @@ Vou transferir para um técnico humano dar continuidade.`;
   // Create IXC ticket
   try {
     const ticketResult = await ixcService.createTicket({
-      client_id: context.clientData?.id,
-      title: `[Cenário C] Sinal fraco - RX ${context.signalData.rx} dBm`,
+      client_id: context.ixcClientId,
+      title: `[Cenário C] Sinal fraco - RX ${context.signalData?.rx} dBm`,
       description: `Problema: Sinal óptico fraco detectado
       
-RX inicial: ${context.signalData.rx} dBm
-TX inicial: ${context.signalData.tx} dBm
+RX inicial: ${context.signalData?.rx || 'N/A'} dBm
+TX inicial: ${context.signalData?.tx || 'N/A'} dBm
 Tentativas de reconexão: ${reconnection_attempts + 1}
 Motivo da escalação: ${escalationReason}
 

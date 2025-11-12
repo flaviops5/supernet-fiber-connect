@@ -19,14 +19,18 @@ import { IXCService } from "../services/ixc-service.ts";
 
 interface ScenarioDContext {
   conversationId: string;
-  clientData: any;
+  ixcClientId?: string;
+  customerName: string;
+  currentMessage: string;
+  flowState: any;
   signalData: {
     tx?: number;
     rx?: number;
-    distance?: number;
-  };
-  parallelDiagnostics?: any;
-  userId?: string;
+    serial?: string;
+    status?: string;
+  } | null;
+  messageHistory: any[];
+  waitingStep?: string | null;
 }
 
 interface ScenarioDResult {
@@ -56,9 +60,9 @@ export async function handleScenarioD(
   
   logger.info("🔴 [Scenario D] Starting critical RX flow", {
     conversationId: context.conversationId,
-    rx: context.signalData.rx,
-    tx: context.signalData.tx,
-    clientId: context.clientData?.id
+    rx: context.signalData?.rx,
+    tx: context.signalData?.tx,
+    clientId: context.ixcClientId
   });
 
   const conversationService = new ConversationService(supabase, logger);
@@ -81,7 +85,7 @@ export async function handleScenarioD(
       await conversationService.updateFlowState(context.conversationId, {
         current_stage: FLOW_STAGES.INFORM_CLIENT,
         scenario: "D",
-        rx_value: context.signalData.rx,
+        rx_value: context.signalData?.rx,
         detection_time: new Date().toISOString(),
         stage_started_at: new Date().toISOString()
       });
@@ -171,7 +175,7 @@ export async function handleScenarioD(
       context.conversationId,
       "technical",
       "Error in Scenario D flow - critical RX",
-      { error: error.message, scenario: "D", rx: context.signalData.rx }
+      { error: error.message, scenario: "D", rx: context.signalData?.rx }
     );
 
     return {
@@ -198,7 +202,7 @@ async function handleInformClient(
 
   // Determine severity message based on RX value
   let severityDescription = "";
-  const rx = context.signalData.rx || -999;
+  const rx = context.signalData?.rx || -999;
 
   if (rx < -35) {
     severityDescription = "**extremamente crítico** (praticamente sem sinal)";
@@ -266,14 +270,14 @@ async function handleCreateTicket(
 
   try {
     const ticketResult = await ixcService.createTicket({
-      client_id: context.clientData?.id,
-      title: `[URGENTE] Sinal óptico crítico - RX ${context.signalData.rx} dBm`,
+      client_id: context.ixcClientId,
+      title: `[URGENTE] Sinal óptico crítico - RX ${context.signalData?.rx} dBm`,
       description: `⚠️ PROBLEMA CRÍTICO - PRIORIDADE MÁXIMA
 
 **Sinal óptico crítico detectado:**
-RX: ${context.signalData.rx} dBm (crítico: < -30 dBm)
-TX: ${context.signalData.tx} dBm
-Distância: ${context.signalData.distance || 'N/A'} metros
+RX: ${context.signalData?.rx || 'N/A'} dBm (crítico: < -30 dBm)
+TX: ${context.signalData?.tx || 'N/A'} dBm
+Distância: ${context.signalData?.distance || 'N/A'} metros
 
 **Diagnóstico:**
 - Possível rompimento ou dano severo na fibra óptica
@@ -439,7 +443,7 @@ Obrigado pela compreensão! 🙏`,
     "Critical RX - Requires urgent on-site visit",
     {
       scenario: "D",
-      rx_value: context.signalData.rx,
+      rx_value: context.signalData?.rx,
       ticket_id: flowState.ticket_id,
       priority: "critical",
       requires_visit: true,
@@ -455,7 +459,7 @@ Obrigado pela compreensão! 🙏`,
   logger.info("📊 [Scenario D] Escalation KPI", {
     scenario: "D",
     resolution_time_seconds: resolutionTime,
-    rx_value: context.signalData.rx,
+    rx_value: context.signalData?.rx,
     ticket_created: flowState.ticket_created,
     ticket_id: flowState.ticket_id,
     success: true
@@ -475,7 +479,7 @@ Obrigado pela compreensão! 🙏`,
     final_status: "escalated_for_visit",
     metadata: {
       ticket_id: flowState.ticket_id,
-      rx_value: context.signalData.rx,
+      rx_value: context.signalData?.rx,
       escalation_time: resolutionTime,
       requires_visit: true
     }
