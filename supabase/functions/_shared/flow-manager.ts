@@ -5,6 +5,9 @@
  * Substitui mensagens hardcoded por configurações flexíveis e editáveis
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
+
 export interface FlowStep {
   step_key: string;
   step_order: number;
@@ -35,7 +38,7 @@ export interface FlowContext {
  * Busca todos os steps ativos de um subject específico
  */
 export async function getFlowSteps(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string
 ): Promise<FlowStep[]> {
@@ -59,7 +62,7 @@ export async function getFlowSteps(
  * Busca configuração do subject
  */
 export async function getFlowSubject(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string
 ): Promise<FlowSubject | null> {
@@ -82,7 +85,7 @@ export async function getFlowSubject(
  * Busca um step específico por step_key
  */
 export async function getFlowStepByKey(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string,
   step_key: string
@@ -137,11 +140,11 @@ export function getNextStep(
  * Busca mensagens aprovadas de um cenário específico
  */
 export async function getApprovedScenarioMessages(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string,
   scenario_key?: string
-): Promise<any[]> {
+): Promise<JsonObject[]> {
   const query = supabase
     .from('agent_flow_scenario_approvals')
     .select('scenario_key, variation_path, approved_messages, updated_at')
@@ -212,7 +215,7 @@ export function validateUserResponse(
  * Busca o step inicial de um subject
  */
 export async function getInitialStep(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string
 ): Promise<FlowStep | null> {
@@ -232,7 +235,7 @@ export async function getInitialStep(
  * Resolver tools efetivas (step_tools ou default_tools)
  */
 export async function resolveStepTools(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string,
   step_key?: string

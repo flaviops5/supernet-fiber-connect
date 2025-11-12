@@ -176,9 +176,9 @@ export default function PublicCalendar() {
       console.log("✅ Eventos formatados:", formattedEvents.length);
       setEvents(formattedEvents);
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("💥 Erro geral:", err);
-      setError(`Erro: ${err.message}`);
+      setError(`Erro: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       setLoading(false);
     }
   };

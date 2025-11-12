@@ -83,11 +83,11 @@ const MonitoringLogs = () => {
       // Extrair contexts únicos
       const uniqueContexts = [...new Set(transformedLogs.map((log) => log.context))];
       setContexts(uniqueContexts);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao buscar logs:", error);
       toast({
         title: "Erro ao carregar logs",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: "destructive",
       });
     } finally {

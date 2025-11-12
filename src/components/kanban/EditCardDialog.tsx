@@ -96,11 +96,11 @@ export function EditCardDialog({ open, onClose, card, onUpdate }: EditCardDialog
 
       onUpdate();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating card:', error);
       toast({
         title: 'Erro ao salvar',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

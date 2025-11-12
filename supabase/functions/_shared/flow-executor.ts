@@ -4,6 +4,8 @@
  * Processa respostas do usuário, executa tools configuradas e determina próximo passo
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject, JsonValue } from "./error-types.ts";
 import { hybridInterpret } from "./ai-response-interpreter.ts";
 import { textReplyWithContext } from "./replies.ts";
 import { 
@@ -16,8 +18,8 @@ import {
 } from "./flow-manager.ts";
 
 export interface ExecutionContext {
-  supabase: any;
-  logger: any;
+  supabase: SupabaseClient;
+  logger: { info: (msg: string, meta?: JsonObject) => void; error: (msg: string, meta?: JsonObject) => void };
   conversation_id: string;
   agent_type: string;
   subject_key: string;
@@ -25,7 +27,7 @@ export interface ExecutionContext {
   ixc_client_id?: string;
   user_message: string;
   current_step_key?: string;
-  flowState?: any;
+  flowState?: JsonObject;
 }
 
 export interface ExecutionResult {
@@ -33,7 +35,7 @@ export interface ExecutionResult {
   next_step_key?: string;
   needs_escalation?: boolean;
   escalation_reason?: string;
-  tools_executed?: Record<string, any>;
+  tools_executed?: JsonObject;
   media_context?: string;
 }
 

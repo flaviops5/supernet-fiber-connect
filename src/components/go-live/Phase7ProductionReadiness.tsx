@@ -125,10 +125,10 @@ export function Phase7ProductionReadiness() {
           variant: "destructive"
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Erro na Validação",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: "destructive"
       });
     } finally {

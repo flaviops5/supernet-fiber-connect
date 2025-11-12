@@ -162,11 +162,11 @@ export function Phase8DeployCoordinated() {
         });
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       updateStepStatus("check-health", "failed");
       toast({
         title: "Erro no Health Check",
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: "destructive"
       });
       return false;

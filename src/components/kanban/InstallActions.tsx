@@ -138,11 +138,11 @@ export function InstallActions({ card }: InstallActionsProps) {
       setDate("");
       setMotivo("");
       setFiles(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('💥 [InstallActions] Erro fatal ao agendar instalação:', err);
       toast({ 
         title: "Erro ao registrar instalação", 
-        description: err.message, 
+        description: err instanceof Error ? err.message : 'Erro desconhecido',
         variant: "destructive" 
       });
     }
@@ -247,11 +247,11 @@ export function InstallActions({ card }: InstallActionsProps) {
       
       setOpenFinalize(false);
       setFiles(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('💥 [InstallActions] Erro fatal ao finalizar instalação:', err);
       toast({ 
         title: "Erro ao finalizar instalação", 
-        description: err.message, 
+        description: err instanceof Error ? err.message : 'Erro desconhecido',
         variant: "destructive" 
       });
     }

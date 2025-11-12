@@ -110,12 +110,12 @@ export function useKanban(boardId: string | null) {
         if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         if (cardsError) throw cardsError;
         setCards(cardsData as any);
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (controller.signal.aborted || myToken !== fetchTokenRef.current) return;
         console.error('Error loading kanban board:', error);
         toast({
           title: 'Erro ao carregar board',
-          description: error.message,
+          description: error instanceof Error ? error.message : 'Erro desconhecido',
           variant: 'destructive',
         });
       } finally {
@@ -248,11 +248,11 @@ export function useKanban(boardId: string | null) {
         title: 'Card movido',
         description: 'Card movido com sucesso',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error moving card:', error);
       toast({
         title: 'Erro ao mover card',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     }
@@ -304,11 +304,11 @@ export function useKanban(boardId: string | null) {
       });
 
       return createdCard;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating card:', error);
       toast({
         title: 'Erro ao criar card',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
       throw error;
@@ -346,11 +346,11 @@ export function useKanban(boardId: string | null) {
         title: 'Card excluído',
         description: 'Card excluído com sucesso',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting card:', error);
       toast({
         title: 'Erro ao excluir card',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
       throw error;
@@ -371,11 +371,11 @@ export function useKanban(boardId: string | null) {
         title: 'Card atualizado',
         description: 'Card atualizado com sucesso',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating card:', error);
       toast({
         title: 'Erro ao atualizar card',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     }
@@ -446,11 +446,11 @@ export function useKanban(boardId: string | null) {
         title: 'Coluna excluída',
         description: 'Coluna excluída com sucesso',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting column:', error);
       toast({
         title: 'Erro ao excluir coluna',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     }

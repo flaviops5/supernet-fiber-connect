@@ -50,11 +50,11 @@ Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase
         bodyOnline
       );
       logger.info('Clientes online obtidos com sucesso (filtro direto aplicado)');
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Erro ao buscar clientes online', 
-        error instanceof Error ? error : new Error(error.message)
+        error instanceof Error ? error : new Error(String(error))
       );
-      throw new Error(`Falha ao buscar clientes online via proxy: ${error.message}`);
+      throw new Error(`Falha ao buscar clientes online via proxy: ${error instanceof Error ? error.message : String(error)}`);
     }
     
   if (!radiusData?.data?.registros) {

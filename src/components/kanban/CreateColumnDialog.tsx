@@ -46,10 +46,10 @@ export function CreateColumnDialog({ open, onClose, boardId }: CreateColumnDialo
       
       // Force page reload to show the new column
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Erro ao criar coluna',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

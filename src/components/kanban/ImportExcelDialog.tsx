@@ -356,11 +356,11 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
       setPreviewData([]);
       setSelectedColumn('');
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error importing Excel:', error);
       toast({
         title: 'Erro na importação',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

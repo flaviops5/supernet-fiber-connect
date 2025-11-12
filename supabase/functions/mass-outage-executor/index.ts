@@ -20,8 +20,8 @@ async function sendWhatsAppMessage(supabase: any, phone: string, message: string
       },
     });
     console.log('WhatsApp enviado', { phone });
-  } catch (err: any) {
-    console.error('Falha ao enviar WhatsApp', { phone, error: err.message });
+  } catch (err: unknown) {
+    console.error('Falha ao enviar WhatsApp', { phone, error: err instanceof Error ? err.message : String(err) });
   }
 }
 
@@ -49,8 +49,8 @@ async function createIxcTicket(supabase: any, clientId: string, descricao: strin
       },
     });
     console.log('Ticket IXC criado', { clientId });
-  } catch (err: any) {
-    console.error('Falha ao criar ticket IXC', { clientId, error: err.message });
+  } catch (err: unknown) {
+    console.error('Falha ao criar ticket IXC', { clientId, error: err instanceof Error ? err.message : String(err) });
   }
 }
 
@@ -143,8 +143,8 @@ ${metadata?.power_outage ? "⚡ Possível falta de energia detectada" : ""}
               : Object.values(registros)[0];
             if (clienteObj?.celular) clientePhones.push(clienteObj.celular);
           }
-        } catch (err: any) {
-          console.warn('Falha ao buscar cliente', { login, error: err.message });
+        } catch (err: unknown) {
+          console.warn('Falha ao buscar cliente', { login, error: err instanceof Error ? err.message : String(err) });
         }
       }
     }

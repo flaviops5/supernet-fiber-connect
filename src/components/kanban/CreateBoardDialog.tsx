@@ -49,11 +49,11 @@ export function CreateBoardDialog({ open, onClose, onBoardCreated }: CreateBoard
       setDescription('');
       onClose();
       onBoardCreated((newBoard as any).id);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating board:', error);
       toast({
         title: 'Erro ao criar board',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

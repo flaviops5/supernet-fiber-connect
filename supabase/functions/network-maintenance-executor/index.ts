@@ -159,8 +159,8 @@ async function executeTask(supabase: any, task: MaintenanceTask, settings: any) 
         success = true;
         break;
 
-      } catch (error: any) {
-        lastError = error.message;
+        } catch (error: unknown) {
+          lastError = error instanceof Error ? error.message : String(error);
         if (attempt < task.retry_count) {
           console.log(`⚠️ Tentativa ${attempt + 1} falhou, tentando novamente...`);
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -193,9 +193,9 @@ async function executeTask(supabase: any, task: MaintenanceTask, settings: any) 
 
     return { task_id: task.id, name: task.name, status: 'completed' };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`❌ Erro ao executar ${task.name}:`, error);
-    return { task_id: task.id, name: task.name, status: 'failed', error: error.message };
+    return { task_id: task.id, name: task.name, status: 'failed', error: error instanceof Error ? error.message : String(error) };
   }
 }
 

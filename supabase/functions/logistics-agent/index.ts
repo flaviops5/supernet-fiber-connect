@@ -240,7 +240,7 @@ Peça educadamente essas informações.
 
 Alguma dúvida sobre o agendamento?`;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Unexpected error:', error);
           assistantMessage = `Desculpe, ocorreu um erro inesperado ao criar o agendamento. Por favor, tente novamente.`;
         }
@@ -275,7 +275,7 @@ Alguma dúvida sobre o agendamento?`;
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Logistics Agent error:', error);
     return handleEdgeFunctionError(error, 'logistics-agent', true);
   } finally {

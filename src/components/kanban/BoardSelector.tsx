@@ -72,11 +72,11 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
       );
       
       setBoards(sorted);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading boards:', error);
       toast({
         title: 'Erro ao carregar boards',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {

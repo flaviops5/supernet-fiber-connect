@@ -5,6 +5,8 @@
  * Prioriza flows do banco quando disponíveis, fallback para hardcoded
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from "./error-types.ts";
 import { 
   getFlowSteps, 
   getFlowStepByKey, 
@@ -44,11 +46,11 @@ const SCENARIO_MAPPING: Record<string, { subject: string; step: string }> = {
  * Busca mensagem do banco ou retorna fallback hardcoded
  */
 export async function getStepMessage(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   flowStateKey: string,
   fallbackMessage: string,
-  context?: Record<string, any>
+  context?: JsonObject
 ): Promise<string> {
   // Verificar se há mapeamento para este flowState
   const mapping = SCENARIO_MAPPING[flowStateKey];
@@ -86,7 +88,7 @@ export async function getStepMessage(
  * Busca configurações de um cenário específico
  */
 export async function getScenarioConfig(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   scenario: 'A' | 'B' | 'C' | 'D' | 'E'
 ): Promise<{
@@ -158,7 +160,7 @@ export function interpolateMessage(
  * Verifica se um cenário tem configuração no banco
  */
 export async function hasScenarioInDatabase(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   scenario: string
 ): Promise<boolean> {
@@ -182,7 +184,7 @@ export async function hasScenarioInDatabase(
  * Busca próximas perguntas de um cenário (para preview/planejamento)
  */
 export async function getScenarioSteps(
-  supabase: any,
+  supabase: SupabaseClient,
   agent_type: string,
   subject_key: string,
   startStep?: string

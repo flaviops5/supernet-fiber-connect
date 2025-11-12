@@ -401,9 +401,9 @@ export default function TestSuiteRunner() {
     try {
       await supabase.functions.invoke('auto-reboot-frozen-equipment');
       // Função existe (mesmo que retorne erro de validação)
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Se for 404, função não existe
-      if (error?.message?.includes('404') || error?.message?.includes('not found')) {
+      if (error instanceof Error && (error.message?.includes('404') || error.message?.includes('not found'))) {
         throw new Error('Edge function auto-reboot não existe');
       }
       // Outros erros são OK (função existe mas validou input)
