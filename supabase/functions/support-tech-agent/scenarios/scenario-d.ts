@@ -47,9 +47,9 @@ const FLOW_STAGES = {
 };
 
 export async function handleScenarioD(
-  context: ScenarioDContext,
   supabase: SupabaseClient,
-  logger: any
+  logger: any,
+  context: ScenarioDContext
 ): Promise<ScenarioDResult> {
   const startTime = Date.now();
   const actions: string[] = [];
