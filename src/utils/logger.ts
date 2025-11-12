@@ -2,10 +2,12 @@
  * Utility de logging do sistema
  */
 
+import type { JsonValue } from '@/types';
+
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 interface LogContext {
-  [key: string]: any;
+  [key: string]: JsonValue;
 }
 
 class Logger {
@@ -24,9 +26,9 @@ class Logger {
   }
 
   error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const errorContext = error instanceof Error 
+    const errorContext: LogContext = error instanceof Error 
       ? { ...context, error: error.message, stack: error.stack }
-      : { ...context, error };
+      : { ...context, error: String(error) };
     
     console.error(this.formatMessage('error', message, errorContext));
   }
