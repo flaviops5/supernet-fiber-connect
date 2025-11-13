@@ -34,6 +34,8 @@ const TIMEOUT_EVALUATION = 35000; // 🔧 Aumentado para evitar timeouts
 // CONTEXTO DOCUMENTAL
 // ============================================
 
+// 🔒 SECURITY NOTE: Contexto documentacional interno
+// NÃO deve ser exposto em respostas públicas da API
 const CONTEXT_DOCS = {
   scenarios: `
 CENÁRIO A: Cliente Offline (Sem Energia/Conexão)
