@@ -17,7 +17,8 @@ import { RebootStats } from '@/components/monitoring/RebootStats';
 import { RebootCandidates } from '@/components/monitoring/RebootCandidates';
 import { ClientStats } from '@/components/monitoring/ClientStats';
 import ContextEscapeAnalytics from '@/components/monitoring/ContextEscapeAnalytics';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw } from 'lucide-react';
+import { PerformanceMonitor } from '@/components/monitoring/PerformanceMonitor';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '@/components/BackButton';
 
@@ -122,10 +123,14 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="gap-2">
+                <Zap className="h-4 w-4" />
+                Performance
               </TabsTrigger>
               <TabsTrigger value="autoreboot" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
@@ -212,6 +217,10 @@ export default function Monitoramento() {
               </Card>
             </div>
           )}
+            </TabsContent>
+
+            <TabsContent value="performance" className="space-y-6">
+              <PerformanceMonitor />
             </TabsContent>
 
             <TabsContent value="autoreboot" className="space-y-6">

@@ -25,7 +25,6 @@ import Apresentacao from "./pages/Apresentacao";
 import AdminAgents from "./pages/AdminAgents";
 import AdminEscalation from "./pages/AdminEscalation";
 import AdminTestes from "./pages/AdminTestes";
-import Monitoring from "./pages/Monitoring";
 import MonitoringLogs from "./pages/MonitoringLogs";
 import LogAnalyticsDashboard from "./pages/LogAnalyticsDashboard";
 import AtlasInsights from "./pages/AtlasInsights";
@@ -102,7 +101,6 @@ const App = () => {
             <Route path="/fluxo-agente" element={<FluxoAgente />} />
             <Route path="/kanban" element={<AdminKanban />} />
             <Route path="/metricas-departamentos" element={<MetricasDepartamentos />} />
-            <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/monitoring/logs" element={<MonitoringLogs />} />
             <Route path="/monitoring/analytics" element={<LogAnalyticsDashboard />} />
             <Route path="/perfil-agente" element={<PerfilAgente />} />

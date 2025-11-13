@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, CheckCircle, Clock, Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Activity } from 'lucide-react';
 
 interface MetricsReport {
   time_window: string;
@@ -22,7 +22,6 @@ interface MetricsReport {
   by_agent: Record<string, any>;
   recent_alerts: any[];
   failed_actions: { pending: number; items: any[] };
-  system_health: any[];
 }
 
 interface TraceLog {
@@ -37,7 +36,7 @@ interface TraceLog {
   environment: string;
 }
 
-export default function Monitoring() {
+export function PerformanceMonitor() {
   const [metrics, setMetrics] = useState<MetricsReport | null>(null);
   const [traces, setTraces] = useState<TraceLog[]>([]);
   const [timeWindow, setTimeWindow] = useState('1h');
@@ -83,14 +82,14 @@ export default function Monitoring() {
     };
 
     loadData();
-    const interval = setInterval(loadData, 30000); // Refresh every 30s
+    const interval = setInterval(loadData, 30000);
 
     return () => clearInterval(interval);
   }, [timeWindow]);
 
   if (loading || !metrics) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-64">
         <Activity className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
@@ -105,11 +104,11 @@ export default function Monitoring() {
   }));
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Sistema de Monitoramento</h1>
-          <p className="text-muted-foreground">Performance e Tracing Distribuído</p>
+          <h2 className="text-2xl font-bold">Performance e Tracing</h2>
+          <p className="text-muted-foreground">Monitoramento distribuído em tempo real</p>
         </div>
         <Tabs value={timeWindow} onValueChange={setTimeWindow}>
           <TabsList>
