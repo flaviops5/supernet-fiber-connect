@@ -225,6 +225,9 @@ verify_jwt = true
 [functions.auto-send-overdue-invoices]
 verify_jwt = true
 
+[functions.validate-production-readiness]
+verify_jwt = true
+
 [functions.calc-kpis]
 verify_jwt = true
 
