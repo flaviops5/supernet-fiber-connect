@@ -40,6 +40,7 @@ import AdminKanban from "./pages/AdminKanban";
 import PublicCalendar from "./pages/PublicCalendar";
 import AdminStressTest from "./pages/AdminStressTest";
 import AdminRateLimits from "./pages/AdminRateLimits";
+import AdminWhitelist from "./pages/AdminWhitelist";
 import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -82,6 +83,7 @@ const App = () => {
             <Route path="/admin/prompts" element={<AdminPrompts />} />
           <Route path="/admin/stress-test" element={<AdminStressTest />} />
           <Route path="/admin/rate-limits" element={<AdminRateLimits />} />
+          <Route path="/admin/whitelist" element={<AdminWhitelist />} />
           <Route path="/admin/testes" element={<AdminTestes />} />
             
             {/* AI RAG - Dedicated route */}

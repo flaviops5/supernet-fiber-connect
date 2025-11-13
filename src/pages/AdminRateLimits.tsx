@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/BackButton';
 import { Shield, Clock, Ban, Activity } from 'lucide-react';
 
@@ -64,6 +65,14 @@ export default function AdminRateLimits() {
         <p className="text-muted-foreground">
           Configurações de controle de taxa para endpoints críticos
         </p>
+        <div className="mt-4">
+          <Button variant="outline" asChild>
+            <a href="/admin/whitelist">
+              <Shield className="w-4 h-4 mr-2" />
+              Gerenciar Whitelist de IPs
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6">
