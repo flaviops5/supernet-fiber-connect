@@ -1,6 +1,8 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('ai-suggest-reply', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Sugestões de resposta manipulam dados sensíveis de clientes
+Deno.serve(createAuthenticatedHandler('ai-suggest-reply', async (req, { supabase, user }) => {
   const { conversation_id } = await req.json();
 
   if (!conversation_id) {

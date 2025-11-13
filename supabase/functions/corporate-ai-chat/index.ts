@@ -1,10 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('corporate-ai-chat');
 
-Deno.serve(createPublicHandler('corporate-ai-chat', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Chat corporativo requer autenticação para acesso ao RAG
+Deno.serve(createAuthenticatedHandler('corporate-ai-chat', async (req, { supabase, user }) => {
   const { message, conversationId } = await req.json();
 
   if (!message) {

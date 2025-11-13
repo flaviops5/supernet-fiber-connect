@@ -1,9 +1,11 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('ai-text-review');
 
-Deno.serve(createPublicHandler('ai-text-review', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Review de texto analisa conteúdo potencialmente sensível
+Deno.serve(createAuthenticatedHandler('ai-text-review', async (req, { supabase, user }) => {
   const { text } = await req.json();
 
   if (!text || text.trim().length === 0) {

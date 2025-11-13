@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('ai-auto-tag');
@@ -20,7 +20,9 @@ const AVAILABLE_TAGS = [
   'urgente'
 ];
 
-Deno.serve(createPublicHandler('ai-auto-tag', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Auto-tagging manipula dados de conversas - requer auth
+Deno.serve(createAuthenticatedHandler('ai-auto-tag', async (req, { supabase, user }) => {
   const { conversation_id, message_content } = await req.json();
 
   if (!conversation_id || !message_content) {
