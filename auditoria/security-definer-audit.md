@@ -9,17 +9,18 @@
 
 - **Total SECURITY DEFINER:** 91 ocorrências em 45 arquivos
 - **Funções Críticas Identificadas:** 8
-- **Status:** 🟡 EM ANÁLISE
+- **Funções Corrigidas (Fase 1):** 3 ✅
+- **Status:** 🟢 FASE 1 CONCLUÍDA | 🟡 FASE 2 EM ANÁLISE
 
 ---
 
 ## 🚨 Funções Críticas (Requerem Ação Imediata)
 
-### 1. ❌ `validate_calendar_token()` - CRÍTICO
+### 1. ✅ `validate_calendar_token()` - CORRIGIDO
 **Arquivo:** `20251103132418_d4b66537-379d-4567-82b7-a5439f600cdc.sql`
-**Problema:** Retorna dados sensíveis (board_id, entity_name, entity_filter) sem validar propriedade do usuário
-**Risco:** Qualquer usuário com token pode acessar dados de boards que não pertencem a ele
-**Severidade:** 🔴 CRÍTICA
+**Problema:** Retornava dados sensíveis (board_id, entity_name, entity_filter) sem validar propriedade do usuário
+**Risco:** Qualquer usuário com token podia acessar dados de boards que não pertencem a ele
+**Severidade:** 🔴 CRÍTICA → ✅ RESOLVIDO
 
 ```sql
 -- ATUAL (INSEGURO)
@@ -29,10 +30,10 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 ```
 
-**Correção Proposta:**
-- ✅ Adicionar validação de ownership do board antes de retornar dados
-- ✅ Verificar se usuário autenticado é membro/owner do board OU
-- ✅ Mudar para SECURITY INVOKER e deixar RLS fazer o trabalho
+**Correção Aplicada:**
+- ✅ Adicionada validação de ownership verificando kanban_board_members
+- ✅ RAISE EXCEPTION se usuário não tem acesso ao board
+- ✅ Mantido SECURITY DEFINER com SET search_path = public
 
 ---
 
@@ -60,10 +61,10 @@ SECURITY DEFINER SET search_path = public
 
 ---
 
-### 4. ⚠️ `log_user_activity()` - MÉDIO
-**Função:** Permite especificar `user_id_param` manualmente
-**Risco:** Usuário pode logar atividade de outro usuário
-**Severidade:** 🟡 MÉDIA
+### 4. ✅ `log_user_activity()` - CORRIGIDO
+**Função:** Permitia especificar `user_id_param` manualmente
+**Risco:** Usuário podia logar atividade de outro usuário
+**Severidade:** 🟡 MÉDIA → ✅ RESOLVIDO
 
 ```sql
 -- ATUAL
@@ -75,19 +76,19 @@ CREATE OR REPLACE FUNCTION public.log_user_activity(
 )
 ```
 
-**Correção Proposta:**
-- ✅ Remover parâmetro `user_id_param` externo
-- ✅ SEMPRE usar `auth.uid()` internamente
-- ✅ Criar função separada `log_system_activity()` para logs de sistema (com controle de acesso)
+**Correção Aplicada:**
+- ✅ Removido parâmetro `user_id_param` externo
+- ✅ SEMPRE usa `auth.uid()` internamente com validação NOT NULL
+- ✅ Criada função separada `log_system_activity()` para logs de sistema (service_role only)
 
 ---
 
-### 5. ⚠️ `log_security_event()` - MÉDIO
-**Função:** Mesma vulnerabilidade que `log_user_activity()`
-**Risco:** Usuário pode logar eventos de segurança de outro usuário
-**Severidade:** 🟡 MÉDIA
+### 5. ✅ `log_security_event()` - CORRIGIDO
+**Função:** Tinha mesma vulnerabilidade que `log_user_activity()`
+**Risco:** Usuário podia logar eventos de segurança de outro usuário
+**Severidade:** 🟡 MÉDIA → ✅ RESOLVIDO
 
-**Correção:** Idêntica a `log_user_activity()`
+**Correção Aplicada:** Idêntica a `log_user_activity()` - sempre usa auth.uid()
 
 ---
 
@@ -127,10 +128,10 @@ END IF;
 
 ## 📋 Plano de Ação
 
-### Fase 1 - CRÍTICO (Hoje)
-- [ ] **ACT-P1.1:** Corrigir `validate_calendar_token()` - adicionar validação de ownership
-- [ ] **ACT-P1.2:** Corrigir `log_user_activity()` - remover parâmetro user_id externo
-- [ ] **ACT-P1.3:** Corrigir `log_security_event()` - remover parâmetro user_id externo
+### Fase 1 - CRÍTICO (Hoje) ✅ CONCLUÍDO
+- [x] **ACT-P1.1:** Corrigir `validate_calendar_token()` - adicionar validação de ownership ✅
+- [x] **ACT-P1.2:** Corrigir `log_user_activity()` - remover parâmetro user_id externo ✅
+- [x] **ACT-P1.3:** Corrigir `log_security_event()` - remover parâmetro user_id externo ✅
 
 ### Fase 2 - IMPORTANTE (Esta semana)
 - [ ] **ACT-P1.4:** Adicionar validação de role em `create_installation_appointment()`
