@@ -551,6 +551,24 @@ verify_jwt = true  # Mínimo: autenticar
 
 ---
 
-**Status:** 🔴 **AÇÃO URGENTE NECESSÁRIA**
+## 📊 Status das Correções
 
-**Próxima Revisão:** Após correção da Fase 1 (24h)
+| Prioridade | Função | Status | RBAC | Sanitização |
+|-----------|--------|--------|------|-------------|
+| P0 | get-function-code | ✅ Desabilitada | ✅ | ✅ |
+| P0 | ixc-stress-test | ✅ Corrigida | ✅ | ✅ |
+| P0 | llm-test-runner | ✅ Corrigida | ✅ | ✅ |
+| P1 | system-health | ✅ Corrigida | ✅ | ✅ |
+| P1 | ixc-endpoints-health | ✅ Corrigida | ✅ | ✅ |
+| P1 | stress-runner | ✅ Corrigida | ✅ | ✅ |
+| P1 | generate-omnichannel-zip | ✅ Corrigida | ✅ | ✅ |
+| P2 | check-lovable-ai-config | ⏳ Pendente | ❌ | ❌ |
+| P2 | test-runner | ⏳ Pendente | ❌ | ❌ |
+
+**Total: 7/9 funções corrigidas (78%)**
+
+---
+
+**Status:** 🟢 **P0 e P1 RESOLVIDOS** | 🟡 **P2 PENDENTE**
+
+**Próxima Revisão:** Após correção da Fase 3 (P2)

@@ -21,6 +21,34 @@ interface StressTestResult {
 Deno.serve(createPublicHandler(
   'ixc-stress-test',
   async (req, { supabase }) => {
+    // 🔒 RBAC: Apenas administradores podem executar stress tests IXC
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
+    // Verificar role de admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!userRole) {
+      console.warn('IXC stress test attempted by non-admin user', user.id);
+      throw new Error('Admin access required');
+    }
+
+    console.log('IXC stress test authorized for admin', user.id);
+    
     const config: StressTestConfig = await req.json();
     
     // 🔒 LIMITES DE SEGURANÇA (P0 Fix)

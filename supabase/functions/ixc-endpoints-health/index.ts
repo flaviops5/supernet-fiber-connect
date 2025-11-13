@@ -83,6 +83,34 @@ async function pMap<T, R>(items: T[], limit: number, mapper: (item: T, index: nu
 Deno.serve(createPublicHandler(
   'ixc-endpoints-health',
   async (req, { supabase }) => {
+    // 🔒 RBAC: Apenas administradores podem executar health check de endpoints
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
+    // Verificar role de admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!userRole) {
+      console.warn('Endpoints health check attempted by non-admin user', user.id);
+      throw new Error('Admin access required');
+    }
+
+    console.log('Endpoints health check authorized for admin', user.id);
+    
     const startAll = Date.now();
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     if (!SUPABASE_URL) {
