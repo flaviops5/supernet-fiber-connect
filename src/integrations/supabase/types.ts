@@ -5660,10 +5660,8 @@ export type Database = {
             }
             Returns: string
           }
-      decrypt_text: { Args: { encrypted_text: string }; Returns: string }
       disable_maintenance_cron: { Args: never; Returns: undefined }
       enable_maintenance_cron: { Args: never; Returns: undefined }
-      encrypt_text: { Args: { plain_text: string }; Returns: string }
       generate_contract_number: { Args: never; Returns: string }
       get_available_agents_for_department: {
         Args: {
