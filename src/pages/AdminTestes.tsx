@@ -8,7 +8,8 @@ import {
   Zap,
   GitBranch,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  Shield
 } from "lucide-react";
 
 // Import test components
@@ -33,6 +34,7 @@ import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
 import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
 import { EmailTestSender } from "@/components/EmailTestSender";
 import { StressTestRunner } from "@/components/tests/StressTestRunner";
+import { PenTestRunner } from "@/components/tests/PenTestRunner";
 
 const AdminTestes = () => {
   return (
@@ -297,6 +299,39 @@ const AdminTestes = () => {
               </CardHeader>
               <CardContent>
                 <SendPaymentTest />
+              </CardContent>
+            </Card>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Segurança */}
+        <AccordionItem value="security" className="border rounded-lg bg-gradient-to-r from-red-500/5 to-orange-500/10">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-red-500" />
+              <div className="text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  Penetration Testing
+                  <span className="text-xs px-2 py-0.5 bg-red-500/20 rounded-full">30 testes</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Testes automatizados de XSS, SQL Injection e Command Injection
+                </div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  🛡️ Pen-Test Automatizado
+                </CardTitle>
+                <CardDescription>
+                  Executa 30 testes de segurança: 15 XSS, 8 SQL Injection e 5 Command Injection
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PenTestRunner />
               </CardContent>
             </Card>
           </AccordionContent>
