@@ -4,6 +4,7 @@ import { LOGISTICS_AGENT_SYSTEM_PROMPT, LOGISTICS_AGENT_ERROR_MESSAGE } from "./
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 
 interface Message {
   role: string;

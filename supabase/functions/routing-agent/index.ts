@@ -3,7 +3,7 @@ import { ROUTING_AGENT_CONFIG } from "./config.ts";
 import { CLOE_MARTINS_SYSTEM_PROMPT, ROUTING_AGENT_SYSTEM_PROMPT } from "./prompts.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
 import { createLogger, createLoggerFromRequest } from "../_shared/logger.ts";
-import { StandardError } from "../_shared/error-handler.ts";
+import { StandardError, handleEdgeFunctionError } from "../_shared/error-handler.ts";
 import type { JsonValue, JsonObject } from "../_shared/error-types.ts";
 import type { LovableAIResponse, AgentRequest } from "../_shared/agent-types.ts";
 // >>> PR10A - Geolocalização
