@@ -1,4 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getOrCreateTraceId } from '../_shared/trace-id.ts';
+import { createTimer } from '../_shared/duration-tracker.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +26,10 @@ interface RateLimitResponse {
 }
 
 Deno.serve(async (req) => {
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  let success = false;
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -83,19 +90,29 @@ Deno.serve(async (req) => {
     }
 
     const status = result.allowed ? 200 : 429;
+    success = result.allowed;
     
-    console.log(`${result.allowed ? '✅' : '⛔'} Rate limit ${result.allowed ? 'passed' : 'exceeded'}: ${actionType}`);
+    console.log(`${result.allowed ? '✅' : '⛔'} Rate limit ${result.allowed ? 'passed' : 'exceeded'}: ${actionType}`, { trace_id: traceId });
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ ...result, trace_id: traceId }),
       { status, headers: rateLimitHeaders }
     );
 
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('❌ Unexpected error:', error, { trace_id: traceId });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, trace_id: traceId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    const duration = timer.end();
+    await recordMetric({
+      agent_name: 'rate-limit-check',
+      action_type: 'check_rate_limit',
+      success,
+      duration_ms: duration,
+      metadata: { trace_id: traceId }
+    }).catch(console.error);
   }
 });

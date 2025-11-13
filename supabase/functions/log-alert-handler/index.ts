@@ -1,5 +1,8 @@
 // Edge Function para enviar alertas via WhatsApp quando logs críticos são detectados
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getOrCreateTraceId } from '../_shared/trace-id.ts';
+import { createTimer } from '../_shared/duration-tracker.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,6 +20,10 @@ interface LogEntry {
 }
 
 Deno.serve(async (req) => {
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  let success = false;
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -122,22 +129,38 @@ Deno.serve(async (req) => {
         .in('id', logIds);
     }
 
-    console.log(`✅ ${alertsSent} alertas enviados com sucesso`);
+    console.log(`✅ ${alertsSent} alertas enviados com sucesso`, { trace_id: traceId });
 
+    success = alertsSent > 0;
     return new Response(
       JSON.stringify({
         success: true,
         alertsSent,
         errorsCount: errorLogs.length,
         contextsAlerted: Object.keys(errorsByContext).length,
-        errors: errors.length > 0 ? errors : undefined
+        errors: errors.length > 0 ? errors : undefined,
+        trace_id: traceId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('❌ Erro no log-alert-handler:', error);
+    console.error('❌ Erro no log-alert-handler:', error, { trace_id: traceId });
     return new Response(
+      JSON.stringify({ success: false, error: 'Internal server error', trace_id: traceId }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } finally {
+    const duration = timer.end();
+    await recordMetric({
+      agent_name: 'log-alert-handler',
+      action_type: 'send_alerts',
+      success,
+      duration_ms: duration,
+      metadata: { trace_id: traceId }
+    }).catch(console.error);
+  }
+});
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

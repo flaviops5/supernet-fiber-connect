@@ -1,4 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { getOrCreateTraceId } from '../_shared/trace-id.ts';
+import { createTimer } from '../_shared/duration-tracker.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,6 +21,10 @@ interface HealthCheckResult {
 }
 
 Deno.serve(async (req) => {
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  let success = false;
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -65,11 +72,13 @@ Deno.serve(async (req) => {
         const allHealthy = results.every(r => r.status === 'healthy');
         const hasErrors = results.some(r => r.status === 'error');
 
+        success = !hasErrors;
         return new Response(
           JSON.stringify({
             overall: hasErrors ? 'error' : allHealthy ? 'healthy' : 'warning',
             checks: results,
             timestamp: new Date().toISOString(),
+            trace_id: traceId
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -141,12 +150,14 @@ Deno.serve(async (req) => {
         const allPassed = tests.every(t => t.passed);
         const totalDuration = tests.reduce((sum, t) => sum + t.duration, 0);
 
+        success = allPassed;
         return new Response(
           JSON.stringify({
             success: allPassed,
             tests,
             totalDuration,
             timestamp: new Date().toISOString(),
+            trace_id: traceId
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -166,23 +177,33 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
+        success = true;
         return new Response(
-          JSON.stringify({ success: true, message: 'Rollback completed' }),
+          JSON.stringify({ success: true, message: 'Rollback completed', trace_id: traceId }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid deploy type' }),
+          JSON.stringify({ error: 'Invalid deploy type', trace_id: traceId }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
   } catch (error) {
-    console.error('Deploy error:', error);
+    console.error('Deploy error:', error, { trace_id: traceId });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, trace_id: traceId }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    const duration = timer.end();
+    await recordMetric({
+      agent_name: 'coordinated-deploy',
+      action_type: 'deploy',
+      success,
+      duration_ms: duration,
+      metadata: { trace_id: traceId }
+    }).catch(console.error);
   }
 });
