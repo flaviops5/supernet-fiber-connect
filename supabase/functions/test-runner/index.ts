@@ -1,4 +1,5 @@
 // >>> PR31 – test-runner (funcional + latência) v2 – 10/10
+// P2 Security Fix: RBAC + Sanitized Results
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -89,6 +90,41 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // RBAC: Admin-only access
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.warn('⚠️ Unauthorized access attempt - no auth header');
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Autenticação necessária' }),
+        { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } }
+      );
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      console.warn('⚠️ Invalid authentication token');
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Token inválido' }),
+        { status: 401, headers: { ...corsHeaders, "content-type": "application/json" } }
+      );
+    }
+
+    const { data: hasAdmin } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
+
+    if (!hasAdmin) {
+      console.warn(`⚠️ Unauthorized access attempt by user ${user.id}`);
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Acesso negado: apenas administradores' }),
+        { status: 403, headers: { ...corsHeaders, "content-type": "application/json" } }
+      );
+    }
+
     console.log("🧪 Iniciando test-runner...");
 
     const results = [];
@@ -128,16 +164,26 @@ serve(async (req) => {
     console.log(`📊 Média: ${Math.round(avg)}ms | Aprovados: ${passed}/${CASES.length}`);
     console.log(`🔄 Cenários refatorados: ${refactoredCount}/${CASES.length}`);
 
+    // Sanitized response - remove detailed error messages and payloads
+    const sanitizedResults = results.map(r => ({
+      case: r.case,
+      ok: r.ok,
+      ms: r.ms,
+      match: r.match,
+      scenario: r.scenario,
+      expected: r.expected
+      // Removed: error details, payloads, internal data
+    }));
+
     return new Response(
       JSON.stringify({ 
         ok: true, 
         avg_ms: Math.round(avg), 
         passed,
         total: CASES.length,
-        refactoredCount,
         refactoredPercentage: Math.round((refactoredCount / CASES.length) * 100),
         severity,
-        results 
+        results: sanitizedResults 
       }), 
       { headers: { ...corsHeaders, "content-type": "application/json" } }
     );
