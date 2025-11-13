@@ -39,6 +39,7 @@ import GoLive from "./pages/GoLive";
 import AdminKanban from "./pages/AdminKanban";
 import PublicCalendar from "./pages/PublicCalendar";
 import AdminStressTest from "./pages/AdminStressTest";
+import AdminPenTest from "./pages/AdminPenTest";
 import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -79,7 +80,8 @@ const App = () => {
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
             <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
             <Route path="/admin/prompts" element={<AdminPrompts />} />
-            <Route path="/admin/stress-test" element={<AdminStressTest />} />
+          <Route path="/admin/stress-test" element={<AdminStressTest />} />
+          <Route path="/admin/pen-test" element={<AdminPenTest />} />
             <Route path="/admin/testes" element={<AdminTestes />} />
             
             {/* AI RAG - Dedicated route */}
