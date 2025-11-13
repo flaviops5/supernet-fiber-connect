@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { JsonObject } from "./error-types.ts";
+import { getOrCreateTraceId } from "./trace-id.ts";
+import { DurationTracker } from "./duration-tracker.ts";
 
 // Cria cliente Supabase local seguro
 function getSupabase() {
@@ -14,8 +16,15 @@ function getSupabase() {
   }
 }
 
-export function createLogger(agentName: string, req?: Request) {
+export interface LoggerOptions {
+  traceId?: string;
+  durationTracker?: DurationTracker;
+}
+
+export function createLogger(agentName: string, req?: Request, options?: LoggerOptions) {
   const supabase = getSupabase();
+  const traceId = options?.traceId ?? (req ? getOrCreateTraceId(req) : crypto.randomUUID().slice(0, 8));
+  const tracker = options?.durationTracker;
 
   async function storeLog(level: string, message: string, metadata: JsonObject = {}) {
     try {
@@ -27,13 +36,20 @@ export function createLogger(agentName: string, req?: Request) {
       // Sanitizar metadata para garantir que seja serializável
       const sanitizedMetadata = sanitizeMetadata(metadata);
       
+      // Add trace_id and duration_ms to metadata
+      const enrichedMetadata = {
+        ...sanitizedMetadata,
+        trace_id: traceId,
+        ...(tracker ? { duration_ms: tracker.elapsed } : {}),
+      };
+      
       await supabase
         .from("monitoring_logs")
         .insert([
           {
             level,
             message,
-            metadata: sanitizedMetadata,
+            metadata: enrichedMetadata,
             agent_name: agentName,
             timestamp: new Date().toISOString(),
           },
@@ -54,17 +70,44 @@ export function createLogger(agentName: string, req?: Request) {
   }
 
   return {
+    traceId, // Expose trace ID for propagation
+    
     info: (msg: string, meta?: JsonObject) => {
-      console.log(`ℹ️ [${agentName}]`, msg, meta ?? "");
+      const duration = tracker ? `[${tracker.elapsed}ms]` : '';
+      console.log(`ℹ️ [${agentName}:${traceId}] ${duration}`, msg, meta ?? "");
       return storeLog("info", msg, meta ?? {});
     },
     warn: (msg: string, meta?: JsonObject) => {
-      console.warn(`⚠️ [${agentName}]`, msg, meta ?? "");
+      const duration = tracker ? `[${tracker.elapsed}ms]` : '';
+      console.warn(`⚠️ [${agentName}:${traceId}] ${duration}`, msg, meta ?? "");
       return storeLog("warn", msg, meta ?? {});
     },
     error: (msg: string, meta?: JsonObject) => {
-      console.error(`❌ [${agentName}]`, msg, meta ?? "");
+      const duration = tracker ? `[${tracker.elapsed}ms]` : '';
+      console.error(`❌ [${agentName}:${traceId}] ${duration}`, msg, meta ?? "");
       return storeLog("error", msg, meta ?? {});
+    },
+    
+    // Helper to measure operation duration
+    measure: async <T>(operation: string, fn: () => Promise<T>): Promise<T> => {
+      const opTimer = new DurationTracker();
+      console.log(`⏱️ [${agentName}:${traceId}] Starting: ${operation}`);
+      
+      try {
+        const result = await fn();
+        const duration = opTimer.complete();
+        console.log(`✅ [${agentName}:${traceId}] Completed: ${operation} (${duration}ms)`);
+        await storeLog("info", `${operation} completed`, { duration_ms: duration });
+        return result;
+      } catch (error) {
+        const duration = opTimer.complete();
+        console.error(`❌ [${agentName}:${traceId}] Failed: ${operation} (${duration}ms)`, error);
+        await storeLog("error", `${operation} failed`, { 
+          duration_ms: duration,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      }
     },
   };
 }
