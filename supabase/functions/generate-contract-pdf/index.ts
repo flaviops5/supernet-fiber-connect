@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
 interface ContractData {
   appointmentId: string;
@@ -17,9 +17,9 @@ interface ContractData {
   contractNumber: string;
 }
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'generate-contract-pdf',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const contractData: ContractData = await req.json();
     
     console.log('Generating contract PDF for:', contractData.planName);

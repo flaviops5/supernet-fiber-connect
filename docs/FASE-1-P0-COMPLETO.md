@@ -2,7 +2,7 @@
 
 **Data:** 2025-11-13  
 **Status:** 🟡 PARCIALMENTE CONCLUÍDO  
-**Progress:** 26/59 edge functions convertidas (44%)
+**Progress:** 46/59 edge functions convertidas (78%)
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## 🔐 Item 1: Edge Functions sem Autenticação
 
-### ✅ Convertidas para `createAuthenticatedHandler` (26 funções)
+### ✅ Convertidas para `createAuthenticatedHandler` (46 funções)
 
 #### **P0 Fix Anteriores (6 + 3 = 9)**
 1. ✅ `ai-auto-tag`
@@ -90,29 +90,29 @@
 28. ✅ `ixc-revenue-stats`
 29. ✅ `ixc-sync-plans`
 
-### ⚠️ Pendentes (33 funções)
+### ⚠️ Pendentes (13 funções)
 
-#### **LOTE 2: Agents + Automações (20 funções)**
-30. ⏳ `automacao-agent`
-31. ⏳ `chatbot-cep-lookup`
-32. ⏳ `generate-ai-faq`
-33. ⏳ `generate-ai-flow-simulations`
-34. ⏳ `generate-blog-content`
-35. ⏳ `generate-contract-pdf`
-36. ⏳ `generate-flow-simulations`
-37. ⏳ `generate-omnichannel-zip`
-38. ⏳ `get-function-code`
-39. ⏳ `graylog-logs-export`
-40. ⏳ `ixc-integration`
-41. ⏳ `ixc-stress-test`
-42. ⏳ `logistics-agent`
-43. ⏳ `luan-auto-upgrade`
-44. ⏳ `mass-outage-executor`
-45. ⏳ `metrics-collector`
-46. ⏳ `migrate-knowledge-batch`
-47. ⏳ `migrate-knowledge-full`
-48. ⏳ `network-maintenance-executor`
-49. ⏳ `process-alerts`
+#### **LOTE 2: Agents + Automações (20 funções) - ✅ CONCLUÍDO**
+30. ✅ `automacao-agent`
+31. ✅ `chatbot-cep-lookup`
+32. ✅ `generate-ai-faq`
+33. ✅ `generate-ai-flow-simulations`
+34. ✅ `generate-blog-content`
+35. ✅ `generate-contract-pdf`
+36. ✅ `generate-flow-simulations`
+37. ✅ `generate-omnichannel-zip`
+38. ✅ `get-function-code`
+39. ✅ `graylog-logs-export`
+40. ✅ `ixc-integration`
+41. ✅ `ixc-stress-test`
+42. ✅ `logistics-agent`
+43. ✅ `luan-auto-upgrade`
+44. ✅ `mass-outage-executor`
+45. ✅ `metrics-collector`
+46. ✅ `migrate-knowledge-batch`
+47. ✅ `migrate-knowledge-full`
+48. ✅ `network-maintenance-executor`
+49. ✅ `process-alerts`
 
 #### **LOTE 3: Restantes + Sem Handler (13 funções)**
 50. ⏳ `process-cep-import`
@@ -182,13 +182,13 @@ Requerem autenticação manual com Supabase client:
 
 | **Categoria** | **Total** | **Concluído** | **%** | **Status** |
 |---------------|-----------|---------------|-------|------------|
-| **Edge Functions Auth** | 59 | 26 | 44% | 🟡 Em Progresso |
+| **Edge Functions Auth** | 59 | 46 | 78% | 🟡 Em Progresso |
 | **SECURITY DEFINER search_path** | 97 | 20 | 21% | 🟡 Em Progresso |
 | **SECURITY DEFINER Views** | 0 | 0 | 100% | ✅ N/A |
 | **Hardcoded API Keys** | 0 | 0 | 100% | ✅ Verificado |
 | **Config Exposure** | 2 | 2 | 100% | ✅ Sanitizado |
 
-**Progress Geral:** 48/158 itens (30%)
+**Progress Geral:** 68/158 itens (43%)
 
 ---
 

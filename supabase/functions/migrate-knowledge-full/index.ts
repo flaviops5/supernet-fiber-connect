@@ -1,9 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-Deno.serve(createPublicHandler('migrate-knowledge-full', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('migrate-knowledge-full', async (req, { supabase, user }) => {
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
       throw new Error('OPENAI_API_KEY not configured');

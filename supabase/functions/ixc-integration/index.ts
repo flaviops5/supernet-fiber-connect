@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { parseJSONStrict, getErrorMessage, type JsonValue, type JsonObject } from '../_shared/error-types.ts';
 import { createLogger } from '../_shared/logger.ts';
 import type { IXCCustomer } from '../_shared/types.ts';

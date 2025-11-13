@@ -1,11 +1,4 @@
-// >>> PR28 – luan-auto-upgrade (Edge Function) v2 – 10/10
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 type KpiRow = { 
   ts: string; 
@@ -14,18 +7,7 @@ type KpiRow = {
   tickets_count: number;
 };
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } }
-    );
+Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabase, user }) => {
 
     // >>> CRITICAL FIX: Prevenir execução simultânea
     const { data: lockAcquired } = await supabase.rpc('try_acquire_cron_lock', {

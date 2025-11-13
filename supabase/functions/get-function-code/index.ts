@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 /**
  * 🚨 SECURITY: Esta função foi DESABILITADA por motivos de segurança crítica
@@ -16,7 +16,7 @@ import { createPublicHandler } from '../_shared/base-handler.ts';
  * 5. Rate limiting agressivo (1 req/min)
  */
 
-Deno.serve(createPublicHandler('get-function-code', async (req) => {
+Deno.serve(createAuthenticatedHandler('get-function-code', async (req, { supabase, user }) => {
     // 🔒 FUNÇÃO DESABILITADA POR SEGURANÇA
     throw new Error(
       'This function has been disabled for security reasons. ' +

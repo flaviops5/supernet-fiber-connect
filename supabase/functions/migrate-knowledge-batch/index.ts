@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('migrate-knowledge-batch', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('migrate-knowledge-batch', async (req, { supabase, user }) => {
     const { batchSize = 25, offset = 0 } = await req.json();
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');

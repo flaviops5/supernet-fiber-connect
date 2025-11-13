@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 interface AlertConfig {
   id: string;
@@ -9,7 +9,7 @@ interface AlertConfig {
   is_active: boolean;
 }
 
-Deno.serve(createPublicHandler('process-alerts', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('process-alerts', async (req, { supabase, user }) => {
   console.log('🔍 Processing alerts...');
 
     // Buscar configurações ativas

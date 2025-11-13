@@ -1,4 +1,4 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
 interface StressTestConfig {
   duration_seconds: number;
@@ -18,31 +18,16 @@ interface StressTestResult {
   errors: Array<{ count: number; message: string }>;
 }
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'ixc-stress-test',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     // 🔒 RBAC: Apenas administradores podem executar stress tests IXC
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Authentication required');
-    }
+    const { data: hasAdmin } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Invalid authentication');
-    }
-
-    // Verificar role de admin
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (!userRole) {
+    if (!hasAdmin) {
       console.warn('IXC stress test attempted by non-admin user', user.id);
       throw new Error('Admin access required');
     }

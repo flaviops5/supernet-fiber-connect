@@ -1,28 +1,13 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('generate-omnichannel-zip', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('generate-omnichannel-zip', async (req, { supabase, user }) => {
     // 🔒 RBAC: Apenas administradores podem baixar código fonte
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Authentication required');
-    }
+    const { data: hasAdmin } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Invalid authentication');
-    }
-
-    // Verificar role de admin
-    const { data: userRole } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    if (!userRole) {
+    if (!hasAdmin) {
       console.warn('Code download attempted by non-admin user', user.id);
       throw new Error('Admin access required');
     }
