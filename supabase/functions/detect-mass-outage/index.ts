@@ -3,7 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 import { getErrorMessage } from '../_shared/error-types.ts';
-import { createLogger } from '../_shared/logger.ts';
+import { createLogger } from "../_shared/structured-logger.ts";
+import { getOrCreateTraceId } from "../_shared/trace-id.ts";
+import { createTimer } from "../_shared/duration-tracker.ts";
 import type { RadiusUser } from '../_shared/types.ts';
 
 const corsHeaders = {
@@ -16,7 +18,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const logger = createLogger('detect-mass-outage');
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  const logger = createLogger('detect-mass-outage', req, { 
+    traceId, 
+    durationTracker: timer 
+  });
 
   try {
     logger.info('Chamada pública recebida');
@@ -57,12 +64,14 @@ serve(async (req) => {
           maxPages: MAX_PAGES 
         });
 
-        const radData = await callIxcWithRetry(
-          IXC_PROXY_URL,
-          'POST',
-          '/webservice/v1/radusuarios',
-          bodyRad
-        );
+        const radData = await logger.measure('ixc-fetch-offline-clients', async () => {
+          return await callIxcWithRetry(
+            IXC_PROXY_URL,
+            'POST',
+            '/webservice/v1/radusuarios',
+            bodyRad
+          );
+        });
 
         const radRegistros = Array.isArray(radData?.data?.registros)
           ? radData.data.registros

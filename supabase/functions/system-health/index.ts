@@ -1,15 +1,29 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 import { withTimeout } from '../_shared/async-utils.ts';
+import { createLogger } from "../_shared/structured-logger.ts";
+import { getOrCreateTraceId } from "../_shared/trace-id.ts";
+import { createTimer } from "../_shared/duration-tracker.ts";
 
 Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
-  console.log('🏥 Running comprehensive health check...');
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  const logger = createLogger('system-health', req, { 
+    traceId, 
+    durationTracker: timer 
+  });
+  
+  logger.info('Running comprehensive health check');
 
     // 1. Database Connection (with 2s timeout)
-    const { data: dbCheck, error: dbError } = await withTimeout(
-      supabase.from('company_settings').select('id').limit(1),
-      2000,
-      'db-check'
-    ).catch(() => ({ data: null, error: { message: 'Timeout' } }));
+    timer.checkpoint('db-check-start');
+    const { data: dbCheck, error: dbError } = await logger.measure('db-connection-check', async () => {
+      return await withTimeout(
+        supabase.from('company_settings').select('id').limit(1),
+        2000,
+        'db-check'
+      ).catch(() => ({ data: null, error: { message: 'Timeout' } }));
+    });
+    timer.checkpoint('db-check-end');
 
     // 2. Circuit Breaker Status (with 1s timeout)
     const { data: cbMetrics } = await withTimeout(
@@ -184,7 +198,12 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
       timestamp: new Date().toISOString()
     };
 
-  console.log('✅ Health check completed:', responseData.summary);
+  const duration = timer.complete();
+  logger.info('Health check completed', { 
+    duration_ms: duration,
+    summary: responseData.summary,
+    status: overallStatus
+  });
 
-  return responseData;
+  return { ...responseData, trace_id: traceId, duration_ms: duration };
 }));

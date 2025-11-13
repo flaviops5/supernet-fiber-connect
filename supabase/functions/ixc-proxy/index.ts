@@ -5,7 +5,10 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createPublicHandler } from "../_shared/base-handler.ts";
 import { validateHMACRequest } from "../_shared/hmac.ts";
 import { safeLog, sanitizeForLog } from "../_shared/log-sanitizer.ts";
-import { createLogger } from "../_shared/unified-logger.ts";
+import { createLogger as createUnifiedLogger } from "../_shared/unified-logger.ts";
+import { createLogger } from "../_shared/structured-logger.ts";
+import { getOrCreateTraceId } from "../_shared/trace-id.ts";
+import { createTimer } from "../_shared/duration-tracker.ts";
 import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
 
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -14,8 +17,12 @@ const CACHE_TTL = 30000; // 30 segundos
 Deno.serve(createPublicHandler(
   'ixc-proxy',
   async (req, { supabase }) => {
-    const logger = createLogger('ixc-proxy');
-    const startTime = Date.now();
+    const timer = createTimer();
+    const traceId = getOrCreateTraceId(req);
+    const logger = createLogger('ixc-proxy', req, { 
+      traceId, 
+      durationTracker: timer 
+    });
     // Ler corpo PRIMEIRO (só pode ser lido uma vez)
     const requestBody = await req.json() as IXCProxyRequest;
     const { method, path, query, body } = requestBody;
@@ -140,10 +147,12 @@ Deno.serve(createPublicHandler(
       }
     }
 
-    const ixcResponse = await fetch(url, {
-      method,
-      headers: ixcHeaders,
-      body: outgoingBody
+    const ixcResponse = await logger.measure('ixc-api-call', async () => {
+      return await fetch(url, {
+        method,
+        headers: ixcHeaders,
+        body: outgoingBody
+      });
     });
 
     // Tentar parsear como JSON; caso contrário, capturar texto (ex.: HTML de login)
@@ -214,6 +223,13 @@ Deno.serve(createPublicHandler(
       responseStatus = 200;
     }
 
+    const duration = timer.complete();
+    logger.info('IXC request completed', { 
+      duration_ms: duration,
+      status: responseStatus,
+      ok
+    });
+
     const response: IXCProxyResponse = {
       ok,
       status: responseStatus,
@@ -221,6 +237,6 @@ Deno.serve(createPublicHandler(
       error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error'))
     };
 
-    return { ...response, duration_ms: duration };
+    return { ...response, duration_ms: duration, trace_id: traceId };
   }
 ));

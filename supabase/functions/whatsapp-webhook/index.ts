@@ -20,7 +20,9 @@ import { redactPII, redactPIIObject, extractCPF } from '../_shared/pii-redaction
 import { logLGPDAccess, logConversationAccess } from '../_shared/lgpd-logger.ts';
 import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
-import { createLoggerFromRequest } from '../_shared/logger.ts';
+import { createLogger } from "../_shared/structured-logger.ts";
+import { getOrCreateTraceId } from "../_shared/trace-id.ts";
+import { createTimer } from "../_shared/duration-tracker.ts";
 
 // ============================================
 // SCHEMA VALIDATION (Prioridade Crítica #1)
@@ -56,8 +58,12 @@ function generateCorrelationId(): string {
 }
 
 serve(async (req) => {
-  const logger = createLoggerFromRequest('whatsapp-webhook', req);
-  const startTime = Date.now();
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  const logger = createLogger('whatsapp-webhook', req, { 
+    traceId, 
+    durationTracker: timer 
+  });
   
   logger.info('📥 Webhook endpoint hit', {
     method: req.method,
