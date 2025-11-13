@@ -1,5 +1,7 @@
 import { createProtectedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { checkAndRegisterEvent } from '../_shared/webhook-idempotency.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 /**
  * Webhook Alerts - Envia alertas críticos para webhook externo
@@ -15,9 +17,9 @@ interface AlertPayload {
   timestamp: string;
 }
 
-Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user }) => {
+Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user, traceId }) => {
   const logger = createLogger('webhook-alerts', req.headers.get('x-request-id') || undefined);
-  logger.info('Processando alertas webhook', { user_id: user.id });
+  logger.info('Processando alertas webhook', { user_id: user.id, trace_id: traceId });
 
   // Buscar configuração do webhook
   const { data: settings } = await supabase
@@ -53,10 +55,49 @@ Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user
   logger.info('Enviando alertas para webhook', { count: alerts.length });
 
   let sentCount = 0;
+  let duplicateCount = 0;
   const errors: string[] = [];
 
   for (const alert of alerts) {
     try {
+      // ============================================
+      // IDEMPOTÊNCIA - Item 11 Auditoria
+      // ============================================
+      // Verificar se este alerta já foi enviado
+      const eventId = `${alert.id}`;
+      
+      const isNewEvent = await checkAndRegisterEvent(supabase, {
+        webhookName: 'webhook-alerts',
+        eventId: eventId,
+        eventType: alert.alert_type,
+        payload: {
+          alert_id: alert.id,
+          severity: alert.severity,
+          message: alert.message
+        },
+        metadata: {
+          trace_id: traceId,
+          webhook_url: settings.webhook_url
+        }
+      });
+
+      if (!isNewEvent) {
+        logger.warn('⏭️ Duplicate alert skipped (idempotency)', { alert_id: alert.id });
+        
+        await recordMetric(supabase, {
+          metric_name: 'webhook_alert_duplicate_skipped',
+          metric_value: 1,
+          dimensions: {
+            alert_type: alert.alert_type,
+            severity: alert.severity
+          },
+          trace_id: traceId
+        });
+        
+        duplicateCount++;
+        continue; // Pular para o próximo alerta
+      }
+
       const payload: AlertPayload = {
         alert_type: alert.alert_type,
         severity: alert.severity || 'info',
@@ -109,6 +150,7 @@ Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user
 
   logger.info('Webhook alerts processados', { 
     sent: sentCount, 
+    duplicates: duplicateCount,
     total: alerts.length,
     failed: errors.length 
   });
@@ -116,6 +158,7 @@ Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user
   return {
     success: true,
     alerts_sent: sentCount,
+    alerts_duplicates: duplicateCount,
     alerts_failed: errors.length,
     errors: errors.length > 0 ? errors : undefined
   };

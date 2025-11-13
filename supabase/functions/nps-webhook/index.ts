@@ -1,12 +1,14 @@
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import { checkAndRegisterEvent } from "../_shared/webhook-idempotency.ts";
+import { recordMetric } from "../_shared/metrics-helper.ts";
 
 // P0 FIX: Convertido para createAuthenticatedHandler
 // Apenas usuários autenticados podem processar respostas NPS
 Deno.serve(createAuthenticatedHandler(
   'nps-webhook',
-  async (req, { supabase, user }) => {
+  async (req, { supabase, user, logger, traceId }) => {
     const payload = await req.json();
-    console.log('NPS Webhook recebido:', payload);
+    logger.info('NPS Webhook recebido', { payloadKeys: Object.keys(payload) });
 
     // Validar campos obrigatórios
     const { 
@@ -29,6 +31,56 @@ Deno.serve(createAuthenticatedHandler(
     if (score < 0 || score > 10) {
       throw new Error('Score deve estar entre 0 e 10');
     }
+
+    // ============================================
+    // IDEMPOTÊNCIA - Item 11 Auditoria
+    // ============================================
+    // Usar recipient_id + campaign_id como identificador único
+    const eventId = `${campaign_id}-${recipient_id}`;
+    
+    const isNewEvent = await checkAndRegisterEvent(supabase, {
+      webhookName: 'nps-webhook',
+      eventId: eventId,
+      eventType: 'nps_response',
+      payload: {
+        campaign_id,
+        recipient_id,
+        score,
+        customer_name
+      },
+      metadata: {
+        trace_id: traceId,
+        response_channel,
+        user_id: user.id
+      }
+    });
+
+    if (!isNewEvent) {
+      logger.warn('⏭️ Duplicate NPS response rejected (idempotency)', { 
+        eventId,
+        campaign_id,
+        recipient_id 
+      });
+      
+      await recordMetric(supabase, {
+        metric_name: 'nps_webhook_duplicate_rejected',
+        metric_value: 1,
+        dimensions: {
+          campaign_id: campaign_id,
+          response_channel: response_channel
+        },
+        trace_id: traceId
+      });
+      
+      return { 
+        success: true, 
+        status: 'duplicate_rejected',
+        message: 'Esta resposta NPS já foi processada anteriormente',
+        event_id: eventId
+      };
+    }
+    
+    logger.info('✅ New NPS response accepted', { eventId, score });
 
     // Calcular categoria baseado no score
     let category: string;
