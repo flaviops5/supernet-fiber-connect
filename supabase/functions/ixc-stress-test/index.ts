@@ -29,12 +29,26 @@ Deno.serve(createPublicHandler(
       endpoints: config.endpoints
     });
 
+    // Debug: verificar secrets
     const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
+    console.log('🔍 Debug secrets:', {
+      hasBaseUrl: !!IXC_API_BASE_URL,
+      hasUsername: !!IXC_API_USERNAME,
+      hasPassword: !!IXC_API_PASSWORD,
+      baseUrlLength: IXC_API_BASE_URL?.length || 0,
+      usernameLength: IXC_API_USERNAME?.length || 0
+    });
+
     if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      throw new Error('IXC credentials not configured');
+      const missing = [];
+      if (!IXC_API_BASE_URL) missing.push('IXC_API_BASE_URL');
+      if (!IXC_API_USERNAME) missing.push('IXC_API_USERNAME');
+      if (!IXC_API_PASSWORD) missing.push('IXC_API_PASSWORD');
+      
+      throw new Error(`IXC credentials not configured. Missing: ${missing.join(', ')}`);
     }
 
     // Gerar token básico de autenticação
