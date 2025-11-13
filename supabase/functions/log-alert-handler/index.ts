@@ -161,8 +161,3 @@ Deno.serve(async (req) => {
     }).catch(console.error);
   }
 });
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
-});
