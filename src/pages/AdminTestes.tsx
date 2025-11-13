@@ -32,6 +32,7 @@ import { TestIXCSubjects } from "@/components/tests/TestIXCSubjects";
 import { WhatsAppApiTester } from "@/components/WhatsAppApiTester";
 import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
 import { EmailTestSender } from "@/components/EmailTestSender";
+import { StressTestRunner } from "@/components/tests/StressTestRunner";
 
 const AdminTestes = () => {
   return (
@@ -353,6 +354,18 @@ const AdminTestes = () => {
                   </CardHeader>
                   <CardContent>
                     <IXCFunctionsTester />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Stress Test IXC</CardTitle>
+                    <CardDescription>
+                      Teste de carga para validar performance sob pressão
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <StressTestRunner />
                   </CardContent>
                 </Card>
 

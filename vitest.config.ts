@@ -10,13 +10,23 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov', 'text-summary'],
+      reportsDirectory: './coverage',
+      include: [
+        'src/**/*.{ts,tsx}',
+        'supabase/functions/**/*.ts'
+      ],
       exclude: [
         'node_modules/',
         'src/tests/',
         '**/*.d.ts',
         '**/*.config.*',
         '**/mockData',
+        'src/integrations/supabase/types.ts',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        'supabase/functions/_shared/**',
         'dist/',
       ],
       thresholds: {
