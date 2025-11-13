@@ -7,6 +7,7 @@ import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
 import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
 import { recordMetric } from "../_shared/metrics-helper.ts";
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 
 Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { supabase, user }) => {
   const startTime = Date.now();

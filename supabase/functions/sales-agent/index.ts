@@ -5,6 +5,7 @@ import { redactPII } from '../_shared/pii-redaction.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLogger } from '../_shared/structured-logger.ts';
 import { kpiLog } from '../_shared/kpi.ts';
+import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
