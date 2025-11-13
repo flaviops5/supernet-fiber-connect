@@ -22,22 +22,22 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.sales-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.routing-agent]
-verify_jwt = false
+verify_jwt = true
 [functions.routing-agent.env]
 TEST_HARNESS = "true"
 ENVIRONMENT = "staging"
 
 [functions.simulate-mass-outage]
-verify_jwt = false
+verify_jwt = true
 
 [functions.support-tech-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.support-financial-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-proxy]
 verify_jwt = false
@@ -58,10 +58,10 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.automacao-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.telemedicina-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.telemedicina-auth]
 verify_jwt = false
@@ -115,7 +115,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-whatsapp-message]
-verify_jwt = false
+verify_jwt = true
 
 [functions.whatsapp-webhook]
 verify_jwt = false
@@ -157,7 +157,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.logistics-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-escalation]
 verify_jwt = true
@@ -196,7 +196,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.installation-notify]
-verify_jwt = false
+verify_jwt = true
 
 [functions.llm-test-runner]
 verify_jwt = false
