@@ -23,6 +23,7 @@ import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLogger } from "../_shared/structured-logger.ts";
 import { getOrCreateTraceId } from "../_shared/trace-id.ts";
 import { createTimer } from "../_shared/duration-tracker.ts";
+import { checkAndRegisterEvent } from "../_shared/webhook-idempotency.ts";
 
 // ============================================
 // SCHEMA VALIDATION (Prioridade Crítica #1)
@@ -132,32 +133,57 @@ serve(async (req) => {
       );
     }
 
-    // Sprint 1: Controle de idempotência
-    const webhookId = `${webhookData.instance || 'default'}-${webhookData.data?.key?.id || Date.now()}`;
+    // ============================================
+    // IDEMPOTÊNCIA - Item 11 Auditoria
+    // ============================================
+    // Usar messageId único do WhatsApp para deduplicação
+    const messageId = webhookData.data?.key?.id || `${webhookData.instance}-${Date.now()}`;
+    const eventType = webhookData.event || 'unknown';
     
-    const { data: existingWebhook } = await supabase
-      .from('processed_webhooks')
-      .select('id')
-      .eq('webhook_id', webhookId)
-      .maybeSingle();
+    // Verificar e registrar evento (operação atômica)
+    const isNewEvent = await checkAndRegisterEvent(supabase, {
+      webhookName: 'whatsapp-webhook',
+      eventId: messageId,
+      eventType: eventType,
+      payload: {
+        instance: webhookData.instance,
+        event: eventType,
+        timestamp: new Date().toISOString()
+      },
+      metadata: {
+        trace_id: traceId,
+        hmac_signature: req.headers.get('x-hmac-signature'),
+        content_length: rawBody.length
+      }
+    });
 
-    if (existingWebhook) {
-      logger.info('⏭️ Webhook já processado (idempotência)', { webhookId });
+    if (!isNewEvent) {
+      logger.info('⏭️ Duplicate webhook event rejected (idempotency)', { 
+        messageId,
+        eventType 
+      });
+      
+      await recordMetric(supabase, {
+        metric_name: 'webhook_duplicate_rejected',
+        metric_value: 1,
+        dimensions: {
+          webhook_name: 'whatsapp-webhook',
+          event_type: eventType
+        },
+        trace_id: traceId
+      });
+      
       return new Response(
-        JSON.stringify({ success: true, status: 'already_processed' }),
+        JSON.stringify({ 
+          success: true, 
+          status: 'duplicate_rejected',
+          message_id: messageId 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Registra webhook como processado
-    await supabase.from('processed_webhooks').insert({
-      webhook_id: webhookId,
-      event_type: webhookData.event || 'unknown',
-      request_signature: req.headers.get('x-hmac-signature'),
-      request_timestamp: req.headers.get('x-hmac-timestamp') ? 
-        parseInt(req.headers.get('x-hmac-timestamp')!) : null,
-      metadata: { rawBodyLength: rawBody.length },
-    });
+    
+    logger.info('✅ New webhook event accepted', { messageId, eventType });
 
     // Evolution API envia diferentes tipos de eventos
     const eventType = webhookData.event;
