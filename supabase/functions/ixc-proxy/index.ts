@@ -2,7 +2,7 @@
 // IXC PROXY - Ponto único de acesso ao IXC
 // ============================================
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { validateHMACRequest } from "../_shared/hmac.ts";
 import { safeLog, sanitizeForLog } from "../_shared/log-sanitizer.ts";
 import { createLogger as createUnifiedLogger } from "../_shared/unified-logger.ts";
@@ -14,9 +14,11 @@ import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 segundos
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// IXC Proxy é ponto único de acesso - CRÍTICO proteger
+Deno.serve(createAuthenticatedHandler(
   'ixc-proxy',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const timer = createTimer();
     const traceId = getOrCreateTraceId(req);
     const logger = createLogger('ixc-proxy', req, { 

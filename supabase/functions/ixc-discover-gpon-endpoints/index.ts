@@ -1,9 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Descoberta de endpoints GPON é operação administrativa
+Deno.serve(createAuthenticatedHandler(
   'ixc-discover-gpon-endpoints',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
     const ixcBaseUrl = Deno.env.get('IXC_API_BASE_URL');

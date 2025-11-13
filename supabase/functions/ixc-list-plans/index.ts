@@ -1,9 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Lista de planos contém dados comerciais estratégicos
+Deno.serve(createAuthenticatedHandler(
   'ixc-list-plans',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     console.log('📋 Listando todos os planos do IXC...');
 
     // Credenciais IXC

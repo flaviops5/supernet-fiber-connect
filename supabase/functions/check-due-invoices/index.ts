@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('check-due-invoices');
@@ -9,9 +9,11 @@ interface InvoiceCheckRequest {
   testDate?: string;
 }
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Verificação de faturas manipula dados financeiros sensíveis
+Deno.serve(createAuthenticatedHandler(
   'check-due-invoices',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const { testMode = false, testDate } = await req.json() as InvoiceCheckRequest;
     
     logger.info('Iniciando verificação de faturas', { testMode, testDate });

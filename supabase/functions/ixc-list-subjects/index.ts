@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
 interface IXCSubject {
@@ -8,7 +8,9 @@ interface IXCSubject {
   ativo: string;
 }
 
-Deno.serve(createPublicHandler('ixc-list-subjects', async (req) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Assuntos IXC são configuração interna do sistema
+Deno.serve(createAuthenticatedHandler('ixc-list-subjects', async (req, { supabase, user }) => {
   console.log('📋 Listando assuntos do IXC via proxy...');
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');

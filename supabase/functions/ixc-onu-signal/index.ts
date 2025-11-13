@@ -7,7 +7,7 @@
  * Endpoint IXC: botao_rel_22991 (Relatório de Potência/Resumo ONU)
  */
 
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { getOnuSignalStatus } from '../_shared/ixc-client.ts';
 import { createLogger } from '../_shared/logger.ts';
 
@@ -109,9 +109,11 @@ function interpretTX(tx: number): { status: string; level: string; message: stri
   };
 }
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Sinal ONU é diagnóstico técnico sensível
+Deno.serve(createAuthenticatedHandler(
   'ixc-onu-signal',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     logger.info('IXC ONU Signal Status - Iniciando consulta');
 
     const { clientId } = await req.json();

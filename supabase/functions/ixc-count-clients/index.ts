@@ -1,10 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Contagem de clientes expõe dados de negócio sensíveis
+Deno.serve(createAuthenticatedHandler(
   'ixc-count-clients',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/ixc-proxy`;
 
     console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');

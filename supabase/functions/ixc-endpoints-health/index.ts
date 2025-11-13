@@ -2,7 +2,7 @@
 // IXC ENDPOINTS HEALTH - Usa lógica treinada (_shared/ixc-client)
 // ============================================
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
 const corsHeaders = {
@@ -80,9 +80,10 @@ async function pMap<T, R>(items: T[], limit: number, mapper: (item: T, index: nu
   return results;
 }
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Já tinha RBAC mas vou usar createAuthenticatedHandler para consistência
+Deno.serve(createAuthenticatedHandler(
   'ixc-endpoints-health',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     // 🔒 RBAC: Apenas administradores podem executar health check de endpoints
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {

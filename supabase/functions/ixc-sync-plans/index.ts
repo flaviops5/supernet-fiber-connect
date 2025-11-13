@@ -1,9 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Sincronização de planos é operação administrativa crítica
+Deno.serve(createAuthenticatedHandler(
   'ixc-sync-plans',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const requestBody = await req.json();
     console.log('📦 Body recebido:', JSON.stringify(requestBody));
     

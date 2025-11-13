@@ -3,7 +3,7 @@
 // ============================================
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
@@ -224,9 +224,11 @@ function computeAnalytics(contracts: Contract[], invoices: Invoice[]) {
   return result;
 }
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Analytics financeiros são dados críticos de negócio
+Deno.serve(createAuthenticatedHandler(
   'ixc-financial-analytics',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const startTime = Date.now();
     const logger = createLogger("ixc-financial-analytics", req);
     logger.info("Iniciando análise financeira");

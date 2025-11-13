@@ -8,7 +8,7 @@
 // - Notificação WhatsApp em HIGH
 // - Structured logging (não bloqueante)
 // =====================================================================
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
@@ -76,7 +76,9 @@ function inferCause(
   return "unknown";
 }
 
-Deno.serve(createPublicHandler('atlas-analyzer', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Análise de atlas manipula dados críticos de infraestrutura
+Deno.serve(createAuthenticatedHandler('atlas-analyzer', async (req, { supabase, user }) => {
   const logger = createLogger("atlas-analyzer-v2", req);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
