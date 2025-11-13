@@ -23,32 +23,35 @@ Deno.serve(createPublicHandler(
   async (req, { supabase }) => {
     const config: StressTestConfig = await req.json();
     
+    // 🔒 LIMITES DE SEGURANÇA (P0 Fix)
+    const MAX_CONCURRENT_USERS = 5;
+    const MAX_DURATION_SECONDS = 30;
+    const MAX_ENDPOINTS = 3;
+    
+    // Aplicar limites severos
+    if (config.concurrent_users > MAX_CONCURRENT_USERS) {
+      throw new Error(`Maximum ${MAX_CONCURRENT_USERS} concurrent users allowed`);
+    }
+    if (config.duration_seconds > MAX_DURATION_SECONDS) {
+      throw new Error(`Maximum ${MAX_DURATION_SECONDS} seconds duration allowed`);
+    }
+    if (config.endpoints.length > MAX_ENDPOINTS) {
+      throw new Error(`Maximum ${MAX_ENDPOINTS} endpoints allowed`);
+    }
+    
     console.log('🔥 Iniciando stress test IXC', {
       duration: config.duration_seconds,
       users: config.concurrent_users,
-      endpoints: config.endpoints
+      endpoints_count: config.endpoints.length
     });
 
-    // Debug: verificar secrets
+    // 🔒 SECURITY: Verificar secrets sem expor detalhes
     const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
-    console.log('🔍 Debug secrets:', {
-      hasBaseUrl: !!IXC_API_BASE_URL,
-      hasUsername: !!IXC_API_USERNAME,
-      hasPassword: !!IXC_API_PASSWORD,
-      baseUrlLength: IXC_API_BASE_URL?.length || 0,
-      usernameLength: IXC_API_USERNAME?.length || 0
-    });
-
     if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
-      const missing = [];
-      if (!IXC_API_BASE_URL) missing.push('IXC_API_BASE_URL');
-      if (!IXC_API_USERNAME) missing.push('IXC_API_USERNAME');
-      if (!IXC_API_PASSWORD) missing.push('IXC_API_PASSWORD');
-      
-      throw new Error(`IXC credentials not configured. Missing: ${missing.join(', ')}`);
+      throw new Error('IXC credentials not configured');
     }
 
     // Gerar token básico de autenticação

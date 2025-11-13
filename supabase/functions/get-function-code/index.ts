@@ -1,24 +1,26 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('get-function-code', async (req) => {
-    const { functionName } = await req.json();
-    
-    if (!functionName) {
-      throw new Error('functionName is required');
-    }
+/**
+ * 🚨 SECURITY: Esta função foi DESABILITADA por motivos de segurança crítica
+ * 
+ * RISCO CRÍTICO:
+ * - Expõe código-fonte completo de todas as edge functions
+ * - Revela lógica de negócio proprietária e algoritmos
+ * - Facilita engenharia reversa e descoberta de vulnerabilidades
+ * 
+ * Para ativar novamente (apenas em staging/desenvolvimento):
+ * 1. Implementar whitelist de funções permitidas
+ * 2. Adicionar role-based access control (apenas super_admin)
+ * 3. Sanitizar código (remover comentários, secrets)
+ * 4. Adicionar audit logging completo
+ * 5. Rate limiting agressivo (1 req/min)
+ */
 
-    // Construir o caminho absoluto para a função
-    const currentDir = new URL('.', import.meta.url).pathname;
-    const functionsDir = currentDir.replace('/get-function-code/', '/');
-    const filePath = `${functionsDir}${functionName}/index.ts`;
-    
-    console.log('Tentando ler arquivo:', filePath);
-    
-    try {
-      const code = await Deno.readTextFile(filePath);
-      return { code, functionName };
-    } catch (fileError) {
-      console.error('Error reading file:', fileError);
-      throw new Error(`Function file not found: ${functionName}`);
-    }
+Deno.serve(createPublicHandler('get-function-code', async (req) => {
+    // 🔒 FUNÇÃO DESABILITADA POR SEGURANÇA
+    throw new Error(
+      'This function has been disabled for security reasons. ' +
+      'Exposing source code is a critical security vulnerability. ' +
+      'Contact system administrator if you need access to function code.'
+    );
 }));
