@@ -1,4 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { getOrCreateTraceId } from '../_shared/trace-id.ts';
+import { createTimer } from '../_shared/duration-tracker.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +10,10 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  let success = false;
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -148,21 +155,32 @@ Deno.serve(async (req) => {
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
-    console.log(`Notificações: ${successCount} enviadas, ${failureCount} falhas`);
+    console.log(`Notificações: ${successCount} enviadas, ${failureCount} falhas`, { trace_id: traceId });
 
+    success = successCount > 0;
     return new Response(
       JSON.stringify({ 
         success: true, 
         results,
-        summary: { success: successCount, failure: failureCount }
+        summary: { success: successCount, failure: failureCount },
+        trace_id: traceId
       }), 
       { headers }
     );
   } catch (err) {
-    console.error("Erro ao processar notificação:", err);
+    console.error("Erro ao processar notificação:", err, { trace_id: traceId });
     return new Response(
-      JSON.stringify({ error: String(err) }), 
+      JSON.stringify({ error: err.message, trace_id: traceId }), 
       { status: 500, headers }
     );
+  } finally {
+    const duration = timer.end();
+    await recordMetric({
+      agent_name: 'installation-notify',
+      action_type: 'send_notification',
+      success,
+      duration_ms: duration,
+      metadata: { trace_id: traceId }
+    }).catch(console.error);
   }
 });

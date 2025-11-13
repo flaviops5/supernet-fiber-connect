@@ -1,4 +1,7 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { getOrCreateTraceId } from '../_shared/trace-id.ts';
+import { createTimer } from '../_shared/duration-tracker.ts';
+import { recordMetric } from '../_shared/metrics-helper.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +13,10 @@ interface DeleteUserRequest {
 }
 
 Deno.serve(async (req) => {
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  let success = false;
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -92,19 +99,29 @@ Deno.serve(async (req) => {
       event_type: 'user_deleted',
       event_description: `Admin ${user.email} deleted user ${userId}`,
       severity: 'info',
-      details: { deleted_user_id: userId }
+      details: { deleted_user_id: userId, trace_id: traceId }
     });
 
+    success = true;
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error:', error, { trace_id: traceId });
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  } finally {
+    const duration = timer.end();
+    await recordMetric({
+      agent_name: 'delete-user',
+      action_type: 'delete_user',
+      success,
+      duration_ms: duration,
+      metadata: { trace_id: traceId }
+    }).catch(console.error);
   }
 })
