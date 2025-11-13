@@ -12,7 +12,7 @@ interface ValidationResult {
   check: string;
   status: 'pass' | 'warning' | 'fail';
   message: string;
-  details?: string;
+  details?: string; // APENAS para logs internos, NUNCA exposto na resposta pública
 }
 
 Deno.serve(createProtectedHandler({
@@ -61,14 +61,16 @@ Deno.serve(createProtectedHandler({
   for (const envVar of requiredEnvVars) {
     const value = Deno.env.get(envVar);
     if (!value) {
+      // SEGURANÇA: details contém instruções gerais, não valores sensíveis
       results.push({
         category: 'Configuração',
         check: envVar,
         status: 'fail',
         message: `Variável ${envVar} não está configurada`,
-        details: 'Configure esta variável nas Edge Functions secrets'
+        details: 'Configure esta variável nas Edge Functions secrets' // Apenas logs internos
       });
     } else {
+      // SEGURANÇA: NUNCA logar ou retornar valores de secrets
       results.push({
         category: 'Configuração',
         check: envVar,
@@ -102,22 +104,25 @@ Deno.serve(createProtectedHandler({
           message: 'IXC API respondendo corretamente'
         });
       } else {
+        // SEGURANÇA: details omitido para não expor estrutura de API
         results.push({
           category: 'Integrações',
           check: 'IXC API',
           status: 'fail',
           message: `IXC API retornou status ${testResponse.status}`,
-          details: 'Verifique credenciais e URL do IXC'
+          details: 'Verifique credenciais e URL do IXC' // Apenas logs internos
         });
       }
     }
   } catch (err) {
+    // SEGURANÇA: Log interno detalhado, mas details sanitizado para não expor stack traces
+    logger.error('Erro ao testar IXC API', err);
     results.push({
       category: 'Integrações',
       check: 'IXC API',
       status: 'fail',
       message: 'Erro ao conectar com IXC',
-      details: err instanceof Error ? err.message : String(err)
+      details: 'Falha de conectividade' // Stack trace completo apenas em logs
     });
   }
 
@@ -149,17 +154,19 @@ Deno.serve(createProtectedHandler({
           check: 'Evolution API',
           status: 'fail',
           message: `Evolution API retornou status ${testResponse.status}`,
-          details: 'Verifique a API key'
+          details: 'Verifique a API key' // Não expõe detalhes da API
         });
       }
     }
   } catch (err) {
+    // SEGURANÇA: Log detalhado interno, resposta sanitizada
+    logger.error('Erro ao testar Evolution API', err);
     results.push({
       category: 'Integrações',
       check: 'Evolution API',
       status: 'fail',
       message: 'Erro ao conectar com Evolution API',
-      details: err instanceof Error ? err.message : String(err)
+      details: 'Falha de conectividade' // Stack trace apenas em logs
     });
   }
 
@@ -186,12 +193,14 @@ Deno.serve(createProtectedHandler({
         .limit(1);
 
       if (error) {
+        // SEGURANÇA: Não expor mensagens de erro SQL
+        logger.error(`Erro ao acessar tabela ${table}`, error);
         results.push({
           category: 'Database',
           check: `Tabela ${table}`,
           status: 'fail',
           message: `Tabela ${table} não acessível`,
-          details: error.message
+          details: 'Erro de acesso ao banco' // Mensagem SQL apenas em logs
         });
       } else {
         results.push({
@@ -202,12 +211,14 @@ Deno.serve(createProtectedHandler({
         });
       }
     } catch (err) {
+      // SEGURANÇA: Log detalhado interno
+      logger.error(`Erro ao verificar tabela ${table}`, err);
       results.push({
         category: 'Database',
         check: `Tabela ${table}`,
         status: 'fail',
         message: `Erro ao acessar ${table}`,
-        details: err instanceof Error ? err.message : String(err)
+        details: 'Falha de validação' // Stack trace apenas em logs
       });
     }
   }
@@ -292,6 +303,32 @@ Deno.serve(createProtectedHandler({
     score 
   });
 
+  // SEGURANÇA: Sanitizar results removendo detalhes sensíveis da resposta pública
+  // Logs internos já contém tudo, aqui apenas retornamos summaries
+  const sanitizedResults = results.map(result => {
+    const sanitized: ValidationResult = {
+      category: result.category,
+      check: result.check,
+      status: result.status,
+      message: result.message
+    };
+    
+    // NUNCA expor details que podem conter:
+    // - Mensagens de erro de APIs externas
+    // - Stack traces
+    // - Credenciais parciais
+    // - Estrutura interna do sistema
+    // O campo details foi completamente removido da resposta pública
+    
+    return sanitized;
+  });
+
+  logger.info('Results sanitizados para resposta pública', {
+    original_count: results.length,
+    sanitized_count: sanitizedResults.length,
+    removed_sensitive_details: true
+  });
+
   return {
     status: readinessStatus,
     score,
@@ -301,8 +338,9 @@ Deno.serve(createProtectedHandler({
       warnings: warningChecks,
       failed: failedChecks
     },
-    results,
-    timestamp: new Date().toISOString()
+    results: sanitizedResults,
+    timestamp: new Date().toISOString(),
+    note: 'Detalhes sensíveis foram omitidos desta resposta. Consulte logs internos para informações completas.'
   };
   }
 }));
