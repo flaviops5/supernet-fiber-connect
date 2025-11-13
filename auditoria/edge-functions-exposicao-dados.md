@@ -382,10 +382,10 @@ verify_jwt = true  # ✓ Autenticado
 
 ## 🟡 P2 - MÉDIO (Correção em 30 dias)
 
-### 8. `check-lovable-ai-config`
-**Risco:** 🟡 **MÉDIO - Revelação de Configuração**
+### 8. `check-lovable-ai-config` ✅ **CORRIGIDO**
+**Risco:** 🟡 **MÉDIO - Revelação de Configuração** → ✅ **RESOLVIDO**
 
-**Problema:**
+**Problema Original:**
 ```typescript
 return { 
   configured: !!LOVABLE_API_KEY,  // ❌ Confirma se existe
@@ -393,57 +393,92 @@ return {
 };
 ```
 
-**Dados Expostos:**
+**Dados Expostos (ANTES):**
 - ✗ Confirmação de presença/ausência de API key
 - ✗ Facilita reconnaissance
 
-**Configuração Atual:**
-```toml
-[functions.check-lovable-ai-config]
-verify_jwt = true  # ✓ Autenticado
+**✅ Correção Implementada:**
+```typescript
+// RBAC: Admin-only via has_role RPC
+const { data: hasAdmin } = await supabase.rpc('has_role', {
+  _user_id: user.id,
+  _role: 'admin'
+});
+
+if (!hasAdmin) {
+  console.warn(`⚠️ Unauthorized access attempt by user ${user.id}`);
+  throw new Error('Acesso negado: apenas administradores');
+}
+
+// Resposta sanitizada
+return { 
+  configured: !!LOVABLE_API_KEY,
+  message: 'Status verificado'  // ✅ Sem detalhes
+};
 ```
 
-**Correção Recomendada:**
-```typescript
-// Apenas para admins
-if (user.role !== 'admin') {
-  throw new Error('Unauthorized');
-}
-```
+**Status:** ✅ **RESOLVIDO**
+- RBAC admin-only implementado
+- Mensagem sanitizada
+- Logging de acessos não autorizados
+- Data: 2025-01-13
 
 ---
 
-### 9. `test-runner`
-**Risco:** 🟡 **MÉDIO - Exposição de Lógica de Testes**
+### 9. `test-runner` ✅ **CORRIGIDO**
+**Risco:** 🟡 **MÉDIO - Exposição de Lógica de Testes** → ✅ **RESOLVIDO**
 
-**Problema:**
+**Problema Original:**
 ```typescript
-// Casos de teste expostos revelam cenários internos
+// ❌ Função pública (verify_jwt = false)
+// ❌ Expõe resultados detalhados com errors, payloads
 const CASES: TestCase[] = [
   { name: "Scenario A – TX/RX zero", payload: { tx: 0, rx: 0 } },
   { name: "Scenario B – Bom & Travado", payload: { tx: 0.5, rx: -20 } },
   // ...
 ];
+
+return { results }; // ❌ Todos os detalhes expostos
 ```
 
-**Dados Expostos:**
+**Dados Expostos (ANTES):**
 - ✗ Cenários de teste internos
 - ✗ Lógica de diagnóstico
 - ✗ Parâmetros de rede esperados
+- ✗ Mensagens de erro completas
+- ✗ Payloads de teste
 
-**Configuração Atual:**
-```toml
-[functions.test-runner]
-verify_jwt = false  # ❌ PÚBLICO!
+**✅ Correção Implementada:**
+```typescript
+// RBAC: Admin-only com autenticação JWT manual
+const { data: { user } } = await supabase.auth.getUser(token);
+const { data: hasAdmin } = await supabase.rpc('has_role', {
+  _user_id: user.id,
+  _role: 'admin'
+});
+
+if (!hasAdmin) return 403;
+
+// Resultados sanitizados
+const sanitizedResults = results.map(r => ({
+  case: r.case,
+  ok: r.ok,
+  ms: r.ms,
+  match: r.match,
+  scenario: r.scenario,
+  expected: r.expected
+  // ✅ Removidos: error, payloads, detalhes internos
+}));
+
+return { results: sanitizedResults };
 ```
 
-**Correção Recomendada:**
-```toml
-[functions.test-runner]
-verify_jwt = true  # Mínimo: autenticar
-
-# Melhor: Apenas admins
-```
+**Status:** ✅ **RESOLVIDO**
+- RBAC admin-only implementado
+- Resultados sanitizados (sem errors/payloads)
+- Autenticação JWT obrigatória
+- Logging de acessos não autorizados
+- Data: 2025-01-13
 
 ---
 
@@ -490,14 +525,20 @@ verify_jwt = true  # Mínimo: autenticar
    - [ ] Remover documentação de secrets OU
    - [ ] Apenas role='admin'
 
-### Fase 3: Correções P2 (30 dias)
+### Fase 3: Correções P2 ✅ CONCLUÍDA
 
-8. **check-lovable-ai-config:**
-   - [ ] Apenas role='admin'
+8. **check-lovable-ai-config:** ✅ RESOLVIDO
+   - [x] RBAC admin-only via has_role RPC
+   - [x] Resposta sanitizada
+   - [x] Logging de acessos não autorizados
+   - Data: 2025-01-13
 
-9. **test-runner:**
-   - [ ] Mudar `verify_jwt = true`
-   - [ ] Restringir para role='admin'
+9. **test-runner:** ✅ RESOLVIDO
+   - [x] Autenticação JWT obrigatória
+   - [x] RBAC admin-only via has_role RPC
+   - [x] Resultados sanitizados (sem errors/payloads)
+   - [x] Logging de acessos não autorizados
+   - Data: 2025-01-13
 
 ### Fase 4: Monitoramento Contínuo
 
