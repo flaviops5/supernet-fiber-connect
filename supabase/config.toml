@@ -1,25 +1,25 @@
 project_id = "mxdupkbpxjcfxdgrwknp"
 
 [functions.check-due-invoices]
-verify_jwt = false
+verify_jwt = true
 
 [functions.summarize-conversation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-alerts]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-dlq]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-contract]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-contract-pdf]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-chatbot-knowledge]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sales-agent]
 verify_jwt = false
@@ -43,7 +43,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.system-health]
-verify_jwt = false
+verify_jwt = true
 
 [functions.metrics-collector]
 verify_jwt = true
@@ -70,16 +70,16 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.voice-to-text]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-count-clients]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-revenue-stats]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-financial-analytics]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sync-ixc-documentation]
 verify_jwt = true
@@ -97,7 +97,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.detect-mass-outage]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-pon-status]
 verify_jwt = true
@@ -139,7 +139,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.corporate-ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.migrate-knowledge-full]
 verify_jwt = true
@@ -151,7 +151,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.ai-auto-tag]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-text-review]
 verify_jwt = true
@@ -160,7 +160,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.check-escalation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-payment-to-customer]
 verify_jwt = true
@@ -169,19 +169,19 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.get-function-code]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-omnichannel-zip]
-verify_jwt = false
+verify_jwt = true
 
 [functions.atlas-analyzer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.graylog-logs-export]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ixc-onu-signal]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-flow-simulations]
 verify_jwt = true
@@ -203,3 +203,21 @@ verify_jwt = false
 
 [functions.qa-orchestrator]
 verify_jwt = false
+
+[functions.assign-user-role]
+verify_jwt = true
+
+[functions.delete-user]
+verify_jwt = true
+
+[functions.kanban-audit]
+verify_jwt = true
+
+[functions.kanban-automation]
+verify_jwt = true
+
+[functions.luan-auto-upgrade]
+verify_jwt = true
+
+[functions.log-alert-handler]
+verify_jwt = true
