@@ -23,7 +23,7 @@ interface StressTestResult {
   };
 }
 
-export default function AdminStressTest() {
+export default function AdminIXCStressTest() {
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
