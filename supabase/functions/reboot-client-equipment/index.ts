@@ -1,4 +1,4 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
 /**
  * Reboot Client Equipment - Edge Function
@@ -10,7 +10,7 @@ import { createPublicHandler } from "../_shared/base-handler.ts";
  * @params {string} customer_cpf - CPF do cliente (fallback)
  * @returns {object} resultado do reboot e status pós-reboot
  */
-Deno.serve(createPublicHandler('reboot-client-equipment', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('reboot-client-equipment', async (req, { supabase, user }) => {
   const { ixc_client_id, customer_cpf } = await req.json();
 
   if (!ixc_client_id && !customer_cpf) {
