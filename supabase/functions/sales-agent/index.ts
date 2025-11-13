@@ -5,7 +5,7 @@ import { redactPII } from '../_shared/pii-redaction.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLogger } from '../_shared/structured-logger.ts';
 import { kpiLog } from '../_shared/kpi.ts';
-import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { handleEdgeFunctionError, corsHeaders } from '../_shared/error-handler.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -13,16 +13,12 @@ interface Message {
 }
 
 Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, user }) => {
-  const startTime = Date.now();
-  let success = false;
   const logger = createLogger('sales-agent', req);
-
+  const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  let messages: Message[] = [];
+  let userContext: any = undefined;
+  let directOrder = false;
   try {
-    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    let messages: Message[] = [];
-    let userContext: any = undefined;
-    let directOrder = false;
-    try {
       const body = await req.json();
       messages = body?.messages ?? [];
       userContext = body?.userContext;
@@ -757,25 +753,11 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
       });
     }
 
-    // Retorna resposta sem tool calls
-    const responseContent = extractContent(aiResponse);
-    success = true;
-    return new Response(JSON.stringify({ 
-      message: responseContent
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Erro no agente de vendas:', error);
-    return handleEdgeFunctionError(error, 'sales-agent', true);
-  } finally {
-    const duration = Date.now() - startTime;
-    recordMetric({
-      agent_name: 'sales-agent',
-      action_type: 'process_request',
-      success,
-      duration_ms: duration
-    }).catch(console.error);
-  }
-});
+  // Retorna resposta sem tool calls
+  const responseContent = extractContent(aiResponse);
+  return new Response(JSON.stringify({ 
+    message: responseContent
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}));

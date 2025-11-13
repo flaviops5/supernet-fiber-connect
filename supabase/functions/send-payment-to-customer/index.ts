@@ -7,17 +7,15 @@ import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
 import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
 import { recordMetric } from "../_shared/metrics-helper.ts";
-import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { handleEdgeFunctionError, corsHeaders } from '../_shared/error-handler.ts';
 
 Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { supabase, user }) => {
-  const startTime = Date.now();
-  
   const { phone, cpf } = await req.json();
-    
-    // Validação de entrada
-    if (!phone && !cpf) {
-      throw new Error('Telefone ou CPF é obrigatório');
-    }
+  
+  // Validação de entrada
+  if (!phone && !cpf) {
+    throw new Error('Telefone ou CPF é obrigatório');
+  }
     console.log('📞 Enviando pagamento para:', { phone, cpf });
 
     // 🔍 Verificar circuit breaker antes de iniciar
@@ -388,19 +386,4 @@ Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
-
-  } catch (error) {
-    console.error('❌ Erro geral:', error);
-    
-    // Registrar métrica de erro
-    recordMetric({
-      agent_name: 'send-payment-to-customer',
-      action_type: 'payment_sent',
-      success: false,
-      duration_ms: Date.now() - startTime,
-      error_message: error.message || 'Unknown error'
-    }).catch(console.error);
-    
-    return handleEdgeFunctionError(error, 'send-payment-to-customer');
-  }
-});
+}));
