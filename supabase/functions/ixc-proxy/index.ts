@@ -177,8 +177,8 @@ Deno.serve(createPublicHandler(
       try { rawText = await ixcResponse.text(); } catch { /* ignore */ }
     }
 
-    const duration = Date.now() - startTime;
-    logger.info(`IXC Response: ${ixcResponse.status}`, { duration });
+    // Timing será capturado pelo timer.complete() ao final
+    logger.info(`IXC Response: ${ixcResponse.status}`, { status: ixcResponse.status });
     
     // Log para debug de dados parseados (sanitizado)
     logger.info('Response data type', { 
