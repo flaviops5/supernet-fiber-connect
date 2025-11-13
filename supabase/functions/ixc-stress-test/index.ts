@@ -29,12 +29,16 @@ Deno.serve(createPublicHandler(
       endpoints: config.endpoints
     });
 
-    const IXC_API_KEY = Deno.env.get('IXC_API_KEY');
-    const IXC_BASE_URL = Deno.env.get('IXC_BASE_URL');
+    const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');
+    const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
+    const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
-    if (!IXC_API_KEY || !IXC_BASE_URL) {
+    if (!IXC_API_BASE_URL || !IXC_API_USERNAME || !IXC_API_PASSWORD) {
       throw new Error('IXC credentials not configured');
     }
+
+    // Gerar token básico de autenticação
+    const authToken = btoa(`${IXC_API_USERNAME}:${IXC_API_PASSWORD}`);
 
     const results: StressTestResult[] = [];
     const startTime = Date.now();
@@ -52,9 +56,9 @@ Deno.serve(createPublicHandler(
       const makeRequest = async () => {
         const reqStart = Date.now();
         try {
-          const response = await fetch(`${IXC_BASE_URL}${endpoint}`, {
+          const response = await fetch(`${IXC_API_BASE_URL}${endpoint}`, {
             headers: {
-              'Authorization': `Bearer ${IXC_API_KEY}`,
+              'Authorization': `Basic ${authToken}`,
               'Content-Type': 'application/json'
             },
             signal: AbortSignal.timeout(10000) // 10s timeout
