@@ -4,7 +4,7 @@ import { LOGISTICS_AGENT_SYSTEM_PROMPT, LOGISTICS_AGENT_ERROR_MESSAGE } from "./
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
-import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
+import { handleEdgeFunctionError, corsHeaders } from '../_shared/error-handler.ts';
 
 interface Message {
   role: string;
@@ -12,12 +12,8 @@ interface Message {
 }
 
 Deno.serve(createAuthenticatedHandler('logistics-agent', async (req, { supabase, user }) => {
-  const startTime = Date.now();
-  let success = false;
-
-  try {
-    const correlationId = `logistics-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const { messages, conversationId, customerData } = await req.json();
+  const correlationId = `logistics-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const { messages, conversationId, customerData } = await req.json();
     
     console.log(`📦 [${correlationId}] Logistics Agent (Érik) - Processing request`);
 
@@ -246,31 +242,16 @@ Alguma dúvida sobre o agendamento?`;
           model: agentConfig.model,
           tokens: aiData.usage
         }
-      });
+    });
 
-    success = true;
-
-    return new Response(
-      JSON.stringify({ 
-        message: assistantMessage,
-        agent: 'logistics',
-        agentName: 'Érik Souza'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-
-  } catch (error: unknown) {
-    console.error('Logistics Agent error:', error);
-    return handleEdgeFunctionError(error, 'logistics-agent', true);
-  } finally {
-    const duration = Date.now() - startTime;
-    recordMetric({
-      agent_name: 'logistics-agent',
-      action_type: 'process_request',
-      success,
-      duration_ms: duration
-    }).catch(console.error);
-  }
-});
+  return new Response(
+    JSON.stringify({ 
+      message: assistantMessage,
+      agent: 'logistics',
+      agentName: 'Érik Souza'
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}));
