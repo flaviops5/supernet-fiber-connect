@@ -19,10 +19,47 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // 🔒 RBAC: Apenas administradores podem executar stress tests
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.warn('Stress test attempted without authentication');
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.warn('Stress test attempted with invalid token');
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verificar role de admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!userRole) {
+      console.warn('Stress test attempted by non-admin user', user.id);
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
     const sessions = Math.min(body.sessions || 20, 50); // Limite seguro: máx 50
 
-    console.log(`🔥 Stress test: ${sessions} sessões simultâneas`);
+    console.log(`🔥 Stress test: ${sessions} sessões simultâneas (Admin: ${user.id})`);
 
     const tasks: Promise<any>[] = [];
     const start = performance.now();

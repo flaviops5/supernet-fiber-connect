@@ -12,7 +12,44 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
     durationTracker: timer 
   });
   
-  logger.info('Running comprehensive health check');
+  // 🔒 RBAC: Apenas administradores podem acessar health check do sistema
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) {
+    logger.warn('Health check attempted without authentication');
+    return new Response(JSON.stringify({ error: 'Authentication required' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  
+  if (authError || !user) {
+    logger.warn('Health check attempted with invalid token', { authError });
+    return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Verificar role de admin
+  const { data: userRole } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'admin')
+    .maybeSingle();
+
+  if (!userRole) {
+    logger.warn('Health check attempted by non-admin user', { userId: user.id });
+    return new Response(JSON.stringify({ error: 'Admin access required' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  logger.info('Running comprehensive health check', { adminUser: user.id });
 
     // 1. Database Connection (with 2s timeout)
     timer.checkpoint('db-check-start');
@@ -80,6 +117,7 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
     ).catch(() => ({ data: null, count: 0 }));
 
     // 7. Evolution API Status (with 5s timeout)
+    // 🔒 SECURITY: Não expor URLs e chaves na resposta
     let evolutionStatus = 'unknown';
     let evolutionDetails = '';
     try {

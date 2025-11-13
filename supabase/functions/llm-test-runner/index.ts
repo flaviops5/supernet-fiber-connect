@@ -485,6 +485,44 @@ serve(async (req) => {
   }
 
   try {
+    // 🔒 RBAC: Apenas administradores podem executar testes LLM
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      console.warn('LLM test attempted without authentication');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }), 
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.warn('LLM test attempted with invalid token');
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }), 
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar role de admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!userRole) {
+      console.warn('LLM test attempted by non-admin user', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }), 
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('LLM test authorized for admin', user.id);
     console.log("🚀 Iniciando LLM Test Runner...");
     
     // Buscar todos os cenários ativos

@@ -1,6 +1,33 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('generate-omnichannel-zip', async (req) => {
+Deno.serve(createPublicHandler('generate-omnichannel-zip', async (req, { supabase }) => {
+    // 🔒 RBAC: Apenas administradores podem baixar código fonte
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Invalid authentication');
+    }
+
+    // Verificar role de admin
+    const { data: userRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (!userRole) {
+      console.warn('Code download attempted by non-admin user', user.id);
+      throw new Error('Admin access required');
+    }
+
+    console.log('Code download authorized for admin', user.id);
     console.log('📦 Generating 3 main backend files...');
 
     // Apenas os 3 arquivos principais solicitados
