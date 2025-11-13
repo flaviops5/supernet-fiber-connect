@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertTriangle, Phone, User } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Phone, User, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { parseError } from "@/types/error.types";
+import { useRateLimiter } from "@/hooks/useRateLimiter";
 
 interface TestResult {
   ok?: boolean;
@@ -21,6 +22,7 @@ export const TestCPFValidation = () => {
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { withRateLimit, lastResult } = useRateLimiter();
 
   const testValidation = async () => {
     if (!input.trim()) {
@@ -35,47 +37,56 @@ export const TestCPFValidation = () => {
     setLoading(true);
     setResult(null);
 
-    try {
-      // Criar conversa de teste
-      const { data: conversation } = await supabase
-        .from("conversations")
-        .insert({
-          customer_name: "Teste",
-          channel: "whatsapp",
-          status: "waiting",
-        })
-        .select()
-        .single();
+    // Aplicar rate limiting
+    const data = await withRateLimit('cpf_search', async () => {
+      try {
+        // Criar conversa de teste
+        const { data: conversation } = await supabase
+          .from("conversations")
+          .insert({
+            customer_name: "Teste",
+            channel: "whatsapp",
+            status: "waiting",
+          })
+          .select()
+          .single();
 
-      if (!conversation) throw new Error("Erro ao criar conversa de teste");
+        if (!conversation) throw new Error("Erro ao criar conversa de teste");
 
-      // Chamar routing-agent
-      const { data, error } = await supabase.functions.invoke("routing-agent", {
-        body: {
-          conversationId: conversation.id,
-          message: input,
-        },
-      });
+        // Chamar routing-agent
+        const { data, error } = await supabase.functions.invoke("routing-agent", {
+          body: {
+            conversationId: conversation.id,
+            message: input,
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
+        return data;
+      } catch (error) {
+        const err = parseError(error);
+        console.error("Erro no teste:", err);
+        throw error;
+      }
+    });
+
+    if (data) {
       setResult(data);
-      
       toast({
         title: "✅ Teste concluído",
         description: "Veja os resultados abaixo",
       });
-    } catch (error) {
-      const err = parseError(error);
-      console.error("Erro no teste:", err);
+    } else {
+      // Rate limit bloqueado
       toast({
-        title: "❌ Erro no teste",
-        description: err.message,
+        title: "⛔ Limite de buscas excedido",
+        description: "Você atingiu o limite de buscas de CPF. Aguarde alguns minutos.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   const getInputTypeIcon = () => {
@@ -124,6 +135,18 @@ export const TestCPFValidation = () => {
         <CardDescription>
           Teste a validação real de CPF com mascaramento automático (LGPD compliant)
         </CardDescription>
+        {lastResult && (
+          <div className="flex items-center gap-2 mt-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <Badge variant="outline" className="text-xs">
+              {lastResult.remainingAttempts !== undefined ? (
+                <>Tentativas restantes: {lastResult.remainingAttempts}/10</>
+              ) : (
+                <>Rate limit ativo</>
+              )}
+            </Badge>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Input de Teste */}
