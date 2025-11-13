@@ -175,8 +175,11 @@ Requerem autenticação manual com Supabase client:
 
 ### **Prioridade MÉDIA** (Documentação e Automação)
 5. ✅ **COMPLETO:** Item 3 - SET search_path em 35 funções SECURITY DEFINER (100%)
-6. 🟡 Criar script de validação automatizada
-7. 🟡 Adicionar pre-commit hook para prevenir regressões
+6. ✅ **COMPLETO:** Scripts de validação automatizada criados
+   - `scripts/validate-security-definer.sql` (validação SQL)
+   - `scripts/validate-security.sh` (validação completa)
+   - `docs/SECURITY-VALIDATION.md` (documentação)
+7. ⏳ Adicionar pre-commit hook (script já existe em `scripts/validate-security-definer.sh`)
 
 ### **Prioridade BAIXA** (Melhorias futuras)
 7. 🟢 Testes E2E de autenticação
