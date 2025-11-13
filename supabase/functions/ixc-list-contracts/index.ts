@@ -1,9 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Lista de contratos contém dados de clientes sensíveis
+Deno.serve(createAuthenticatedHandler(
   'ixc-list-contracts',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const ixcUsername = Deno.env.get('IXC_API_USERNAME');
     const ixcPassword = Deno.env.get('IXC_API_PASSWORD');
     const IXC_API_BASE = Deno.env.get('IXC_API_BASE_URL');

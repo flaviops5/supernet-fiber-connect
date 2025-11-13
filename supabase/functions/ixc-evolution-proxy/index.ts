@@ -4,7 +4,7 @@
 // Melhorias: Timeout, Backoff, Validação, Logs Seguros
 // ========================================================
 
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
 
 // ====================================================
@@ -35,7 +35,9 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-Deno.serve(createPublicHandler('ixc-evolution-proxy', async (req) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Proxy IXC+Evolution acessa dados sensíveis de clientes
+Deno.serve(createAuthenticatedHandler('ixc-evolution-proxy', async (req, { supabase, user }) => {
   const start = performance.now();
 
     // ====================================================

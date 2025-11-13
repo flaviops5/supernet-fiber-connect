@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { createLogger } from '../_shared/logger.ts';
 import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
@@ -19,7 +19,9 @@ function parseSessionSeconds(user: RadiusUser): number {
   return 0;
 }
 
-Deno.serve(createPublicHandler('check-reboot-candidates', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Candidatos a reboot manipula dados de equipamentos críticos
+Deno.serve(createAuthenticatedHandler('check-reboot-candidates', async (req, { supabase, user }) => {
   const logger = createLogger('check-reboot-candidates', req);
   logger.info('Verificando clientes com banda baixa');
 

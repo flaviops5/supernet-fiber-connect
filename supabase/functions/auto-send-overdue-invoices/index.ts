@@ -1,4 +1,4 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const corsHeaders = {
@@ -6,7 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(createPublicHandler('auto-send-overdue-invoices', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Envio de boletos manipula dados financeiros sensíveis
+Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, { supabase, user }) => {
   const logger = createLogger('auto-send-overdue-invoices');
   const { testClientName } = await req.json().catch(() => ({}));
   

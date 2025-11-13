@@ -9,12 +9,14 @@
 // - Cooldown: 1x por dia por equipamento
 // - Exclui horário 1h-6h
 
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { createLogger } from '../_shared/logger.ts';
 import type { RadiusUser, ClientStatus } from '../_shared/types.ts';
 
-Deno.serve(createPublicHandler('auto-reboot-frozen-equipment', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Auto-reboot executa ações críticas em equipamentos
+Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req, { supabase, user }) => {
   const logger = createLogger('auto-reboot-frozen-equipment');
   logger.info('Iniciando verificação de equipamentos travados');
 

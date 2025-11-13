@@ -1,12 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('ixc-radio-status');
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Status de rádios expõe infraestrutura de rede
+Deno.serve(createAuthenticatedHandler(
   'ixc-radio-status',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const IXC_API_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_API_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
     const IXC_API_BASE_URL = Deno.env.get('IXC_API_BASE_URL');

@@ -1,9 +1,11 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('calculate-projections');
 
-Deno.serve(createPublicHandler('calculate-projections', async (req, { supabase }) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Cálculo de projeções financeiras é dado sensível
+Deno.serve(createAuthenticatedHandler('calculate-projections', async (req, { supabase, user }) => {
 
     logger.info('Iniciando cálculo de projeções');
 
