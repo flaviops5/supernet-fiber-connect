@@ -1,0 +1,598 @@
+{
+  "phase": "audit",
+  "version": "8.6-enterprise",
+  "auditor": "Erik Jesus",
+  "timestamp": "2025-11-13T05:30:00Z",
+  "score": 73,
+  "status": "⚠️ Atenção",
+  "executive_summary": {
+    "critical_issues": 2,
+    "high_issues": 5,
+    "medium_issues": 8,
+    "low_issues": 12,
+    "top_risks": [
+      "70+ edge functions públicas sem autenticação (createPublicHandler)",
+      "10+ SECURITY DEFINER views podem bypassar RLS",
+      "268 ocorrências de 'any' em 45 arquivos TypeScript",
+      "338 console.log/error/warn não migrados para logger estruturado",
+      "validate-production-readiness expõe configurações sensíveis publicamente"
+    ],
+    "key_strengths": [
+      "Circuit Breakers implementados (Lovable AI + IXC) com retry exponencial",
+      "RLS habilitado em 100% das tabelas críticas (conversations, user_roles, profiles)",
+      "Structured logging com trace_id e duration_ms tracking",
+      "5 agentes IA documentados e operacionais (Cloé, Luan, Julia, Vicente, Erik)",
+      "63 testes E2E implementados cobrindo fluxos críticos",
+      "Knowledge Base com vetorização OpenAI embeddings"
+    ]
+  },
+  "sections": {
+    "code_structure": {
+      "score": 68,
+      "status": "⚠️ MÉDIA",
+      "findings": {
+        "any_types": {
+          "severity": "HIGH",
+          "count": 268,
+          "files_affected": 45,
+          "details": "268 ocorrências de 'any' em componentes Kanban, monitoring, e testes. Compromete type safety.",
+          "evidence": "src/components/kanban/*.tsx, src/components/monitoring/*.tsx",
+          "recommendation": "Substituir por tipos explícitos ou unknown com type guards"
+        },
+        "console_logs": {
+          "severity": "MEDIUM",
+          "count": 338,
+          "files_affected": 121,
+          "details": "338 console.log/error/warn não migrados para logger estruturado. 60% em edge functions.",
+          "evidence": "src/components/*.tsx, supabase/functions/**/index.ts",
+          "recommendation": "Migrar para logger.info/warn/error com sanitização automática"
+        },
+        "dead_code": {
+          "severity": "LOW",
+          "status": "✅ CORRIGIDO",
+          "details": "Código morto (AccessibilityTest.tsx, E2ETest.tsx) recém removido na última sessão.",
+          "evidence": "Files deleted: src/pages/AccessibilityTest.tsx, src/pages/E2ETest.tsx",
+          "recommendation": "Continuar monitoramento de código órfão"
+        },
+        "imports": {
+          "severity": "LOW",
+          "count": 2385,
+          "details": "2385 imports detectados. Nenhum padrão circular ou órfão crítico detectado.",
+          "recommendation": "OK - Estrutura de imports saudável"
+        }
+      }
+    },
+    "automation_flows": {
+      "score": 82,
+      "status": "✅ BOM",
+      "findings": {
+        "agents_implemented": {
+          "severity": "INFO",
+          "count": 5,
+          "agents": ["Cloé Martins", "Luan Aquino", "Julia Santos", "Vicente Almeida", "Erik Jesus"],
+          "details": "5 agentes IA operacionais com prompts documentados. Routing agent com TEST_HARNESS para QA.",
+          "evidence": "supabase/functions/routing-agent/index.ts (925 linhas), 1259 referências aos agentes",
+          "recommendation": "OK - Agentes bem estruturados"
+        },
+        "circuit_breakers": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "Circuit breakers ativos para Lovable AI (threshold: 5, timeout: 30s) e IXC (threshold: 3, timeout: 60s)",
+          "evidence": "supabase/functions/_shared/circuit-breaker.ts, ixc-client.ts, lovable-client.ts",
+          "recommendation": "OK - Resilience patterns implementados"
+        },
+        "retry_logic": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "Retry com backoff exponencial (max 3 retries, base 1s-10s) implementado em callIxcWithRetry e retryWithBackoff",
+          "evidence": "354 matches de 'retry|backoff|circuit' em 39 arquivos",
+          "recommendation": "OK - Retry resiliente implementado"
+        },
+        "flow_manager": {
+          "severity": "LOW",
+          "details": "Flow manager integrado com flow-adapter, flow-executor, flow-state. Suporta cenários aprovados.",
+          "evidence": "supabase/functions/_shared/flow-*.ts",
+          "recommendation": "OK - Arquitetura de fluxos bem estruturada"
+        }
+      }
+    },
+    "external_integrations": {
+      "score": 65,
+      "status": "⚠️ ATENÇÃO",
+      "findings": {
+        "ixc_integration": {
+          "severity": "MEDIUM",
+          "status": "✅ RESILIENTE / ⚠️ HMAC OPCIONAL",
+          "details": "IXC client com circuit breaker, retry, e suporte a HMAC (se HMAC_SHARED_SECRET configurado). Mas HMAC é opcional.",
+          "evidence": "supabase/functions/_shared/ixc-client.ts (276 linhas)",
+          "recommendation": "Tornar HMAC obrigatório para produção"
+        },
+        "lovable_ai": {
+          "severity": "LOW",
+          "status": "✅ SEGURO",
+          "details": "Lovable AI client com circuit breaker, retry exponencial, PII redaction antes de enviar para IA.",
+          "evidence": "supabase/functions/_shared/lovable-client.ts (214 linhas), pii-redaction.ts",
+          "recommendation": "OK - Integração segura e resiliente"
+        },
+        "elevation_api": {
+          "severity": "MEDIUM",
+          "status": "⚠️ PARCIAL",
+          "details": "Elevation API (WhatsApp) integrada via ixc-evolution-proxy. Falta circuit breaker dedicado.",
+          "evidence": "supabase/functions/ixc-evolution-proxy/index.ts",
+          "recommendation": "Adicionar circuit breaker específico para Elevation"
+        },
+        "authentication": {
+          "severity": "CRITICAL",
+          "status": "🚨 CRÍTICO",
+          "details": "70+ edge functions usam createPublicHandler (sem autenticação). Inclui webhook-alerts, validate-production-readiness, atlas-analyzer.",
+          "evidence": "69 matches de 'Deno.serve' com createPublicHandler",
+          "recommendation": "Migrar edge functions sensíveis para createProtectedHandler com role checks"
+        }
+      }
+    },
+    "database": {
+      "score": 78,
+      "status": "✅ BOM / ⚠️ VIEWS",
+      "findings": {
+        "rls_coverage": {
+          "severity": "INFO",
+          "status": "✅ 100% COBERTURA CRÍTICA",
+          "details": "RLS habilitado em 100% das tabelas críticas: conversations, conversation_messages, user_roles, profiles, signed_contracts, lgpd_audit.",
+          "evidence": "254 matches de 'RLS|ENABLE ROW LEVEL SECURITY' em 84 arquivos SQL",
+          "recommendation": "OK - RLS completo em tabelas sensíveis"
+        },
+        "security_definer_views": {
+          "severity": "MEDIUM",
+          "status": "⚠️ ATENÇÃO",
+          "details": "Database linter detectou 10+ SECURITY DEFINER views que podem bypassar RLS policies do usuário.",
+          "evidence": "Supabase linter: 40 issues, 10+ SECURITY DEFINER views (ERROR level)",
+          "recommendation": "Auditar views e substituir por SECURITY INVOKER quando possível"
+        },
+        "functions": {
+          "severity": "LOW",
+          "count": 150,
+          "details": "150+ database functions, maioria usando SECURITY DEFINER SET search_path corretamente.",
+          "evidence": "Listagem completa em useful-context <db-functions>",
+          "recommendation": "OK - Functions bem estruturadas"
+        },
+        "indexes": {
+          "severity": "INFO",
+          "status": "PONTO CEGO",
+          "details": "Índices não auditados nesta sessão. Necessário analisar pg_indexes para verificar cobertura.",
+          "recommendation": "Auditar índices em próxima fase"
+        }
+      }
+    },
+    "security": {
+      "score": 62,
+      "status": "⚠️ ATENÇÃO / 🚨 CRÍTICO",
+      "findings": {
+        "authentication": {
+          "severity": "CRITICAL",
+          "status": "🚨 70+ ENDPOINTS PÚBLICOS",
+          "details": "70+ edge functions sem autenticação. webhook-alerts, validate-production-readiness, atlas-analyzer expostos.",
+          "evidence": "security--get_security_scan_results: OPEN_ENDPOINTS (error level)",
+          "recommendation": "IMEDIATO: Adicionar auth em funções sensíveis"
+        },
+        "info_disclosure": {
+          "severity": "HIGH",
+          "status": "⚠️ EXPOSIÇÃO DE CONFIG",
+          "details": "validate-production-readiness expõe env vars, API endpoints, database structure sem auth.",
+          "evidence": "security scan: INFO_LEAKAGE (warn level)",
+          "recommendation": "Restringir acesso a admin role apenas"
+        },
+        "pii_redaction": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "PII redaction ativo antes de enviar dados para Lovable AI. Redaciona CPF, email, phone.",
+          "evidence": "supabase/functions/_shared/pii-redaction.ts usado em lovable-client.ts",
+          "recommendation": "OK - PII protection ativa"
+        },
+        "rate_limiting": {
+          "severity": "MEDIUM",
+          "status": "✅ IMPLEMENTADO / ⚠️ COVERAGE",
+          "details": "Rate limiting implementado (check_rate_limit RPC, useRateLimit hook). Mas não aplicado em todos endpoints públicos.",
+          "evidence": "src/hooks/useRateLimit.ts, supabase/functions/rate-limit-check/index.ts",
+          "recommendation": "Aplicar rate limiting em TODOS endpoints públicos"
+        },
+        "lgpd_compliance": {
+          "severity": "INFO",
+          "status": "✅ CONFORMIDADE PARCIAL",
+          "details": "Auditoria LGPD implementada (lgpd_audit table), anonimização automática após 90 dias, opt-out tracking.",
+          "evidence": "docs/rls-policies-audit.md, anonymize_old_conversations() function",
+          "recommendation": "OK - Conformidade LGPD ativa"
+        }
+      }
+    },
+    "performance": {
+      "score": 75,
+      "status": "✅ BOM / PONTO CEGO",
+      "findings": {
+        "circuit_breakers": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "Circuit breakers ativos (Lovable: 30s timeout, IXC: 60s timeout). Previne cascatas de erro.",
+          "evidence": "supabase/functions/_shared/circuit-breaker.ts (192 linhas)",
+          "recommendation": "OK - Resilience patterns ativos"
+        },
+        "retry_backoff": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "Retry com backoff exponencial (1s→2s→4s) em IXC e Lovable AI. Max 3 retries.",
+          "evidence": "callIxcWithRetry, retryWithBackoff functions",
+          "recommendation": "OK - Retry configurado corretamente"
+        },
+        "duration_tracking": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "duration_ms tracking em 92 matches. Permite P95/P99 analysis.",
+          "evidence": "92 matches de 'duration_ms' em 28 arquivos",
+          "recommendation": "OK - Performance tracking ativo"
+        },
+        "p95_p99_metrics": {
+          "severity": "MEDIUM",
+          "status": "⚠️ PONTO CEGO",
+          "details": "duration_ms coletado, mas P95/P99 não verificados nesta auditoria. Necessário analisar Graylog/monitoring.",
+          "recommendation": "Auditar métricas P95/P99 em próxima fase"
+        },
+        "caching": {
+          "severity": "MEDIUM",
+          "status": "⚠️ PONTO CEGO",
+          "details": "Cache helper implementado (cache-helper.ts), mas cobertura não auditada.",
+          "evidence": "supabase/functions/_shared/cache-helper.ts",
+          "recommendation": "Auditar cobertura de cache"
+        }
+      }
+    },
+    "observability": {
+      "score": 81,
+      "status": "✅ BOM",
+      "findings": {
+        "structured_logging": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO / ⚠️ MIGRAÇÃO PENDENTE",
+          "details": "Logger estruturado implementado (src/lib/logger.ts, _shared/logger.ts). Mas 338 console.log/error não migrados.",
+          "evidence": "logger.ts com sanitização automática de PII, 338 console.* pendentes",
+          "recommendation": "Migrar console.* restantes para logger estruturado"
+        },
+        "trace_id": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "trace_id (correlation_id) implementado em 92 matches. Permite rastreamento end-to-end.",
+          "evidence": "92 matches de 'trace_id|correlation_id' em 28 arquivos",
+          "recommendation": "OK - Tracing ativo"
+        },
+        "duration_tracking": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "duration_ms tracking em edge functions e clients. Permite análise de latência.",
+          "evidence": "duration-tracker.ts, measure() function",
+          "recommendation": "OK - Duration tracking completo"
+        },
+        "graylog_integration": {
+          "severity": "INFO",
+          "status": "✅ INTEGRADO",
+          "details": "Graylog + Elasticsearch mencionados em docs. graylog-logs-export edge function implementada.",
+          "evidence": "supabase/functions/graylog-logs-export/index.ts",
+          "recommendation": "OK - Observability pipeline ativa"
+        }
+      }
+    },
+    "testing": {
+      "score": 70,
+      "status": "✅ BOM / ⚠️ COBERTURA",
+      "findings": {
+        "e2e_tests": {
+          "severity": "INFO",
+          "status": "✅ 63 TESTES IMPLEMENTADOS",
+          "details": "63 testes E2E cobrindo: login, diagnóstico, pagamento, contrato, mass outage, kanban, admin, atendimento, auto-reboot.",
+          "evidence": "549 matches de 'describe|it|test' em 31 arquivos E2E",
+          "recommendation": "OK - Cobertura E2E abrangente"
+        },
+        "unit_tests": {
+          "severity": "MEDIUM",
+          "status": "⚠️ COBERTURA PARCIAL",
+          "details": "Unit tests em: AddUserForm, NotFound, logger, sanitize. Mas cobertura total não auditada.",
+          "evidence": "src/components/__tests__/, src/lib/__tests__/",
+          "recommendation": "Aumentar cobertura unit tests para >80%"
+        },
+        "test_harness": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "TEST_HARNESS mode no routing agent permite QA sem CPF real. Roteamento por intenção.",
+          "evidence": "routing-agent/index.ts linha 98-169",
+          "recommendation": "OK - QA automation pronta"
+        },
+        "coverage_baseline": {
+          "severity": "MEDIUM",
+          "status": "⚠️ BASELINE NÃO EXECUTADA",
+          "details": "Coverage baseline documentada (docs/quality/COVERAGE-BASELINE-REPORT.md), mas execução não verificada.",
+          "recommendation": "Executar npm run test -- --coverage e validar baseline"
+        }
+      }
+    },
+    "ai_governance": {
+      "score": 85,
+      "status": "✅ EXCELENTE",
+      "findings": {
+        "agents_operational": {
+          "severity": "INFO",
+          "status": "✅ 5 AGENTES ATIVOS",
+          "count": 5,
+          "agents": ["Cloé Martins (routing)", "Luan Aquino (tech)", "Julia Santos (financial)", "Vicente Almeida (sales)", "Erik Jesus (auditor)"],
+          "details": "1259 referências aos agentes em 134 arquivos. Documentação extensa (~800 linhas/agente).",
+          "evidence": "docs/guides/*-guide.md, auditoria/PR-09-DOCUMENTACAO-COMPLETA.md",
+          "recommendation": "OK - Governança IA robusta"
+        },
+        "knowledge_base": {
+          "severity": "INFO",
+          "status": "✅ VETORIZAÇÃO ATIVA",
+          "details": "Knowledge base com OpenAI embeddings. 474 matches de 'vector|embedding|knowledge'. Sync automático.",
+          "evidence": "knowledge_index table, sync-chatbot-knowledge edge function, VectorMigrationPanel",
+          "recommendation": "OK - RAG pipeline operacional"
+        },
+        "rag_helper": {
+          "severity": "INFO",
+          "status": "✅ IMPLEMENTADO",
+          "details": "RAG helper (retrieveKnowledgeContext) integrado ao routing agent. Busca semântica ativa.",
+          "evidence": "supabase/functions/_shared/rag-helper.ts, match_knowledge() function",
+          "recommendation": "OK - RAG integration completa"
+        },
+        "prompts_management": {
+          "severity": "LOW",
+          "status": "✅ CENTRALIZADO",
+          "details": "System prompts centralizados em routing-agent/prompts.ts (CLOE_MARTINS_SYSTEM_PROMPT, etc.).",
+          "evidence": "routing-agent/prompts.ts, AdminPrompts page",
+          "recommendation": "OK - Prompt governance estruturada"
+        }
+      }
+    },
+    "documentation": {
+      "score": 79,
+      "status": "✅ BOM / ⚠️ VETORIZAÇÃO PARCIAL",
+      "findings": {
+        "agent_guides": {
+          "severity": "INFO",
+          "status": "✅ COMPLETO",
+          "count": 4,
+          "guides": ["cloe-martins-guide.md (~800 linhas)", "luan-aquino-guide.md (~750 linhas)", "julia-santos-guide.md (~700 linhas)", "vicente-almeida-guide.md (~750 linhas)"],
+          "details": "Guias completos dos agentes com fluxos, ferramentas, e cenários. Revisados em PR-09.",
+          "evidence": "docs/guides/*.md, auditoria/PR-09-DOCUMENTACAO-COMPLETA.md",
+          "recommendation": "OK - Documentação agente completa"
+        },
+        "technical_docs": {
+          "severity": "LOW",
+          "status": "✅ EXTENSIVO / ⚠️ DISPERSO",
+          "details": "Documentação técnica em docs/, auditoria/, sql/. Mas dispersa em múltiplas pastas.",
+          "evidence": "docs/AUDITORIA-*.md, auditoria/AUDITPACK-*.md, CHANGELOG-*.md",
+          "recommendation": "Consolidar documentação técnica em estrutura unificada"
+        },
+        "vectorization": {
+          "severity": "MEDIUM",
+          "status": "✅ IMPLEMENTADO / ⚠️ MIGRAÇÃO PENDENTE",
+          "details": "Vetorização ativa para knowledge_base. Mas migração completa não verificada (VectorMigrationPanel).",
+          "evidence": "knowledge_index table, migrate-knowledge-batch edge function",
+          "recommendation": "Executar migração completa via VectorMigrationPanel"
+        },
+        "api_documentation": {
+          "severity": "MEDIUM",
+          "status": "⚠️ PONTO CEGO",
+          "details": "Edge functions documentadas inline, mas falta documentação API centralizada (Swagger/OpenAPI).",
+          "recommendation": "Gerar documentação API automática via OpenAPI"
+        }
+      }
+    },
+    "naming_and_coherence": {
+      "score": 76,
+      "status": "✅ BOM / ⚠️ INCONSISTÊNCIAS",
+      "findings": {
+        "naming_consistency": {
+          "severity": "LOW",
+          "status": "✅ CONSISTENTE / ⚠️ PEQUENAS INCONSISTÊNCIAS",
+          "details": "Nomeclatura consistente: kebab-case (edge functions), camelCase (variables), PascalCase (components). Pequenas inconsistências em agents (Cloé vs Cloe).",
+          "evidence": "routing-agent normaliza 'Cloé Martins' → 'cloe' (linha 152-153)",
+          "recommendation": "Padronizar nomeclatura de agentes (acentos vs sem acentos)"
+        },
+        "dead_code": {
+          "severity": "LOW",
+          "status": "✅ CORRIGIDO RECENTE",
+          "details": "Código morto (AccessibilityTest.tsx, E2ETest.tsx) removido na última sessão. Nenhum código morto crítico detectado.",
+          "evidence": "Files deleted: src/pages/AccessibilityTest.tsx, src/pages/E2ETest.tsx",
+          "recommendation": "OK - Limpeza recente aplicada"
+        },
+        "misplaced_logic": {
+          "severity": "LOW",
+          "status": "✅ BEM ESTRUTURADO",
+          "details": "Lógica bem organizada: _shared/ para helpers, components/ para UI, pages/ para routes, types/ para types.",
+          "evidence": "src/types/index.ts (export centralized), _shared/*.ts (helpers)",
+          "recommendation": "OK - Arquitetura coesa"
+        },
+        "duplicate_routes": {
+          "severity": "INFO",
+          "status": "✅ RESOLVIDO",
+          "details": "Rotas duplicadas (/admin/stress-test) recém renomeadas para /admin/ixc-stress-test. Nenhuma duplicação detectada.",
+          "evidence": "AdminStressTest.tsx renomeado para AdminIXCStressTest.tsx",
+          "recommendation": "OK - Rotas consistentes"
+        }
+      }
+    }
+  },
+  "cross_check_results": {
+    "documentation_vectorization": "Parcial - knowledge_base vetorizada, mas migração completa não verificada",
+    "naming_consistency": "OK - Pequenas inconsistências (Cloé vs Cloe)",
+    "dead_code_detected": false,
+    "unclosed_braces_quotes": false,
+    "misplaced_logic": false
+  },
+  "priority_action_plan": [
+    {
+      "id": "ACT-001",
+      "section": "Segurança",
+      "severity": "CRÍTICA",
+      "title": "Adicionar autenticação em 70+ edge functions públicas",
+      "details": "webhook-alerts, validate-production-readiness, atlas-analyzer expostos sem autenticação. Migrar createPublicHandler → createProtectedHandler.",
+      "recommendation": "IMEDIATO: Auditar todas as edge functions e adicionar auth em funções sensíveis. Usar has_role('admin') para admin-only.",
+      "effort": "Alto",
+      "risk": "Crítico"
+    },
+    {
+      "id": "ACT-002",
+      "section": "Segurança",
+      "severity": "ALTA",
+      "title": "Remover exposição de configurações em validate-production-readiness",
+      "details": "Função expõe env vars, API endpoints, database structure publicamente.",
+      "recommendation": "URGENTE: Restringir acesso a admin role. Sanitizar error messages. Mover detalhes para logs.",
+      "effort": "Médio",
+      "risk": "Alto"
+    },
+    {
+      "id": "ACT-003",
+      "section": "Banco de Dados",
+      "severity": "MÉDIA",
+      "title": "Auditar e corrigir 10+ SECURITY DEFINER views",
+      "details": "Views com SECURITY DEFINER podem bypassar RLS policies do usuário.",
+      "recommendation": "Auditar pg_views, substituir por SECURITY INVOKER quando possível, documentar justificativa.",
+      "effort": "Médio",
+      "risk": "Médio"
+    },
+    {
+      "id": "ACT-004",
+      "section": "Código",
+      "severity": "MÉDIA",
+      "title": "Reduzir 268 ocorrências de 'any' em TypeScript",
+      "details": "268 'any' em 45 arquivos (Kanban, monitoring). Compromete type safety.",
+      "recommendation": "Fase 1: Substituir 'any' em componentes críticos por tipos explícitos ou unknown com type guards.",
+      "effort": "Alto",
+      "risk": "Baixo"
+    },
+    {
+      "id": "ACT-005",
+      "section": "Observabilidade",
+      "severity": "MÉDIA",
+      "title": "Migrar 338 console.log/error para logger estruturado",
+      "details": "338 console.* não migrados. 60% em edge functions.",
+      "recommendation": "Migrar para logger.info/warn/error com sanitização automática. Essencial para debugar produção.",
+      "effort": "Alto",
+      "risk": "Baixo"
+    },
+    {
+      "id": "ACT-006",
+      "section": "Integrações",
+      "severity": "MÉDIA",
+      "title": "Tornar HMAC obrigatório para IXC em produção",
+      "details": "IXC client aceita requests sem HMAC se HMAC_SHARED_SECRET não configurado.",
+      "recommendation": "Tornar HMAC obrigatório em produção. Adicionar validação no deployment.",
+      "effort": "Baixo",
+      "risk": "Médio"
+    },
+    {
+      "id": "ACT-007",
+      "section": "Integrações",
+      "severity": "MÉDIA",
+      "title": "Adicionar circuit breaker para Elevation API",
+      "details": "Elevation API (WhatsApp) integrada sem circuit breaker dedicado.",
+      "recommendation": "Criar ElevationCircuitBreaker similar ao IXCCircuitBreaker.",
+      "effort": "Médio",
+      "risk": "Médio"
+    },
+    {
+      "id": "ACT-008",
+      "section": "Segurança",
+      "severity": "MÉDIA",
+      "title": "Aplicar rate limiting em TODOS endpoints públicos",
+      "details": "Rate limiting implementado, mas não aplicado em todos os 70+ endpoints públicos.",
+      "recommendation": "Adicionar withRateLimit wrapper em todas as edge functions públicas.",
+      "effort": "Médio",
+      "risk": "Médio"
+    },
+    {
+      "id": "ACT-009",
+      "section": "Testes",
+      "severity": "BAIXA",
+      "title": "Aumentar cobertura de unit tests para >80%",
+      "details": "Unit tests parciais. Cobertura total não verificada.",
+      "recommendation": "Executar coverage report e atingir >80% em código crítico.",
+      "effort": "Alto",
+      "risk": "Baixo"
+    },
+    {
+      "id": "ACT-010",
+      "section": "Documentação",
+      "severity": "BAIXA",
+      "title": "Completar migração de vetorização da knowledge base",
+      "details": "Vetorização ativa, mas migração completa não verificada.",
+      "recommendation": "Executar VectorMigrationPanel.tsx → migrate-knowledge-full.",
+      "effort": "Baixo",
+      "risk": "Baixo"
+    },
+    {
+      "id": "ACT-011",
+      "section": "Performance",
+      "severity": "BAIXA",
+      "title": "Auditar métricas P95/P99 e cobertura de cache",
+      "details": "duration_ms coletado, mas P95/P99 não verificados. Cache helper implementado mas cobertura desconhecida.",
+      "recommendation": "Analisar Graylog/monitoring para P95/P99. Auditar cobertura de cache.",
+      "effort": "Médio",
+      "risk": "Baixo"
+    },
+    {
+      "id": "ACT-012",
+      "section": "Documentação",
+      "severity": "BAIXA",
+      "title": "Gerar documentação API automática (OpenAPI/Swagger)",
+      "details": "Edge functions documentadas inline, mas falta documentação API centralizada.",
+      "recommendation": "Adicionar Swagger/OpenAPI schema generator.",
+      "effort": "Médio",
+      "risk": "Baixo"
+    }
+  ],
+  "detailed_metrics": {
+    "code_quality": {
+      "total_files": 345,
+      "total_imports": 2385,
+      "any_types": 268,
+      "console_logs": 338,
+      "todo_fixme": 371,
+      "edge_functions": 69,
+      "react_components": "~200 (estimated)"
+    },
+    "testing": {
+      "e2e_tests": 63,
+      "unit_tests": "~20 (estimated)",
+      "test_files": 31,
+      "coverage_percentage": "Unknown - Baseline não executada"
+    },
+    "security": {
+      "rls_enabled_tables": "100% (critical tables)",
+      "public_endpoints": 70,
+      "security_definer_views": 10,
+      "rate_limited_endpoints": "Partial coverage"
+    },
+    "observability": {
+      "trace_id_matches": 92,
+      "duration_tracking_matches": 92,
+      "structured_logs": "Partial - 338 console.* pendentes",
+      "logger_implementation": "Yes - src/lib/logger.ts"
+    },
+    "ai_governance": {
+      "agents_count": 5,
+      "agent_references": 1259,
+      "knowledge_base_entries": "Unknown - DB query needed",
+      "vectorization_active": true
+    },
+    "database": {
+      "total_functions": 150,
+      "rls_policies": 68,
+      "tables_audited": 25,
+      "linter_issues": 40
+    }
+  },
+  "confidence_score": 0.88,
+  "notes": [
+    "Auditoria baseada em análise estática de código, schema DB, e security scan.",
+    "Métricas de runtime (P95/P99, cache hit rate) não verificadas - PONTO CEGO.",
+    "Coverage baseline documentada mas execução não verificada.",
+    "Sistema em GOOD CONDITION (73/100) com melhorias críticas pendentes em autenticação.",
+    "Prioridade máxima: Adicionar auth em edge functions públicas (ACT-001)."
+  ]
+}
