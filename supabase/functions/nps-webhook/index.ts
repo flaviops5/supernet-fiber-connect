@@ -1,8 +1,10 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Apenas usuários autenticados podem processar respostas NPS
+Deno.serve(createAuthenticatedHandler(
   'nps-webhook',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const payload = await req.json();
     console.log('NPS Webhook recebido:', payload);
 
