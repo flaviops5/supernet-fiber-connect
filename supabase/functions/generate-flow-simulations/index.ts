@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('generate-flow-simulations');
@@ -21,7 +21,7 @@ interface ConversationPath {
   responses: Array<{ step: string; response: string }>;
 }
 
-Deno.serve(createPublicHandler('generate-flow-simulations', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('generate-flow-simulations', async (req, { supabase, user }) => {
   const { agentType } = await req.json();
 
   if (!agentType) {

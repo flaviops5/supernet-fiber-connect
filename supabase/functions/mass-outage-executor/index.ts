@@ -3,7 +3,7 @@
 // Detecção de quedas em massa + notificação + abertura de ticket IXC
 // ===============================================================
 
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
 // ===============================================================
@@ -57,7 +57,7 @@ async function createIxcTicket(supabase: any, clientId: string, descricao: strin
 // ===============================================================
 // 🚀 Função principal
 // ===============================================================
-Deno.serve(createPublicHandler('mass-outage-executor', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('mass-outage-executor', async (req, { supabase, user }) => {
   // 🔍 Validação inicial de ambiente
   const required = [
     "SUPABASE_URL",

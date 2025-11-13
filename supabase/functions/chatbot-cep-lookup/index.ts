@@ -1,5 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createLogger } from '../_shared/logger.ts';
 
@@ -11,9 +11,9 @@ interface CepLookupRequest {
   action: 'check_coverage' | 'list_plans' | 'find_region';
 }
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'chatbot-cep-lookup',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     logger.info('CEP lookup request received');
     
     const body = await req.json();

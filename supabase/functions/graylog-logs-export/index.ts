@@ -1,14 +1,6 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('graylog-logs-export', async (req, { supabase }) => {
-  // Autenticação básica via query param ou header
-  const url = new URL(req.url);
-  const authToken = url.searchParams.get('token') || req.headers.get('x-graylog-token');
-  const expectedToken = Deno.env.get('GRAYLOG_TOKEN') || Deno.env.get('CRON_SECRET');
-  
-  if (!authToken || authToken !== expectedToken) {
-    throw new Error('Unauthorized');
-  }
+Deno.serve(createAuthenticatedHandler('graylog-logs-export', async (req, { supabase, user }) => {
 
   // Parâmetros de filtro
   const level = url.searchParams.get('level'); // INFO, WARN, ERROR

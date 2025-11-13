@@ -1,9 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'generate-ai-faq',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const { theme } = await req.json();
 
     if (!theme || theme.trim().length === 0) {

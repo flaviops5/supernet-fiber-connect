@@ -1,27 +1,16 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { LOGISTICS_AGENT_CONFIG } from "./config.ts";
 import { LOGISTICS_AGENT_SYSTEM_PROMPT, LOGISTICS_AGENT_ERROR_MESSAGE } from "./prompts.ts";
 import { callLovableAI, extractContent, extractToolCalls, hasToolCalls } from '../_shared/lovable-client.ts';
 import { logLGPDAccess } from '../_shared/lgpd-logger.ts';
-import { handleEdgeFunctionError } from '../_shared/error-handler.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface Message {
   role: string;
   content: string;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+Deno.serve(createAuthenticatedHandler('logistics-agent', async (req, { supabase, user }) => {
   const startTime = Date.now();
   let success = false;
 
@@ -30,10 +19,6 @@ serve(async (req) => {
     const { messages, conversationId, customerData } = await req.json();
     
     console.log(`📦 [${correlationId}] Logistics Agent (Érik) - Processing request`);
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Sprint 1: LGPD Audit para acesso a dados do cliente
     if (conversationId) {

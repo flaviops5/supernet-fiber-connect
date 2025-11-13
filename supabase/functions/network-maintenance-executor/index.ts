@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 interface MaintenanceTask {
   id: string;
@@ -11,7 +11,7 @@ interface MaintenanceTask {
   metadata: any;
 }
 
-Deno.serve(createPublicHandler('network-maintenance-executor', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('network-maintenance-executor', async (req, { supabase, user }) => {
   console.log('🔧 Iniciando ciclo de manutenção inteligente');
 
   // Buscar configurações

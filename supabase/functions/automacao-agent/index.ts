@@ -1,9 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { createLogger } from '../_shared/structured-logger.ts';
 
-Deno.serve(createPublicHandler('automacao-agent', async (req) => {
+Deno.serve(createAuthenticatedHandler('automacao-agent', async (req, { supabase, user }) => {
   const logger = createLogger('automacao-agent', req);
   const correlationId = `automacao-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   const { messages } = await req.json();

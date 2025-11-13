@@ -1,9 +1,9 @@
 // ============================================
 // METRICS COLLECTOR - Processa e agrega métricas
 // ============================================
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('metrics-collector', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('metrics-collector', async (req, { supabase, user }) => {
   const { timeWindow = '1h' } = await req.json().catch(() => ({}));
 
     // Calcular janela de tempo

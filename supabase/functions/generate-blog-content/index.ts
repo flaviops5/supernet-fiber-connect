@@ -1,9 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'generate-blog-content',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const { prompt, type, category } = await req.json();
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
