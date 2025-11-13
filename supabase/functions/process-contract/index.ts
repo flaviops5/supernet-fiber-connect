@@ -1,4 +1,4 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('process-contract');
@@ -25,9 +25,9 @@ interface ContractRequest {
   timestamp: string;
 }
 
-Deno.serve(createPublicHandler(
+Deno.serve(createAuthenticatedHandler(
   'process-contract',
-  async (req, { supabase }) => {
+  async (req, { supabase, user }) => {
     const { customerData, planData, timestamp }: ContractRequest = await req.json();
 
     logger.info('Processing contract request', { 

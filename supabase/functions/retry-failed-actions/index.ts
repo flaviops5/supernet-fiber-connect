@@ -1,9 +1,9 @@
 // ============================================
 // RETRY FAILED ACTIONS - DLQ Processor
 // ============================================
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler('retry-failed-actions', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('retry-failed-actions', async (req, { supabase, user }) => {
   console.log('🔄 Starting DLQ retry processor...');
   
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

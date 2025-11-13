@@ -1,4 +1,4 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
 const LOCAWEB_API_TOKEN = Deno.env.get("LOCAWEB_API_TOKEN");
 const LOCAWEB_API_URL = "https://api.smtplw.com.br/v1/messages";
@@ -25,7 +25,7 @@ function replaceVariables(text: string, variables: Record<string, string>): stri
   return result;
 }
 
-Deno.serve(createPublicHandler('send-locaweb-email', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('send-locaweb-email', async (req, { supabase, user }) => {
   if (!LOCAWEB_API_TOKEN) {
     throw new Error("LOCAWEB_API_TOKEN não configurado");
   }

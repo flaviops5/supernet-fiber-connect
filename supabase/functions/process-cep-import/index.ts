@@ -1,4 +1,4 @@
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 interface CepRow {
   cep_start: string;
@@ -21,7 +21,7 @@ interface ImportResult {
   }>;
 }
 
-Deno.serve(createPublicHandler('process-cep-import', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('process-cep-import', async (req, { supabase, user }) => {
   console.log('Starting CEP import process...')
   
   const { file, filename } = await req.json()

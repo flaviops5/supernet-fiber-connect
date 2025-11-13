@@ -2,36 +2,20 @@
 // SEND PAYMENT TO CUSTOMER - Proteção completa com circuit breaker
 // ============================================
 // Esta função mantém circuit breaker + cache + error handler + metrics
-// Não usa base-handler completo devido à lógica customizada de circuit breaker
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { getCachedOrFetch, setCache } from "../_shared/cache-helper.ts";
 import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
-import { handleEdgeFunctionError } from "../_shared/error-handler.ts";
 import { recordMetric } from "../_shared/metrics-helper.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
+Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { supabase, user }) => {
   const startTime = Date.now();
   
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { phone, cpf } = await req.json();
+  const { phone, cpf } = await req.json();
     
     // Validação de entrada
     if (!phone && !cpf) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Telefone ou CPF é obrigatório' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      throw new Error('Telefone ou CPF é obrigatório');
     }
     console.log('📞 Enviando pagamento para:', { phone, cpf });
 
@@ -39,32 +23,10 @@ serve(async (req) => {
     const circuitStatus = getCircuitBreakerStatus();
     if (circuitStatus.state === 'open') {
       console.warn('⚠️ Circuit breaker ABERTO - aguardando recuperação');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Sistema temporariamente indisponível. Tente novamente em alguns instantes.',
-          circuitBreaker: circuitStatus
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
-      );
+      throw new Error('Sistema temporariamente indisponível. Tente novamente em alguns instantes.');
     }
 
-    // Inicialização do Supabase com validação
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials');
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Cabeçalhos para chamadas internas
-    const invokeHeaders = {
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': 'application/json',
-    };
+    // Cabeçalhos para chamadas internas (não mais necessário - usa supabase client)
 
     // 1. BUSCAR CLIENTE NO IXC COM MÚLTIPLOS FALLBACKS
     console.log('🔍 Iniciando busca de cliente...');

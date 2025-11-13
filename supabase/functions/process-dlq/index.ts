@@ -1,6 +1,6 @@
-import { createPublicHandler } from "../_shared/base-handler.ts";
+import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createPublicHandler('process-dlq', async (req, { supabase }) => {
+Deno.serve(createAuthenticatedHandler('process-dlq', async (req, { supabase, user }) => {
 
     console.log('🔄 Processing Dead Letter Queue...');
 
