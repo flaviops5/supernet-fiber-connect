@@ -746,7 +746,11 @@ IMPORTANTE: Use esta análise para contextualizar sua resposta. Se for comprovan
               logger.info("Financial titles found", { count: titles.length });
               
               // Ordenar títulos: vencidos primeiro (se prefer_overdue), depois mais próximos
-              const sortedTitles = titles.sort((a: any, b: any) => {
+              interface FinancialTitle {
+                data_vencimento: string;
+                [key: string]: unknown;
+              }
+              const sortedTitles = (titles as FinancialTitle[]).sort((a, b) => {
                 const dateA = new Date(a.data_vencimento);
                 const dateB = new Date(b.data_vencimento);
                 const now = new Date();

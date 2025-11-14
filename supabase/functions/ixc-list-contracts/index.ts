@@ -21,17 +21,39 @@ Deno.serve(createAuthenticatedHandler(
     // Normalizar URL removendo /adm.php
     const cleanBaseUrl = IXC_API_BASE.replace(/\/adm\.php$/, '');
 
+    interface RequestBody {
+      page?: number | string;
+      rp?: number | string;
+      search?: string;
+    }
+
+    interface IXCContract {
+      id_grupo?: string | number;
+      id?: string | number;
+      grupo?: string;
+      velocidade?: string;
+      download?: string;
+      upload?: string;
+      valor?: string;
+    }
+
+    interface IXCApiResponse {
+      registros?: IXCContract[] | Record<string, IXCContract>;
+      total?: number;
+      message?: string;
+    }
+
     const bodyJson = await req.json().catch(() => ({} as Record<string, unknown>));
 
-    const page = Number((bodyJson as any).page) > 0 ? Number((bodyJson as any).page) : 1;
-    const rp = Number((bodyJson as any).rp) > 0 ? Number((bodyJson as any).rp) : 50;
-    const search = typeof (bodyJson as any).search === 'string' ? String((bodyJson as any).search) : '';
+    const page = Number((bodyJson as RequestBody).page) > 0 ? Number((bodyJson as RequestBody).page) : 1;
+    const rp = Number((bodyJson as RequestBody).rp) > 0 ? Number((bodyJson as RequestBody).rp) : 50;
+    const search = typeof (bodyJson as RequestBody).search === 'string' ? String((bodyJson as RequestBody).search) : '';
 
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
     const baseUrl = `${cleanBaseUrl}/webservice/v1`;
 
     // Helper to POST with IXC conventions
-    const postIXC = async (endpoint: string, form: Record<string, string>) => {
+    const postIXC = async (endpoint: string, form: Record<string, string>): Promise<IXCApiResponse> => {
       const body = new URLSearchParams(form);
       const res = await fetch(`${baseUrl}/${endpoint}`, {
         method: 'POST',
@@ -43,9 +65,9 @@ Deno.serve(createAuthenticatedHandler(
         body,
       });
       const text = await res.text();
-      let data: any;
+      let data: IXCApiResponse;
       try { 
-        data = JSON.parse(text); 
+        data = JSON.parse(text) as IXCApiResponse;
       } catch {
         console.error(`[IXC ${endpoint}] Non-JSON response:`, text);
         throw new Error(`Invalid response from IXC at /${endpoint}`);
@@ -61,7 +83,13 @@ Deno.serve(createAuthenticatedHandler(
 
     // Use radgrupos (Planos de velocidades)
     const endpoint = 'radgrupos';
-    let found: any[] = [];
+    let found: Array<{
+      id: string | number;
+      name: string;
+      download: string;
+      upload: string;
+      value: string;
+    }> = [];
     let lastTotal = 0;
 
     const form: Record<string, string> = {
@@ -81,7 +109,7 @@ Deno.serve(createAuthenticatedHandler(
     lastTotal = result?.total ?? 0;
 
     if (result?.registros && Array.isArray(result.registros)) {
-      found = result.registros.map((r: any) => ({
+      found = result.registros.map((r) => ({
         id: r.id_grupo || r.id,
         name: r.grupo || r.velocidade || '',
         download: r.download || '',

@@ -26,8 +26,25 @@ Deno.serve(createAuthenticatedHandler(
     const auth = btoa(`${ixcUsername}:${ixcPassword}`);
     const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
 
+    interface IXCPlanResponse {
+      id?: string | number;
+      grupo?: string;
+      nome?: string;
+      download?: string;
+      upload?: string;
+      valor_produto?: string | number;
+      valor?: string | number;
+      tipo?: string;
+    }
+
+    interface IXCApiResponse {
+      registros?: IXCPlanResponse[] | Record<string, IXCPlanResponse>;
+      total?: number;
+      message?: string;
+    }
+
     // Buscar TODOS os planos do IXC com paginação
-    let allPlans: any[] = [];
+    let allPlans: IXCPlanResponse[] = [];
     let currentPage = 1;
     let totalPages = 1;
 
@@ -50,10 +67,10 @@ Deno.serve(createAuthenticatedHandler(
       });
 
       const text = await response.text();
-      let data: any;
+      let data: IXCApiResponse;
       
       try {
-        data = JSON.parse(text);
+        data = JSON.parse(text) as IXCApiResponse;
       } catch {
         console.error('❌ Resposta não-JSON do IXC:', text.slice(0, 200));
         throw new Error('Resposta inválida do IXC');
@@ -85,7 +102,7 @@ Deno.serve(createAuthenticatedHandler(
     console.log(`✅ Total de ${allPlans.length} planos encontrados`);
 
     // Formatar planos para resposta
-    const formattedPlans = allPlans.map((plan: any) => ({
+    const formattedPlans = allPlans.map((plan) => ({
       id: plan.id,
       name: plan.grupo || plan.nome || `Plano ${plan.id}`,
       download: plan.download || '0',
