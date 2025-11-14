@@ -6,17 +6,32 @@ import { recordMetric } from '../_shared/metrics-helper.ts';
 import { createLogger } from '../_shared/structured-logger.ts';
 import { kpiLog } from '../_shared/kpi.ts';
 import { handleEdgeFunctionError, corsHeaders } from '../_shared/error-handler.ts';
+import type { JsonObject } from '../_shared/error-types.ts';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
+interface Plan {
+  id: string;
+  name: string;
+  speed: string;
+  price: number;
+  description?: string;
+  [key: string]: unknown;
+}
+
+interface CepPlan {
+  plan: Plan;
+  [key: string]: unknown;
+}
+
 Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, user }) => {
   const logger = createLogger('sales-agent', req);
-  const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   let messages: Message[] = [];
-  let userContext: any = undefined;
+  let userContext: JsonObject | undefined = undefined;
   let directOrder = false;
   try {
       const body = await req.json();
@@ -52,7 +67,7 @@ Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, use
 
       // Tenta parsear JSON primeiro; se falhar, aceita texto com labels
       const parseDirectOrder = (raw: string) => {
-        let data: any = {};
+        let data: Record<string, unknown> = {};
         const trimmed = (raw || '').trim();
         if (trimmed.startsWith('{')) {
           try { data = JSON.parse(trimmed); } catch { data = {}; }
@@ -118,7 +133,7 @@ Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, use
       }
 
       // Buscar plano por id (preferencial) ou por nome
-      let plan: any = null;
+      let plan: Plan | null = null;
       let planLookup: { by: 'id' | 'name'; value: string } | null = null;
       if (orderData.plan_id) {
         const { data } = await supabase
@@ -395,7 +410,7 @@ Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, use
     }
 
     // Extrai protocolo se disponível  
-    const protocol = (userContext as any)?.protocol;
+    const protocol = (userContext as JsonObject)?.protocol as string | undefined;
     const protocolMsg = protocol ? `\n\nProtocolo de atendimento: ${protocol}` : '';
 
     const systemPrompt = `Você é o Vicente, consultor de Vendas especializado em planos de internet fibra óptica.
@@ -522,7 +537,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             content: JSON.stringify({
               has_coverage: !!coverage,
               region: coverage?.region_name,
-              available_plans: coverage?.cep_plans?.map((cp: any) => cp.plan) || []
+              available_plans: coverage?.cep_plans?.map((cp: CepPlan) => cp.plan) || []
             })
           });
           
