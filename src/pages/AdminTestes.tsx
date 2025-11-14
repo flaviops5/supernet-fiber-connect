@@ -35,6 +35,7 @@ import WhatsAppFlowTest from "@/components/WhatsAppFlowTest";
 import { EmailTestSender } from "@/components/EmailTestSender";
 import { StressTestRunner } from "@/components/tests/StressTestRunner";
 import { PenTestRunner } from "@/components/tests/PenTestRunner";
+import { UnitTestRunner } from "@/components/tests/UnitTestRunner";
 
 const AdminTestes = () => {
   return (
@@ -51,7 +52,28 @@ const AdminTestes = () => {
         </p>
       </div>
 
-      <Accordion type="multiple" className="space-y-4" defaultValue={["qa-orchestrator"]}>
+      <Accordion type="multiple" className="space-y-4" defaultValue={["unit-tests"]}>
+        {/* Unit Tests - Item 12 */}
+        <AccordionItem value="unit-tests" className="border rounded-lg bg-gradient-to-r from-blue-500/5 to-blue-500/10">
+          <AccordionTrigger className="px-6 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <FlaskConical className="h-5 w-5 text-blue-500" />
+              <div className="text-left">
+                <div className="font-semibold flex items-center gap-2">
+                  Unit Tests - Edge Functions
+                  <span className="text-xs px-2 py-0.5 bg-blue-500/20 rounded-full">Item 12</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  66 testes unitários para 5 edge functions críticas
+                </div>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <UnitTestRunner />
+          </AccordionContent>
+        </AccordionItem>
+
         {/* QA Orchestrator - PR#53 */}
         <AccordionItem value="qa-orchestrator" className="border rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
           <AccordionTrigger className="px-6 hover:no-underline">
