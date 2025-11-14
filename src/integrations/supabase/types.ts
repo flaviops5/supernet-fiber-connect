@@ -5302,6 +5302,39 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          payload: Json
+          processed_at: string
+          webhook_name: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          payload?: Json
+          processed_at?: string
+          webhook_name: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          payload?: Json
+          processed_at?: string
+          webhook_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       context_escape_analysis: {
@@ -5546,6 +5579,10 @@ export type Database = {
     }
     Functions: {
       anonymize_old_conversations: { Args: never; Returns: number }
+      audit_security_definer_usage: {
+        Args: { function_name: string; parameters?: Json }
+        Returns: undefined
+      }
       calc_onu_instability_top_14d:
         | {
             Args: never
@@ -5615,6 +5652,7 @@ export type Database = {
       cleanup_expired_webhooks: { Args: never; Returns: number }
       cleanup_monitoring_logs: { Args: never; Returns: number }
       cleanup_old_logs: { Args: never; Returns: undefined }
+      cleanup_old_webhook_events: { Args: never; Returns: number }
       create_installation_appointment:
         | {
             Args: {
@@ -5785,13 +5823,7 @@ export type Database = {
           tickets_count: number
         }[]
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["user_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_board_member:
         | { Args: { _board_id: string; _user_id: string }; Returns: boolean }
         | { Args: { p_board_id: string }; Returns: boolean }
@@ -5832,7 +5864,15 @@ export type Database = {
           event_description: string
           event_type: string
           severity_param?: string
-          user_id_param?: string
+        }
+        Returns: string
+      }
+      log_system_activity: {
+        Args: {
+          activity_description: string
+          activity_type: string
+          metadata_param?: Json
+          system_user_id?: string
         }
         Returns: string
       }
@@ -5841,7 +5881,6 @@ export type Database = {
           activity_description: string
           activity_type: string
           metadata_param?: Json
-          user_id_param?: string
         }
         Returns: string
       }
