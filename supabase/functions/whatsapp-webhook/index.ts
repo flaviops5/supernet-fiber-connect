@@ -94,7 +94,7 @@ serve(async (req) => {
       }
     }
 
-    let webhookData: any = null;
+    let webhookData: Record<string, unknown> | null = null;
     let rawBody = '';
     
     try {
@@ -757,8 +757,8 @@ serve(async (req) => {
       }
 
       // 3️⃣ Chamar routing-agent com try/catch robusto (Prioridade Crítica #4)
-      let routingResponse: any;
-      let routingError: any;
+      let routingResponse: { reply?: string; error?: string } | null = null;
+      let routingError: Error | null = null;
       
       try {
         const result = await supabase.functions.invoke('routing-agent', {

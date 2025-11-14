@@ -220,7 +220,7 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
     const results = {
       sent: 0,
       errors: 0,
-      details: [] as any[]
+      details: [] as Array<{ clientId: string; error: string }>
     };
 
     for (const client of finalClientsToProcess) {

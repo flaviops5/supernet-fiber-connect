@@ -305,7 +305,7 @@ async function findRegionInfo(supabase: SupabaseClient, cep: string) {
 
     let response = `🌍 **Áreas de Cobertura SUPERNET FIBRA:**\n\n`
 
-    regions?.forEach((region: any) => {
+    regions?.forEach((region: { name?: string; region_code?: string }) => {
       response += `📍 **${region.name}** (${region.region_code})\n`
     })
 

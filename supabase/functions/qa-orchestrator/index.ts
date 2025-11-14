@@ -90,7 +90,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 3
   }
 }
 
-async function lovableChat(model: string, messages: any[], response_format?: any, temperature?: number) {
+async function lovableChat(model: string, messages: Array<{ role: string; content: string }>, response_format?: { type: string }, temperature?: number) {
   const res = await fetchWithTimeout(LOVABLE_AI_URL, {
     method: "POST",
     headers: { 
@@ -115,7 +115,7 @@ async function lovableChat(model: string, messages: any[], response_format?: any
   return { data, content };
 }
 
-function safeJson<T = any>(s: string): T | null {
+function safeJson<T = JsonValue>(s: string): T | null {
   try { 
     return JSON.parse(s); 
   } catch { 
@@ -171,7 +171,7 @@ Analise se o roteamento está correto e avalie os outros critérios.
 `.trim();
 
   // Avaliação com LLM (com fallback se indisponível)
-  let parsed: any = {};
+  let parsed: Record<string, unknown> = {};
   let fallbackUsed = false;
   try {
     const ev = await lovableChat(
@@ -184,8 +184,8 @@ Analise se o roteamento está correto e avalie os outros critérios.
       0.0 // temperatura 0 = julgamento determinístico
     );
     parsed = safeJson(ev.content) || {};
-  } catch (e: any) {
-    console.warn("[QA] Avaliador LLM indisponível, usando fallback local.", e?.message || e);
+  } catch (e: unknown) {
+    console.warn("[QA] Avaliador LLM indisponível, usando fallback local.", e instanceof Error ? e.message : String(e));
     fallbackUsed = true;
     parsed = {
       clarity_score: 0.8,
@@ -241,7 +241,7 @@ serve(async (req) => {
     let regPass = 0, regFail = 0;
     let expPass = 0, expFail = 0;
     let latencies: number[] = [];
-    const allResults: any[] = [];
+    const allResults: Array<{ role: string; content: string }> = [];
     let timedOut = false;
 
     // ---------------------------

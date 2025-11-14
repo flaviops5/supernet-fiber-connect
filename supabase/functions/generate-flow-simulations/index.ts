@@ -181,7 +181,7 @@ async function generateConversationWithAI(
   agentType: string,
   lovableApiKey: string
 ): Promise<{
-  messages: any[];
+  messages: Array<{ role: string; content: string }>;
   estimatedDuration: number;
   qualityScore: number;
   issues: string[];

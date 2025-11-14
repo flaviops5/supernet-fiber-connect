@@ -28,7 +28,7 @@ serve(async (req) => {
   try {
     const { messages } = await req.json();
     
-    const correlationId = req.headers.get('x-correlation-id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID() || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     logger.info('Processing request', { correlationId });
 
     const systemPrompt = `Você é um assistente especializado em telemedicina da SUPERNET FIBRA.
@@ -73,7 +73,7 @@ Mantenha respostas concisas e objetivas (máximo 3-4 parágrafos).`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages.map((m: any) => ({
+          ...messages.map((m: { role: string; content: string }) => ({
             ...m,
             content: m.role === 'user' ? redactPII(m.content, 'ai') : m.content
           })),

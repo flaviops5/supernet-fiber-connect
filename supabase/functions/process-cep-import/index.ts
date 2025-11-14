@@ -17,7 +17,7 @@ interface ImportResult {
   details: Array<{
     line: number;
     error: string;
-    data?: any;
+    data?: unknown;
   }>;
 }
 

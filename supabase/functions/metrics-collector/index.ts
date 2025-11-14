@@ -20,7 +20,7 @@ Deno.serve(createAuthenticatedHandler('metrics-collector', async (req, { supabas
     if (metricsError) throw metricsError;
 
     // Agregar por agente
-    const byAgent: Record<string, any> = {};
+    const byAgent: Record<string, { total: number; success: number; failed: number }> = {};
     
     metrics?.forEach(m => {
       if (!byAgent[m.agent_name]) {

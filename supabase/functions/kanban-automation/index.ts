@@ -40,7 +40,7 @@ export default createAuthenticatedHandler<{ processed: number; executed: number 
       }
 
       // Check trigger conditions
-      const conditions = automation.trigger_conditions as Record<string, any>;
+      const conditions = automation.trigger_conditions as Record<string, unknown>;
       
       if (trigger.trigger_type === 'card_moved') {
         if (conditions.to_column_id && conditions.to_column_id !== trigger.to_column_id) {
@@ -49,7 +49,7 @@ export default createAuthenticatedHandler<{ processed: number; executed: number 
       }
 
       // Execute actions
-      const actions = automation.actions as Array<{ type: string; [key: string]: any }>;
+      const actions = automation.actions as Array<{ type: string; [key: string]: unknown }>;
       
       for (const action of actions) {
         try {

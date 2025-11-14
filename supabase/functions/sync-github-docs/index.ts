@@ -235,7 +235,7 @@ Deno.serve(createPublicHandler('sync-github-docs', async (req, { supabase }) => 
           syncedItems.push({ file: file.path, title });
         }
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`❌ Erro ao processar ${file.path}:`, error);
         errors.push({ file: file.path, error: error.message });
       }

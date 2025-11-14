@@ -10,7 +10,7 @@ const corsHeaders = {
 
 type TestCase = { 
   name: string; 
-  payload: any; 
+  payload: Record<string, unknown>; 
   targetFn: string;
   expectedScenario?: string;
 };
@@ -48,7 +48,7 @@ const CASES: TestCase[] = [
   }
 ];
 
-async function runCase(supabase: any, tc: TestCase) {
+async function runCase(supabase: SupabaseClient, tc: TestCase) {
   const start = performance.now();
   
   try {
