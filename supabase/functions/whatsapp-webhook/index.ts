@@ -186,9 +186,9 @@ serve(async (req) => {
     logger.info('✅ New webhook event accepted', { messageId, eventType });
 
     // Evolution API envia diferentes tipos de eventos
-    const eventType = webhookData.event;
+    // eventType já foi declarado na linha 141
     
-    logger.info('🔔 Event type received', { 
+    logger.info('🔔 Event type received', {
       eventType, 
       hasData: !!webhookData.data,
       dataKeys: webhookData.data ? Object.keys(webhookData.data) : []
