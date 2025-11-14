@@ -1,4 +1,21 @@
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject, JsonValue } from "../_shared/error-types.ts";
+
+interface FailedAction {
+  id: string;
+  action_type: string;
+  action_payload: JsonObject;
+  result?: JsonObject;
+  retry_count?: number;
+  created_at: string;
+}
+
+interface RetryResult {
+  success: boolean;
+  data?: JsonValue;
+  error?: string | JsonValue;
+}
 
 Deno.serve(createAuthenticatedHandler('process-dlq', async (req, { supabase, user }) => {
 
@@ -25,7 +42,7 @@ Deno.serve(createAuthenticatedHandler('process-dlq', async (req, { supabase, use
       console.log(`🔄 Retrying action ${action.id} (${action.action_type})`);
 
       try {
-        let retryResult: any = null;
+        let retryResult: RetryResult | null = null;
 
         // Retry baseado no tipo de ação
         switch (action.action_type) {
@@ -91,7 +108,7 @@ Deno.serve(createAuthenticatedHandler('process-dlq', async (req, { supabase, use
   };
 }));
 
-async function retryWhatsApp(supabase: any, action: any) {
+async function retryWhatsApp(supabase: SupabaseClient, action: FailedAction): Promise<RetryResult> {
   const { phone, message } = action.action_payload;
   
   const { data, error } = await supabase.functions.invoke('send-whatsapp-message', {
@@ -101,7 +118,7 @@ async function retryWhatsApp(supabase: any, action: any) {
   return { success: !error, data, error };
 }
 
-async function retryEmail(supabase: any, action: any) {
+async function retryEmail(supabase: SupabaseClient, action: FailedAction): Promise<RetryResult> {
   const { to, subject, html } = action.action_payload;
   
   const { data, error } = await supabase.functions.invoke('send-locaweb-email', {
@@ -111,7 +128,7 @@ async function retryEmail(supabase: any, action: any) {
   return { success: !error, data, error };
 }
 
-async function retryIXCTicket(supabase: any, action: any) {
+async function retryIXCTicket(supabase: SupabaseClient, action: FailedAction): Promise<RetryResult> {
   const { client_id, assunto, descricao } = action.action_payload;
   
   const { data, error } = await supabase.functions.invoke('ixc-proxy', {
@@ -129,7 +146,7 @@ async function retryIXCTicket(supabase: any, action: any) {
   return { success: !error, data, error };
 }
 
-async function retryReboot(supabase: any, action: any) {
+async function retryReboot(supabase: SupabaseClient, action: FailedAction): Promise<RetryResult> {
   const { client_id, equipment_id } = action.action_payload;
   
   // Implementar lógica de reboot via IXC

@@ -467,7 +467,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string, opt
               registros = registros.filter(c => {
                 const tel = c.telefone_celular?.replace(/\D/g, '') || '';
                 const fone = c.fone_celular?.replace(/\D/g, '') || '';
-                const whats = (c as any).whatsapp?.replace(/\D/g, '') || '';
+                const whats = (c as IXCCustomer & { whatsapp?: string }).whatsapp?.replace(/\D/g, '') || '';
                 return tel.includes(cleanNumber) || fone.includes(cleanNumber) || whats.includes(cleanNumber);
               });
               console.log(`📞 Após filtro telefone: ${registros.length} resultados`);
@@ -501,7 +501,7 @@ async function searchCustomers(baseUrl: string, auth: string, query: string, opt
       const phoneMatch = cleanNumber && (
         (c.telefone_celular && c.telefone_celular.replace(/\D/g, '').includes(cleanNumber)) ||
         (c.fone_celular && c.fone_celular.replace(/\D/g, '').includes(cleanNumber)) ||
-        ((c as any).whatsapp && (c as any).whatsapp.replace(/\D/g, '').includes(cleanNumber))
+        ((c as IXCCustomer & { whatsapp?: string }).whatsapp && (c as IXCCustomer & { whatsapp?: string }).whatsapp?.replace(/\D/g, '').includes(cleanNumber))
       );
       const nameMatch = [c.razao, c.nome_fantasia]
         .filter(Boolean)
@@ -708,8 +708,8 @@ async function getCustomerStatus(baseUrl: string, auth: string, customerId: stri
           key.toLowerCase().includes('status') || 
           key.toLowerCase().includes('situacao') ||
           key.toLowerCase().includes('ativo')
-        ).reduce((obj: any, key) => {
-          obj[key] = customerData[key];
+        ).reduce((obj: Record<string, unknown>, key) => {
+          obj[key] = customerData[key as keyof typeof customerData];
           return obj;
         }, {})
       };
@@ -882,26 +882,54 @@ async function getCustomersByStatus(baseUrl: string, auth: string, params: IXCSe
       return [];
     }
     
-    const contracts = Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {});
+    interface ContractData {
+      id_cliente?: string | number;
+      id?: string | number;
+      status?: string;
+      status_internet?: string;
+      contrato?: string;
+      pago_ate_data?: string;
+      dt_ult_bloq_auto?: string;
+      dt_ult_des_bloq_conf?: string;
+      situacao_financeira_contrato?: string;
+    }
+    
+    const contracts = (Array.isArray(data.registros) ? data.registros : Object.values(data.registros || {})) as ContractData[];
     console.log(`✅ Encontrados ${contracts.length} contratos com status ${status}`);
     
     // Buscar dados dos clientes para cada contrato (sem duplicatas)
-    const customerIds = [...new Set(contracts.map((c: any) => c.id_cliente).filter(Boolean))];
+    const customerIds = [...new Set(contracts.map((c: ContractData) => c.id_cliente).filter(Boolean))];
     console.log(`👥 Buscando dados de ${customerIds.length} clientes únicos...`);
     
-    const clientsWithStatus = [] as any[];
+    interface ClientWithStatus extends IXCCustomer {
+      statusInfo: {
+        serviceStatus: string;
+        contracts: Array<{
+          id?: string | number;
+          status?: string;
+          status_internet?: string;
+          contrato?: string;
+          pago_ate_data?: string;
+          dt_ult_bloq_auto?: string;
+          dt_ult_des_bloq_conf?: string;
+          situacao_financeira_contrato?: string;
+        }>;
+      };
+    }
+    
+    const clientsWithStatus: ClientWithStatus[] = [];
     
     for (const customerId of customerIds) {
       try {
         const customer = await getCustomer(baseUrl, auth, String(customerId));
         if (customer) {
           // Adicionar informações dos contratos ao cliente
-          const customerContracts = contracts.filter((c: any) => String(c.id_cliente) === String(customerId));
+          const customerContracts = contracts.filter((c: ContractData) => String(c.id_cliente) === String(customerId));
           clientsWithStatus.push({
             ...customer,
             statusInfo: {
               serviceStatus: status,
-              contracts: customerContracts.map((c: any) => ({
+              contracts: customerContracts.map((c: ContractData) => ({
                 id: c.id,
                 status: c.status,
                 status_internet: c.status_internet,

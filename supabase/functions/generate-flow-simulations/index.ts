@@ -1,5 +1,6 @@
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
+import type { JsonValue } from '../_shared/error-types.ts';
 
 const logger = createLogger('generate-flow-simulations');
 
@@ -10,9 +11,9 @@ interface FlowStep {
   step_order: number;
   question: string;
   instruction: string;
-  response_options: any;
-  response_variations: any;
-  next_step_map: any;
+  response_options: JsonValue;
+  response_variations: JsonValue;
+  next_step_map: JsonValue;
   awaits_response: boolean;
 }
 

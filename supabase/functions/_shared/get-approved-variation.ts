@@ -2,8 +2,10 @@
  * Busca variações aprovadas do banco de dados
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 export async function getApprovedScenarioReply(
-  supabaseAdmin: any,
+  supabaseAdmin: SupabaseClient,
   agent: string,
   scenarioKey: string
 ) {

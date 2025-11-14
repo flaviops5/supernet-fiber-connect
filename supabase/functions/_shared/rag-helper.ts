@@ -4,6 +4,8 @@
  * Encapsula lógica de busca vetorizada para ser reutilizada por todos os agentes
  */
 
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 export interface RAGResult {
   success: boolean;
   documents: Array<{
@@ -24,7 +26,7 @@ export interface RAGResult {
  * @param options - Opções de busca (top_k, similarity_threshold, agentTypes)
  */
 export async function retrieveKnowledgeContext(
-  supabase: any,
+  supabase: SupabaseClient,
   message: string,
   openaiApiKey: string,
   options: {
@@ -77,7 +79,7 @@ export async function retrieveKnowledgeContext(
     // Filtrar por agent_types se especificado
     let filteredResults = knowledgeBase || [];
     if (agentTypes.length > 0 && filteredResults.length > 0) {
-      filteredResults = filteredResults.filter((doc: any) => {
+      filteredResults = filteredResults.filter((doc: { metadata?: { agent_types?: string[] } }) => {
         const docAgentTypes = doc.metadata?.agent_types || [];
         return agentTypes.some(type => docAgentTypes.includes(type));
       });
@@ -88,7 +90,7 @@ export async function retrieveKnowledgeContext(
       console.log(`✅ RAG: ${filteredResults.length} documentos encontrados (semântica)`);
       
       const contextText = filteredResults
-        .map((doc: any) => 
+        .map((doc: { category: string; title: string; content: string; similarity: number }) => 
           `[${doc.category}] ${doc.title}\n${doc.content}\nRelevância: ${(doc.similarity * 100).toFixed(1)}%`
         )
         .join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
@@ -115,7 +117,7 @@ export async function retrieveKnowledgeContext(
  * Busca de fallback usando palavras-chave quando busca vetorizada falha
  */
 async function performFallbackSearch(
-  supabase: any,
+  supabase: SupabaseClient,
   message: string,
   limit: number
 ): Promise<RAGResult> {
@@ -157,7 +159,7 @@ async function performFallbackSearch(
     console.log(`✅ Fallback: ${fallbackDocs.length} documentos encontrados`);
 
     const contextText = fallbackDocs
-      .map((doc: any) => 
+      .map((doc: { category: string; title: string; content: string }) => 
         `[${doc.category}] ${doc.title}\n${doc.content}\n(Busca por palavra-chave: ${searchTerm})`
       )
       .join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n');
