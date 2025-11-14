@@ -1,4 +1,13 @@
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { JsonObject } from '../_shared/error-types.ts';
+
+interface MaintenanceSettings {
+  enabled: boolean;
+  network_stable_threshold_minutes: number;
+  auto_escalate_failures: boolean;
+  [key: string]: unknown;
+}
 
 interface MaintenanceTask {
   id: string;
@@ -8,7 +17,20 @@ interface MaintenanceTask {
   command: string;
   retry_count: number;
   timeout_seconds: number;
-  metadata: any;
+  metadata: JsonObject;
+}
+
+interface TaskExecutionResult {
+  task_id: string;
+  status: 'success' | 'failed';
+  duration_ms: number;
+  result?: JsonObject;
+  error?: string;
+}
+
+interface FailureRecord {
+  task_id: string;
+  count: number;
 }
 
 Deno.serve(createAuthenticatedHandler('network-maintenance-executor', async (req, { supabase, user }) => {
@@ -78,7 +100,7 @@ Deno.serve(createAuthenticatedHandler('network-maintenance-executor', async (req
   };
 }));
 
-async function executeTasks(supabase: any, priority: string, settings: any) {
+async function executeTasks(supabase: SupabaseClient, priority: string, settings: MaintenanceSettings): Promise<TaskExecutionResult[]> {
   const now = new Date();
   
   // Buscar tarefas que precisam ser executadas
@@ -105,7 +127,7 @@ async function executeTasks(supabase: any, priority: string, settings: any) {
   return results;
 }
 
-async function executeTask(supabase: any, task: MaintenanceTask, settings: any) {
+async function executeTask(supabase: SupabaseClient, task: MaintenanceTask, settings: MaintenanceSettings): Promise<TaskExecutionResult> {
   const startTime = Date.now();
   let logId: string;
 
@@ -199,7 +221,7 @@ async function executeTask(supabase: any, task: MaintenanceTask, settings: any) 
   }
 }
 
-async function executeTaskCommand(task: MaintenanceTask): Promise<any> {
+async function executeTaskCommand(task: MaintenanceTask): Promise<JsonObject> {
   // Implementação dos comandos de manutenção
   switch (task.command) {
     case 'check_network_availability':
@@ -281,7 +303,7 @@ async function cleanOldLogs() {
   return { logs_deleted: 150 };
 }
 
-async function sendAlert(supabase: any, settings: any, message: string) {
+async function sendAlert(supabase: SupabaseClient, settings: MaintenanceSettings, message: string) {
   console.log(`🚨 ALERTA: ${message}`);
   
   // Registrar alerta
@@ -296,7 +318,7 @@ async function sendAlert(supabase: any, settings: any, message: string) {
   // Enviar webhook se configurado
 }
 
-async function escalateRecurringFailures(supabase: any, settings: any) {
+async function escalateRecurringFailures(supabase: SupabaseClient, settings: MaintenanceSettings) {
   if (!settings.auto_escalate_failures) return;
 
   // Buscar tarefas com 3+ falhas nas últimas 24h
@@ -308,7 +330,7 @@ async function escalateRecurringFailures(supabase: any, settings: any) {
 
   // Agrupar e contar falhas
   const failureCount: Record<string, number> = {};
-  failures?.forEach((f: any) => {
+  failures?.forEach((f: FailureRecord) => {
     failureCount[f.task_id] = (failureCount[f.task_id] || 0) + 1;
   });
 

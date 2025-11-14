@@ -8,8 +8,8 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 **Objective:** Eliminate 303 `any` usages across 66 files
 
 **Current Status:**
-- ✅ Fixed: ~127 occurrences (42%)
-- 🔄 Remaining: ~176 occurrences (58%)
+- ✅ Fixed: ~138 occurrences (46%)
+- 🔄 Remaining: ~165 occurrences (54%)
 
 ## ✅ Completed Migrations (24 arquivos)
 
@@ -41,6 +41,11 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 6. ✅ `chatbot-cep-lookup/index.ts` - 6 any eliminados
 7. ✅ `generate-ai-faq/index.ts` - 1 any eliminado
 
+### Edge Functions - Média Prioridade (3 arquivos)
+1. ✅ `auto-send-overdue-invoices/index.ts` - 2 any eliminados
+2. ✅ `atlas-analyzer/index.ts` - 2 any eliminados
+3. ✅ `network-maintenance-executor/index.ts` - 7 any eliminados
+
 ### Edge Functions Individuais (10 arquivos)
 1. ✅ `log-alert-handler/index.ts` - Handler de alertas de logs
 2. ✅ `generate-flow-simulations/index.ts` - Gerador de simulações
@@ -50,12 +55,9 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 6. ✅ `process-dlq/index.ts` - Processador DLQ
 7. ✅ `qa-orchestrator/index.ts` - Orquestrador QA (parcial)
 
-## 🔄 In Progress Migrations (3 arquivos)
+## 🔄 In Progress Migrations (0 arquivos)
 
-### Prioridade Média
-- 🟡 `auto-send-overdue-invoices/index.ts` - 2 ocorrências
-- 🟡 `atlas-analyzer/index.ts` - 2 ocorrências
-- 🟡 `network-maintenance-executor/index.ts` - 7 ocorrências
+Todas funções de alta e média prioridade foram completadas! 🎉
 
 ## ❌ Pendentes (41 arquivos)
 

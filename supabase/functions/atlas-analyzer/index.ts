@@ -12,6 +12,29 @@ import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
 
+interface AtlasKpis {
+  errors_per_min?: number;
+  [key: string]: unknown;
+}
+
+interface AtlasInsight {
+  kpis?: AtlasKpis;
+  [key: string]: unknown;
+}
+
+interface OutageEventMetadata {
+  pon_port?: string;
+  cto?: string;
+  region?: string;
+  [key: string]: unknown;
+}
+
+interface OutageEvent {
+  metadata?: OutageEventMetadata;
+  region_pattern?: string;
+  [key: string]: unknown;
+}
+
 // --------------------------- Utils ------------------------------------
 type Severity = "LOW" | "MEDIUM" | "HIGH";
 type Cause =
@@ -28,7 +51,7 @@ function asNumber(n: unknown, fallback = 0) {
   return Number.isFinite(v) ? v : fallback;
 }
 
-function calcTrend(last3: Array<{ kpis?: any }>): "worsening" | "stable" | "improving" {
+function calcTrend(last3: AtlasInsight[]): "worsening" | "stable" | "improving" {
   if (!last3 || last3.length < 2) return "stable";
   const series = last3
     .map((x) => asNumber(x?.kpis?.errors_per_min, 0))
@@ -43,7 +66,7 @@ function calcTrend(last3: Array<{ kpis?: any }>): "worsening" | "stable" | "impr
 }
 
 // Agrupa eventos por prioridade: PON > CTO > REGION
-function groupKeysFromOutages(events: any[]): string[] {
+function groupKeysFromOutages(events: OutageEvent[]): string[] {
   const map = new Map<string, number>();
   for (const e of events || []) {
     const md = e?.metadata || {};

@@ -1,6 +1,28 @@
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { createLogger } from '../_shared/logger.ts';
 
+interface IXCFinancialTitle {
+  id_cliente?: string | number;
+  cliente_id?: string | number;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface IXCCustomerData {
+  razao?: string;
+  nome_fantasia?: string;
+  cnpj_cpf?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface ClientToProcess {
+  id: string;
+  name: string;
+  data: IXCCustomerData;
+  overdueTitle: IXCFinancialTitle;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -63,7 +85,7 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
     }
 
     // 2. Processar títulos e agrupar por cliente (apenas títulos não pagos)
-    const clientTitlesMap = new Map<string, any[]>();
+    const clientTitlesMap = new Map<string, IXCFinancialTitle[]>();
     for (const title of titles) {
       // Verificar se o título está pago ou cancelado
       const titleStatus = (title.status || '').toUpperCase();
@@ -81,7 +103,7 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
     logger.info('Clientes únicos com títulos vencidos', { count: clientTitlesMap.size });
 
     // 3. Para cada cliente, buscar dados completos e verificar status FA
-    const clientsToProcess: Array<{id: string, name: string, data: any, overdueTitle: any}> = [];
+    const clientsToProcess: ClientToProcess[] = [];
     const allClientsFound: Array<{name: string, status: string, hasOverdueTitle: boolean}> = [];
 
     for (const [clientId, clientTitles] of clientTitlesMap.entries()) {
