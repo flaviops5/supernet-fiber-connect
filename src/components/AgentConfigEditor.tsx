@@ -100,6 +100,7 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              sanitize
             />
           </div>
 
@@ -109,6 +110,7 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
               id="description"
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              sanitize
             />
           </div>
 
@@ -131,6 +133,7 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
             onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
             rows={15}
             className="font-mono text-sm"
+            sanitize
           />
           <p className="text-xs text-muted-foreground">
             Este é o prompt que define o comportamento e personalidade do agente

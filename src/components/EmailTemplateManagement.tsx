@@ -209,6 +209,7 @@ export function EmailTemplateManagement() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: Contrato de Instalação"
                     required
+                    sanitize
                   />
                 </div>
 
@@ -220,6 +221,7 @@ export function EmailTemplateManagement() {
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
                     placeholder="contrato-instalacao"
                     required
+                    sanitize
                   />
                 </div>
               </div>
@@ -232,6 +234,7 @@ export function EmailTemplateManagement() {
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder="Seu Contrato SUPERNET FIBRA"
                   required
+                  sanitize
                 />
               </div>
 

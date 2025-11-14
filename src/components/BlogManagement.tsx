@@ -406,6 +406,7 @@ export default function BlogManagement() {
                       }));
                     }}
                     placeholder="Título do post"
+                    sanitize
                   />
                 </div>
                 
@@ -416,6 +417,7 @@ export default function BlogManagement() {
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                     placeholder="url-amigavel"
+                    sanitize
                   />
                 </div>
               </div>
@@ -428,6 +430,7 @@ export default function BlogManagement() {
                   onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
                   placeholder="Breve descrição do post"
                   rows={3}
+                  sanitize
                 />
               </div>
 
@@ -439,6 +442,7 @@ export default function BlogManagement() {
                   onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                   placeholder="Conteúdo completo do post (Markdown)"
                   rows={15}
+                  sanitize
                 />
               </div>
 
@@ -469,6 +473,7 @@ export default function BlogManagement() {
                     value={formData.author}
                     onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
                     placeholder="Nome do autor"
+                    sanitize
                   />
                 </div>
 

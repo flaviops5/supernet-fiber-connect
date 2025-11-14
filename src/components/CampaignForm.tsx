@@ -171,6 +171,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Ex: Promoção Black Friday 2024"
               required
+              sanitize
             />
           </div>
 
@@ -182,6 +183,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Descreva o objetivo da campanha"
               rows={3}
+              sanitize
             />
           </div>
 
@@ -396,6 +398,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
               placeholder="Use variáveis: {{nome}}, {{plano}}, {{valor}}"
               rows={5}
               required
+              sanitize
             />
             <p className="text-xs text-muted-foreground mt-1">
               Variáveis disponíveis: {`{{nome}}, {{plano}}, {{valor}}, {{data_vencimento}}`}
