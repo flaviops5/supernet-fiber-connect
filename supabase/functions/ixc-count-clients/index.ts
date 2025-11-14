@@ -104,8 +104,8 @@ Deno.serve(createAuthenticatedHandler(
     }
 
     // Agrupar por login (deduplicar)
-    const uniqueOnline = new Map<string, any>();
-    const uniqueOffline = new Map<string, any>();
+    const uniqueOnline = new Map<string, Record<string, unknown>>();
+    const uniqueOffline = new Map<string, Record<string, unknown>>();
     
     for (const user of allOnlineUsers) {
       const login = String(user.login ?? '').toLowerCase().trim();

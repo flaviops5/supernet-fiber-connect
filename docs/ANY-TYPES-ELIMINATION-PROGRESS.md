@@ -8,8 +8,8 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 **Objective:** Eliminate 303 `any` usages across 66 files
 
 **Current Status:**
-- ✅ Fixed: ~138 occurrences (46%)
-- 🔄 Remaining: ~165 occurrences (54%)
+- ✅ Fixed: ~142 occurrences (47%)
+- 🔄 Remaining: ~161 occurrences (53%)
 
 ## ✅ Completed Migrations (24 arquivos)
 
@@ -46,6 +46,11 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 2. ✅ `atlas-analyzer/index.ts` - 2 any eliminados
 3. ✅ `network-maintenance-executor/index.ts` - 7 any eliminados
 
+### Edge Functions - Utilities (3 arquivos)
+1. ✅ `ixc-evolution-proxy/index.ts` - 1 any eliminado
+2. ✅ `ixc-count-clients/index.ts` - 2 any eliminados
+3. ✅ `ixc-revenue-stats/index.ts` - 1 any eliminado
+
 ### Edge Functions Individuais (10 arquivos)
 1. ✅ `log-alert-handler/index.ts` - Handler de alertas de logs
 2. ✅ `generate-flow-simulations/index.ts` - Gerador de simulações
@@ -59,12 +64,9 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 
 Todas funções de alta e média prioridade foram completadas! 🎉
 
-## ❌ Pendentes (41 arquivos)
+## ❌ Pending Migrations (38 arquivos)
 
-### Utilities (20 arquivos)
-- `ixc-evolution-proxy/index.ts` - 1 ocorrência
-- `ixc-count-clients/index.ts` - 2 ocorrências
-- `ixc-revenue-stats/index.ts` - 1 ocorrência
+### Utilities (38 arquivos restantes)
 - `send-payment-to-customer/index.ts` - 2 ocorrências
 - `site-analyzer-agent/index.ts` - 1 ocorrência
 - `sync-chatbot-knowledge/index.ts` - 1 ocorrência
@@ -72,7 +74,7 @@ Todas funções de alta e média prioridade foram completadas! 🎉
 - `system-health/index.ts` - 6 ocorrências
 - `scenario-rollback/index.ts` - 1 ocorrência
 - `sales-agent/index.ts` - 1 ocorrência
-- ... (outros 10 arquivos menores)
+- ... (outros 31 arquivos)
 
 ## Padrões de Correção Aplicados
 

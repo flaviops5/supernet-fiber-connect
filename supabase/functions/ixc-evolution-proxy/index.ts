@@ -5,6 +5,7 @@
 // ========================================================
 
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import type { JsonValue } from '../_shared/error-types.ts';
 
 
 // ====================================================
@@ -144,7 +145,7 @@ Deno.serve(createAuthenticatedHandler('ixc-evolution-proxy', async (req, { supab
           8000 // 8s timeout
         );
 
-        let data: any;
+        let data: JsonValue;
         try {
           data = await evoRes.json();
         } catch {
