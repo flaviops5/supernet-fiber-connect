@@ -9,6 +9,17 @@ import { getCircuitBreakerStatus } from "../_shared/ixc-client.ts";
 import { recordMetric } from "../_shared/metrics-helper.ts";
 import { handleEdgeFunctionError, corsHeaders } from '../_shared/error-handler.ts';
 
+interface IXCCustomer {
+  id: string | number;
+  razao?: string;
+  cnpj_cpf?: string;
+  telefone_celular?: string;
+  fone_celular?: string;
+  whatsapp?: string;
+  telefone_comercial?: string;
+  [key: string]: unknown;
+}
+
 Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { supabase, user }) => {
   const { phone, cpf } = await req.json();
   
@@ -185,7 +196,7 @@ Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { 
         console.log(`📦 ${customerList.length} clientes carregados`);
         
         // Amostra dos 3 primeiros clientes para debug
-        console.log('📝 Amostra (3 primeiros):', customerList.slice(0, 3).map((c: any) => ({
+        console.log('📝 Amostra (3 primeiros):', customerList.slice(0, 3).map((c: IXCCustomer) => ({
           id: c.id,
           nome: c.razao,
           cpf: c.cnpj_cpf,
@@ -197,7 +208,7 @@ Deno.serve(createAuthenticatedHandler('send-payment-to-customer', async (req, { 
           }
         })));
         
-        customer = customerList.find((c: any) => {
+        customer = customerList.find((c: IXCCustomer) => {
           const clientCpf = (c.cnpj_cpf || '').replace(/\D/g, '');
           const phonesRaw = [c.telefone_celular, c.fone_celular, c.whatsapp, c.telefone_comercial].filter(Boolean);
           const phones = phonesRaw.map((p: string) => String(p).replace(/\D/g, ''));

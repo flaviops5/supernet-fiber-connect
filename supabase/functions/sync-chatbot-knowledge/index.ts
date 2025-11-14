@@ -1,5 +1,10 @@
 import { createPublicHandler } from '../_shared/base-handler.ts';
 
+interface PlanFeature {
+  text?: string;
+  [key: string]: unknown;
+}
+
 Deno.serve(createPublicHandler('sync-chatbot-knowledge', async (req, { supabase }) => {
 
     // 1. Buscar planos ativos
@@ -38,7 +43,7 @@ Deno.serve(createPublicHandler('sync-chatbot-knowledge', async (req, { supabase 
     // 5. Criar conteúdo sobre planos (disponível para sales)
     const plansContent = plans?.map(plan => {
       const features = Array.isArray(plan.features) 
-        ? plan.features.map((f: any) => `- ${f.text || f}`).join('\n')
+        ? plan.features.map((f: PlanFeature | string) => `- ${typeof f === 'string' ? f : f.text || f}`).join('\n')
         : '';
       
       return {
