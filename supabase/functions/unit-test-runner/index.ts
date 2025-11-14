@@ -301,7 +301,7 @@ serve(async (req) => {
           ? `✅ All ${totalTests} tests passed successfully!`
           : `⚠️ ${failedTests} of ${totalTests} tests failed`,
         timestamp: new Date().toISOString(),
-        executionTime: timer.elapsed()
+        executionTime: timer.elapsed
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
