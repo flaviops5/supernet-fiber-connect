@@ -11,6 +11,30 @@ interface CepLookupRequest {
   action: 'check_coverage' | 'list_plans' | 'find_region';
 }
 
+interface CepPlanData {
+  plans: {
+    id: string;
+    name: string;
+    speed: string;
+    price: number;
+    original_price?: number;
+    popular?: boolean;
+    features?: string[];
+    image_url?: string;
+  };
+}
+
+interface PlanInfo {
+  id: string;
+  name: string;
+  speed: string;
+  price: number;
+  original_price?: number;
+  popular?: boolean;
+  features?: string[];
+  image_url?: string;
+}
+
 Deno.serve(createAuthenticatedHandler(
   'chatbot-cep-lookup',
   async (req, { supabase, user }) => {
@@ -46,7 +70,7 @@ Deno.serve(createAuthenticatedHandler(
   }
 ));
 
-async function checkCepCoverage(supabase: any, cep: string, originalMessage: string) {
+async function checkCepCoverage(supabase: SupabaseClient, cep: string, originalMessage: string) {
   if (!cep || cep.length !== 8) {
     return { 
       response: `Para verificar a cobertura na sua região, preciso do seu CEP completo com 8 dígitos. 
@@ -117,7 +141,7 @@ Você também pode consultar outros CEPs próximos se desejar.`,
       `)
       .eq('cep_coverage_id', cepData.id)
 
-    const plans = plansData?.map((cp: any) => cp.plans).filter(Boolean) || []
+    const plans: PlanInfo[] = plansData?.map((cp: CepPlanData) => cp.plans).filter(Boolean) || []
 
     let response = `✅ **Ótimas notícias! Temos cobertura para o CEP ${formatCep(cep)}!**
 
@@ -129,7 +153,7 @@ Você também pode consultar outros CEPs próximos se desejar.`,
     if (plans.length > 0) {
       response += `🚀 **Planos Disponíveis:**\n\n`
       
-      plans.forEach((plan: any) => {
+      plans.forEach((plan: PlanInfo) => {
         const discount = plan.original_price ? 
           Math.round(((plan.original_price - plan.price) / plan.original_price) * 100) : 0
         
@@ -165,7 +189,7 @@ Você também pode consultar outros CEPs próximos se desejar.`,
         }
 
         if (plan.features && Array.isArray(plan.features)) {
-          plan.features.forEach((feature: any) => {
+          plan.features.forEach((feature: { text: string }) => {
             response += `  ✓ ${feature.text}\n`
           })
         }
