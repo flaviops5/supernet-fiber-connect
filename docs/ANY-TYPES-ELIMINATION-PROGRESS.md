@@ -5,11 +5,49 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 
 ## 📊 Overall Status
 
-**Objective:** Eliminate 303 `any` usages across 66 files
+**Objective:** Eliminate 303 `any` usages across 66 files + Create unit tests for critical edge functions
 
 **Current Status:**
 - ✅ Fixed: 303 occurrences (100%) 🎉
 - 🔄 Remaining: 0 occurrences (0%)
+- ✅ Unit Tests: 4 critical edge functions covered
+
+## 🧪 Unit Tests Coverage
+
+### Implemented Tests (4 edge functions)
+1. ✅ `ixc-proxy/tests/ixc-proxy.test.ts`
+   - Cache management (GET requests, TTL validation)
+   - HMAC timestamp validation
+   - URL normalization
+   - Credentials validation
+
+2. ✅ `detect-mass-outage/tests/detect-mass-outage.test.ts`
+   - Pagination logic (max pages, stop conditions)
+   - PON grouping and counting
+   - Mass outage threshold detection
+   - Rate limiting and dying gasp events
+
+3. ✅ `routing-agent/tests/routing-agent.test.ts`
+   - Input type detection (CPF, CNPJ, CEP, phone)
+   - CPF validation, masking, and redaction
+   - Department routing logic
+   - Metadata sanitization
+
+4. ✅ `whatsapp-webhook/tests/whatsapp-webhook.test.ts`
+   - HMAC validation (signature, timestamp)
+   - Idempotency check (duplicate prevention)
+   - Rate limiting (per phone, time windows)
+   - Payload validation and correlation IDs
+
+### Test Execution
+```bash
+# Run all tests
+deno test --allow-net --allow-env supabase/functions/
+
+# Run specific function tests
+deno test --allow-net --allow-env supabase/functions/ixc-proxy/tests/
+deno test --allow-net --allow-env supabase/functions/routing-agent/tests/
+```
 
 ## ✅ Completed Migrations (24 arquivos)
 
