@@ -55,6 +55,53 @@ import { safeTestConnectivity } from "./services/connectivity-service.ts";
 import { executeConfiguredTools } from "./tools/tool-executor.ts";
 // <<< REFACTORED MODULES
 
+// >>> TYPES - Conversation Metadata
+interface FlowStateData {
+  continue?: string;
+  hybrid_mode_active?: boolean;
+  timeout_attempts?: number;
+  waiting_step?: string;
+  ixc_client_id?: string;
+  geo?: {
+    cidade?: string;
+    source?: string;
+  };
+  [key: string]: unknown;
+}
+
+interface SignalData {
+  tx?: number;
+  rx?: number;
+  serial?: string;
+  onu_serial?: string;
+  [key: string]: unknown;
+}
+
+interface ConversationMetadata {
+  flow_state?: FlowStateData | string;
+  signal_data?: SignalData;
+  cpf_retry_count?: number;
+  clarification_attempts?: number;
+  last_clarification_step?: string;
+  scenario?: string;
+  [key: string]: unknown;
+}
+
+interface Conversation {
+  id?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  metadata?: ConversationMetadata;
+  updated_at?: string;
+}
+
+interface MessageAttachment {
+  type: 'image' | 'video' | 'audio' | 'document';
+  url: string;
+  mime_type?: string;
+}
+// <<< TYPES
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -225,7 +272,7 @@ serve(async (req) => {
     }
 
     // Normalizar flow_state para evitar espalhar string em chaves '0','1',...
-    const rawFlowState = (convWithPhone?.metadata as any)?.flow_state;
+    const rawFlowState = convWithPhone?.metadata?.flow_state;
     let flowState = normalizeFlowState(rawFlowState);
     // Disponibiliza a versão string (quando existir) para detecção de cenário
     const continueFlowState = typeof rawFlowState === "string" ? rawFlowState : (flowState?.continue || "");
@@ -254,7 +301,7 @@ serve(async (req) => {
         .from("conversations")
         .update({
           metadata: {
-            ...(convWithPhone?.metadata as any || {}),
+            ...(convWithPhone?.metadata || {}),
             flow_state: {
               ...existingFlowState,
               hybrid_mode_active: isHybridEnabled
@@ -297,7 +344,7 @@ serve(async (req) => {
     // 📷 PROCESSAR IMAGENS COM VISÃO AI
     let imageAnalysis = "";
     if (attachments && attachments.length > 0) {
-      const imageAttachments = attachments.filter((a: any) => a.type === 'image');
+      const imageAttachments = attachments.filter((a: MessageAttachment) => a.type === 'image');
       
       if (imageAttachments.length > 0) {
         logger.info("Processando imagens com visão AI", { 
@@ -434,7 +481,7 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
       logger.info("🧪 Mock currentConversation created");
     }
 
-    const currentFlowState = (currentConversation?.metadata as any)?.flow_state;
+    const currentFlowState = currentConversation?.metadata?.flow_state as FlowStateData | undefined;
     const lastInteraction = currentConversation?.updated_at 
       ? new Date(currentConversation.updated_at) 
       : new Date();
@@ -457,9 +504,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         await supabase
           .from("conversations")
           .update({
-            metadata: {
-              ...(currentConversation?.metadata as any || {}),
-              flow_state: {
+              metadata: {
+                ...(currentConversation?.metadata || {}),
+                flow_state: {
                 ...currentFlowState,
                 timeout_attempts: 1,
                 last_timeout_at: new Date().toISOString()
@@ -484,9 +531,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
         await supabase
           .from("conversations")
           .update({
-            metadata: {
-              ...(currentConversation?.metadata as any || {}),
-              flow_state: {
+              metadata: {
+                ...(currentConversation?.metadata || {}),
+                flow_state: {
                 ...currentFlowState,
                 timeout_attempts: 2,
                 last_timeout_at: new Date().toISOString()
@@ -514,9 +561,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
           .from("conversations")
           .update({
             status: "closed",
-            metadata: {
-              ...(currentConversation?.metadata as any || {}),
-              flow_state: {
+              metadata: {
+                ...(currentConversation?.metadata || {}),
+                flow_state: {
                 ...currentFlowState,
                 timeout_attempts: 3,
                 closed_reason: "timeout_15min"
@@ -535,9 +582,9 @@ Seja objetivo e direto. Extraia apenas os dados técnicos importantes.`;
 
     // >>> PR7: DETECÇÃO AUTOMÁTICA DE ENTRADA NO CENÁRIO B
     // (coloque logo após a obtenção de signal/flow_state/ixc_client_id)
-    const signal = (currentConversation?.metadata as any)?.signal_data;
-    const ixcId = (currentConversation?.metadata as any)?.flow_state?.ixc_client_id ?? ixc_client_id;
-    const waitingStep = (currentConversation?.metadata as any)?.flow_state?.waiting_step;
+    const signal = currentConversation?.metadata?.signal_data;
+    const ixcId = (currentConversation?.metadata?.flow_state as FlowStateData)?.ixc_client_id ?? ixc_client_id;
+    const waitingStep = (currentConversation?.metadata?.flow_state as FlowStateData)?.waiting_step;
 
     // 🔍 Detectar sintomas de problema de navegação (regex expandido)
     const userReportsConnectivityIssue = !isFirstMessage && message && 
@@ -601,7 +648,7 @@ Me avise quando ligar, por favor.
       // Extrair apenas o primeiro nome
       const fullName = conversation?.customer_name || "cliente";
       const customerName = fullName.split(' ')[0];
-      const cpfRetryCount = (conversation?.metadata as any)?.cpf_retry_count || 0;
+      const cpfRetryCount = conversation?.metadata?.cpf_retry_count || 0;
 
       // 🚨 CASO ESPECIAL: CPF não encontrado
       if (cpf_not_found) {
@@ -618,7 +665,7 @@ Me avise quando ligar, por favor.
               department: "tecnico",
               assigned_agent_id: null,
               metadata: {
-                ...(conversation?.metadata as any || {}),
+                ...(conversation?.metadata || {}),
                 needs_human_transfer: true,
                 transfer_reason: "cpf_not_found_after_retries"
               }
@@ -639,9 +686,9 @@ Me avise quando ligar, por favor.
           await supabase
             .from("conversations")
             .update({
-              metadata: {
-                ...(conversation?.metadata as any || {}),
-                cpf_retry_count: cpfRetryCount + 1
+                metadata: {
+                  ...(conversation?.metadata || {}),
+                  cpf_retry_count: cpfRetryCount + 1
               }
             })
             .eq("id", conversation_id);
@@ -653,7 +700,7 @@ Me avise quando ligar, por favor.
             .from("conversations")
             .update({
               metadata: {
-                ...(conversation?.metadata as any || {}),
+                ...(conversation?.metadata || {}),
                 cpf_retry_count: 0
               }
             })
@@ -733,7 +780,12 @@ Me avise quando ligar, por favor.
             // 🧪 MODO DE TESTE: Criar dados mock
             if (testHarness === true) {
               if (!onu_signal) {
-                const mockSignals: Record<string, any> = {
+                interface MockSignal {
+                  tx_power: number;
+                  rx_power: number;
+                  status: 'online' | 'offline';
+                }
+                const mockSignals: Record<string, MockSignal> = {
                   'A': { tx_power: 0, rx_power: 0, status: 'offline' },
                   'B': { tx_power: 0.5, rx_power: -20, status: 'online' },
                   'C': { tx_power: -2, rx_power: -27, status: 'online' },
@@ -750,7 +802,7 @@ Me avise quando ligar, por favor.
                   customer_name: 'Cliente Teste',
                   customer_phone: '(11) 99999-9999',
                   metadata: { scenario: activeScenario }
-                } as any;
+                } as Conversation;
                 logger.info("🧪 Mock conversation created");
               }
             }
@@ -766,7 +818,7 @@ Me avise quando ligar, por favor.
               signal: {
                 tx: onu_signal?.tx_power || Number(tx) || 0,
                 rx: onu_signal?.rx_power || Number(rx) || 0,
-                serial: (onu_signal as any)?.serial || (onu_signal as any)?.onu_serial
+                serial: (onu_signal as SignalData)?.serial || (onu_signal as SignalData)?.onu_serial
               },
               message: message || "",
               normalizedMessage: message ? normalizeText(message) : undefined,
@@ -1020,7 +1072,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               .from("conversations")
               .update({
                 metadata: {
-                  ...(conversation?.metadata as any || {}),
+                  ...(conversation?.metadata || {}),
                   flow_state: "cenario_a_verificar_luzes",
                   scenario: "A" // 🔧 Sempre definir o scenario
                 }
@@ -1069,9 +1121,9 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               .from("conversations")
               .update({
                 metadata: {
-                  ...(conversation?.metadata as any || {}),
+                  ...(conversation?.metadata || {}),
                   flow_state: {
-                    ...((conversation?.metadata as any)?.flow_state || {}),
+                    ...((conversation?.metadata?.flow_state as FlowStateData) || {}),
                     waiting_step: "scenario_b_wait_restart",
                     scenario: "B",
                     ixc_client_id
@@ -1098,9 +1150,9 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               .from("conversations")
               .update({
                 metadata: {
-                  ...(conversation?.metadata as any || {}),
+                  ...(conversation?.metadata || {}),
                   flow_state: {
-                    ...((conversation?.metadata as any)?.flow_state || {}),
+                    ...((conversation?.metadata?.flow_state as FlowStateData) || {}),
                     waiting_step: "scenario_c_check_instability",
                     scenario: "C",
                     ixc_client_id,
@@ -1142,7 +1194,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             .from("conversations")
             .update({
               metadata: {
-                ...(conversation?.metadata as any || {}),
+                ...(conversation?.metadata || {}),
                 flow_state: "cenario_a_verificar_luzes",
                 scenario: "A" // 🔧 Sempre definir o scenario
               }
@@ -1178,8 +1230,8 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         .eq("id", conversation_id)
         .single();
 
-      const continueFlowState = (currentConversation?.metadata as any)?.flow_state;
-      scenario = (currentConversation?.metadata as any)?.scenario;
+      const continueFlowState = currentConversation?.metadata?.flow_state;
+      scenario = currentConversation?.metadata?.scenario as string | undefined;
 
       // Normaliza flow_state para avaliação segura
       const flowStateHasEnergia = Array.isArray(continueFlowState)
@@ -1228,7 +1280,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               department: "tecnico",
               assigned_agent_id: null,
               metadata: {
-                ...(currentConversation?.metadata as any || {}),
+                ...(currentConversation?.metadata || {}),
                 needs_human_transfer: true,
                 transfer_reason: "client_frustrated",
                 frustration_level: frustration.intensity,
@@ -1257,8 +1309,8 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
       }
 
       // 📊 CONTADOR DE TENTATIVAS DE CLARIFICAÇÃO (Priority #1)
-      const clarificationAttempts = (currentConversation?.metadata as any)?.clarification_attempts || 0;
-      const lastClarificationStep = (currentConversation?.metadata as any)?.last_clarification_step;
+      const clarificationAttempts = currentConversation?.metadata?.clarification_attempts || 0;
+      const lastClarificationStep = currentConversation?.metadata?.last_clarification_step;
       
       // Se já tentou clarificar 2x no mesmo step → transferir para humano
       if (clarificationAttempts >= 2 && lastClarificationStep === continueFlowState) {
@@ -1277,7 +1329,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               department: "tecnico",
               assigned_agent_id: null,
               metadata: {
-                ...(currentConversation?.metadata as any || {}),
+                ...(currentConversation?.metadata || {}),
                 needs_human_transfer: true,
                 transfer_reason: "clarification_limit_exceeded",
                 clarification_attempts: clarificationAttempts
@@ -1390,7 +1442,12 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
             if (testHarness === true) {
               // Criar sinal mock baseado no cenário
               if (!onu_signal) {
-                const mockSignals: Record<string, any> = {
+                interface MockSignal {
+                  tx_power: number;
+                  rx_power: number;
+                  status: 'online' | 'offline';
+                }
+                const mockSignals: Record<string, MockSignal> = {
                   'A': { tx_power: 0, rx_power: 0, status: 'offline' },
                   'B': { tx_power: 0.5, rx_power: -20, status: 'online' },
                   'C': { tx_power: -2, rx_power: -27, status: 'online' },
@@ -1408,7 +1465,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
                   customer_name: 'Cliente Teste',
                   customer_phone: '(11) 99999-9999',
                   metadata: { scenario: activeScenario }
-                } as any;
+                } as Conversation;
                 logger.info("🧪 Mock conversation created");
               }
             }
@@ -1424,7 +1481,7 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
               signal: {
                 tx: onu_signal?.tx_power || Number(tx) || 0,
                 rx: onu_signal?.rx_power || Number(rx) || 0,
-                serial: (onu_signal as any)?.serial || (onu_signal as any)?.onu_serial
+                serial: (onu_signal as SignalData)?.serial || (onu_signal as SignalData)?.onu_serial
               },
               message: message || "",
               normalizedMessage: message ? normalizeText(message) : undefined,
@@ -1525,8 +1582,8 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
         const { error: insertErr } = await insertAgentMessageOnce(supabase, conversation_id, responseMessage);
         
         if (insertErr) {
-          logger.error("Erro ao inserir mensagem de continuação", { error: (insertErr as any).message });
-          throw insertErr as any;
+          logger.error("Erro ao inserir mensagem de continuação", { error: insertErr instanceof Error ? insertErr.message : String(insertErr) });
+          throw insertErr;
         }
 
         logger.info("Luan respondeu ao cliente no fluxo genérico");
