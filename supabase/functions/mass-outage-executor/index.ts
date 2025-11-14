@@ -5,11 +5,12 @@
 
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 import { callIxcWithRetry } from "../_shared/ixc-client.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ===============================================================
 // 🧠 Helper: Envio de WhatsApp via Evolution API (Edge Function existente)
 // ===============================================================
-async function sendWhatsAppMessage(supabase: any, phone: string, message: string) {
+async function sendWhatsAppMessage(supabase: SupabaseClient, phone: string, message: string) {
   if (!phone || !message) throw new Error("Telefone ou mensagem ausente");
   try {
     await supabase.functions.invoke("send-whatsapp-message", {
@@ -28,7 +29,7 @@ async function sendWhatsAppMessage(supabase: any, phone: string, message: string
 // ===============================================================
 // 🧠 Helper: Criar ticket no IXC via função integrada existente
 // ===============================================================
-async function createIxcTicket(supabase: any, clientId: string, descricao: string) {
+async function createIxcTicket(supabase: SupabaseClient, clientId: string, descricao: string) {
   if (!clientId) throw new Error("Cliente não identificado para abertura de ticket");
 
   try {

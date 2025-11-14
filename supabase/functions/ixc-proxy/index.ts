@@ -10,8 +10,9 @@ import { createLogger } from "../_shared/structured-logger.ts";
 import { getOrCreateTraceId } from "../_shared/trace-id.ts";
 import { createTimer } from "../_shared/duration-tracker.ts";
 import type { IXCProxyRequest, IXCProxyResponse } from "../_shared/types.ts";
+import type { JsonValue } from "../_shared/error-types.ts";
 
-const cache = new Map<string, { data: any; timestamp: number }>();
+const cache = new Map<string, { data: JsonValue; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 segundos
 
 // P0 FIX: Convertido para createAuthenticatedHandler

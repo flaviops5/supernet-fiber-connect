@@ -6,7 +6,7 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { JsonObject } from "./error-types.ts";
+import type { JsonObject, JsonValue } from "./error-types.ts";
 import { 
   getFlowSteps, 
   getFlowStepByKey, 
@@ -144,7 +144,7 @@ export async function getScenarioConfig(
  */
 export function interpolateMessage(
   template: string,
-  variables: Record<string, any>
+  variables: Record<string, JsonValue>
 ): string {
   let result = template;
   

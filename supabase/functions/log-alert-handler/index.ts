@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getOrCreateTraceId } from '../_shared/trace-id.ts';
 import { createTimer } from '../_shared/duration-tracker.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
+import type { JsonValue } from '../_shared/error-types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ interface LogEntry {
   id: string;
   level: string;
   message: string;
-  metadata: any;
+  metadata: JsonValue;
   context: string;
   correlation_id?: string;
   timestamp: string;
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
       if (!acc[context]) acc[context] = [];
       acc[context].push(log);
       return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, LogEntry[]>);
 
     // Enviar alertas para cada grupo de erro
     for (const [context, logs] of Object.entries(errorsByContext)) {

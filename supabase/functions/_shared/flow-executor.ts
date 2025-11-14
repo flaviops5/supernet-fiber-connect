@@ -70,7 +70,12 @@ export async function executeFlowStep(
   }
 
   // 3. Interpretar resposta usando sistema híbrido
-  let interpretation: any = null;
+  interface InterpretationResult {
+    result: string;
+    confidence: number;
+    method: string;
+  }
+  let interpretation: InterpretationResult | null = null;
   
   if (step.response_options && step.response_options.length > 0) {
     // Preparar detectores baseados nas opções
@@ -110,7 +115,7 @@ export async function executeFlowStep(
   });
 
   // 5. Executar tools se configuradas
-  let toolsExecuted: Record<string, any> = {};
+  let toolsExecuted: Record<string, JsonValue> = {};
   const stepTools = await resolveStepTools(
     supabase,
     ctx.agent_type,

@@ -256,7 +256,7 @@ export function resetCircuitBreaker() {
 export async function getOnuSignalStatus(
   proxyUrl: string,
   clientId: string
-): Promise<any> {
+): Promise<JsonValue> {
   console.log(`📡 Buscando dados TX/RX para cliente ${clientId}...`);
   
   try {
