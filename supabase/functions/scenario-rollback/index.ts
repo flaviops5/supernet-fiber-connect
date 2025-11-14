@@ -1,6 +1,15 @@
 // >>> PR29 – scenario-rollback (dupla confirmação real) v2 – 10/10
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
+interface RollbackLogRecord {
+  id: string;
+  agent: string;
+  scenario_key: string;
+  to_version: number;
+  status: string;
+  [key: string]: unknown;
+}
+
 Deno.serve(createAuthenticatedHandler('scenario-rollback', async (req, { supabase, user }) => {
 
     const { 
@@ -110,7 +119,7 @@ Deno.serve(createAuthenticatedHandler('scenario-rollback', async (req, { supabas
     if (action === "apply" || emergency_bypass) {
       const { rollback_id } = emergency_bypass ? null : await req.json();
 
-      let confirmed: any;
+      let confirmed: RollbackLogRecord | null = null;
       if (!emergency_bypass) {
         const { data, error: fetchError } = await supabase
           .from("agent_scenarios_rollback_log")

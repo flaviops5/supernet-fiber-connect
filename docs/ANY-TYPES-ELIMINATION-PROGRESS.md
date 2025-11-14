@@ -8,8 +8,8 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 **Objective:** Eliminate 303 `any` usages across 66 files
 
 **Current Status:**
-- ✅ Fixed: ~147 occurrences (49%)
-- 🔄 Remaining: ~156 occurrences (51%)
+- ✅ Fixed: ~155 occurrences (51%)
+- 🔄 Remaining: ~148 occurrences (49%)
 
 ## ✅ Completed Migrations (24 arquivos)
 
@@ -46,7 +46,7 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 2. ✅ `atlas-analyzer/index.ts` - 2 any eliminados
 3. ✅ `network-maintenance-executor/index.ts` - 7 any eliminados
 
-### Edge Functions - Utilities (7 arquivos)
+### Edge Functions - Utilities (10 arquivos)
 1. ✅ `ixc-evolution-proxy/index.ts` - 1 any eliminado
 2. ✅ `ixc-count-clients/index.ts` - 2 any eliminados
 3. ✅ `ixc-revenue-stats/index.ts` - 1 any eliminado
@@ -54,6 +54,9 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 5. ✅ `site-analyzer-agent/index.ts` - 1 any eliminado
 6. ✅ `sync-chatbot-knowledge/index.ts` - 1 any eliminado
 7. ✅ `sync-github-docs/index.ts` - 1 any eliminado
+8. ✅ `system-health/index.ts` - 6 any eliminados
+9. ✅ `scenario-rollback/index.ts` - 1 any eliminado
+10. ✅ `sales-agent/index.ts` - 6 any eliminados
 
 ### Edge Functions Individuais (10 arquivos)
 1. ✅ `log-alert-handler/index.ts` - Handler de alertas de logs
@@ -68,13 +71,10 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 
 Todas funções de alta e média prioridade foram completadas! 🎉
 
-## ❌ Pending Migrations (34 arquivos)
+## ❌ Pending Migrations (31 arquivos)
 
-### Utilities (34 arquivos restantes)
-- `system-health/index.ts` - 6 ocorrências
-- `scenario-rollback/index.ts` - 1 ocorrência
-- `sales-agent/index.ts` - 1 ocorrência
-- ... (outros 31 arquivos)
+### Utilities (31 arquivos restantes)
+- ... (31 arquivos menores)
 
 ## Padrões de Correção Aplicados
 

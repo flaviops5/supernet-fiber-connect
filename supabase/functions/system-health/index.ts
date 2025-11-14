@@ -4,6 +4,12 @@ import { createLogger } from "../_shared/structured-logger.ts";
 import { getOrCreateTraceId } from "../_shared/trace-id.ts";
 import { createTimer } from "../_shared/duration-tracker.ts";
 
+interface HealthCheck {
+  status: 'healthy' | 'warning' | 'error';
+  message: string;
+  details?: string;
+}
+
 Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
   const timer = createTimer();
   const traceId = getOrCreateTraceId(req);
@@ -166,7 +172,7 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
         } catch (fetchError) {
           clearTimeout(timeoutId);
           evolutionStatus = 'warning';
-          evolutionDetails = fetchError.name === 'AbortError' ? 'Timeout' : (fetchError as any).message;
+          evolutionDetails = fetchError.name === 'AbortError' ? 'Timeout' : (fetchError instanceof Error ? fetchError.message : String(fetchError));
         }
       }
     } catch (error) {
@@ -219,8 +225,8 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
     };
 
     // Determine overall status
-    const hasError = Object.values(checks).some((c: any) => c.status === 'error');
-    const hasWarning = Object.values(checks).some((c: any) => c.status === 'warning');
+    const hasError = Object.values(checks).some((c: HealthCheck) => c.status === 'error');
+    const hasWarning = Object.values(checks).some((c: HealthCheck) => c.status === 'warning');
     
     const overallStatus = hasError ? 'error' : hasWarning ? 'warning' : 'healthy';
 
@@ -229,9 +235,9 @@ Deno.serve(createPublicHandler('system-health', async (req, { supabase }) => {
       checks,
       summary: {
         total_checks: Object.keys(checks).length,
-        healthy: Object.values(checks).filter((c: any) => c.status === 'healthy').length,
-        warnings: Object.values(checks).filter((c: any) => c.status === 'warning').length,
-        errors: Object.values(checks).filter((c: any) => c.status === 'error').length
+        healthy: Object.values(checks).filter((c: HealthCheck) => c.status === 'healthy').length,
+        warnings: Object.values(checks).filter((c: HealthCheck) => c.status === 'warning').length,
+        errors: Object.values(checks).filter((c: HealthCheck) => c.status === 'error').length
       },
       timestamp: new Date().toISOString()
     };
