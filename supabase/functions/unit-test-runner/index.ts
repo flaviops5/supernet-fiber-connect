@@ -75,7 +75,7 @@ serve(async (req) => {
       );
     }
 
-    logger.info('Unit test runner initiated', { userId: user.id });
+    logger.info('Unit test runner initiated', { userId: user.id, version: '1.0.1' });
 
     const { suite, coverage = false } = await req.json().catch(() => ({}));
 
