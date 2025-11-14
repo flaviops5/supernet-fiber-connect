@@ -56,7 +56,7 @@ function extractFrontMatter(content: string): {
     const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
       const key = line.substring(0, colonIndex).trim();
-      let value: any = line.substring(colonIndex + 1).trim();
+      let value: string | string[] | boolean = line.substring(colonIndex + 1).trim();
 
       // Remover aspas
       if ((value.startsWith('"') && value.endsWith('"')) ||

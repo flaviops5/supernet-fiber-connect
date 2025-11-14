@@ -1,5 +1,10 @@
 import { createPublicHandler } from "../_shared/base-handler.ts";
 
+interface ConversationMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 Deno.serve(createPublicHandler('site-analyzer-agent', async (req) => {
     const { message, conversationHistory } = await req.json();
     
@@ -32,7 +37,7 @@ Contexto do projeto:
     // Construir histórico de mensagens
     const messages = [
       { role: "system", content: systemPrompt },
-      ...(conversationHistory || []).map((msg: any) => ({
+      ...(conversationHistory || []).map((msg: ConversationMessage) => ({
         role: msg.role,
         content: msg.content
       })),
