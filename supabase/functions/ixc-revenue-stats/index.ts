@@ -1,6 +1,18 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
+interface IXCContract {
+  status_internet?: string;
+  valor?: string | number;
+  plano?: string;
+  [key: string]: unknown;
+}
+
+interface IXCContractsResponse {
+  registros?: IXCContract[];
+  [key: string]: unknown;
+}
+
 // P0 FIX: Convertido para createAuthenticatedHandler
 // Estatísticas de receita são dados financeiros críticos
 Deno.serve(createAuthenticatedHandler(
@@ -59,7 +71,7 @@ Deno.serve(createAuthenticatedHandler(
         throw new Error(`Erro ao buscar contratos no IXC: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: IXCContractsResponse = await response.json();
       
       if (!data.registros || data.registros.length === 0) {
         hasMorePages = false;
@@ -69,7 +81,7 @@ Deno.serve(createAuthenticatedHandler(
       revenueStats.totalContracts += data.registros.length;
 
       // Processar cada contrato
-      data.registros.forEach((contract: any) => {
+      data.registros?.forEach((contract: IXCContract) => {
         const status = contract.status_internet || 'unknown';
         const valor = parseFloat(contract.valor) || 0;
         const plano = contract.plano || 'Sem plano';
