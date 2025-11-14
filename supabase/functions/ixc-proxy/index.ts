@@ -160,7 +160,7 @@ Deno.serve(createAuthenticatedHandler(
 
     // Tentar parsear como JSON; caso contrário, capturar texto (ex.: HTML de login)
     const contentType = (ixcResponse.headers.get('content-type') || '').toLowerCase();
-    let ixcData: any = null;
+    let ixcData: JsonValue | null = null;
     let rawText: string | undefined;
     try {
       const looksJson = contentType.includes('json');

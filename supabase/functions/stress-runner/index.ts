@@ -61,7 +61,7 @@ serve(async (req) => {
 
     console.log(`🔥 Stress test: ${sessions} sessões simultâneas (Admin: ${user.id})`);
 
-    const tasks: Promise<any>[] = [];
+    const tasks: Promise<{ success: boolean; duration: number }>[] = [];
     const start = performance.now();
 
     // Dispara todas as sessões em paralelo

@@ -156,8 +156,8 @@ ${metadata?.power_outage ? "⚡ Possível falta de energia detectada" : ""}
     );
 
     // 🔔 3. Criar lista de tarefas de notificação
-    const tasks: Promise<any>[] = [];
-
+    const tasks: Promise<void>[] = [];
+    
     // 📱 Enviar para responsáveis
     for (const r of responsaveisEvento) {
       const msg = `🚨 [${r.funcao}] ${r.nome}\n${descricao}`;

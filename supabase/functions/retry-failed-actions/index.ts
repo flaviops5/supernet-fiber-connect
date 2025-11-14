@@ -107,7 +107,7 @@ Deno.serve(createAuthenticatedHandler('retry-failed-actions', async (req, { supa
         }
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`❌ Error retrying action ${action.id}:`, error);
       results.failed++;
 

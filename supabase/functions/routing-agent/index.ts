@@ -28,7 +28,7 @@ Deno.serve(createAuthenticatedHandler('routing-agent', async (req, { supabase, u
     // ============================================
     // PARSE SEGURO DO BODY (Prioridade Crítica #1 e #8)
     // ============================================
-    let body: any = {};
+    let body: Record<string, unknown> = {};
     
     try {
       body = await req.json();
@@ -568,7 +568,7 @@ Para começarmos, preciso do seu CPF para localizar seu cadastro, isso deve leva
         .eq("id", conversationId)
         .single();
       
-      let flowState = (currentConv?.metadata as any)?.flow_state || {};
+      let flowState = (currentConv?.metadata as Record<string, unknown>)?.flow_state || {};
       
       const geoData = await ensureGeo(
         supabase,

@@ -10,7 +10,7 @@ function extractFrontMatter(content: string) {
   }
   
   const [, yamlContent, markdownContent] = match;
-  const metadata: Record<string, any> = {};
+  const metadata: Record<string, string | boolean | string[]> = {};
   
   // Parse YAML simples (linha por linha)
   yamlContent.split('\n').forEach(line => {
