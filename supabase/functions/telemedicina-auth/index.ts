@@ -1,8 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createPublicHandlerWithRateLimit } from '../_shared/base-handler.ts';
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 
-Deno.serve(createPublicHandler('telemedicina-auth', async (req, { supabase }) => {
+Deno.serve(createPublicHandlerWithRateLimit(
+  'telemedicina-auth',
+  async (req, { supabase }) => {
   const { cpf, password } = await req.json();
 
   if (!cpf || !password) {

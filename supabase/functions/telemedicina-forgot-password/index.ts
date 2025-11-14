@@ -1,7 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createPublicHandler } from '../_shared/base-handler.ts';
+import { createPublicHandlerWithRateLimit } from '../_shared/base-handler.ts';
 
-Deno.serve(createPublicHandler('telemedicina-forgot-password', async (req, { supabase }) => {
+Deno.serve(createPublicHandlerWithRateLimit(
+  'telemedicina-forgot-password', 
+  async (req, { supabase }) => {
   const { cpf, email } = await req.json();
 
   if (!cpf && !email) {

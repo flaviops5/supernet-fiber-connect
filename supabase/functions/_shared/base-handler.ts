@@ -213,6 +213,73 @@ export function createPublicHandler<T = JsonValue>(
 }
 
 /**
+ * Template para funções públicas COM rate limiting por IP
+ * Use para endpoints públicos que precisam de proteção contra abuso
+ */
+export function createPublicHandlerWithRateLimit<T = JsonValue>(
+  functionName: string,
+  handler: (req: Request, context: HandlerContext) => Promise<T>,
+  config?: {
+    maxRequestsPerMinute?: number;
+    windowMs?: number;
+  }
+) {
+  return async (req: Request): Promise<Response> => {
+    const startTime = Date.now();
+    
+    try {
+      // 1. CORS Preflight
+      if (req.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders });
+      }
+
+      // 2. Rate limiting por IP
+      const { RateLimiters } = await import('./rate-limiter-ip.ts');
+      const limiter = config?.maxRequestsPerMinute 
+        ? await import('./rate-limiter-ip.ts').then(m => m.createRateLimiter({
+            windowMs: config.windowMs || 60000,
+            max: config.maxRequestsPerMinute,
+            message: `Rate limit exceeded. Maximum ${config.maxRequestsPerMinute} requests per minute.`
+          }))
+        : RateLimiters.strict;
+
+      await limiter.check(req);
+
+      // 3. Continuar com handler normal
+      return await createProtectedHandler({
+        functionName,
+        requireAuth: false,
+        enableRateLimit: false,
+        handler
+      })(req);
+
+    } catch (error) {
+      // Se for uma Response de rate limit, retornar diretamente
+      if (error instanceof Response) {
+        return error;
+      }
+      
+      // Outros erros
+      const duration = Date.now() - startTime;
+      console.error(`❌ [${functionName}] Error:`, error);
+      
+      await recordMetric({
+        agent_name: functionName,
+        action_type: 'request',
+        success: false,
+        duration_ms: duration,
+        error_message: error instanceof Error ? error.message : String(error)
+      }).catch(console.error);
+
+      return handleEdgeFunctionError(
+        error instanceof Error ? error : new Error(String(error)),
+        functionName
+      );
+    }
+  };
+}
+
+/**
  * Template para funções autenticadas com rate limit
  */
 export function createAuthenticatedHandler<T = JsonValue>(
