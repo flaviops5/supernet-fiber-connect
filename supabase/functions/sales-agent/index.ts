@@ -503,7 +503,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
         const functionName = toolCall.function.name;
         const args = JSON.parse(toolCall.function.arguments);
         
-        console.log(`Executando tool: ${functionName}`, args);
+        logger.info(`Executando tool: ${functionName}`, { args, correlationId });
         
         if (functionName === 'check_cep_coverage') {
           // Verifica cobertura do CEP
@@ -557,7 +557,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
           try {
             // 1. Criar cliente no IXC
-            console.log('Criando cliente no IXC via tool...');
+            logger.info('Criando cliente no IXC via tool', { correlationId });
             const { data: customerResult, error: customerError } = await supabase.functions.invoke('ixc-integration', {
               body: {
                 action: 'createCustomer',
@@ -576,15 +576,15 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             });
 
             if (customerError) {
-              console.error('Erro ao criar cliente no IXC:', customerError);
+              logger.error('Erro ao criar cliente no IXC', { error: customerError, correlationId });
               throw new Error('Erro ao criar cliente no IXC');
             }
 
             const customerId = customerResult?.data?.id || customerResult?.data?.registro?.id;
-            console.log('Cliente criado no IXC com ID:', customerId);
+            logger.info('Cliente criado no IXC com ID', { customerId, correlationId });
 
             // 2. Criar atendimento no IXC
-            console.log('Criando atendimento no IXC via tool...');
+            logger.info('Criando atendimento no IXC via tool', { correlationId });
             const { data: atendimentoResult, error: atendimentoError } = await supabase.functions.invoke('ixc-integration', {
               body: {
                 action: 'createAtendimento',
@@ -609,12 +609,12 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
             });
 
             if (atendimentoError) {
-              console.error('Erro ao criar atendimento no IXC:', atendimentoError);
+              logger.error('Erro ao criar atendimento no IXC', { error: atendimentoError, correlationId });
               throw new Error('Erro ao criar atendimento no IXC');
             }
 
             const atendimentoId = atendimentoResult?.data?.id || atendimentoResult?.data?.registro?.id;
-            console.log('Atendimento criado no IXC com ID:', atendimentoId);
+            logger.info('Atendimento criado no IXC com ID', { atendimentoId, correlationId });
 
             // 3. Criar registro local
             const { data: appointment, error } = await supabase
@@ -640,7 +640,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
               .single();
 
             if (error) {
-              console.error('Erro ao criar registro local:', error);
+              logger.error('Erro ao criar registro local', { error, correlationId });
             }
 
             // KPI: Pedido de instalação criado
@@ -670,7 +670,7 @@ WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
               })
             });
           } catch (ixcError) {
-            console.error('Erro na criação via tool:', ixcError);
+            logger.error('Erro na criação via tool', { error: ixcError, correlationId });
             toolResults.push({
               tool_call_id: toolCall.id,
               role: 'tool',
