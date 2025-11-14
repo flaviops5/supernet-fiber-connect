@@ -20,6 +20,8 @@ async function loadPromptFile(filename: string): Promise<string> {
   try {
     return await Deno.readTextFile(path);
   } catch (error) {
+    // Note: This runs at module initialization, before logger is available
+    // Using console.error as fallback for critical startup errors
     console.error(`[SUPPORT-TECH] Erro ao carregar ${filename}:`, error);
     throw new Error(`Failed to load prompt file: ${filename}`);
   }
@@ -32,6 +34,8 @@ async function loadLogsSchema(): Promise<Record<string, unknown>> {
     const content = await Deno.readTextFile(path);
     return JSON.parse(content);
   } catch (error) {
+    // Note: This runs at module initialization, before logger is available
+    // Using console.error as fallback for critical startup errors
     console.error('[SUPPORT-TECH] Erro ao carregar logs-schema.json:', error);
     throw new Error('Failed to load logs schema');
   }

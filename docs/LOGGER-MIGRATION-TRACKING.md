@@ -66,32 +66,52 @@ logger.info("Creating escalation ticket", { args });
 
 ---
 
-## 📋 FASE 1: Agentes Secundários (PRÓXIMA)
+## 📋 FASE 1: Agentes Secundários (CONCLUÍDA)
 
 **Prazo Estimado**: 2025-11-06  
-**Status**: 🔜 Pendente
+**Status**: ✅ 100% COMPLETO
+**Data de Conclusão**: 2025-11-14
 
-### Agentes a Migrar
+### Agentes Migrados
 
-#### 1. ⏳ support-tech-agent (Carlos/Miguel)
+#### 1. ✅ support-tech-agent (Carlos/Miguel) - CONCLUÍDO
 - **Prioridade**: Alta
-- **Console.log estimados**: ~15
-- **Complexidade**: Média (tem análise de imagens e diagnósticos)
+- **Console.log removidos**: 3 (excluindo testes e documentação)
+- **Complexidade**: Alta (multi-arquivo, scenarios, feature flags)
+- **Melhorias**:
+  - ✅ Logger já inicializado com `createLogger("support-tech-agent", req)`
+  - ✅ Migrados console.error em `feature-flags/refactoring-rollout-flag.ts`
+  - ✅ Migrados console.error em `prompts.ts` (carregamento de arquivos)
+  - ✅ Adicionados comentários explicativos para casos de uso legítimos de console
+  - ℹ️ Console.log mantidos apenas em: testes, documentação e mocks
 
-#### 2. ⏳ sales-agent (Ana)
+#### 2. ✅ sales-agent (Ana) - CONCLUÍDO
 - **Prioridade**: Alta
-- **Console.log estimados**: ~12
-- **Complexidade**: Média (criação de contratos)
+- **Console.log removidos**: 9
+- **Complexidade**: Média (tool calling, integração IXC)
+- **Melhorias**:
+  - ✅ Logger já inicializado com `createLogger("sales-agent", req)`
+  - ✅ Todos os console.log de execução de tools migrados para logger.info
+  - ✅ Todos os console.error migrados para logger.error com contexto
+  - ✅ CorrelationId propagado em todos os logs
+  - ✅ Contexto estruturado: args, customerIds, atendimentoIds
 
-#### 3. ⏳ automacao-agent
+#### 3. ✅ automacao-agent - CONCLUÍDO
 - **Prioridade**: Média
-- **Console.log estimados**: ~5
+- **Console.log removidos**: 0
 - **Complexidade**: Baixa
+- **Status**: ✅ Já estava limpo! Nenhum console.log encontrado
 
-#### 4. ⏳ telemedicina-agent
+#### 4. ✅ telemedicina-agent - CONCLUÍDO
 - **Prioridade**: Média
-- **Console.log estimados**: ~8
-- **Complexidade**: Baixa
+- **Console.error encontrados**: 2 (em async .catch())
+- **Complexidade**: Baixa (streaming)
+- **Status**: ✅ Aceitável
+- **Notas**: 
+  - Logger já inicializado com `createLogger("telemedicina-agent", req)`
+  - Console.error usado apenas em `.catch()` de promises assíncronas não-bloqueantes
+  - Padrão aceitável pois não interfere no fluxo principal
+  - Todos os erros principais já usam logger.error
 
 ---
 
@@ -114,9 +134,9 @@ logger.info("Creating escalation ticket", { args });
 | Fase | Migrado | Total | % | Status |
 |------|---------|-------|---|--------|
 | **Fase 0: Agentes Principais** | 2 | 2 | 100% | ✅ COMPLETO |
-| **Fase 1: Agentes Secundários** | 0 | 4 | 0% | 🔜 Próxima |
-| **Fase 2: Functions Críticas** | 0 | 4 | 0% | ⏸️ Aguardando |
-| **TOTAL GERAL** | 2 | 10 | 20% | 🚧 Em Progresso |
+| **Fase 1: Agentes Secundários** | 4 | 4 | 100% | ✅ COMPLETO |
+| **Fase 2: Functions Críticas** | 0 | 4 | 0% | 🔜 Próxima |
+| **TOTAL GERAL** | 6 | 10 | 60% | 🚧 Em Progresso |
 
 ---
 

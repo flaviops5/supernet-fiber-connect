@@ -51,6 +51,8 @@ export async function shouldUseRefactoredScenarios(
     
     return bucket < rolloutPct;
   } catch (error) {
+    // Note: We don't have access to logger here, but this is a rare error case
+    // that should be caught by monitoring. Using console.error as fallback.
     console.error('Erro ao verificar feature flag refactored_scenarios_rollout', error);
     // Em caso de erro, usar código inline (safe default)
     return false;
