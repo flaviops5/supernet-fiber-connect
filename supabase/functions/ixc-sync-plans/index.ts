@@ -1,5 +1,22 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+interface IXCPlanRecord {
+  id: string | number;
+  grupo?: string;
+  nome?: string;
+  download?: string;
+  upload?: string;
+  valor_produto?: string | number;
+  valor?: string | number;
+}
+
+interface IXCApiResponse {
+  registros?: IXCPlanRecord[] | Record<string, IXCPlanRecord>;
+  total?: number;
+  message?: string;
+}
 
 // P0 FIX: Convertido para createAuthenticatedHandler
 // Sincronização de planos é operação administrativa crítica
@@ -47,7 +64,7 @@ Deno.serve(createAuthenticatedHandler(
 
     // Buscar TODOS os planos do IXC com paginação
     console.log('🔄 Iniciando busca paginada de planos...');
-    let allRegistros: any[] = [];
+    let allRegistros: IXCPlanRecord[] = [];
     let currentPage = 1;
     let totalPages = 1;
 
@@ -70,10 +87,10 @@ Deno.serve(createAuthenticatedHandler(
       });
 
       const text = await response.text();
-      let data: any;
+      let data: IXCApiResponse;
       
       try {
-        data = JSON.parse(text);
+        data = JSON.parse(text) as IXCApiResponse;
       } catch {
         console.error('Resposta não-JSON do IXC:', text);
         throw new Error('Resposta inválida do IXC');

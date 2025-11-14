@@ -3,14 +3,17 @@
 ## Objetivo
 Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcançar 100% type safety.
 
-## Status Geral
-- **Total identificado:** 303 ocorrências em 66 arquivos
-- **Corrigido:** ~80 ocorrências (26%)
-- **Restante:** ~223 ocorrências (74%)
+## 📊 Overall Status
 
-## ✅ Arquivos Completamente Migrados (15 arquivos)
+**Objective:** Eliminate 303 `any` usages across 66 files
 
-### _shared/ (11 arquivos)
+**Current Status:**
+- ✅ Fixed: ~127 occurrences (42%)
+- 🔄 Remaining: ~176 occurrences (58%)
+
+## ✅ Completed Migrations (24 arquivos)
+
+### _shared/ (17 arquivos)
 1. ✅ `error-types.ts` - Tipos base JSON e error handling
 2. ✅ `base-handler.ts` - Handler autenticado com tipos corretos
 3. ✅ `cache-helper.ts` - Cache com SupabaseClient
@@ -29,7 +32,16 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 16. ✅ `flow-adapter.ts` - Adaptador de fluxo tipado
 17. ✅ `get-approved-variation.ts` - Variações aprovadas tipadas
 
-### Edge Functions Individuais (4 arquivos)
+### Edge Functions Críticas - Alta Prioridade (7 arquivos)
+1. ✅ `support-tech-agent/index.ts` - 36 any eliminados
+2. ✅ `support-financial-agent/index.ts` - 2 any eliminados
+3. ✅ `ixc-list-contracts/index.ts` - 9 any eliminados
+4. ✅ `ixc-list-plans/index.ts` - 3 any eliminados
+5. ✅ `ixc-sync-plans/index.ts` - 5 any eliminados
+6. ✅ `chatbot-cep-lookup/index.ts` - 6 any eliminados
+7. ✅ `generate-ai-faq/index.ts` - 1 any eliminado
+
+### Edge Functions Individuais (10 arquivos)
 1. ✅ `log-alert-handler/index.ts` - Handler de alertas de logs
 2. ✅ `generate-flow-simulations/index.ts` - Gerador de simulações
 3. ✅ `ixc-integration/index.ts` - Integração IXC (parcial)
@@ -38,21 +50,12 @@ Eliminar todos os 303 usos de `any` em 66 arquivos de edge functions para alcan�
 6. ✅ `process-dlq/index.ts` - Processador DLQ
 7. ✅ `qa-orchestrator/index.ts` - Orquestrador QA (parcial)
 
-## 🔄 Em Progresso (10 arquivos)
-
-### Prioridade Alta
-- `support-tech-agent/index.ts` - 1 ocorrência (imageAttachments filter)
-- `support-financial-agent/index.ts` - 1 ocorrência (titles.sort)
-- `ixc-list-contracts/index.ts` - 3 ocorrências
-- `ixc-list-plans/index.ts` - 3 ocorrências
-- `ixc-sync-plans/index.ts` - 5 ocorrências
+## 🔄 In Progress Migrations (3 arquivos)
 
 ### Prioridade Média
-- `chatbot-cep-lookup/index.ts` - 6 ocorrências
-- `generate-ai-faq/index.ts` - 1 ocorrência
-- `auto-send-overdue-invoices/index.ts` - 2 ocorrências
-- `atlas-analyzer/index.ts` - 2 ocorrências
-- `network-maintenance-executor/index.ts` - 7 ocorrências
+- 🟡 `auto-send-overdue-invoices/index.ts` - 2 ocorrências
+- 🟡 `atlas-analyzer/index.ts` - 2 ocorrências
+- 🟡 `network-maintenance-executor/index.ts` - 7 ocorrências
 
 ## ❌ Pendentes (41 arquivos)
 

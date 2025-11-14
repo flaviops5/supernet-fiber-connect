@@ -1,6 +1,19 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
+interface AIFaqItem {
+  question: string;
+  answer: string;
+  suggestedIcon?: string;
+  category?: string;
+  qualityScore?: number;
+  suggestions?: string[];
+}
+
+interface AIFaqResponse {
+  faqs: AIFaqItem[];
+}
+
 Deno.serve(createAuthenticatedHandler(
   'generate-ai-faq',
   async (req, { supabase, user }) => {
@@ -89,7 +102,7 @@ Gere 3-5 FAQs completas baseadas neste tema. Pense em dúvidas reais que cliente
     console.log('AI Response received:', aiMessage.substring(0, 200));
 
     // Parse JSON response
-    let parsedResponse;
+    let parsedResponse: AIFaqResponse;
     try {
       // Remove markdown code blocks if present
       const cleanedMessage = aiMessage
@@ -97,7 +110,7 @@ Gere 3-5 FAQs completas baseadas neste tema. Pense em dúvidas reais que cliente
         .replace(/```\s*/g, '')
         .trim();
       
-      parsedResponse = JSON.parse(cleanedMessage);
+      parsedResponse = JSON.parse(cleanedMessage) as AIFaqResponse;
     } catch (parseError) {
       console.error('JSON parse error:', parseError, 'Raw message:', aiMessage);
       throw new Error('Failed to parse AI response as JSON');
@@ -109,7 +122,7 @@ Gere 3-5 FAQs completas baseadas neste tema. Pense em dúvidas reais que cliente
     }
 
     // Validate each FAQ
-    const validatedFAQs = parsedResponse.faqs.map((faq: any, index: number) => {
+    const validatedFAQs = parsedResponse.faqs.map((faq: AIFaqItem, index: number) => {
       if (!faq.question || !faq.answer || !faq.suggestedIcon || !faq.category) {
         console.error(`Invalid FAQ at index ${index}:`, faq);
         throw new Error(`Invalid FAQ structure at index ${index}`);
