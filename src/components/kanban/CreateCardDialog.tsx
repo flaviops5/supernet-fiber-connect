@@ -84,7 +84,10 @@ export function CreateCardDialog({ open, onClose, columns, onCreateCard }: Creat
           </div>
           <div className="space-y-2">
             <Label htmlFor="card-priority">Prioridade</Label>
-            <Select value={priority} onValueChange={(value: any) => setPriority(value)}>
+            <Select 
+              value={priority} 
+              onValueChange={(value) => setPriority(value as 'low' | 'medium' | 'high' | 'urgent')}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

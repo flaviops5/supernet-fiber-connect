@@ -44,14 +44,15 @@
 
 ### 🟢 P2 - Médio
 - 🔄 **ACT-004**: Reduzir uso de `any` TypeScript
-  - Status: IN PROGRESS (60% completo)
+  - Status: IN PROGRESS (75% completo)
   - Arquivo: `auditoria/ACT-004-TYPESCRIPT-ANY-PROGRESS.md`
   - Progresso:
     - ✅ Criadas interfaces Logger, FlowState, ConversationMetadata
-    - ✅ Atualizados scenario-a.ts, flow-manager.ts, context-adapter.ts
-    - ✅ Atualizados BoardSelector.tsx, KanbanCalendar.tsx
-    - 🔄 Restam 61 ocorrências (cenários B/C/D/E + componentes)
-  - Estimativa restante: ~3h
+    - ✅ Atualizados scenario-a.ts, scenario-b.ts, flow-manager.ts, context-adapter.ts
+    - ✅ Atualizados simulation-cache.ts, flow-state-helpers.ts, message-helpers.ts
+    - ✅ Atualizados BoardSelector.tsx, KanbanCalendar.tsx, CreateCardDialog.tsx, EditCardDialog.tsx
+    - 🔄 Restam ~40 ocorrências (cenários C/D/E + alguns componentes)
+  - Estimativa restante: ~2h
 
 ## 📋 PENDENTE
 
@@ -83,7 +84,7 @@
 
 ### Por Status
 - ✅ **Concluído**: 5 ações (56%)
-- 🔄 **Em Progresso**: 1 ação (11%) - ACT-004 a 60%
+- 🔄 **Em Progresso**: 1 ação (11%) - ACT-004 a 75%
 - ⏳ **Pendente**: 3 ações (33%)
 
 ### Tempo Investido vs Estimado

@@ -294,7 +294,10 @@ export function InstallActions({ card }: InstallActionsProps) {
 
             <div className="grid gap-1">
               <Label>Período</Label>
-              <Select value={periodo} onValueChange={(v: any) => setPeriodo(v)}>
+              <Select 
+                value={periodo} 
+                onValueChange={(v) => setPeriodo(v as 'manhã' | 'tarde')}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="manhã">Manhã</SelectItem>

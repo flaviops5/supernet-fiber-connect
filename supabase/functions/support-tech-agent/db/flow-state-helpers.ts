@@ -4,14 +4,17 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { FlowState, ConversationMetadata } from "../types/database.types.ts";
+import type { Logger } from "../types/logger.types.ts";
+import type { JsonObject } from "../../../_shared/error-types.ts";
 
 /**
  * Normalizar flow_state para evitar espalhar string em chaves '0','1',...
  */
-export function normalizeFlowState(fs: any): Record<string, any> {
+export function normalizeFlowState(fs: unknown): FlowState {
   if (typeof fs === "string") return { continue: fs };
   if (!fs || typeof fs !== "object" || Array.isArray(fs)) return {};
-  return fs;
+  return fs as FlowState;
 }
 
 /**
@@ -20,9 +23,9 @@ export function normalizeFlowState(fs: any): Record<string, any> {
 export async function setWaitingStep(
   supabaseClient: SupabaseClient,
   conversationId: string,
-  meta: any,
+  meta: JsonObject,
   step: string,
-  extra: Record<string, any> = {}
+  extra: JsonObject = {}
 ): Promise<void> {
   await supabaseClient
     .from("conversations")
@@ -46,7 +49,7 @@ export async function persistIxcClientId(
   supabase: SupabaseClient,
   conversation_id: string,
   ixc_client_id: string,
-  logger: any
+  logger: Logger
 ): Promise<void> {
   const { data: currentConv } = await supabase
     .from("conversations")
@@ -54,14 +57,14 @@ export async function persistIxcClientId(
     .eq("id", conversation_id)
     .single();
 
-  const existingState = (currentConv?.metadata as any)?.flow_state;
+  const existingState = (currentConv?.metadata as ConversationMetadata)?.flow_state;
   
   if (!existingState?.ixc_client_id || existingState?.ixc_client_id !== ixc_client_id) {
     await supabase
       .from("conversations")
       .update({
         metadata: {
-          ...(currentConv?.metadata as any || {}),
+          ...(currentConv?.metadata as JsonObject || {}),
           flow_state: {
             ...existingState,
             ixc_client_id
