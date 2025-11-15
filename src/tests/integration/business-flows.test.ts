@@ -382,7 +382,7 @@ describe('Business Flows Integration Tests', () => {
       });
 
       expect(result.data.payment_options).toHaveLength(3);
-      expect(result.data.payment_options.some((o: any) => o.type === 'pix')).toBe(
+      expect(result.data.payment_options.some((o: { type: string }) => o.type === 'pix')).toBe(
         true
       );
     });

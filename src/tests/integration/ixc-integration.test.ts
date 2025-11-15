@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import type { MockSupabaseClient } from '../types/test-mocks.types';
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => ({
@@ -7,15 +8,16 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 describe('IXC Integration Tests', () => {
-  let mockSupabase: any;
+  let mockSupabase: MockSupabaseClient;
 
   beforeEach(() => {
     mockSupabase = {
       functions: {
         invoke: vi.fn(),
       },
+      from: vi.fn(),
     };
-    (createClient as any).mockReturnValue(mockSupabase);
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
   });
 
   describe('Busca de Clientes', () => {

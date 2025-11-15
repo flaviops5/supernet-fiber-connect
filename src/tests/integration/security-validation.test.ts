@@ -178,12 +178,12 @@ describe('Security Validation - CPF Tests', () => {
         error: null,
       };
 
-      (supabase.functions.invoke as any).mockResolvedValue(mockResponse);
+      (supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await supabase.functions.invoke('check-cpf-masking');
 
       expect(result.data.all_masked).toBe(true);
-      expect(result.data.conversations.every((c: any) => c.cpf_masked.includes('*'))).toBe(
+      expect(result.data.conversations.every((c: { cpf_masked: string }) => c.cpf_masked.includes('*'))).toBe(
         true
       );
     });

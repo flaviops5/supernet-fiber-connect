@@ -108,12 +108,12 @@ describe('IXC Endpoints Integration', () => {
         error: null,
       };
 
-      (supabase.functions.invoke as any).mockResolvedValue(mockResponse);
+      (supabase.functions.invoke as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
       const result = await supabase.functions.invoke('test-all-ixc-functions');
 
       expect(result.data.failed).toBeGreaterThan(0);
-      expect(result.data.tested_functions.some((f: any) => f.status === 'failed')).toBe(true);
+      expect(result.data.tested_functions.some((f: { status: string }) => f.status === 'failed')).toBe(true);
     });
 
     it('deve medir tempo de resposta de cada função', async () => {

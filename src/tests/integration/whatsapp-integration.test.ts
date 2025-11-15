@@ -222,7 +222,7 @@ describe('WhatsApp Integration Tests', () => {
         },
       });
 
-      expect(result.data.steps.some((s: any) => s.type === 'payment_options')).toBe(
+      expect(result.data.steps.some((s: { type: string }) => s.type === 'payment_options')).toBe(
         true
       );
     });
