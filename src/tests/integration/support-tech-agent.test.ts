@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import type { MockSupabaseClient } from '../types/test-mocks.types';
 
 // Mock Supabase client
 vi.mock('@supabase/supabase-js', () => ({
@@ -7,7 +8,7 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 describe('Support Tech Agent Integration Tests', () => {
-  let mockSupabase: any;
+  let mockSupabase: MockSupabaseClient;
 
   beforeEach(() => {
     mockSupabase = {
@@ -27,7 +28,7 @@ describe('Support Tech Agent Integration Tests', () => {
         insert: vi.fn(),
       })),
     };
-    (createClient as any).mockReturnValue(mockSupabase);
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
   });
 
   describe('Cenário A: TX/RX = 0.00 (Equipamento Desligado)', () => {

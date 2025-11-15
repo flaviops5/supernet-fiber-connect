@@ -172,19 +172,26 @@ describe('PR#17 - Fast-Path', () => {
 
 // ===== Helper Functions =====
 
-function isGoodSignal(signal?: any): boolean {
+import type { SignalData } from './types/test-mocks.types';
+
+interface TestMockSupabase {
+  functions: { invoke: ReturnType<typeof vi.fn> };
+  from: ReturnType<typeof vi.fn>;
+}
+
+function isGoodSignal(signal?: SignalData): boolean {
   const rx = Number(signal?.rx);
   return Number.isFinite(rx) && rx > -24;
 }
 
 async function simulateParallelDiag(
-  supabase: any, 
+  supabase: TestMockSupabase, 
   ixcClientId: string, 
   conversationId: string,
   timeout: number = 5000
 ): Promise<{
-  signalResult: PromiseSettledResult<any>;
-  connectivityResult: PromiseSettledResult<any>;
+  signalResult: PromiseSettledResult<unknown>;
+  connectivityResult: PromiseSettledResult<unknown>;
   elapsed: number;
 }> {
   const start = Date.now();
