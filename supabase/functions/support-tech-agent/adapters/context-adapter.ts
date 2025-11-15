@@ -9,6 +9,8 @@
  */
 
 import type { ScenarioType } from "../types/scenario-context.ts";
+import type { FlowState, MessageHistoryItem, MassOutageData } from "../types/database.types.ts";
+import type { JsonObject } from "../../../_shared/error-types.ts";
 
 /**
  * Dados disponíveis no formato inline (extraídos do handler principal)
@@ -25,7 +27,7 @@ export interface InlineContextData {
   ixc_client_id?: string;
   
   // Estado do fluxo
-  flowState: any;
+  flowState: FlowState;
   
   // Sinal óptico
   signal?: {
@@ -40,11 +42,7 @@ export interface InlineContextData {
   normalizedMessage?: string;
   
   // Histórico de mensagens
-  messageHistory: Array<{
-    sender_type: string;
-    content: string;
-    created_at?: string;
-  }>;
+  messageHistory: MessageHistoryItem[];
   
   // Detecção de intenção/humor
   detectedIntent?: string;
@@ -58,10 +56,10 @@ export interface InlineContextData {
   
   // Mass Outage
   massOutageActive?: boolean;
-  massOutageData?: any;
+  massOutageData?: MassOutageData;
   
   // Metadata adicional
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }
 
 /**
@@ -77,7 +75,22 @@ export interface InlineContextData {
  * - signal_data
  * - message_history
  */
-export function buildScenarioAContext(data: InlineContextData): any {
+export interface ScenarioAContextData {
+  conversation_id: string;
+  ixc_client_id?: string;
+  customer_name: string;
+  current_message: string;
+  flow_state: FlowState;
+  waiting_step?: string;
+  signal_data: {
+    tx: number;
+    rx: number;
+    serial?: string;
+  } | null;
+  message_history: MessageHistoryItem[];
+}
+
+export function buildScenarioAContext(data: InlineContextData): ScenarioAContextData {
   return {
     conversation_id: data.conversation_id,
     ixc_client_id: data.ixc_client_id || data.flowState?.ixc_client_id,
@@ -107,7 +120,24 @@ export function buildScenarioAContext(data: InlineContextData): any {
  * - message_history
  * - fast_path_eligible (calculado aqui)
  */
-export function buildScenarioBContext(data: InlineContextData): any {
+export interface ScenarioBContextData {
+  conversation_id: string;
+  ixc_client_id?: string;
+  customer_name: string;
+  current_message: string;
+  flow_state: FlowState;
+  signal_data: {
+    tx: number;
+    rx: number;
+    serial?: string;
+  } | null;
+  message_history: MessageHistoryItem[];
+  fast_path_eligible: boolean;
+  waiting_step?: string;
+  reboot_attempts: number;
+}
+
+export function buildScenarioBContext(data: InlineContextData): ScenarioBContextData {
   // Verificar elegibilidade para Fast-Path
   const isFirstDetection = !data.flowState?.scenario_started;
   const noRebootYet = !data.flowState?.reboot_attempts || data.flowState.reboot_attempts === 0;

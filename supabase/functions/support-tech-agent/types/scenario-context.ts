@@ -30,13 +30,14 @@ export interface FlowState {
   ixc_ticket_id?: string;
   resolved?: boolean;
   needs_human?: boolean;
+  continue?: string;
   geo?: {
     cidade?: string;
     bairro?: string;
     source?: string;
   };
-  // Flexível para campos dinâmicos
-  [key: string]: any;
+  // Flexível para campos dinâmicos (usar JsonValue do error-types.ts)
+  [key: string]: string | number | boolean | null | undefined | Record<string, unknown> | unknown[];
 }
 
 export interface MessageHistoryItem {
@@ -146,10 +147,13 @@ export interface ScenarioResult {
 /**
  * Type para handlers de cenário
  */
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Logger } from './logger.types.ts';
+
 export type ScenarioHandler = (
   context: ScenarioContext,
-  supabase: any,
-  logger: any
+  supabase: SupabaseClient,
+  logger: Logger
 ) => Promise<ScenarioResult>;
 
 /**

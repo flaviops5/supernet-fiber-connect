@@ -4,10 +4,8 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-export interface FlowState {
-  [key: string]: any;
-}
+import type { FlowState } from "../types/database.types.ts";
+import type { JsonObject, JsonValue } from "../../../_shared/error-types.ts";
 
 export interface FlowContext {
   conversation_id: string;
@@ -17,7 +15,7 @@ export interface FlowContext {
 /**
  * Normalizar flow_state para evitar espalhar string em chaves '0','1',...
  */
-export function normalizeFlowState(rawFlowState: any): FlowState {
+export function normalizeFlowState(rawFlowState: unknown): FlowState {
   if (typeof rawFlowState === "string") {
     return { continue: rawFlowState };
   }
@@ -44,8 +42,8 @@ export async function updateFlowState(
     .eq("id", conversation_id)
     .single();
 
-  const currentMeta = (current?.metadata as any) || {};
-  const currentFlow = normalizeFlowState(currentMeta.flow_state);
+  const currentMeta = (current?.metadata as JsonObject) || {};
+  const currentFlow = normalizeFlowState(currentMeta.flow_state as FlowState);
 
   // Merge updates
   const newFlowState = {
@@ -93,7 +91,7 @@ export async function setWaitingStep(
   supabase: SupabaseClient,
   conversationId: string,
   step: string,
-  extra: Record<string, any> = {}
+  extra: JsonObject = {}
 ): Promise<void> {
   const { data: current } = await supabase
     .from("conversations")
@@ -101,8 +99,8 @@ export async function setWaitingStep(
     .eq("id", conversationId)
     .single();
 
-  const meta = (current?.metadata as any) || {};
-  const flowState = normalizeFlowState(meta.flow_state);
+  const meta = (current?.metadata as JsonObject) || {};
+  const flowState = normalizeFlowState(meta.flow_state as FlowState);
 
   await supabase
     .from("conversations")
@@ -132,8 +130,8 @@ export async function clearWaitingStep(
     .eq("id", conversationId)
     .single();
 
-  const meta = (current?.metadata as any) || {};
-  const flowState = normalizeFlowState(meta.flow_state);
+  const meta = (current?.metadata as JsonObject) || {};
+  const flowState = normalizeFlowState(meta.flow_state as FlowState);
 
   await supabase
     .from("conversations")

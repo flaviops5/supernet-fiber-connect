@@ -4,6 +4,7 @@ import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { CalendarEvent as DBCalendarEvent } from "@/types";
 
 const localizer = momentLocalizer(moment);
 
@@ -47,7 +48,7 @@ export function KanbanCalendar({ boardId, startDate, endDate }: KanbanCalendarPr
       }
       
       setEvents(
-        (data || []).map((e: any) => ({
+        ((data as DBCalendarEvent[]) || []).map((e) => ({
           id: e.id,
           title: `${e.municipio || "—"} – ${e.title}`,
           start: new Date(e.data_instalacao),

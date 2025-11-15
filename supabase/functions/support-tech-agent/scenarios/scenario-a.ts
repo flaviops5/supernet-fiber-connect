@@ -11,6 +11,9 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Logger } from "../types/logger.types.ts";
+import type { FlowState, ConversationMetadata } from "../types/database.types.ts";
+import type { JsonObject } from "../../../_shared/error-types.ts";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
 import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
@@ -24,15 +27,15 @@ export interface ScenarioAContext {
   ixc_client_id?: string;
   customer_name: string;
   current_message: string;
-  flow_state: any;
-  conversation_metadata: any;
+  flow_state: FlowState;
+  conversation_metadata: ConversationMetadata;
   clarification_attempts: number;
 }
 
 export interface ScenarioAResult {
   message: string;
   should_insert: boolean;
-  flow_updates?: Record<string, any>;
+  flow_updates?: JsonObject;
   escalate?: boolean;
   resolved?: boolean;
 }
@@ -42,7 +45,7 @@ export interface ScenarioAResult {
  */
 export async function handleScenarioA(
   supabase: SupabaseClient,
-  logger: any,
+  logger: Logger,
   context: ScenarioAContext
 ): Promise<ScenarioAResult> {
   const {
