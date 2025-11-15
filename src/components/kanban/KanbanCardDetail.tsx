@@ -266,7 +266,9 @@ export function KanbanCardDetail({ card, open, onClose, onUpdate, onDelete }: Ka
                   <h3 className="text-sm font-semibold mb-2">Prioridade</h3>
                   <Select 
                     value={card.priority} 
-                    onValueChange={(value: any) => onUpdate(card.id, { priority: value })}
+                    onValueChange={(value) => onUpdate(card.id, { 
+                      priority: value as 'low' | 'medium' | 'high' | 'urgent' 
+                    })}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue />

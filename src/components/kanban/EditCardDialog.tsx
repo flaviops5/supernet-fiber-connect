@@ -140,11 +140,11 @@ export function EditCardDialog({ open, onClose, card, onUpdate }: EditCardDialog
 
       onUpdate();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting card:', error);
       toast({
         title: 'Erro ao excluir',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
@@ -273,7 +273,13 @@ export function EditCardDialog({ open, onClose, card, onUpdate }: EditCardDialog
 
           <div className="grid gap-2">
             <Label htmlFor="priority">Prioridade</Label>
-            <Select value={formData.priority} onValueChange={(value: any) => setFormData({ ...formData, priority: value })}>
+            <Select 
+              value={formData.priority} 
+              onValueChange={(value) => setFormData({ 
+                ...formData, 
+                priority: value as 'low' | 'medium' | 'high' | 'urgent' 
+              })}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

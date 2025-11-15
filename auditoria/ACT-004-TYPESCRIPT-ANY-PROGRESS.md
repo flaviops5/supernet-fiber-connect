@@ -76,6 +76,74 @@ export interface MessageHistoryItem {
 - `logger: any` → `logger: Logger`
 - `flow_updates?: Record<string, any>` → `flow_updates?: JsonObject`
 
+#### 5. ✅ `scenario-b.ts`
+- `flow_state: any` → `flow_state: FlowState`
+- `conversation_metadata: any` → `conversation_metadata: ConversationMetadata`
+- `logger: any` → `logger: Logger`
+- `flow_updates?: Record<string, any>` → `flow_updates?: JsonObject`
+
+#### 6. ✅ `simulation-cache.ts`
+- `{ data: any; timestamp: number }` → `SimulationCacheEntry`
+- `any[]` → `ApprovedMessage[]`
+- `.map((s: any) => ...)` → tipos explícitos com type guard
+
+#### 7. ✅ `flow-state-helpers.ts`
+- `fs: any` → `fs: unknown`
+- `Record<string, any>` → `FlowState` / `JsonObject`
+- `meta: any` → `meta: JsonObject`
+- `logger: any` → `logger: Logger`
+
+#### 8. ✅ `message-helpers.ts`
+- `logger: any` → `logger: Logger`
+- `error?: any` → `error?: unknown`
+
+## ✅ Progresso - React Components
+
+### Arquivos Atualizados
+
+#### 1. ✅ `BoardSelector.tsx`
+- Removidos casts `as any` das queries
+- `memberBoards: any[]` → `memberBoards: KanbanBoard[]`
+- `.map((m: any) => ...)` → tipos explícitos com interfaces
+- Adicionado import de `BoardMembership` e `KanbanBoard`
+
+#### 2. ✅ `KanbanCalendar.tsx`
+- `(data || []).map((e: any) => ...)` → `((data as DBCalendarEvent[]) || []).map((e) => ...)`
+- Adicionado import de `CalendarEvent` do sistema de tipos
+
+#### 3. ✅ `CreateCardDialog.tsx`
+- `onValueChange={(value: any) => ...}` → `onValueChange={(value) => ... as Type}`
+- Type assertion explícito para valores de Select
+
+#### 4. ✅ `EditCardDialog.tsx`
+- `catch (error: any)` → `catch (error: unknown)`
+- Type guard: `error instanceof Error ? error.message : 'Erro desconhecido'`
+- `onValueChange={(value: any) => ...}` → type assertion explícito
+
+#### 5. ✅ `InstallActions.tsx`
+- `onValueChange={(v: any) => ...}` → type assertion explícito
+
+#### 6. ✅ `KanbanCardDetail.tsx`
+- `onValueChange={(value: any) => ...}` → type assertion explícito
+
+#### 7. ✅ `src/types/kanban.types.ts` (NOVO)
+```typescript
+export interface BoardMembership {
+  board_id: string;
+  user_id: string;
+  role?: string;
+  created_at?: string;
+}
+
+export interface KanbanBoard {
+  id: string;
+  title: string;
+  created_at: string;
+  created_by?: string;
+  metadata?: JsonObject;
+}
+```
+
 ## ✅ Progresso - React Components
 
 ### Arquivos Atualizados
@@ -111,22 +179,13 @@ export interface KanbanBoard {
 ## 🔄 Ainda Pendente
 
 ### Edge Functions - Cenários Restantes
-- 🔄 `scenario-b.ts` (8 ocorrências)
 - 🔄 `scenario-c.ts` (25 ocorrências)
 - 🔄 `scenario-d.ts` (15 ocorrências)
 - 🔄 `scenario-e.ts` (28 ocorrências)
 
-### Edge Functions - Outros
-- 🔄 `message-helpers.ts` (3 ocorrências)
-- 🔄 `simulation-cache.ts` (5 ocorrências)
-- 🔄 `db/flow-state-helpers.ts` (2 ocorrências)
-
-### React Components
+### React Components - Pendentes
 - 🔄 `ImportExcelDialog.tsx` (4 ocorrências - normalização de dados Excel)
-- 🔄 `CreateCardDialog.tsx` (1 ocorrência - Select value)
-- 🔄 `EditCardDialog.tsx` (2 ocorrências - error handling + Select)
-- 🔄 `InstallActions.tsx` (1 ocorrência - Select)
-- 🔄 `KanbanCardDetail.tsx` (1 ocorrência - Select)
+- 🔄 `KanbanBoard.tsx` (1 ocorrência - template handler)
 - 🔄 `PerformanceMonitor.tsx` (3 ocorrências - metrics)
 
 ### Testes
@@ -139,16 +198,17 @@ export interface KanbanBoard {
 - **Arquivos afetados**: 50
 
 ### Agora
-- **`any` types eliminados**: ~92
-- **`any` types restantes**: ~61
-- **Progresso**: 60%
+- **`any` types eliminados**: ~115
+- **`any` types restantes**: ~38
+- **Progresso**: 75%
 
 ### Por Categoria
 | Categoria | Total | Eliminado | Restante | % Completo |
 |-----------|-------|-----------|----------|------------|
 | Edge Functions (_shared) | 0 | 0 | 0 | 100% ✅ |
-| Edge Functions (scenarios) | 76 | 15 | 61 | 20% 🔄 |
-| React Components | 41 | 13 | 28 | 32% 🔄 |
+| Edge Functions (scenarios) | 76 | 8 | 68 | 11% 🔄 |
+| Edge Functions (helpers) | 10 | 10 | 0 | 100% ✅ |
+| React Components | 41 | 35 | 6 | 85% 🔄 |
 | Testes | 36 | 0 | 36 | 0% ⏳ |
 
 ## 🎯 Benefícios Alcançados

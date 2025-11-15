@@ -4,6 +4,7 @@
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Logger } from "../types/logger.types.ts";
 
 /**
  * Evita salvar mensagens duplicadas do agente
@@ -13,8 +14,8 @@ export async function insertAgentMessageOnce(
   supabase: SupabaseClient,
   conversation_id: string,
   content: string,
-  logger: any
-): Promise<{ skipped?: boolean; error?: any }> {
+  logger: Logger
+): Promise<{ skipped?: boolean; error?: unknown }> {
   try {
     if (!content || !conversation_id) return { skipped: true };
 
@@ -64,8 +65,8 @@ export async function insertAgentMessage(
   content: string,
   senderName = "Luan Silva",
   skipDbOps = false,
-  logger?: any
-): Promise<{ error: any }> {
+  logger?: Logger
+): Promise<{ error: unknown }> {
   if (skipDbOps) {
     logger?.info("🧪 SKIP_DB_OPS: Mensagem não inserida", { 
       content: content.substring(0, 50),
