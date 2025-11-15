@@ -5,6 +5,10 @@
  * Estados: CLOSED (normal) -> OPEN (bloqueado) -> HALF_OPEN (teste)
  */
 
+import { createLogger } from './structured-logger.ts';
+
+const logger = createLogger('circuit-breaker');
+
 export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export interface CircuitBreakerConfig {
@@ -72,9 +76,11 @@ export class CircuitBreaker {
 
     if (this.state === 'HALF_OPEN') {
       this.successCount++;
-      console.log(
-        `✅ Circuit breaker ${this.name} HALF_OPEN success ${this.successCount}/${this.config.successThreshold}`
-      );
+      logger.info('Circuit breaker HALF_OPEN success', { 
+        name: this.name, 
+        successCount: this.successCount, 
+        threshold: this.config.successThreshold 
+      });
 
       // Se atingiu threshold de sucesso, fecha o circuito
       if (this.successCount >= this.config.successThreshold) {
@@ -87,9 +93,11 @@ export class CircuitBreaker {
     this.failureCount++;
     this.successCount = 0;
 
-    console.error(
-      `❌ Circuit breaker ${this.name} failure ${this.failureCount}/${this.config.failureThreshold}`
-    );
+    logger.error('Circuit breaker failure detected', { 
+      name: this.name, 
+      failureCount: this.failureCount, 
+      threshold: this.config.failureThreshold 
+    });
 
     if (this.state === 'HALF_OPEN') {
       // Falha em half-open: volta para OPEN imediatamente
@@ -111,9 +119,10 @@ export class CircuitBreaker {
     this.nextAttempt = Date.now() + this.config.timeout;
     this.halfOpenCount = 0;
     
-    console.error(
-      `🚨 Circuit breaker ${this.name} OPENED - aguarde ${this.config.timeout / 1000}s`
-    );
+    logger.error('Circuit breaker OPENED', { 
+      name: this.name, 
+      timeoutSeconds: this.config.timeout / 1000 
+    });
   }
 
   private transitionToHalfOpen(): void {
@@ -121,9 +130,7 @@ export class CircuitBreaker {
     this.successCount = 0;
     this.halfOpenCount = 0;
     
-    console.warn(
-      `⚠️ Circuit breaker ${this.name} HALF_OPEN - tentando recuperação`
-    );
+    logger.warn('Circuit breaker HALF_OPEN - attempting recovery', { name: this.name });
   }
 
   private transitionToClosed(): void {
@@ -132,9 +139,7 @@ export class CircuitBreaker {
     this.successCount = 0;
     this.halfOpenCount = 0;
     
-    console.log(
-      `✅ Circuit breaker ${this.name} CLOSED - operação normal`
-    );
+    logger.info('Circuit breaker CLOSED - normal operation resumed', { name: this.name });
   }
 
   getState(): CircuitState {
@@ -157,7 +162,7 @@ export class CircuitBreaker {
     this.successCount = 0;
     this.nextAttempt = 0;
     this.halfOpenCount = 0;
-    console.log(`🔄 Circuit breaker ${this.name} resetado manualmente`);
+    logger.info('Circuit breaker manually reset', { name: this.name });
   }
 }
 
