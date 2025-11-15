@@ -1,0 +1,137 @@
+paths:
+  /support-tech-agent:
+    post:
+      tags:
+        - Agent
+      summary: Processar mensagem de suporte técnico
+      description: |
+        Processa mensagem do usuário através do agente de suporte técnico.
+        
+        ## Funcionalidades
+        - Diagnóstico automático de problemas
+        - Sugestões de soluções
+        - Abertura de chamados
+        - Consulta de informações do cliente
+        
+        ## Rate Limiting
+        - 30 requisições/minuto por usuário
+        - Timeout: 30 segundos
+      operationId: processTechSupportMessage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+                - conversationId
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+                  description: Mensagem do usuário
+                  example: "Minha internet está lenta"
+                conversationId:
+                  type: string
+                  format: uuid
+                  description: ID da conversa
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+                cpf:
+                  type: string
+                  pattern: '^\d{11}$'
+                  description: CPF do cliente (opcional)
+                  example: "12345678900"
+                metadata:
+                  type: object
+                  description: Metadados adicionais
+                  properties:
+                    source:
+                      type: string
+                      enum: [whatsapp, web, mobile, api]
+                      example: "whatsapp"
+            examples:
+              simple:
+                summary: Mensagem simples
+                value:
+                  message: "Minha internet está lenta"
+                  conversationId: "550e8400-e29b-41d4-a716-446655440000"
+              
+              withCPF:
+                summary: Com CPF do cliente
+                value:
+                  message: "Preciso de ajuda técnica"
+                  conversationId: "550e8400-e29b-41d4-a716-446655440000"
+                  cpf: "12345678900"
+      
+      responses:
+        '200':
+          description: Resposta do agente
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    required:
+                      - response
+                    properties:
+                      response:
+                        type: string
+                        description: Resposta do agente
+                        example: "Entendi que sua internet está lenta. Vou fazer um diagnóstico..."
+                      actions:
+                        type: array
+                        description: Ações executadas pelo agente
+                        items:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [diagnostic, reboot, ticket]
+                            status:
+                              type: string
+                              enum: [pending, success, failed]
+                            result:
+                              type: object
+                      nextStep:
+                        type: string
+                        description: Próximo passo sugerido
+                        example: "waiting_test_result"
+              examples:
+                success:
+                  summary: Resposta com sucesso
+                  value:
+                    success: true
+                    data:
+                      response: "Realizei um teste na sua conexão. Sua velocidade está em 95% do contratado. Tudo normal!"
+                      actions:
+                        - type: "diagnostic"
+                          status: "success"
+                          result:
+                            speed: 95
+                            ping: 15
+                            jitter: 2
+                      nextStep: "resolved"
+        
+        '400':
+          $ref: '../openapi.yaml#/components/responses/BadRequest'
+        
+        '401':
+          $ref: '../openapi.yaml#/components/responses/Unauthorized'
+        
+        '429':
+          $ref: '../openapi.yaml#/components/responses/TooManyRequests'
+        
+        '500':
+          $ref: '../openapi.yaml#/components/responses/InternalServerError'

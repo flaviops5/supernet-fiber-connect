@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: Supernet Fiber Connect API
+  version: 4.0.0
+  description: |
+    API completa do sistema Supernet Fiber Connect - Plataforma de atendimento omnichannel com agentes de IA.
+    
+    ## Autenticação
+    Todas as requisições requerem Bearer token JWT do Supabase.
+    
+    ## Rate Limiting
+    - 100 requisições/minuto para usuários autenticados
+    - 10 requisições/minuto para endpoints públicos
+    
+    ## Versionamento
+    A API segue versionamento semântico (semver.org)
+  contact:
+    name: Supernet Fiber Connect
+    email: suporte@supernetfiber.com.br
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://mxdupkbpxjcfxdgrwknp.supabase.co/functions/v1
+    description: Produção
+  - url: http://localhost:54321/functions/v1
+    description: Desenvolvimento
+
+tags:
+  - name: Agent
+    description: Edge Functions de agentes de IA
+  - name: Webhook
+    description: Webhooks de integrações externas
+  - name: Integration
+    description: APIs de integração com sistemas externos
+  - name: Maintenance
+    description: Funções de manutenção e monitoramento
+  - name: Analytics
+    description: Logs e analytics
+
+security:
+  - bearerAuth: []
+
+paths:
+  /support-tech-agent:
+    $ref: './edge-functions/support-tech-agent.yaml#/paths/~1support-tech-agent'
+  
+  /whatsapp-webhook:
+    $ref: './edge-functions/whatsapp-webhook.yaml#/paths/~1whatsapp-webhook'
+  
+  /routing-agent:
+    $ref: './edge-functions/routing-agent.yaml#/paths/~1routing-agent'
+  
+  /graylog-logs-export:
+    $ref: './edge-functions/graylog-logs-export.yaml#/paths/~1graylog-logs-export'
+  
+  /kanban-audit:
+    $ref: './edge-functions/kanban-audit.yaml#/paths/~1kanban-audit'
+  
+  /network-maintenance-executor:
+    $ref: './edge-functions/network-maintenance-executor.yaml#/paths/~1network-maintenance-executor'
+  
+  /sync-chatbot-knowledge:
+    $ref: './edge-functions/sync-chatbot-knowledge.yaml#/paths/~1sync-chatbot-knowledge'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token do Supabase Auth
+  
+  schemas:
+    # Common
+    Error:
+      $ref: './schemas/common.yaml#/components/schemas/Error'
+    
+    Pagination:
+      $ref: './schemas/common.yaml#/components/schemas/Pagination'
+    
+    # Conversation
+    Conversation:
+      $ref: './schemas/conversation.yaml#/components/schemas/Conversation'
+    
+    Message:
+      $ref: './schemas/conversation.yaml#/components/schemas/Message'
+    
+    # Campaign
+    Campaign:
+      $ref: './schemas/campaign.yaml#/components/schemas/Campaign'
+    
+    Recipient:
+      $ref: './schemas/campaign.yaml#/components/schemas/Recipient'
+    
+    # Kanban
+    KanbanCard:
+      $ref: './schemas/kanban.yaml#/components/schemas/KanbanCard'
+  
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid request"
+            details: "Missing required field: message"
+    
+    Unauthorized:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            details: "Invalid or expired token"
+    
+    Forbidden:
+      description: Sem permissão
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Forbidden"
+            details: "Insufficient permissions"
+    
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Not found"
+            details: "Resource does not exist"
+    
+    TooManyRequests:
+      description: Rate limit excedido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Too many requests"
+            details: "Rate limit exceeded. Try again in 60 seconds"
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Número máximo de requisições permitidas
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Número de requisições restantes
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Timestamp Unix quando o limite reseta
+    
+    InternalServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Internal server error"
+            details: "An unexpected error occurred"
