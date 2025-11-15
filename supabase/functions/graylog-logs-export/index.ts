@@ -1,12 +1,18 @@
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
+import { createLogger } from '../_shared/structured-logger.ts';
 
 Deno.serve(createAuthenticatedHandler('graylog-logs-export', async (req, { supabase, user }) => {
-
+  const logger = createLogger('graylog-logs-export', req);
+  
+  const url = new URL(req.url);
+  
   // Parâmetros de filtro
   const level = url.searchParams.get('level'); // INFO, WARN, ERROR
   const source = url.searchParams.get('source'); // nome do agente/função
   const limit = parseInt(url.searchParams.get('limit') || '100', 10);
   const since = url.searchParams.get('since'); // ISO timestamp
+
+  logger.info('Exporting logs to Graylog format', { level, source, limit, since });
 
   // Query builder
   let query = supabase
@@ -30,7 +36,7 @@ Deno.serve(createAuthenticatedHandler('graylog-logs-export', async (req, { supab
   const { data: logs, error } = await query;
 
   if (error) {
-    console.error('❌ Erro ao buscar logs:', error);
+    logger.error('Failed to fetch logs from database', { error: error.message });
     throw new Error(`Database error: ${error.message}`);
   }
 

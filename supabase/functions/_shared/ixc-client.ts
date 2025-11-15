@@ -4,6 +4,9 @@
 
 import { addHMACHeaders } from './hmac.ts';
 import type { JsonValue } from './types.ts';
+import { createLogger } from './structured-logger.ts';
+
+const logger = createLogger('ixc-client');
 
 interface RetryConfig {
   maxRetries: number;
@@ -52,13 +55,14 @@ function checkCircuitBreaker(): { canProceed: boolean; reason?: string } {
     // Verificar se deve tentar half-open
     if (now - circuitBreaker.lastFailureTime > CIRCUIT_BREAKER_TIMEOUT) {
       circuitBreaker.state = 'half-open';
-      console.log('🔄 Circuit breaker: HALF-OPEN');
+      logger.info('Circuit breaker transitioning to HALF-OPEN');
       return { canProceed: true };
     }
     
+    const waitSeconds = Math.ceil((CIRCUIT_BREAKER_TIMEOUT - (now - circuitBreaker.lastFailureTime)) / 1000);
     return { 
       canProceed: false, 
-      reason: `Circuit breaker OPEN - aguarde ${Math.ceil((CIRCUIT_BREAKER_TIMEOUT - (now - circuitBreaker.lastFailureTime)) / 1000)}s` 
+      reason: `Circuit breaker OPEN - aguarde ${waitSeconds}s` 
     };
   }
   
@@ -72,7 +76,7 @@ function recordSuccess() {
   if (circuitBreaker.state === 'half-open') {
     circuitBreaker.state = 'closed';
     circuitBreaker.failures = 0;
-    console.log('✅ Circuit breaker: CLOSED');
+    logger.info('Circuit breaker CLOSED after successful recovery');
   }
 }
 
@@ -85,7 +89,10 @@ function recordFailure() {
   
   if (circuitBreaker.failures >= CIRCUIT_BREAKER_THRESHOLD) {
     circuitBreaker.state = 'open';
-    console.log('🚨 Circuit breaker: OPEN');
+    logger.error('Circuit breaker OPENED due to repeated failures', { 
+      failures: circuitBreaker.failures, 
+      threshold: CIRCUIT_BREAKER_THRESHOLD 
+    });
   }
 }
 
@@ -113,7 +120,7 @@ export async function callIxcWithRetry(
   
   for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
     try {
-      console.log(`🔄 IXC call attempt ${attempt + 1}/${retryConfig.maxRetries + 1}: ${method} ${path}`);
+      logger.info('IXC API call attempt', { attempt: attempt + 1, total: retryConfig.maxRetries + 1, method, path });
       
       const startTime = Date.now();
       const requestBody = { method, path, body, query };
@@ -131,7 +138,7 @@ export async function callIxcWithRetry(
       });
       
       const duration = Date.now() - startTime;
-      console.log(`⏱️ IXC call duration: ${duration}ms`);
+      logger.info('IXC API call completed', { duration, status: response.status });
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -140,7 +147,7 @@ export async function callIxcWithRetry(
         
         // Não fazer retry em erros de configuração
         if (isConfigError) {
-          console.error(`❌ Configuration error detected - aborting retries`);
+          logger.error('IXC configuration error detected - aborting retries', { status: response.status });
           throw new Error(`[NO_RETRY] ${errorMsg}`);
         }
         
@@ -156,7 +163,7 @@ export async function callIxcWithRetry(
           ? 'IXC retornou página de login - verifique URL, usuário e senha do IXC'
           : 'IXC retornou HTML ao invés de JSON - verifique a configuração da API';
         
-        console.error(`❌ HTML response detected - aborting retries`);
+        logger.error('IXC HTML response detected - aborting retries', { isLoginPage });
         throw new Error(`[NO_RETRY] ${errorMsg}`);
       }
       
@@ -195,12 +202,12 @@ export async function callIxcWithRetry(
       
       // ✅ SUCESSO
       recordSuccess();
-      console.log(`✅ IXC call successful on attempt ${attempt + 1}`);
+      logger.info('IXC call successful', { attempt: attempt + 1 });
       return data;
       
     } catch (error) {
       lastError = error as Error;
-      console.error(`❌ IXC call failed on attempt ${attempt + 1}:`, lastError.message);
+      logger.error('IXC call failed', { attempt: attempt + 1, error: lastError.message });
       
       // ✅ CORREÇÃO: Erros de configuração NÃO devem disparar circuit breaker
       // Se for erro de configuração (marcado com [NO_RETRY]), abortar imediatamente
@@ -212,7 +219,7 @@ export async function callIxcWithRetry(
       
       // Se for último retry, não esperar
       if (attempt < retryConfig.maxRetries) {
-        console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+        logger.info('Waiting before retry', { delayMs });
         await delay(delayMs);
         
         // Exponential backoff
@@ -246,7 +253,7 @@ export function resetCircuitBreaker() {
   circuitBreaker.failures = 0;
   circuitBreaker.lastFailureTime = 0;
   circuitBreaker.state = 'closed';
-  console.log('🔧 Circuit breaker manually reset to CLOSED');
+  logger.info('Circuit breaker manually reset to CLOSED');
 }
 
 /**
@@ -257,7 +264,7 @@ export async function getOnuSignalStatus(
   proxyUrl: string,
   clientId: string
 ): Promise<JsonValue> {
-  console.log(`📡 Buscando dados TX/RX para cliente ${clientId}...`);
+  logger.info('Fetching ONU signal TX/RX data', { clientId });
   
   try {
     const result = await callIxcWithRetry(
@@ -267,10 +274,10 @@ export async function getOnuSignalStatus(
       { id: clientId }
     );
     
-    console.log('✅ Dados TX/RX obtidos com sucesso');
+    logger.info('ONU signal data fetched successfully', { clientId });
     return result;
   } catch (error) {
-    console.error('❌ Erro ao buscar dados TX/RX:', error);
+    logger.error('Failed to fetch ONU signal data', { clientId, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
