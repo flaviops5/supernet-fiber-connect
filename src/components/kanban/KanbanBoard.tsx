@@ -76,13 +76,18 @@ export function KanbanBoard({
     await createCard(columnId, title, description, priority);
   };
 
-  const handleTemplateSelect = async (template: any) => {
+  const handleTemplateSelect = async (template: { 
+    name: string; 
+    structure?: { 
+      columns?: Array<{ title: string; color?: string }> 
+    } 
+  }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     if (template) {
       const { data: newBoard } = await supabase
-        .from('kanban_boards' as any)
+        .from('kanban_boards')
         .insert({
           title: template.name,
           created_by: user.id,
@@ -90,12 +95,12 @@ export function KanbanBoard({
         .select()
         .single();
 
-      if (newBoard && template.structure) {
-        const columns = (template.structure as any).columns || [];
+      if (newBoard && template.structure?.columns) {
+        const columns = template.structure.columns;
         for (let i = 0; i < columns.length; i++) {
           const col = columns[i];
-          await supabase.from('kanban_columns' as any).insert({
-            board_id: (newBoard as any).id,
+          await supabase.from('kanban_columns').insert({
+            board_id: newBoard.id,
             name: col.title,
             color: col.color || '#3b82f6',
             position: i,
