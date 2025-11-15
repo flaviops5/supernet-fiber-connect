@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { KanbanBoard, BoardMembership } from '@/types';
 
 interface Board {
   id: string;
@@ -34,7 +35,7 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
 
       // Query 1: Buscar boards criados pelo usuário
       const { data: created, error: err1 } = await supabase
-        .from('kanban_boards' as any)
+        .from('kanban_boards')
         .select('id, title, created_at')
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
@@ -43,27 +44,27 @@ export function BoardSelector({ currentBoardId, onBoardChange, onCreateBoard }: 
 
       // Query 2: Buscar boards onde usuário é membro (JOIN manual)
       const { data: memberships, error: err2 } = await supabase
-        .from('kanban_board_members' as any)
+        .from('kanban_board_members')
         .select('board_id')
         .eq('user_id', user.id);
 
       // Buscar detalhes dos boards das memberships
-      const memberBoardIds = (memberships as any)?.map((m: any) => m.board_id) || [];
-      let memberBoards: any[] = [];
+      const memberBoardIds = (memberships as BoardMembership[] | null)?.map(m => m.board_id) || [];
+      let memberBoards: KanbanBoard[] = [];
       
       if (memberBoardIds.length > 0) {
         const { data: memberBoardData } = await supabase
-          .from('kanban_boards' as any)
+          .from('kanban_boards')
           .select('id, title, created_at')
           .in('id', memberBoardIds);
         
-        memberBoards = memberBoardData || [];
+        memberBoards = (memberBoardData as KanbanBoard[] | null) || [];
       }
 
       // Combinar e remover duplicatas
-      const allBoards = [...((created as any) || []), ...memberBoards];
+      const allBoards = [...((created as KanbanBoard[] | null) || []), ...memberBoards];
       const unique = new Map<string, Board>();
-      allBoards.forEach((b: any) => {
+      allBoards.forEach((b) => {
         if (b?.id) unique.set(b.id, { id: b.id, title: b.title, created_at: b.created_at });
       });
       

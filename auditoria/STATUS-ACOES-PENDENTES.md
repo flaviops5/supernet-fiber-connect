@@ -44,9 +44,14 @@
 
 ### 🟢 P2 - Médio
 - 🔄 **ACT-004**: Reduzir uso de `any` TypeScript
-  - Status: IN PROGRESS
-  - Estimativa: ~8h restantes
-  - Próximo: Criar interfaces específicas para componentes
+  - Status: IN PROGRESS (60% completo)
+  - Arquivo: `auditoria/ACT-004-TYPESCRIPT-ANY-PROGRESS.md`
+  - Progresso:
+    - ✅ Criadas interfaces Logger, FlowState, ConversationMetadata
+    - ✅ Atualizados scenario-a.ts, flow-manager.ts, context-adapter.ts
+    - ✅ Atualizados BoardSelector.tsx, KanbanCalendar.tsx
+    - 🔄 Restam 61 ocorrências (cenários B/C/D/E + componentes)
+  - Estimativa restante: ~3h
 
 ## 📋 PENDENTE
 
@@ -72,19 +77,19 @@
 |------------|-------|-----------|--------------|----------|
 | P0 (Crítico) | 2 | 2 (100%) | 0 | 0 |
 | P1 (Alto) | 3 | 3 (100%) | 0 | 0 |
-| P2 (Médio) | 2 | 1 (50%) | 1 (50%) | 0 |
+| P2 (Médio) | 2 | 0 (0%) | 1 (50%) | 1 (50%) |
 | P3 (Baixo) | 2 | 0 (0%) | 0 | 2 (100%) |
-| **TOTAL** | **9** | **6 (67%)** | **1 (11%)** | **2 (22%)** |
+| **TOTAL** | **9** | **5 (56%)** | **1 (11%)** | **3 (33%)** |
 
 ### Por Status
-- ✅ **Concluído**: 6 ações (67%)
-- 🔄 **Em Progresso**: 1 ação (11%)
-- ⏳ **Pendente**: 2 ações (22%)
+- ✅ **Concluído**: 5 ações (56%)
+- 🔄 **Em Progresso**: 1 ação (11%) - ACT-004 a 60%
+- ⏳ **Pendente**: 3 ações (33%)
 
 ### Tempo Investido vs Estimado
 - Tempo estimado total: ~45h
-- Tempo investido (concluído): ~19h (42%)
-- Tempo restante estimado: ~26h (58%)
+- Tempo investido (concluído + em progresso): ~24h (53%)
+- Tempo restante estimado: ~21h (47%)
 
 ## 🎯 Próximas Ações Recomendadas
 
@@ -129,7 +134,8 @@
 ### Sprint Atual (2025-11-14)
 - ✅ 3 ações concluídas hoje
 - ✅ 1 bugfix crítico resolvido
-- 🎯 67% do backlog concluído
+- 🔄 ACT-004 a 60% (em progresso)
+- 🎯 56% do backlog concluído
 - 📊 Score de segurança: 9/10
 
 ### Velocidade
