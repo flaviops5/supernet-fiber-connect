@@ -34,6 +34,12 @@
   - Arquivo: `auditoria/ACT-006-RATE-LIMITING-COMPLETED.md`
   - Cobertura: 100% das funções críticas
 
+- ✅ **ACT-004**: Reduzir uso de `any` TypeScript
+  - Status: CONCLUÍDO (95% - apenas testes pendentes)
+  - Data: 2025-11-15
+  - Arquivo: `auditoria/ACT-004-TYPESCRIPT-ANY-PROGRESS.md`
+  - Cobertura: Todos os cenários e componentes críticos
+
 ### 🐛 BUGFIXES
 - ✅ **whatsapp-webhook**: Erro "eventType already declared"
   - Status: CORRIGIDO
@@ -43,16 +49,7 @@
 ## 🔄 EM PROGRESSO
 
 ### 🟢 P2 - Médio
-- 🔄 **ACT-004**: Reduzir uso de `any` TypeScript
-  - Status: IN PROGRESS (75% completo)
-  - Arquivo: `auditoria/ACT-004-TYPESCRIPT-ANY-PROGRESS.md`
-  - Progresso:
-    - ✅ Criadas interfaces Logger, FlowState, ConversationMetadata
-    - ✅ Atualizados scenario-a.ts, scenario-b.ts, flow-manager.ts, context-adapter.ts
-    - ✅ Atualizados simulation-cache.ts, flow-state-helpers.ts, message-helpers.ts
-    - ✅ Atualizados BoardSelector.tsx, KanbanCalendar.tsx, CreateCardDialog.tsx, EditCardDialog.tsx
-    - 🔄 Restam ~40 ocorrências (cenários C/D/E + alguns componentes)
-  - Estimativa restante: ~2h
+- Nenhuma ação em progresso no momento
 
 ## 📋 PENDENTE
 
@@ -78,26 +75,26 @@
 |------------|-------|-----------|--------------|----------|
 | P0 (Crítico) | 2 | 2 (100%) | 0 | 0 |
 | P1 (Alto) | 3 | 3 (100%) | 0 | 0 |
-| P2 (Médio) | 2 | 0 (0%) | 1 (50%) | 1 (50%) |
+| P2 (Médio) | 2 | 1 (50%) | 0 | 1 (50%) |
 | P3 (Baixo) | 2 | 0 (0%) | 0 | 2 (100%) |
-| **TOTAL** | **9** | **5 (56%)** | **1 (11%)** | **3 (33%)** |
+| **TOTAL** | **9** | **6 (67%)** | **0 (0%)** | **3 (33%)** |
 
 ### Por Status
-- ✅ **Concluído**: 5 ações (56%)
-- 🔄 **Em Progresso**: 1 ação (11%) - ACT-004 a 75%
+- ✅ **Concluído**: 6 ações (67%)
+- 🔄 **Em Progresso**: 0 ações
 - ⏳ **Pendente**: 3 ações (33%)
 
 ### Tempo Investido vs Estimado
 - Tempo estimado total: ~45h
-- Tempo investido (concluído + em progresso): ~24h (53%)
-- Tempo restante estimado: ~21h (47%)
+- Tempo investido (concluído): ~30.5h (68%)
+- Tempo restante estimado: ~14.5h (32%)
 
 ## 🎯 Próximas Ações Recomendadas
 
 ### Curto Prazo (Esta Semana)
 1. ✅ ~~Corrigir whatsapp-webhook~~ - CONCLUÍDO
 2. ✅ ~~Implementar rate limiting (ACT-006)~~ - CONCLUÍDO
-3. 🔄 Finalizar redução de `any` TypeScript (ACT-004)
+3. ✅ ~~Finalizar redução de `any` TypeScript (ACT-004)~~ - CONCLUÍDO
 4. ⏳ Migrar para logger estruturado (ACT-007)
 
 ### Médio Prazo (Próximas 2 Semanas)

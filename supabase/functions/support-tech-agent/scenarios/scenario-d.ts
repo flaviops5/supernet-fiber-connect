@@ -16,20 +16,23 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
+import type { FlowState, MessageHistoryItem } from "../types/database.types.ts";
+import type { Logger } from "../types/logger.types.ts";
+import type { JsonObject } from "../../../_shared/error-types.ts";
 
 interface ScenarioDContext {
   conversationId: string;
   ixcClientId?: string;
   customerName: string;
   currentMessage: string;
-  flowState: any;
+  flowState: FlowState;
   signalData: {
     tx?: number;
     rx?: number;
     serial?: string;
     status?: string;
   } | null;
-  messageHistory: any[];
+  messageHistory: MessageHistoryItem[];
   waitingStep?: string | null;
 }
 
@@ -39,7 +42,7 @@ interface ScenarioDResult {
   escalated: boolean;
   actions_taken: string[];
   final_status: string;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
 }
 
 const FLOW_STAGES = {
@@ -52,7 +55,7 @@ const FLOW_STAGES = {
 
 export async function handleScenarioD(
   supabase: SupabaseClient,
-  logger: any,
+  logger: Logger,
   context: ScenarioDContext
 ): Promise<ScenarioDResult> {
   const startTime = Date.now();

@@ -20,19 +20,22 @@ import { ConversationService } from "../services/conversation-service.ts";
 import { IXCService } from "../services/ixc-service.ts";
 import { hybridInterpret } from "../../_shared/ai-response-interpreter.ts";
 import { redactPII } from "../../_shared/pii-redaction.ts";
+import type { FlowState, MessageHistoryItem } from "../types/database.types.ts";
+import type { Logger } from "../types/logger.types.ts";
+import type { JsonObject } from "../../../_shared/error-types.ts";
 
 interface ScenarioCContext {
   conversationId: string;
   ixcClientId?: string;
   customerName: string;
   currentMessage: string;
-  flowState: any;
+  flowState: FlowState;
   signalData: {
     tx?: number;
     rx?: number;
     serial?: string;
   } | null;
-  messageHistory: any[];
+  messageHistory: MessageHistoryItem[];
   waitingStep?: string | null;
 }
 
@@ -42,7 +45,7 @@ interface ScenarioCResult {
   escalated: boolean;
   actions_taken: string[];
   final_status: string;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
 }
 
 const FLOW_STAGES = {
@@ -58,7 +61,7 @@ const FLOW_STAGES = {
 
 export async function handleScenarioC(
   supabase: SupabaseClient,
-  logger: any,
+  logger: Logger,
   context: ScenarioCContext
 ): Promise<ScenarioCResult> {
   const startTime = Date.now();
@@ -91,8 +94,8 @@ export async function handleScenarioC(
     // Get message history for intent detection
     const messageHistory = await conversationService.getMessageHistory(context.conversationId, 5);
     const lastUserMessage = messageHistory
-      .filter((m: any) => m.sender_type === "customer")
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      .filter((m) => m.sender_type === "customer")
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())[0];
 
     const userMessage = lastUserMessage?.content || "";
     const sanitizedMessage = redactPII(userMessage, "ai");
