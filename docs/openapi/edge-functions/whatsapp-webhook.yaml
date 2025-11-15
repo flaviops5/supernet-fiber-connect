@@ -1,0 +1,129 @@
+paths:
+  /whatsapp-webhook:
+    post:
+      tags:
+        - Webhook
+      summary: Webhook de mensagens do WhatsApp
+      description: |
+        Recebe webhooks da Evolution API com mensagens e eventos do WhatsApp.
+        
+        ## Segurança
+        - Validação de HMAC signature
+        - IP whitelist
+        - Rate limiting por IP
+        
+        ## Eventos Suportados
+        - messages.upsert (nova mensagem)
+        - messages.update (mensagem atualizada)
+        - connection.update (status da conexão)
+      operationId: handleWhatsAppWebhook
+      security: []  # Public endpoint com validação HMAC
+      parameters:
+        - name: X-Webhook-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+          description: HMAC SHA256 do payload
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event
+                - instance
+                - data
+              properties:
+                event:
+                  type: string
+                  enum: [messages.upsert, messages.update, connection.update]
+                  description: Tipo do evento
+                  example: "messages.upsert"
+                instance:
+                  type: string
+                  description: Nome da instância
+                  example: "supernet-main"
+                data:
+                  type: object
+                  description: Dados do evento
+                  properties:
+                    key:
+                      type: object
+                      properties:
+                        remoteJid:
+                          type: string
+                          example: "5511987654321@s.whatsapp.net"
+                        fromMe:
+                          type: boolean
+                          example: false
+                        id:
+                          type: string
+                          example: "3EB0C7B3F5C8B2E9A4D1"
+                    message:
+                      type: object
+                      properties:
+                        conversation:
+                          type: string
+                          example: "Minha internet está lenta"
+                        extendedTextMessage:
+                          type: object
+                    messageTimestamp:
+                      type: integer
+                      example: 1700000000
+            examples:
+              textMessage:
+                summary: Mensagem de texto
+                value:
+                  event: "messages.upsert"
+                  instance: "supernet-main"
+                  data:
+                    key:
+                      remoteJid: "5511987654321@s.whatsapp.net"
+                      fromMe: false
+                      id: "3EB0C7B3F5C8B2E9A4D1"
+                    message:
+                      conversation: "Minha internet está lenta"
+                    messageTimestamp: 1700000000
+      
+      responses:
+        '200':
+          description: Webhook processado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  processed:
+                    type: boolean
+                    example: true
+        
+        '400':
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid payload"
+        
+        '401':
+          description: Signature inválida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid signature"
+        
+        '429':
+          $ref: '../openapi.yaml#/components/responses/TooManyRequests'

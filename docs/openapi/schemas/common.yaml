@@ -1,0 +1,77 @@
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+          example: "Invalid request"
+        details:
+          type: string
+          description: Detalhes adicionais do erro
+          example: "Missing required field: message"
+        code:
+          type: string
+          description: Código interno do erro
+          example: "ERR_VALIDATION_001"
+    
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Página atual
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Itens por página
+        total:
+          type: integer
+          minimum: 0
+          description: Total de itens
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Total de páginas
+    
+    Metadata:
+      type: object
+      additionalProperties: true
+      description: Metadados flexíveis em formato JSON
+    
+    Timestamp:
+      type: string
+      format: date-time
+      description: Timestamp ISO 8601
+      example: "2025-11-15T10:30:00Z"
+    
+    UUID:
+      type: string
+      format: uuid
+      description: Identificador único UUID v4
+      example: "550e8400-e29b-41d4-a716-446655440000"
+    
+    CPF:
+      type: string
+      pattern: '^\d{11}$'
+      description: CPF apenas números (11 dígitos)
+      example: "12345678900"
+    
+    Phone:
+      type: string
+      pattern: '^\d{10,11}$'
+      description: Telefone brasileiro (10-11 dígitos)
+      example: "11987654321"
+    
+    Email:
+      type: string
+      format: email
+      description: Endereço de email válido
+      example: "usuario@exemplo.com.br"
