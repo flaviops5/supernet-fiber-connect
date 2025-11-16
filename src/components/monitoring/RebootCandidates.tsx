@@ -57,7 +57,7 @@ export const RebootCandidates = () => {
           <div>
             <CardTitle>Candidatos para Reboot</CardTitle>
             <CardDescription>
-              Clientes online há {'> 24h'} com tráfego {'< 100MB'} (equipamento congelado)
+              Cliente online com banda {'< 900 Kbps'}, não bloqueado
             </CardDescription>
           </div>
           <Button 
