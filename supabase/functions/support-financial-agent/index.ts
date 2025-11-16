@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { callLovableAI, extractContent } from '../_shared/lovable-client.ts';
 import { redactPII } from '../_shared/pii-redaction.ts';
 import { logConversationAccess } from '../_shared/lgpd-logger.ts';
-import { handleEdgeFunctionError, corsHeaders, StandardError } from "../_shared/error-handler.ts";
+import { handleEdgeFunctionError, StandardError } from "../_shared/error-handler.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
 import { MessageAttachment } from "../_shared/agent-types.ts";
 import { IXCContrato } from "../_shared/ixc-types.ts";
@@ -14,22 +15,18 @@ interface Message {
   content: string;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Support Financial Agent manipula dados financeiros sensíveis
+Deno.serve(createAuthenticatedHandler('support-financial-agent', async (req, { supabase: authSupabase, user }) => {
   const logger = createLogger("support-financial-agent", req);
 
   try {
-    const { messages, conversationId, customerData, routeReason, attachments } = await req.json();
-    
-    const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
-    logger.info("Processing request", { correlationId, routeReason, hasAttachments: !!attachments?.length });
-    
+    // Usar service role para operações privilegiadas
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { messages, conversationId, customerData, routeReason, attachments } = await req.json();
 
     // Fetch agent configuration from database
     const { data: agentConfig, error: configError } = await supabase

@@ -1,14 +1,6 @@
 // Edge Function para enviar alertas via WhatsApp quando logs críticos são detectados
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getOrCreateTraceId } from '../_shared/trace-id.ts';
-import { createTimer } from '../_shared/duration-tracker.ts';
-import { recordMetric } from '../_shared/metrics-helper.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import type { JsonValue } from '../_shared/error-types.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface LogEntry {
   id: string;
@@ -17,23 +9,12 @@ interface LogEntry {
   metadata: JsonValue;
   context: string;
   correlation_id?: string;
-  timestamp: string;
+  log_timestamp: string;
 }
 
-Deno.serve(async (req) => {
-  const timer = createTimer();
-  const traceId = getOrCreateTraceId(req);
-  let success = false;
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+// P0 FIX: Convertido para createAuthenticatedHandler
+// Manipula alertas críticos do sistema
+Deno.serve(createAuthenticatedHandler('log-alert-handler', async (req, { supabase, user }) => {
 
     // Buscar logs de erro dos últimos 5 minutos que ainda não foram notificados
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -122,43 +103,22 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Marcar logs como alertados
-      const logIds = logs.map(l => l.id);
+    // Marcar logs como alertados
+    if (errorLogs.length > 0) {
+      const ids = errorLogs.map(log => log.id);
       await supabase
         .from('monitoring_logs')
         .update({ alerted_at: new Date().toISOString() })
-        .in('id', logIds);
+        .in('id', ids);
     }
 
-    console.log(`✅ ${alertsSent} alertas enviados com sucesso`, { trace_id: traceId });
+    console.log(`✅ Alertas processados: ${alertsSent} enviados, ${errors.length} erros`);
 
-    success = alertsSent > 0;
-    return new Response(
-      JSON.stringify({
-        success: true,
-        alertsSent,
-        errorsCount: errorLogs.length,
-        contextsAlerted: Object.keys(errorsByContext).length,
-        errors: errors.length > 0 ? errors : undefined,
-        trace_id: traceId
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('❌ Erro no log-alert-handler:', error, { trace_id: traceId });
-    return new Response(
-      JSON.stringify({ success: false, error: 'Internal server error', trace_id: traceId }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } finally {
-    const duration = timer.end();
-    await recordMetric({
-      agent_name: 'log-alert-handler',
-      action_type: 'send_alerts',
-      success,
-      duration_ms: duration,
-      metadata: { trace_id: traceId }
-    }).catch(console.error);
-  }
-});
+    return {
+      success: true,
+      alertsSent,
+      errorsCount: errorLogs.length,
+      contactsCount: alertContacts.length,
+      errors: errors.length > 0 ? errors : undefined
+    };
+}));
