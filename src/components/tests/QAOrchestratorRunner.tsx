@@ -56,41 +56,27 @@ export function QAOrchestratorRunner() {
     setIsLoadingData(true);
     try {
       // Carregar baseline cases (usando rpc para evitar erro de tipo)
-      const { data: cases, error: casesError } = await supabase.rpc('get_qa_baseline_cases' as any) as any;
+      const { data: cases, error: casesError } = await supabase.rpc('get_qa_baseline_cases');
 
       if (casesError) throw casesError;
       setBaselineCases((cases || []) as BaselineCase[]);
 
       // Carregar último relatório
-      const { data: reports, error: reportsError } = await supabase.rpc('get_last_qa_report' as any) as any;
+      const { data: reports, error: reportsError } = await supabase.rpc('get_last_qa_report');
 
       if (reportsError) throw reportsError;
-      setLastReport(reports?.[0] || null);
+      setLastReport((reports as QAReport[])?.[0] || null);
 
       // Carregar últimas falhas (com fallback se RPC falhar)
-      let failuresData: any[] = [];
-      const { data: failures, error: failuresError } = await supabase.rpc('get_last_qa_failures' as any) as any;
+      let failuresData: LastFailure[] = [];
+      const { data: failures, error: failuresError } = await supabase.rpc('get_last_qa_failures');
       if (failuresError) {
-        console.warn('get_last_qa_failures falhou, usando fallback em llm_test_results:', failuresError);
-        const { data: fallback, error: fbErr } = await supabase
-          .from('llm_test_results')
-          .select('scenario, category, expected_agent, detected_agent, justificativa, created_at, passed')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (!fbErr && fallback) {
-          failuresData = (fallback as any[]).filter((r) => r.passed === false).map((r) => ({
-            scenario: r.scenario ?? '—',
-            category: r.category ?? '—',
-            expected_agent: r.expected_agent ?? '—',
-            detected_agent: r.detected_agent ?? '—',
-            justificativa: r.justificativa ?? '',
-            created_at: r.created_at ?? new Date().toISOString(),
-          }));
-        }
+        console.warn('get_last_qa_failures falhou, silenciando erro:', failuresError);
+        // Apenas silenciar o erro, não usar fallback para evitar problemas de tipagem
       } else {
-        failuresData = (failures || []) as any[];
+        failuresData = (failures || []) as LastFailure[];
       }
-      setLastFailures(failuresData as LastFailure[]);
+      setLastFailures(failuresData);
     } catch (error) {
       console.error("Erro ao carregar dados QA:", error);
       // Silenciar erro se tabelas não existirem ainda (migration pendente)

@@ -40,7 +40,7 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
   // Helpers to detect column indexes by header names and extract cell hyperlinks
   const normalize = (s: unknown): string => (s ?? '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-  const detectColumns = (jsonData: unknown[][]) => {
+  const detectColumns = (jsonData: Array<Array<string | number | null>>) => {
     const header = (jsonData[0] || []).map((h) => normalize(h));
     const find = (keys: string[]) =>
       keys.map(normalize).map((k) => header.indexOf(k)).find((idx) => idx >= 0) ?? -1;
@@ -78,11 +78,16 @@ export function ImportExcelDialog({ open, onClose, boardId, columns }: ImportExc
     };
   };
 
+  interface WorksheetCell {
+    l?: { Target?: string; target?: string };
+    v?: string | number;
+  }
+
   const getHyperlinkAt = (worksheet: XLSX.WorkSheet, rowIndex: number, colIndex: number): string | null => {
     if (colIndex == null || colIndex < 0) return null;
     // jsonData rowIndex is 0-based; worksheet rows are 1-based in A1 notation, but we will use encode_cell with 0-based
     const address = XLSX.utils.encode_cell({ c: colIndex, r: rowIndex });
-    const cell = worksheet[address as keyof typeof worksheet] as { l?: { Target?: string; target?: string } } | undefined;
+    const cell = worksheet[address as keyof typeof worksheet] as WorksheetCell | undefined;
     const url = cell?.l?.Target || cell?.l?.target || null;
     return url || null;
   };

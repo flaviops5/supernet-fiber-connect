@@ -17,12 +17,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { AgingSummary, OnuInstability, RetestEffectiveness } from "@/types/pr19.types";
 import SupportHeatmap from "@/components/geo/SupportHeatmap";
 import RegionAlerts from "@/components/alerts/RegionAlerts";
-
-// Tipos temporários (TODO: Migrar para @/types/kpi.types)
-type KPIRow = any;
-type KPIMetrics = any;
-type KPIRegionRow = any;
-type KPIRegionAgg = any;
 import { RegionsMap } from "@/components/admin/RegionsMap";
 import { toCoord } from "@/components/geo/city-centroids";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,6 +24,37 @@ import { ActionModal } from "@/components/regions/ActionModal";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ClientsByRegionTable } from "@/components/admin/ClientsByRegionTable";
+
+interface KPIRow {
+  ts: string;
+  total_count: number;
+  resolved_remote_count: number;
+  tickets_count: number;
+}
+
+interface KPIMetrics {
+  total: number;
+  remoteRate: number;
+  tickets: number;
+  timeSeries: Array<{ date: string; total: number; resolved: number }>;
+}
+
+interface KPIRegionRow {
+  cidade: string;
+  bairro: string | null;
+  total_count: number;
+  tickets_count: number;
+  rx_critico_count: number;
+}
+
+interface KPIRegionAgg {
+  key: string;
+  cidade: string;
+  bairro: string | null;
+  totalCount: number;
+  tickets: number;
+  rxCrit: number;
+}
 
 type CriticalRegion = {
   cidade: string;
