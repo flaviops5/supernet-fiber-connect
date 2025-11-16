@@ -1,12 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { getOrCreateTraceId } from '../_shared/trace-id.ts';
-import { createTimer } from '../_shared/duration-tracker.ts';
-import { recordMetric } from '../_shared/metrics-helper.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createProtectedHandler } from '../_shared/base-handler.ts';
 
 interface DeployRequest {
   type: 'health_check' | 'deploy_edge_functions' | 'deploy_frontend' | 'smoke_tests' | 'rollback';
@@ -20,19 +12,23 @@ interface HealthCheckResult {
   details?: string;
 }
 
-Deno.serve(async (req) => {
-  const timer = createTimer();
-  const traceId = getOrCreateTraceId(req);
-  let success = false;
+// P0 FIX: Convertido para createProtectedHandler com verificação admin
+// Deploy coordenado é operação crítica que afeta produção
+Deno.serve(createProtectedHandler({
+  functionName: 'coordinated-deploy',
+  requireAuth: true,
+  enableRateLimit: false,
   
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  handler: async (req, { supabase, user }) => {
+    // 🔒 Verificar se usuário é admin
+    const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user!.id,
+      _role: 'admin'
+    });
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (roleError || !roleData) {
+      throw new Error('Unauthorized - Admin access required');
+    }
 
     const { type, version }: DeployRequest = await req.json();
 
@@ -150,17 +146,12 @@ Deno.serve(async (req) => {
         const allPassed = tests.every(t => t.passed);
         const totalDuration = tests.reduce((sum, t) => sum + t.duration, 0);
 
-        success = allPassed;
-        return new Response(
-          JSON.stringify({
-            success: allPassed,
-            tests,
-            totalDuration,
-            timestamp: new Date().toISOString(),
-            trace_id: traceId
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return {
+          success: allPassed,
+          tests,
+          totalDuration,
+          timestamp: new Date().toISOString()
+        };
       }
 
       case 'rollback': {
@@ -177,33 +168,11 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        success = true;
-        return new Response(
-          JSON.stringify({ success: true, message: 'Rollback completed', trace_id: traceId }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return { success: true, message: 'Rollback completed' };
       }
 
       default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid deploy type', trace_id: traceId }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        throw new Error('Invalid deploy type');
     }
-  } catch (error) {
-    console.error('Deploy error:', error, { trace_id: traceId });
-    return new Response(
-      JSON.stringify({ error: error.message, trace_id: traceId }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } finally {
-    const duration = timer.end();
-    await recordMetric({
-      agent_name: 'coordinated-deploy',
-      action_type: 'deploy',
-      success,
-      duration_ms: duration,
-      metadata: { trace_id: traceId }
-    }).catch(console.error);
   }
-});
+}));
