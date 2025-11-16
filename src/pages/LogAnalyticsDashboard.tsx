@@ -10,12 +10,23 @@ import { AlertCircle, CheckCircle, Info, AlertTriangle, RefreshCw, Download } fr
 import { format, subHours, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface LogRecord {
+  id: string;
+  level: string;
+  context: string | null;
+  message: string;
+  metadata: Record<string, unknown> | null;
+  log_timestamp: string;
+  created_at: string;
+  correlation_id?: string;
+}
+
 interface LogStats {
   total: number;
   byLevel: Record<string, number>;
   byContext: Record<string, number>;
   timeline: Array<{ hour: string; error: number; warn: number; info: number }>;
-  recentErrors: Array<any>;
+  recentErrors: LogRecord[];
   topContexts: Array<{ context: string; count: number }>;
 }
 
@@ -121,7 +132,7 @@ export default function LogAnalyticsDashboard() {
           log.level,
           log.context,
           `"${log.message.replace(/"/g, '""')}"`,
-          log.correlation_id || ''
+          log.correlation_id ?? ''
         ].join(',')
       )
     ].join('\n');

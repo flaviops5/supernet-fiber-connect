@@ -8,6 +8,35 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, Clock, Activity } from 'lucide-react';
 
+interface AgentMetrics {
+  total: number;
+  success: number;
+  failed: number;
+  avg_duration_ms: number;
+}
+
+interface AlertItem {
+  id: string;
+  level: string;
+  message: string;
+  created_at: string;
+  severity?: string;
+  tipo?: string;
+  mensagem?: string;
+  criado_em?: string;
+}
+
+interface FailedActionItem {
+  id: string;
+  action_type: string;
+  error_message: string;
+  created_at: string;
+  agent_name?: string;
+  criado_em?: string;
+  tipo_de_acao?: string;
+  mensagem_de_erro?: string;
+}
+
 interface MetricsReport {
   time_window: string;
   period: { start: string; end: string };
@@ -19,9 +48,9 @@ interface MetricsReport {
     error_rate: string;
     avg_duration_ms: number;
   };
-  by_agent: Record<string, any>;
-  recent_alerts: any[];
-  failed_actions: { pending: number; items: any[] };
+  by_agent: Record<string, AgentMetrics>;
+  recent_alerts: AlertItem[];
+  failed_actions: { pending: number; items: FailedActionItem[] };
 }
 
 interface TraceLog {
@@ -30,7 +59,7 @@ interface TraceLog {
   context: string;
   level: string;
   message: string;
-  metadata: any;
+  metadata: Record<string, unknown> | null | string | number | boolean;
   created_at: string;
   log_timestamp: string;
   environment: string;
@@ -68,7 +97,7 @@ export function PerformanceMonitor() {
         .limit(100);
 
       if (error) throw error;
-      setTraces(data || []);
+      setTraces((data || []) as never);
     } catch (error) {
       console.error('Error fetching traces:', error);
     }
@@ -95,7 +124,7 @@ export function PerformanceMonitor() {
     );
   }
 
-  const agentData = Object.entries(metrics.by_agent).map(([name, data]: [string, any]) => ({
+  const agentData = Object.entries(metrics.by_agent).map(([name, data]) => ({
     name,
     total: data.total,
     success: data.success,
@@ -286,10 +315,10 @@ export function PerformanceMonitor() {
                         </span>
                       </div>
                       <p className="text-sm mb-2">{trace.message}</p>
-                      {trace.metadata?.duration_ms && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {typeof trace.metadata === 'object' && trace.metadata && 'duration_ms' in trace.metadata && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {trace.metadata.duration_ms}ms
+                          {String((trace.metadata as Record<string, unknown>).duration_ms)}ms
                         </div>
                       )}
                     </div>

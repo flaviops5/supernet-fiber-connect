@@ -47,12 +47,12 @@ export default function AdminWhitelist() {
   const loadWhitelist = async () => {
     try {
       const { data, error } = await supabase
-        .from('rate_limit_whitelist' as any)
+        .from('rate_limit_whitelist' as never)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEntries((data as any) || []);
+      setEntries((data as WhitelistEntry[]) || []);
     } catch (error) {
       console.error('Error loading whitelist:', error);
       toast.error('Erro ao carregar whitelist');
@@ -76,15 +76,25 @@ export default function AdminWhitelist() {
       return;
     }
 
+    interface WhitelistParams {
+      p_ip_address: string | null;
+      p_ip_range: string | null;
+      p_label: string;
+      p_description: string | null;
+      p_reason: string;
+      p_expires_at: string | null;
+    }
+
     try {
-      const { error } = await supabase.rpc('add_to_whitelist' as any, {
+      const params: WhitelistParams = {
         p_ip_address: formData.ipAddress || null,
         p_ip_range: formData.ipRange || null,
         p_label: formData.label,
         p_description: formData.description || null,
         p_reason: formData.reason,
         p_expires_at: formData.expiresAt || null,
-      } as any);
+      };
+      const { error } = await supabase.rpc('add_to_whitelist' as never, params as never);
 
       if (error) throw error;
 
@@ -99,17 +109,18 @@ export default function AdminWhitelist() {
         expiresAt: '',
       });
       loadWhitelist();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding to whitelist:', error);
-      toast.error(`Erro: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Erro: ${errorMessage}`);
     }
   };
 
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('rate_limit_whitelist' as any)
-        .update({ is_active: !currentStatus })
+        .from('rate_limit_whitelist' as never)
+        .update({ is_active: !currentStatus } as never)
         .eq('id', id);
 
       if (error) throw error;

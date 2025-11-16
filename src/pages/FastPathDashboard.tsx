@@ -49,11 +49,20 @@ function MetricCard({ title, value, trend, icon, alert }: MetricCardProps) {
   );
 }
 
+interface SystemAlert {
+  id: string;
+  alert_type: string;
+  severity: string;
+  message: string;
+  metadata: Record<string, unknown> | null | string | number | boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
+
 export default function FastPathDashboard() {
   const [stats, setStats] = useState<FastPathStats[]>([]);
   const [todayStats, setTodayStats] = useState<FastPathStats | null>(null);
-  // Using any here because system_alerts has dynamic metadata (JSON type from Supabase)
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<SystemAlert[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -71,8 +80,15 @@ export default function FastPathDashboard() {
         // Agrupar por dia
         const statsByDay = new Map<string, FastPathStats>();
         
-        rawData.forEach((record: any) => {
-          const date = new Date(record.created_at).toISOString().split('T')[0];
+        interface MonitoringRecord {
+          created_at: string;
+          acao: string;
+          detalhes: Record<string, unknown> | null | string | number | boolean;
+        }
+
+        rawData.forEach((record) => {
+          const typedRecord = record as MonitoringRecord;
+          const date = new Date(typedRecord.created_at).toISOString().split('T')[0];
           
           if (!statsByDay.has(date)) {
             statsByDay.set(date, {
@@ -87,9 +103,9 @@ export default function FastPathDashboard() {
           
           const stats = statsByDay.get(date)!;
           
-          if (record.acao === 'fast_path_enabled') stats.total_fast_paths++;
-          if (record.acao === 'fast_path_resolved') stats.total_resolved++;
-          if (record.acao === 'fast_path_problem_confirmed') stats.total_escalated++;
+          if (typedRecord.acao === 'fast_path_enabled') stats.total_fast_paths++;
+          if (typedRecord.acao === 'fast_path_resolved') stats.total_resolved++;
+          if (typedRecord.acao === 'fast_path_problem_confirmed') stats.total_escalated++;
         });
 
         // Calcular taxa de sucesso
@@ -116,7 +132,7 @@ export default function FastPathDashboard() {
         .limit(5);
 
       if (alertsData) {
-        setAlerts(alertsData);
+        setAlerts(alertsData as never);
       }
     };
 

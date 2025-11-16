@@ -133,8 +133,11 @@ export function Phase8DeployCoordinated() {
       if (error) throw error;
       
       // Aceitar como sucesso se não houver erros críticos (warnings são aceitáveis)
+      interface HealthCheck {
+        status: string;
+      }
       const hasCriticalErrors = Object.values(data.checks || {}).some(
-        (check: any) => check.status === 'error'
+        (check) => (check as HealthCheck).status === 'error'
       );
       
       if (!hasCriticalErrors) {
