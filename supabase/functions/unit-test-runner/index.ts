@@ -75,6 +75,20 @@ serve(async (req) => {
       );
     }
 
+    // Verificar se é admin
+    const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
+
+    if (roleError || !roleData) {
+      logger.warn('Unauthorized access attempt - non-admin user', { userId: user.id });
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized - Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     logger.info('Unit test runner initiated', { userId: user.id, version: '1.0.1' });
 
     const { suite, coverage = false } = await req.json().catch(() => ({}));

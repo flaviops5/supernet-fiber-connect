@@ -1,4 +1,4 @@
-import { createProtectedHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { checkAndRegisterEvent } from '../_shared/webhook-idempotency.ts';
 import { recordMetric } from '../_shared/metrics-helper.ts';
@@ -6,7 +6,7 @@ import { recordMetric } from '../_shared/metrics-helper.ts';
 /**
  * Webhook Alerts - Envia alertas críticos para webhook externo
  * Processa alertas do sistema e notifica via HTTP POST
- * REQUER AUTENTICAÇÃO
+ * REQUER AUTENTICAÇÃO (admin-only)
  */
 
 interface AlertPayload {
@@ -17,9 +17,23 @@ interface AlertPayload {
   timestamp: string;
 }
 
-Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user, traceId }) => {
-  const logger = createLogger('webhook-alerts', req.headers.get('x-request-id') || undefined);
-  logger.info('Processando alertas webhook', { user_id: user.id, trace_id: traceId });
+Deno.serve(createAuthenticatedHandler(
+  'webhook-alerts',
+  async (req, { supabase, user, traceId }) => {
+    const logger = createLogger('webhook-alerts', req.headers.get('x-request-id') || undefined);
+    
+    // 🔒 Verificar se usuário é admin
+    const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
+
+    if (roleError || !roleData) {
+      logger.warn('Unauthorized access attempt', { user_id: user.id });
+      throw new Error('Unauthorized - Admin access required');
+    }
+    
+    logger.info('Processando alertas webhook', { user_id: user.id, trace_id: traceId });
 
   // Buscar configuração do webhook
   const { data: settings } = await supabase
@@ -147,6 +161,21 @@ Deno.serve(createProtectedHandler('webhook-alerts', async (req, { supabase, user
         .eq('id', alert.id);
     }
   }
+
+  logger.info('Webhook alerts processados', { 
+    sent: sentCount, 
+    duplicates: duplicateCount,
+    errors: errors.length
+  });
+
+  return {
+    success: true,
+    message: `Processados ${sentCount} alertas`,
+    alerts_sent: sentCount,
+    duplicates_skipped: duplicateCount,
+    errors: errors.length > 0 ? errors : undefined
+  };
+}));
 
   logger.info('Webhook alerts processados', { 
     sent: sentCount, 
