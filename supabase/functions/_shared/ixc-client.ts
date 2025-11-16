@@ -105,7 +105,8 @@ export async function callIxcWithRetry(
   path: string,
   body?: JsonValue,
   query?: string,
-  config: Partial<RetryConfig> = {}
+  config: Partial<RetryConfig> = {},
+  additionalHeaders?: Record<string, string>
 ): Promise<JsonValue> {
   const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
   
@@ -131,9 +132,12 @@ export async function callIxcWithRetry(
         ? await addHMACHeaders(requestBody, HMAC_SECRET)
         : { 'Content-Type': 'application/json' };
 
+      // Merge com headers adicionais (ex: Authorization)
+      const finalHeaders = { ...signedHeaders, ...additionalHeaders };
+
       const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: signedHeaders,
+        headers: finalHeaders,
         body: JSON.stringify(requestBody)
       });
       

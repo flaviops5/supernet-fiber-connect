@@ -8,6 +8,10 @@ Deno.serve(createAuthenticatedHandler(
   'ixc-count-clients',
   async (req, { supabase, user }) => {
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/ixc-proxy`;
+    
+    // Obter Authorization header para repassar ao ixc-proxy
+    const authHeader = req.headers.get('Authorization');
+    const additionalHeaders = authHeader ? { 'Authorization': authHeader } : {};
 
     console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');
 
@@ -35,7 +39,10 @@ Deno.serve(createAuthenticatedHandler(
           IXC_PROXY_URL,
           'POST',
           '/webservice/v1/radusuarios',
-          bodyOnline
+          bodyOnline,
+          undefined,
+          {},
+          additionalHeaders
         );
 
         const onlineRegistros: Array<Record<string, unknown>> = Array.isArray(onlineData?.data?.registros)
@@ -80,7 +87,10 @@ Deno.serve(createAuthenticatedHandler(
           IXC_PROXY_URL,
           'POST',
           '/webservice/v1/radusuarios',
-          bodyOffline
+          bodyOffline,
+          undefined,
+          {},
+          additionalHeaders
         );
 
         const offlineRegistros: Array<Record<string, unknown>> = Array.isArray(offlineData?.data?.registros)
