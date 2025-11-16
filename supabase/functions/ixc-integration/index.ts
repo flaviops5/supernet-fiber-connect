@@ -213,7 +213,7 @@ Deno.serve(createAuthenticatedHandler('ixc-integration', async (req, { supabase,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+}));
 
 async function postIXC(url: string, auth: string, params: Record<string, string>): Promise<IXCApiResponse<JsonValue>> {
   const { ixcsoft: ixcsoftParam, ...rest } = params || {};
