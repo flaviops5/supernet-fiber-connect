@@ -22,6 +22,10 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+  
+  // Obter Authorization header para repassar ao ixc-proxy
+  const authHeader = req.headers.get('Authorization');
+  const additionalHeaders = authHeader ? { 'Authorization': authHeader } : {};
 
   // Verificar horário (não executar entre 1h-6h)
   const now = new Date();
@@ -42,7 +46,9 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
       'GET',
       '/webservice/v1/radusuarios',
       undefined,
-      'qtype=radusuarios.online&oper==&page=1&rp=999999&sortname=radusuarios.acctstarttime&sortorder=desc'
+      'qtype=radusuarios.online&oper==&page=1&rp=999999&sortname=radusuarios.acctstarttime&sortorder=desc',
+      {},
+      additionalHeaders
     );
 
     if (!radiusResponse.ok || !radiusResponse.data?.registros) {
@@ -133,7 +139,9 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
           'GET',
           '/webservice/v1/cliente',
           undefined,
-          `qtype=cliente.id&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=cliente.id&sortorder=asc`
+          `qtype=cliente.id&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=cliente.id&sortorder=asc`,
+          {},
+          additionalHeaders
         );
 
         if (!clientResponse.ok || !clientResponse.data?.registros?.[0]) {
@@ -222,7 +230,9 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
             'GET',
             '/webservice/v1/radusuarios',
             undefined,
-            `qtype=radusuarios.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=radusuarios.acctstarttime&sortorder=desc`
+            `qtype=radusuarios.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=radusuarios.acctstarttime&sortorder=desc`,
+            {},
+            additionalHeaders
           );
 
           if (recheckResponse.ok && recheckResponse.data?.registros?.[0]) {
@@ -277,7 +287,9 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
               'GET',
               '/webservice/v1/su_cliente_equipamento',
               undefined,
-              `qtype=su_cliente_equipamento.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=su_cliente_equipamento.id&sortorder=desc`
+              `qtype=su_cliente_equipamento.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=su_cliente_equipamento.id&sortorder=desc`,
+              {},
+              additionalHeaders
             );
 
             if (equipmentResponse.ok && equipmentResponse.data?.registros?.[0]) {
@@ -291,7 +303,10 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
                 {
                   id_equipamento: equipmentId,
                   comando: 'reboot'
-                }
+                },
+                undefined,
+                {},
+                additionalHeaders
               );
 
               if (rebootResponse.ok) {
@@ -309,7 +324,9 @@ Deno.serve(createAuthenticatedHandler('auto-reboot-frozen-equipment', async (req
                   'GET',
                   '/webservice/v1/radusuarios',
                   undefined,
-                  `qtype=radusuarios.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=radusuarios.acctstarttime&sortorder=desc`
+                  `qtype=radusuarios.id_cliente&query=${suspect.clientId}&oper==&page=1&rp=1&sortname=radusuarios.acctstarttime&sortorder=desc`,
+                  {},
+                  additionalHeaders
                 );
 
                 let bandwidthAfter = 0;

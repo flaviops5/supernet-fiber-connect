@@ -29,6 +29,10 @@ Deno.serve(createAuthenticatedHandler('check-reboot-candidates', async (req, { s
   
   // URL do proxy centralizado
   const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+  
+  // Obter Authorization header para repassar ao ixc-proxy
+  const authHeader = req.headers.get('Authorization');
+  const additionalHeaders = authHeader ? { 'Authorization': authHeader } : {};
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
     logger.info('Buscando clientes ONLINE via IXC proxy (filtro direto)');
@@ -49,7 +53,10 @@ Deno.serve(createAuthenticatedHandler('check-reboot-candidates', async (req, { s
         IXC_PROXY_URL,
         'POST',
         '/webservice/v1/radusuarios',
-        bodyOnline
+        bodyOnline,
+        undefined,
+        {},
+        additionalHeaders
       );
       logger.info('Clientes online obtidos com sucesso (filtro direto aplicado)');
     } catch (error: unknown) {
@@ -126,7 +133,9 @@ Deno.serve(createAuthenticatedHandler('check-reboot-candidates', async (req, { s
             'GET',
             '/webservice/v1/cliente',
             undefined,
-            `qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`
+            `qtype=cliente.id&query=${user.id_cliente}&oper==&page=1&rp=1`,
+            {},
+            additionalHeaders
           );
 
           if (clientResponse?.data?.registros?.[0]) {
