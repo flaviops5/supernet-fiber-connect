@@ -26,18 +26,16 @@ Deno.serve(createProtectedHandler({
       throw new Error('Usuário não autenticado');
     }
     
-    // Verificar se é admin (role está na tabela user_roles por segurança)
-    const { data: userRole, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    // 🔒 Verificar se usuário é admin usando função SECURITY DEFINER
+    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
     
-    if (roleError || !userRole || userRole.role !== 'admin') {
+    if (roleError || !isAdmin) {
       logger.warn('Tentativa de acesso não autorizado', { 
         user_id: user.id, 
-        has_role: !!userRole,
-        role: userRole?.role 
+        error: roleError?.message 
       });
       throw new Error('Acesso negado: apenas administradores podem executar esta validação');
     }
