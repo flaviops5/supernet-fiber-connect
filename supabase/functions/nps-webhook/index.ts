@@ -1,12 +1,14 @@
-import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import { createPublicHandlerWithRateLimit } from "../_shared/base-handler.ts";
 import { checkAndRegisterEvent } from "../_shared/webhook-idempotency.ts";
 import { recordMetric } from "../_shared/metrics-helper.ts";
 
-// P0 FIX: Convertido para createAuthenticatedHandler
-// Apenas usuários autenticados podem processar respostas NPS
-Deno.serve(createAuthenticatedHandler(
+/**
+ * NPS Webhook - Recebe respostas NPS de sistemas externos
+ * Público com rate limiting (webhooks externos não têm JWT)
+ */
+Deno.serve(createPublicHandlerWithRateLimit(
   'nps-webhook',
-  async (req, { supabase, user, logger, traceId }) => {
+  async (req, { supabase, logger, traceId }) => {
     const payload = await req.json();
     logger.info('NPS Webhook recebido', { payloadKeys: Object.keys(payload) });
 
@@ -50,8 +52,7 @@ Deno.serve(createAuthenticatedHandler(
       },
       metadata: {
         trace_id: traceId,
-        response_channel,
-        user_id: user.id
+        response_channel
       }
     });
 
@@ -144,5 +145,9 @@ Deno.serve(createAuthenticatedHandler(
         follow_up_needed: category === 'detractor',
       }
     };
+  },
+  {
+    maxRequestsPerMinute: 60, // 60 respostas NPS por minuto
+    windowMs: 60000
   }
 ));

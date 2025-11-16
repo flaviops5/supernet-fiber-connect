@@ -55,7 +55,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.nps-webhook]
-verify_jwt = true
+verify_jwt = false
 
 [functions.automacao-agent]
 verify_jwt = true
@@ -70,7 +70,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.voice-to-text]
-verify_jwt = true
+verify_jwt = false
 
 [functions.ixc-count-clients]
 verify_jwt = true
@@ -234,7 +234,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.chatbot-cep-lookup]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-reboot-candidates]
 verify_jwt = true
@@ -273,7 +273,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.rate-limit-check]
-verify_jwt = true
+verify_jwt = false
 
 [functions.reboot-client-equipment]
 verify_jwt = true
