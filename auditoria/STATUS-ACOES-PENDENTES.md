@@ -91,7 +91,7 @@
 
 ## 🎯 Próximas Ações Recomendadas
 
-### ✅ Todas as Ações Concluídas!
+### ✅ Todas as Ações Concluídas! (ACT-001 a ACT-009)
 
 1. ✅ ~~Corrigir whatsapp-webhook~~ - CONCLUÍDO
 2. ✅ ~~Implementar rate limiting (ACT-006)~~ - CONCLUÍDO
@@ -100,11 +100,27 @@
 5. ✅ ~~Documentar APIs com OpenAPI (ACT-008)~~ - CONCLUÍDO
 6. ✅ ~~Adicionar índices no DB (ACT-009)~~ - CONCLUÍDO
 
-### Próximas Melhorias (Futuro)
-1. Testes E2E com Playwright
-2. Monitoramento APM (Application Performance Monitoring)
-3. Testes de carga e stress
-4. CI/CD pipeline completo
+### 🔄 Novo Backlog (Pós-Auditoria 2025-11-16)
+
+#### Imediato (P0) - 14-20h
+1. 🔄 **ACT-010**: Autenticar edge functions públicas sensíveis (8-12h)
+2. 🔄 **ACT-011**: Corrigir SECURITY DEFINER views (6-8h)
+
+#### Curto Prazo (P1) - 8-12h
+3. 🔄 **ACT-012**: Proteger validate-production-readiness (2-3h)
+4. 🔄 **ACT-013**: Habilitar leaked password protection (1h)
+5. 🔄 **ACT-014**: Configurar search_path em functions (3-4h)
+6. 🔄 **ACT-015**: Mover extensions para schema correto (2-3h)
+
+#### Médio Prazo (P2) - 12-16h
+7. 🔄 Análise de tabelas com RLS sem políticas (4-6h)
+8. 🔄 Pen-testing de XSS (4-6h)
+9. 🔄 Load testing e stress testing (4-6h)
+
+#### Longo Prazo (P3) - 20-30h
+10. 🔄 Testes E2E com Playwright (8-12h)
+11. 🔄 APM (Application Performance Monitoring) (6-8h)
+12. 🔄 CI/CD pipeline completo (6-10h)
 
 ## 🔒 Segurança - Status Geral
 
