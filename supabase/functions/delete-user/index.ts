@@ -1,127 +1,65 @@
+import { createProtectedHandler } from '../_shared/base-handler.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { getOrCreateTraceId } from '../_shared/trace-id.ts';
-import { createTimer } from '../_shared/duration-tracker.ts';
-import { recordMetric } from '../_shared/metrics-helper.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 interface DeleteUserRequest {
   userId: string;
 }
 
-Deno.serve(async (req) => {
-  const timer = createTimer();
-  const traceId = getOrCreateTraceId(req);
-  let success = false;
+// P0 FIX: Convertido para createProtectedHandler com verificação admin
+// Deletar usuários é operação crítica que requer admin
+Deno.serve(createProtectedHandler({
+  functionName: 'delete-user',
+  requireAuth: true,
+  enableRateLimit: false,
   
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  handler: async (req, { supabase, user }) => {
+    // 🔒 Verificar se usuário é admin
+    const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: user!.id,
+      _role: 'admin'
+    });
 
-  try {
-    // Get Supabase credentials from environment
+    if (roleError || !roleData) {
+      console.error('❌ User is not admin', { userId: user!.id });
+      throw new Error('Forbidden: Admin role required');
+    }
+
+    // Create admin client for user deletion
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    
-    // Create admin client with service role
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify the requesting user is authenticated and is an admin
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get the requesting user
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if requesting user is admin
-    const { data: roleData, error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (roleError || !roleData || roleData.role !== 'admin') {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Only admins can delete users' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Parse request body
     const { userId }: DeleteUserRequest = await req.json();
 
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'userId is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('userId is required');
     }
 
     // Prevent self-deletion
-    if (userId === user.id) {
-      return new Response(
-        JSON.stringify({ error: 'Cannot delete your own account' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (userId === user!.id) {
+      throw new Error('Cannot delete your own account');
     }
 
     // Delete user from auth.users (this will cascade delete related data due to foreign keys)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      console.error('Error deleting user:', deleteError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to delete user', details: deleteError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('❌ Error deleting user:', deleteError);
+      throw new Error(`Failed to delete user: ${deleteError.message}`);
     }
 
     // Log the deletion for security audit
     await supabaseAdmin.from('security_logs').insert({
-      user_id: user.id,
+      user_id: user!.id,
       event_type: 'user_deleted',
-      event_description: `Admin ${user.email} deleted user ${userId}`,
+      event_description: `Admin deleted user ${userId}`,
       severity: 'info',
-      details: { deleted_user_id: userId, trace_id: traceId }
+      details: { deleted_user_id: userId }
     });
 
-    success = true;
-    return new Response(
-      JSON.stringify({ success: true, message: 'User deleted successfully' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.log(`✅ User ${userId} deleted successfully by admin ${user!.id}`);
 
-  } catch (error) {
-    console.error('Unexpected error:', error, { trace_id: traceId });
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } finally {
-    const duration = timer.end();
-    await recordMetric({
-      agent_name: 'delete-user',
-      action_type: 'delete_user',
-      success,
-      duration_ms: duration,
-      metadata: { trace_id: traceId }
-    }).catch(console.error);
+    return { success: true, message: 'User deleted successfully' };
   }
-})
+}));

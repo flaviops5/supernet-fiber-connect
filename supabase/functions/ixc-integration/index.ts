@@ -20,11 +20,6 @@ import type {
   IXCApiParams
 } from '../_shared/ixc-types.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 function normalizeRegistros(input: unknown): IXCCustomer[] {
   if (!input) return [];
   const arr = Array.isArray(input) ? input : (typeof input === 'object' ? Object.values(input) : []);
@@ -49,12 +44,10 @@ function normalizeRegistros(input: unknown): IXCCustomer[] {
   })) as IXCCustomer[];
 }
 
-serve(async (req) => {
+// P0 FIX: Convertido para createAuthenticatedHandler
+// IXC Integration manipula dados sensíveis de clientes
+Deno.serve(createAuthenticatedHandler('ixc-integration', async (req, { supabase, user }) => {
   const logger = createLogger('ixc-integration');
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
 
   try {
     // Validar body antes de fazer parse
