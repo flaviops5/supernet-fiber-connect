@@ -176,19 +176,3 @@ Deno.serve(createAuthenticatedHandler(
     errors: errors.length > 0 ? errors : undefined
   };
 }));
-
-  logger.info('Webhook alerts processados', { 
-    sent: sentCount, 
-    duplicates: duplicateCount,
-    total: alerts.length,
-    failed: errors.length 
-  });
-
-  return {
-    success: true,
-    alerts_sent: sentCount,
-    alerts_duplicates: duplicateCount,
-    alerts_failed: errors.length,
-    errors: errors.length > 0 ? errors : undefined
-  };
-}));
