@@ -59,10 +59,10 @@ export async function authenticateRequest(
 
   // 2️⃣ HMAC Authentication (internal calls)
   if (hmacSignature && hmacTimestamp) {
-    const hmacSecret = Deno.env.get('HMAC_SECRET');
+    const hmacSecret = Deno.env.get('HMAC_SHARED_SECRET');
     
     if (!hmacSecret) {
-      logger?.warn('HMAC_SECRET not configured - skipping HMAC validation');
+      logger?.warn('HMAC_SHARED_SECRET not configured - skipping HMAC validation');
     } else {
       try {
         const timestamp = parseInt(hmacTimestamp, 10);
@@ -202,10 +202,10 @@ export async function generateHmacSignature(
   path: string,
   body: string = ''
 ): Promise<{ signature: string; timestamp: number }> {
-  const hmacSecret = Deno.env.get('HMAC_SECRET');
+  const hmacSecret = Deno.env.get('HMAC_SHARED_SECRET');
   
   if (!hmacSecret) {
-    throw new Error('HMAC_SECRET not configured');
+    throw new Error('HMAC_SHARED_SECRET not configured');
   }
 
   const timestamp = Date.now();
