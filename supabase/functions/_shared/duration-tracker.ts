@@ -53,6 +53,13 @@ export class DurationTracker {
   }
 
   /**
+   * Backwards-compatible alias; some handlers call timer.end()
+   */
+  end(): number {
+    return this.complete();
+  }
+
+  /**
    * Get all checkpoint durations relative to start
    */
   getAllCheckpoints(): Record<string, number> {

@@ -3734,6 +3734,7 @@ export type Database = {
       }
       monitoring_logs: {
         Row: {
+          alerted_at: string | null
           context: string
           correlation_id: string | null
           created_at: string
@@ -3745,6 +3746,7 @@ export type Database = {
           metadata: Json | null
         }
         Insert: {
+          alerted_at?: string | null
           context: string
           correlation_id?: string | null
           created_at?: string
@@ -3756,6 +3758,7 @@ export type Database = {
           metadata?: Json | null
         }
         Update: {
+          alerted_at?: string | null
           context?: string
           correlation_id?: string | null
           created_at?: string
