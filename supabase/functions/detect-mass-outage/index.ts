@@ -1,25 +1,55 @@
-import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+import { authenticateRequest, addHmacHeaders } from "../_shared/composite-auth.ts";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 import { getErrorMessage } from '../_shared/error-types.ts';
 import { createLogger } from "../_shared/structured-logger.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { RadiusUser } from '../_shared/types.ts';
 
-// P0 FIX: Convertido para createAuthenticatedHandler
-// Detecção de quedas em massa é operação crítica de infraestrutura
-Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supabase, user, traceId, timer }) => {
-  const logger = createLogger('detect-mass-outage', req, { 
-    traceId, 
-    durationTracker: timer 
-  });
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-key, x-hmac-signature, x-hmac-timestamp',
+};
 
-  logger.info('Iniciando detecção de quedas em massa');
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-  const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
+// v3.1 Hybrid: CRON-compatible com composite auth
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-  // Extrair Authorization header para propagar ao IXC Proxy
-  const authHeader = req.headers.get('authorization');
-  const authHeaders = authHeader ? { 'Authorization': authHeader } : {};
+  const traceId = crypto.randomUUID();
+  const logger = createLogger('detect-mass-outage', req, { traceId });
+
+  try {
+    // 🔐 Autenticação via composite auth (CRON > HMAC > service_role > JWT)
+    const authResult = await authenticateRequest(req, logger);
+    
+    if (!authResult.authenticated) {
+      logger.warn('❌ Chamada pública recebida', { error: authResult.error });
+      return new Response(
+        JSON.stringify({ error: authResult.error || 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    logger.info('✅ Authenticated', { 
+      method: authResult.method,
+      metadata: authResult.metadata 
+    });
+
+    // Criar cliente Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    logger.info('Iniciando detecção de quedas em massa via proxy');
+    const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${supabaseUrl}/functions/v1/ixc-proxy`;
+
+    // 🔐 Preparar headers com HMAC para chamadas ao ixc-proxy
+    const baseHeaders: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
 
   // Buscar clientes offline do IXC via proxy
     let page = 1;
@@ -46,6 +76,14 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
           maxPages: MAX_PAGES 
         });
 
+        // Gerar headers HMAC para esta requisição
+        const hmacHeaders = await addHmacHeaders(
+          baseHeaders,
+          'POST',
+          '/webservice/v1/radusuarios',
+          bodyRad
+        );
+
         const radData = await logger.measure('ixc-fetch-offline-clients', async () => {
           return await callIxcWithRetry(
             IXC_PROXY_URL,
@@ -54,7 +92,7 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
             bodyRad,
             undefined,
             {},
-            authHeaders
+            hmacHeaders
           );
         });
 
@@ -197,54 +235,74 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
           }
 
           try {
-            // FALLBACK ROBUSTO: Tentar ambas as chamadas, mas continuar mesmo se cliente_equipamento falhar
-            let clientData, equipData;
+            // FALLBACK ROBUSTO: Tentar buscar dados do cliente
+            let clientData;
             
             try {
-              // Buscar apenas dados do cliente (inclui bairro). Removido uso de cliente_equipamento (inexistente)
+              // Buscar dados do cliente (inclui bairro)
+              const clientBody = {
+                qtype: 'cliente.id',
+                query: clientId,
+                oper: '=',
+                page: '1',
+                rp: '1',
+                sortname: 'cliente.id',
+                sortorder: 'asc',
+              };
+
+              const clientHmacHeaders = await addHmacHeaders(
+                baseHeaders,
+                'POST',
+                '/webservice/v1/cliente',
+                clientBody
+              );
+
               clientData = await retryWithBackoff(() =>
                 callIxcWithRetry(
                   IXC_PROXY_URL,
                   'POST',
                   '/webservice/v1/cliente',
-                  {
-                    qtype: 'cliente.id',
-                    query: clientId,
-                    oper: '=',
-                    page: '1',
-                    rp: '1',
-                    sortname: 'cliente.id',
-                    sortorder: 'desc',
-                  },
+                  clientBody,
                   undefined,
                   {},
-                  authHeaders
+                  clientHmacHeaders
                 )
               );
-              // Sem equipamentos disponíveis
-              equipData = { data: { registros: [] } };
             } catch (error) {
-              // Se falhou completamente, tentar pelo menos buscar o cliente
-              logger.warn(`Erro ao buscar dados completos do cliente ${clientId}, tentando apenas dados básicos`);
+              // Se falhou completamente, tentar pelo menos buscar o cliente sem retry
+              logger.warn(`Erro ao buscar dados do cliente ${clientId} com retry, tentando uma vez`);
               try {
+                const fallbackBody = {
+                  qtype: 'cliente.id',
+                  query: clientId,
+                  oper: '=',
+                  page: '1',
+                  rp: '1',
+                  sortname: 'cliente.id',
+                  sortorder: 'asc',
+                };
+
+                const fallbackHeaders = await addHmacHeaders(
+                  baseHeaders,
+                  'POST',
+                  '/webservice/v1/cliente',
+                  fallbackBody
+                );
+
                 clientData = await callIxcWithRetry(
                   IXC_PROXY_URL,
                   'POST',
                   '/webservice/v1/cliente',
-                  {
-                    qtype: 'cliente.id',
-                    query: clientId,
-                    oper: '=',
-                    page: '1',
-                    rp: '1',
-                    sortname: 'cliente.id',
-                    sortorder: 'desc',
-                  }
+                  fallbackBody,
+                  undefined,
+                  {},
+                  fallbackHeaders
                 );
-                equipData = { data: { registros: [] } }; // Sem dados de equipamento
               } catch (fallbackError) {
-                // Falhou tudo, retornar apenas o usuário
-                return { user };
+                logger.warn(`Cliente ${clientId}: Erro ao buscar dados mesmo com fallback`, {
+                  error: getErrorMessage(fallbackError)
+                });
+                return { user }; // Retorna sem dados PON
               }
             }
 
@@ -258,6 +316,9 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
               const cliente = clientes[0];
               bairro = cliente.bairro || cliente.endereco_bairro || '';
             }
+
+            // Sem dados de PON disponíveis
+            return { user, ponPort: '', cto: '', bairro };
 
             // Processar dados de equipamento (PON/CTO)
             const equipamentos = Array.isArray(equipData?.data?.registros)
@@ -407,18 +468,40 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
 
     // ... keep existing code (PON grouping logic)
 
-    return {
-      success: true,
-      total_offline: allRadUsers.length,
-      clients_with_pon_data: clientsWithPon.filter(c => c.ponPort).length,
-      mass_outages_detected: massOutages.length,
-      mass_outages: massOutages,
-      groups_analyzed: {
-        total: ponGroups.size + ctoGroups.size + regionGroups.size,
-        by_pon_port: ponGroups.size,
-        by_cto: ctoGroups.size,
-        by_region: regionGroups.size,
-        hierarchy_applied: true
+    return new Response(
+      JSON.stringify({
+        success: true,
+        total_offline: allRadUsers.length,
+        clients_with_pon_data: clientsWithPon.filter(c => c.ponPort).length,
+        mass_outages_detected: massOutages.length,
+        mass_outages: massOutages,
+        groups_analyzed: {
+          total: ponGroups.size + ctoGroups.size + regionGroups.size,
+          by_pon_port: ponGroups.size,
+          by_cto: ctoGroups.size,
+          by_region: regionGroups.size,
+          hierarchy_applied: true
+        }
+      }),
+      { 
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    };
-}));
+    );
+  } catch (error) {
+    logger.error('Erro na detecção de quedas em massa', { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error'
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+});
