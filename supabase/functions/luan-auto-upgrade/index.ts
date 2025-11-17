@@ -1,4 +1,4 @@
-import { createAuthenticatedHandler, corsHeaders } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
 type KpiRow = { 
   ts: string; 
@@ -96,7 +96,7 @@ Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabas
 
     return new Response(
       JSON.stringify({ ok: true, policy }), 
-      { headers: { ...corsHeaders, "content-type": "application/json" } }
+      { headers: { "content-type": "application/json" } }
     );
 
   } catch (e) {
@@ -105,7 +105,7 @@ Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabas
       JSON.stringify({ ok: false, error: String(e) }), 
       { 
         status: 500, 
-        headers: { ...corsHeaders, "content-type": "application/json" } 
+        headers: { "content-type": "application/json" } 
       }
     );
   } finally {
