@@ -46,11 +46,13 @@ Deno.serve(async (req) => {
     logger.info('Iniciando detecção de quedas em massa via proxy');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${supabaseUrl}/functions/v1/ixc-proxy`;
 
-    // 🔐 Preparar headers base com Service Role para passar no gateway (verify_jwt)
+    // 🔐 Preparar headers base para HMAC (sem JWT)
     const baseHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseKey}`
+      'Content-Type': 'application/json'
     };
+
+    // Path exato do proxy para assinar HMAC corretamente
+    const proxyPath = new URL(IXC_PROXY_URL).pathname;
 
   // Buscar clientes offline do IXC via proxy
     let page = 1;
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
         const hmacHeaders = await addHmacHeaders(
           baseHeaders,
           'POST',
-          '/webservice/v1/radusuarios',
+          proxyPath,
           bodyRad
         );
 
@@ -254,7 +256,7 @@ Deno.serve(async (req) => {
               const clientHmacHeaders = await addHmacHeaders(
                 baseHeaders,
                 'POST',
-                '/webservice/v1/cliente',
+                proxyPath,
                 clientBody
               );
 
@@ -286,7 +288,7 @@ Deno.serve(async (req) => {
                 const fallbackHeaders = await addHmacHeaders(
                   baseHeaders,
                   'POST',
-                  '/webservice/v1/cliente',
+                  proxyPath,
                   fallbackBody
                 );
 

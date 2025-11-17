@@ -40,7 +40,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ixc-proxy]
-verify_jwt = true
+verify_jwt = false
 
 [functions.system-health]
 verify_jwt = true
