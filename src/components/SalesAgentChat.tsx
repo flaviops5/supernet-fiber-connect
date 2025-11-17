@@ -56,9 +56,14 @@ export const SalesAgentChat = () => {
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll automático para acompanhar a conversa
+  // Scroll automático para acompanhar a conversa (apenas dentro do container do chat)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      const chatContainer = messagesEndRef.current.parentElement;
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }
   }, [messages]);
 
   const sendMessage = async () => {

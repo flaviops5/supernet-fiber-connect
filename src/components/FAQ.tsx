@@ -113,7 +113,7 @@ const FAQ = () => {
             {faqs.slice(Math.ceil(faqs.length / 2)).map((faq, index) => {
             const IconComponent = faq.icon;
             const adjustedIndex = index + Math.ceil(faqs.length / 2);
-            return <div key={`faq-right-${adjustedIndex}`} className="bg-muted rounded-2xl border-l-4 border-accent shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in" style={{
+            return <div key={`faq-right-${adjustedIndex}`} className="bg-muted rounded-2xl border-l-4 border-primary shadow-md hover:shadow-lg transition-all duration-300 hover:scale-102 animate-fade-in" style={{
               animationDelay: `${(index + Math.ceil(faqs.length / 2)) * 0.1}s`
             }}>
                   <Accordion type="single" collapsible>
@@ -121,10 +121,10 @@ const FAQ = () => {
                       <AccordionTrigger className="px-6 py-6 hover:no-underline group">
                         <div className="flex items-center gap-4 text-left">
                           <div className="w-12 h-12 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <IconComponent className="w-6 h-6 text-accent stroke-2" />
+                            <IconComponent className="w-6 h-6 text-primary stroke-2" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-base text-foreground group-hover:text-accent transition-colors leading-tight">
+                            <h3 className="text-base text-foreground group-hover:text-primary transition-colors leading-tight">
                               {faq.question}
                             </h3>
                           </div>

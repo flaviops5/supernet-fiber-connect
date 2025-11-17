@@ -161,8 +161,8 @@ const HeroSection = () => {
                   <Wifi className="w-6 h-6 text-red-accent" />
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground">Wi-Fi 6</p>
-                  <p className="text-sm text-muted-foreground">Sinal em toda a casa</p>
+                  <p className="font-semibold text-foreground">WI-FI 6</p>
+                  <p className="text-sm text-muted-foreground">MELHOR REDE SEM FIO</p>
                 </div>
               </div>
             </div>
@@ -189,10 +189,18 @@ const HeroSection = () => {
                   </div>)}
 
                 {/* Navigation buttons */}
-                <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/20 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-background/30 transition-colors shadow-md">
+                <button 
+                  onClick={prevSlide} 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-lg"
+                  aria-label="Slide anterior"
+                >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-background/20 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-background/30 transition-colors shadow-md">
+                <button 
+                  onClick={nextSlide} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-lg"
+                  aria-label="Próximo slide"
+                >
                   <ChevronRight className="w-5 h-5" />
                 </button>
 
