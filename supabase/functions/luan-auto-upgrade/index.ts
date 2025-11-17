@@ -1,4 +1,4 @@
-import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler, corsHeaders } from '../_shared/base-handler.ts';
 
 type KpiRow = { 
   ts: string; 
@@ -80,19 +80,17 @@ Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabas
     
     if (upsertError) throw upsertError;
 
-    // 4) Log auditoria (fire-and-forget via EdgeRuntime)
-    EdgeRuntime.waitUntil(
-      supabase.from("registros_de_monitoramento").insert({
-        fluxo: "support-tech",
-        acao: "auto_upgrade_applied",
-        detalhes: { 
-          remoteRate: policy.kpi_snapshot.remoteRate,
-          ticketRate: policy.kpi_snapshot.ticketRate,
-          policy_version: policy.version,
-          prefer_variations: policy.rules.prefer_variations 
-        }
-      })
-    );
+    // 4) Log auditoria (fire-and-forget)
+    supabase.from("registros_de_monitoramento").insert({
+      fluxo: "support-tech",
+      acao: "auto_upgrade_applied",
+      detalhes: { 
+        remoteRate: policy.kpi_snapshot.remoteRate,
+        ticketRate: policy.kpi_snapshot.ticketRate,
+        policy_version: policy.version,
+        prefer_variations: policy.rules.prefer_variations 
+      }
+    }).catch(console.error);
 
     console.log("✅ Auto-upgrade aplicado:", policy.version);
 
@@ -100,11 +98,6 @@ Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabas
       JSON.stringify({ ok: true, policy }), 
       { headers: { ...corsHeaders, "content-type": "application/json" } }
     );
-
-    } finally {
-      // Liberar lock sempre
-      await supabase.rpc('release_cron_lock', { p_job_name: 'luan-auto-upgrade' });
-    }
 
   } catch (e) {
     console.error("❌ Erro auto-upgrade:", e);
@@ -115,6 +108,9 @@ Deno.serve(createAuthenticatedHandler('luan-auto-upgrade', async (req, { supabas
         headers: { ...corsHeaders, "content-type": "application/json" } 
       }
     );
+  } finally {
+    // Liberar lock sempre
+    await supabase.rpc('release_cron_lock', { p_job_name: 'luan-auto-upgrade' }).catch(console.error);
   }
-});
+}));
 // <<< PR28
