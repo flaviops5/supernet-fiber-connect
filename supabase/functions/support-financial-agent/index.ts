@@ -10,6 +10,11 @@ import { MessageAttachment } from "../_shared/agent-types.ts";
 import { IXCContrato } from "../_shared/ixc-types.ts";
 import { kpiLog } from "../_shared/kpi.ts";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 interface Message {
   role: string;
   content: string;
@@ -1054,4 +1059,4 @@ ${pixData.data.qrcode}`;
   } catch (error) {
     return handleEdgeFunctionError(error, "support-financial-agent");
   }
-});
+}));
