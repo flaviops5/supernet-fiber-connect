@@ -314,7 +314,7 @@ const detectIconFromText = (text: string): string => {
           {Array.from({ length: count }, (_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              className={`w-1 h-1 rounded-full transition-all duration-300 ${
                 index + 1 === current
                   ? 'bg-primary scale-110'
                   : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
