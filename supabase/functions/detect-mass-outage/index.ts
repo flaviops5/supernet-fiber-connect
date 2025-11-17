@@ -1,4 +1,3 @@
-import { authenticateRequest, addHmacHeaders } from "../_shared/composite-auth.ts";
 import { callIxcWithRetry } from '../_shared/ixc-client.ts';
 import { setMassOutageStatus } from '../_shared/mass-outage-helper.ts';
 import { getErrorMessage } from '../_shared/error-types.ts';
@@ -11,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-key, x-hmac-signature, x-hmac-timestamp',
 };
 
-// v3.1 Hybrid: CRON-compatible com composite auth
+// v3.1 Hybrid: CRON-compatible public function
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -22,18 +21,6 @@ Deno.serve(async (req) => {
   const logger = createLogger('detect-mass-outage', req, { traceId });
 
   try {
-    // 🔐 Autenticação via composite auth (CRON > HMAC > service_role > JWT)
-    const authResult = await authenticateRequest(req, logger);
-    
-    if (!authResult.authenticated) {
-      logger.warn('Public request without valid auth – proceeding in public mode', { error: authResult.error });
-      // Proceed without auth (function is public via config). Consider external rate limiting if needed.
-    }
-
-    logger.info('✅ Authenticated', { 
-      method: authResult.method,
-      metadata: authResult.metadata 
-    });
 
     // Criar cliente Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -43,13 +30,10 @@ Deno.serve(async (req) => {
     logger.info('Iniciando detecção de quedas em massa via proxy');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${supabaseUrl}/functions/v1/ixc-proxy`;
 
-    // 🔐 Preparar headers base para HMAC (sem JWT)
+    // 🔐 Preparar headers base (HMAC será gerado internamente por callIxcWithRetry)
     const baseHeaders: Record<string, string> = {
       'Content-Type': 'application/json'
     };
-
-    // Path exato do proxy para assinar HMAC corretamente
-    const proxyPath = new URL(IXC_PROXY_URL).pathname;
 
   // Buscar clientes offline do IXC via proxy
     let page = 1;
@@ -76,14 +60,6 @@ Deno.serve(async (req) => {
           maxPages: MAX_PAGES 
         });
 
-        // Gerar headers HMAC para esta requisição
-        const hmacHeaders = await addHmacHeaders(
-          baseHeaders,
-          'POST',
-          proxyPath,
-          bodyRad
-        );
-
         const radData = await logger.measure('ixc-fetch-offline-clients', async () => {
           return await callIxcWithRetry(
             IXC_PROXY_URL,
@@ -92,7 +68,7 @@ Deno.serve(async (req) => {
             bodyRad,
             undefined,
             {},
-            hmacHeaders
+            baseHeaders
           );
         });
 
@@ -250,13 +226,6 @@ Deno.serve(async (req) => {
                 sortorder: 'asc',
               };
 
-              const clientHmacHeaders = await addHmacHeaders(
-                baseHeaders,
-                'POST',
-                proxyPath,
-                clientBody
-              );
-
               clientData = await retryWithBackoff(() =>
                 callIxcWithRetry(
                   IXC_PROXY_URL,
@@ -265,7 +234,7 @@ Deno.serve(async (req) => {
                   clientBody,
                   undefined,
                   {},
-                  clientHmacHeaders
+                  baseHeaders
                 )
               );
             } catch (error) {
@@ -282,13 +251,6 @@ Deno.serve(async (req) => {
                   sortorder: 'asc',
                 };
 
-                const fallbackHeaders = await addHmacHeaders(
-                  baseHeaders,
-                  'POST',
-                  proxyPath,
-                  fallbackBody
-                );
-
                 clientData = await callIxcWithRetry(
                   IXC_PROXY_URL,
                   'POST',
@@ -296,7 +258,7 @@ Deno.serve(async (req) => {
                   fallbackBody,
                   undefined,
                   {},
-                  fallbackHeaders
+                  baseHeaders
                 );
               } catch (fallbackError) {
                 logger.warn(`Cliente ${clientId}: Erro ao buscar dados mesmo com fallback`, {
