@@ -68,7 +68,9 @@ export async function authenticateRequest(
   }
 
   // 2️⃣ HMAC Authentication (internal calls)
-  if (hmacSignature && hmacTimestamp) {
+  // IMPORTANTE: Se houver Authorization header, pular HMAC e validar Authorization
+  // Isso permite que edge functions autenticadas chamem o proxy com JWT
+  if (hmacSignature && hmacTimestamp && !authHeader) {
     const hmacSecret = Deno.env.get('HMAC_SHARED_SECRET');
     
     if (!hmacSecret) {
