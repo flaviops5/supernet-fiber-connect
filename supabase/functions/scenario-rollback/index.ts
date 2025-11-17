@@ -11,7 +11,7 @@ interface RollbackLogRecord {
 }
 
 Deno.serve(createAuthenticatedHandler('scenario-rollback', async (req, { supabase, user }) => {
-
+  try {
     const { 
       agent, 
       scenario_key, 
