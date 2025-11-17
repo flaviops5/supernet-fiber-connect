@@ -1,18 +1,19 @@
 import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
 
-Deno.serve(createAuthenticatedHandler('qa-orchestrator', async (req, { supabase, user }) => {
-
+// Constantes globais
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-
-// Endpoint do routing-agent
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const ROUTING_ENDPOINT = `${supabaseUrl}/functions/v1/routing-agent`;
 
-// Controladores
 const RUN_REGRESSION_DEFAULT = true;
 const RUN_EXPLORATORY_DEFAULT = false;
 
-// Prompts de avaliação
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 const CONTEXT_DOCS = {
   scenarios: `
 CENÁRIOS TÉCNICOS DE REFERÊNCIA:
@@ -103,7 +104,7 @@ async function lovableChat(model: string, messages: Array<{ role: string; conten
       ...(response_format ? { response_format } : {}),
       ...(temperature !== undefined ? { temperature } : {})
     })
-  }, 25000); // 25s timeout para LLM
+  }, 25000);
   
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -115,7 +116,7 @@ async function lovableChat(model: string, messages: Array<{ role: string; conten
   return { data, content };
 }
 
-function safeJson<T = JsonValue>(s: string): T | null {
+function safeJson<T = any>(s: string): T | null {
   try { 
     return JSON.parse(s); 
   } catch { 
@@ -126,21 +127,17 @@ function safeJson<T = JsonValue>(s: string): T | null {
 async function evalOne(prompt: string, expectedAgent: string) {
   console.log(`[QA] Avaliando: "${prompt.slice(0, 50)}..." -> esperado: ${expectedAgent}`);
   
-  // 1) Envia para routing-agent com testMode
   const t0 = performance.now();
-  
+
   const routingRes = await fetchWithTimeout(ROUTING_ENDPOINT, {
     method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${supabaseKey}`
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       conversationId: `qa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       message: prompt,
       testMode: true
     })
-  }, 15000); // 15s timeout para routing
+  }, 15000);
   
   if (!routingRes.ok) {
     throw new Error(`Routing agent HTTP ${routingRes.status}`);
@@ -155,7 +152,6 @@ async function evalOne(prompt: string, expectedAgent: string) {
   
   console.log(`[QA] Roteamento: ${detectedAgent} | Latência: ${latency}ms`);
 
-  // 2) Avalia com Gemini-2.5-pro
   const evalMsg = `
 Avaliar resposta de roteamento:
 
@@ -170,58 +166,61 @@ Avaliar resposta de roteamento:
 Analise se o roteamento está correto e avalie os outros critérios.
 `.trim();
 
-  // Avaliação com LLM (com fallback se indisponível)
-  let parsed: Record<string, unknown> = {};
+  let parsed: Record<string, any> = {};
   let fallbackUsed = false;
   try {
     const ev = await lovableChat(
-      "google/gemini-2.5-flash", // ⚡ MUDANÇA: Flash é mais barato e rápido
+      "google/gemini-2.5-flash",
       [
         { role: "system", content: buildSystemPrompt() },
         { role: "user", content: evalMsg }
       ],
       { type: "json_object" },
-      0.0 // temperatura 0 = julgamento determinístico
+      0.0
     );
+
     parsed = safeJson(ev.content) || {};
-  } catch (e: unknown) {
-    console.warn("[QA] Avaliador LLM indisponível, usando fallback local.", e instanceof Error ? e.message : String(e));
+    
+    if (!parsed.routing_score && detectedAgent === expectedAgent) {
+      parsed.routing_score = 1.0;
+    }
+  } catch (err) {
+    console.warn("[QA] Falha ao chamar LLM, usando fallback", err);
     fallbackUsed = true;
     parsed = {
+      routing_score: detectedAgent === expectedAgent ? 1.0 : 0.0,
       clarity_score: 0.8,
       context_score: 0.8,
       tone_score: 0.8,
-      timing_score: 0.8,
-      justification: "Fallback local: avaliador indisponível (sem créditos/timeout)"
+      timing_score: latency < 5000 ? 1.0 : 0.5
     };
   }
 
-  // Garantir que routing_score é 0 ou 1
-  const routingScore = (detectedAgent === expectedAgent) ? 1 : 0;
-
-  const clarity = Number(parsed.clarity_score ?? 0.5);
-  const context = Number(parsed.context_score ?? 0.5);
-  const tone = Number(parsed.tone_score ?? 0.5);
-  const timing = Number(parsed.timing_score ?? 0.5);
-  const avgOthers = (clarity + context + tone + timing) / 4;
+  const routingScore = parsed.routing_score ?? 0;
+  const avgOthers = ((parsed.clarity_score ?? 0) + (parsed.context_score ?? 0) + 
+                      (parsed.tone_score ?? 0) + (parsed.timing_score ?? 0)) / 4;
+  const pass = routingScore === 1.0 && avgOthers >= 0.7;
 
   return {
+    prompt,
+    expected_agent: expectedAgent,
     detected_agent: detectedAgent,
-    response_text: responseText,
+    response: responseText,
     latency_ms: latency,
     scores: {
       routing_score: routingScore,
-      clarity_score: clarity,
-      context_score: context,
-      tone_score: tone,
-      timing_score: timing,
-      pass: routingScore === 1 && avgOthers >= 0.7,
-      justification: (parsed.justification ?? "Avaliação automática") + (fallbackUsed ? " | Fallback aplicado" : "")
-    }
+      clarity_score: parsed.clarity_score ?? 0,
+      context_score: parsed.context_score ?? 0,
+      tone_score: parsed.tone_score ?? 0,
+      timing_score: parsed.timing_score ?? 0,
+      pass
+    },
+    overall_score: (routingScore + avgOthers) / 2,
+    justification: (parsed.justification ?? "Avaliação automática") + (fallbackUsed ? " | Fallback aplicado" : "")
   };
 }
 
-serve(async (req) => {
+Deno.serve(createAuthenticatedHandler('qa-orchestrator', async (req, { supabase, user }) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -234,33 +233,27 @@ serve(async (req) => {
     const runExploratory = (url.searchParams.get("exploratory") ?? "false").toLowerCase() === "true";
 
     const reportStart = new Date();
-    const GLOBAL_TIMEOUT_MS = 130000; // 130s - deixa 20s de margem antes do limite de 150s
+    const GLOBAL_TIMEOUT_MS = 130000;
     const startTime = Date.now();
     
     let total = 0, pass = 0, fail = 0;
     let regPass = 0, regFail = 0;
     let expPass = 0, expFail = 0;
-    let latencies: number[] = [];
-    const allResults: Array<{ role: string; content: string }> = [];
     let timedOut = false;
+    const latencies: number[] = [];
+    const allResults: any[] = [];
 
-    // ---------------------------
-    // REGRESSION SUITE (FIXA)
-    // ---------------------------
+    // Regressão
     if (runRegression) {
       console.log("[QA] Executando suite de regressão");
       
-      const { data: cases, error: casesError } = await supabase
-        .from("qa_regression_cases")
+      const { data: cases } = await supabase
+        .from("qa_test_cases")
         .select("*")
-        .order("scenario_name", { ascending: true });
-
-      if (casesError) {
-        throw new Error(`Erro ao buscar casos de regressão: ${casesError.message}`);
-      }
+        .eq("is_active", true)
+        .order("priority", { ascending: false });
 
       for (const c of (cases || [])) {
-        // Verificar timeout global
         if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) {
           console.warn(`[QA] Timeout global atingido após ${total} testes`);
           timedOut = true;
@@ -281,66 +274,34 @@ serve(async (req) => {
             regFail += 1; 
           }
 
-          // Grava no llm_test_results para histórico unificado
-          await supabase.from("llm_test_results").insert({
-            category: c.category,
-            scenario: c.scenario_name,
-            expected_agent: c.expected_agent,
+          await supabase.from("qa_test_results").insert({
+            test_case_id: c.id,
             detected_agent: r.detected_agent,
-            model_generation: "fixed-baseline",
-            model_evaluator: "google/gemini-2.5-flash", // ⚡ Atualizado para Flash
-            endpoint_called: "routing-agent",
+            response_text: r.response,
+            latency_ms: r.latency_ms,
             routing_score: r.scores.routing_score,
             clarity_score: r.scores.clarity_score,
             context_score: r.scores.context_score,
             tone_score: r.scores.tone_score,
             timing_score: r.scores.timing_score,
-            pass: r.scores.pass,
-            confidence: r.scores.pass ? 1 : 0,
-            response: r.response_text,
-            evaluation: { justification: r.scores.justification },
-            latency_ms_total: r.latency_ms
+            overall_score: r.overall_score,
+            passed: r.scores.pass,
+            justification: r.justification,
+            test_type: 'regression'
           });
 
-          // Atualiza o cabeçalho da baseline
-          await supabase.from("qa_regression_cases").update({
-            last_passed: r.scores.pass,
-            last_routing_score: r.scores.routing_score,
-            last_run_at: new Date().toISOString()
-          }).eq("id", c.id);
-
-          allResults.push({
-            type: "regression",
-            scenario: c.scenario_name,
-            category: c.category,
-            expected: c.expected_agent,
-            detected: r.detected_agent,
-            latency_ms: r.latency_ms,
-            ...r.scores
-          });
-        } catch (testError) {
-          console.error(`[QA] Erro no teste ${c.scenario_name}:`, testError);
+          allResults.push(r);
+        } catch (testErr) {
+          console.error(`[QA] Erro no teste ${c.scenario_name}:`, testErr);
+          total += 1;
           fail += 1;
           regFail += 1;
-          total += 1;
-          
-          allResults.push({
-            type: "regression",
-            scenario: c.scenario_name,
-            category: c.category,
-            expected: c.expected_agent,
-            detected: "error",
-            error: testError instanceof Error ? testError.message : String(testError),
-            pass: false
-          });
         }
       }
     }
 
-    // ---------------------------
-    // EXPLORATORY SUITE (OPCIONAL)
-    // ---------------------------
-    if (runExploratory) {
+    // Exploratória
+    if (runExploratory && !timedOut) {
       console.log("[QA] Executando suite exploratória");
       
       const { data: baseScenarios } = await supabase
@@ -350,8 +311,13 @@ serve(async (req) => {
         .order("created_at", { ascending: false });
 
       for (const s of (baseScenarios || [])) {
+        if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) {
+          console.warn("[QA] Timeout global atingido na fase exploratória");
+          timedOut = true;
+          break;
+        }
+
         try {
-          // Gera variação com flash
           const gen = await lovableChat("google/gemini-2.5-flash", [
             { 
               role: "system", 
@@ -361,82 +327,59 @@ serve(async (req) => {
               role: "user", 
               content: `Mensagem base: "${s.prompt}"` 
             }
-          ]);
+          ], undefined, 0.7);
 
-          const variation = gen.content?.slice(0, 500) || s.prompt;
+          const variation = gen.content.trim();
+          console.log(`[QA Exploratory] Variação gerada: "${variation}"`);
 
           const r = await evalOne(variation, s.expected_agent);
           total += 1;
           latencies.push(r.latency_ms);
-          
-          if (r.scores.pass) { 
-            pass += 1; 
-            expPass += 1; 
-          } else { 
-            fail += 1; 
-            expFail += 1; 
+
+          if (r.scores.pass) {
+            pass += 1;
+            expPass += 1;
+          } else {
+            fail += 1;
+            expFail += 1;
           }
 
-          await supabase.from("llm_test_results").insert({
-            category: s.category,
-            scenario: `${s.name} (var)`,
-            expected_agent: s.expected_agent,
+          await supabase.from("qa_test_results").insert({
             detected_agent: r.detected_agent,
-            model_generation: "google/gemini-2.5-flash",
-            model_evaluator: "google/gemini-2.5-flash", // ⚡ Atualizado para Flash
-            endpoint_called: "routing-agent",
+            response_text: r.response,
+            latency_ms: r.latency_ms,
             routing_score: r.scores.routing_score,
             clarity_score: r.scores.clarity_score,
             context_score: r.scores.context_score,
             tone_score: r.scores.tone_score,
             timing_score: r.scores.timing_score,
-            pass: r.scores.pass,
-            confidence: r.scores.pass ? 1 : 0,
-            response: r.response_text,
-            evaluation: { justification: r.scores.justification },
-            latency_ms_total: r.latency_ms
+            overall_score: r.overall_score,
+            passed: r.scores.pass,
+            justification: r.justification,
+            test_type: 'exploratory',
+            exploratory_prompt: variation
           });
 
-          allResults.push({
-            type: "exploratory",
-            scenario: `${s.name} (var)`,
-            category: s.category,
-            expected: s.expected_agent,
-            detected: r.detected_agent,
-            prompt_used: variation,
-            latency_ms: r.latency_ms,
-            ...r.scores
-          });
-        } catch (expError) {
-          console.error(`[QA] Erro no teste exploratório ${s.name}:`, expError);
+          allResults.push(r);
+        } catch (expErr) {
+          console.error(`[QA Exploratory] Erro no cenário ${s.scenario_name}:`, expErr);
+          total += 1;
+          fail += 1;
+          expFail += 1;
         }
       }
     }
 
-    // ---------------------------
-    // FECHA RELATÓRIO
-    // ---------------------------
-    const avgLatency = latencies.length 
-      ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) 
-      : null;
-    
-    const avgScore = allResults.length
-      ? Number((
-          allResults.reduce((a, b) => 
-            a + ((b.routing_score + b.clarity_score + b.context_score + b.tone_score + b.timing_score) / 5), 
-            0
-          ) / allResults.length
-        ).toFixed(2))
-      : null;
+    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
+    const avgScore = allResults.length > 0 ? allResults.reduce((sum, r) => sum + r.overall_score, 0) / allResults.length : 0;
 
     const { data: rep } = await supabase
       .from("qa_reports")
       .insert({
-        run_started_at: reportStart.toISOString(),
-        run_finished_at: new Date().toISOString(),
+        executed_at: reportStart.toISOString(),
         total_tests: total,
-        total_pass: pass,
-        total_fail: fail,
+        passed_tests: pass,
+        failed_tests: fail,
         regression_pass: regPass,
         regression_fail: regFail,
         exploratory_pass: expPass,
@@ -484,4 +427,4 @@ serve(async (req) => {
       }
     });
   }
-});
+}));
