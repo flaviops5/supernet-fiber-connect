@@ -136,8 +136,12 @@ export async function callIxcWithRetry(
         ...additionalHeaders
       };
 
+      // Só assinar com HMAC quando NÃO houver Authorization fornecido
+      // (Permite autenticação por token interno ou JWT de usuário no proxy)
+      const hasAuthorization = !!finalHeaders['Authorization'];
+
       const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
-      if (HMAC_SECRET) {
+      if (HMAC_SECRET && !hasAuthorization) {
         // Gerar HMAC compatível com composite-auth validation (method:path:timestamp:body)
         const message = `POST:${proxyPath}:${timestamp}:${bodyStr}`;
         const encoder = new TextEncoder();
