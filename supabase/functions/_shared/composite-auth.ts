@@ -56,6 +56,16 @@ export async function authenticateRequest(
       error: 'Invalid CRON key'
     };
   }
+  // 1.5️⃣ Internal system token (Authorization: Bearer <IXC_INTERNAL_SYSTEM_TOKEN>)
+  const internalToken = Deno.env.get('IXC_INTERNAL_SYSTEM_TOKEN');
+  if (authHeader && internalToken && authHeader === `Bearer ${internalToken}`) {
+    logger?.info('✅ Authenticated via internal system token');
+    return {
+      authenticated: true,
+      method: 'internal_token',
+      metadata: { source: 'internal_job' }
+    };
+  }
 
   // 2️⃣ HMAC Authentication (internal calls)
   if (hmacSignature && hmacTimestamp) {
