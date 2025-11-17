@@ -126,7 +126,8 @@ export async function callIxcWithRetry(
       const requestBody = { method, path, body, query };
 
       // Gerar headers HMAC usando composite-auth (compatível com validação)
-      const proxyPath = new URL(proxyUrl).pathname;
+      const proxyUrlObj = new URL(proxyUrl);
+      const proxyPath = proxyUrlObj.pathname + proxyUrlObj.search; // Include query string
       const bodyStr = JSON.stringify(requestBody);
       const timestamp = Date.now();
       
@@ -137,7 +138,7 @@ export async function callIxcWithRetry(
 
       const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
       if (HMAC_SECRET) {
-        // Gerar HMAC compatível com composite-auth validation
+        // Gerar HMAC compatível com composite-auth validation (method:path:timestamp:body)
         const message = `POST:${proxyPath}:${timestamp}:${bodyStr}`;
         const encoder = new TextEncoder();
         const key = await crypto.subtle.importKey(
