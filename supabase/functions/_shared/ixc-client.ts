@@ -2,7 +2,6 @@
 // IXC CLIENT - Retry Logic + Circuit Breaker
 // ============================================
 
-import { addHMACHeaders } from './hmac.ts';
 import type { JsonValue } from './types.ts';
 import { createLogger } from './structured-logger.ts';
 
@@ -126,19 +125,41 @@ export async function callIxcWithRetry(
       const startTime = Date.now();
       const requestBody = { method, path, body, query };
 
-      // Assinatura HMAC se secret configurado
-      const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
-      const signedHeaders = HMAC_SECRET
-        ? await addHMACHeaders(requestBody, HMAC_SECRET)
-        : { 'Content-Type': 'application/json' };
+      // Gerar headers HMAC usando composite-auth (compatível com validação)
+      const proxyPath = new URL(proxyUrl).pathname;
+      const bodyStr = JSON.stringify(requestBody);
+      const timestamp = Date.now();
+      
+      let finalHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...additionalHeaders
+      };
 
-      // Merge com headers adicionais (ex: Authorization)
-      const finalHeaders = { ...signedHeaders, ...additionalHeaders };
+      const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
+      if (HMAC_SECRET) {
+        // Gerar HMAC compatível com composite-auth validation
+        const message = `POST:${proxyPath}:${timestamp}:${bodyStr}`;
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(HMAC_SECRET),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        );
+        const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+        const signature = Array.from(new Uint8Array(signatureBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        
+        finalHeaders['X-HMAC-Signature'] = signature;
+        finalHeaders['X-HMAC-Timestamp'] = timestamp.toString();
+      }
 
       const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: finalHeaders,
-        body: JSON.stringify(requestBody)
+        body: bodyStr
       });
       
       const duration = Date.now() - startTime;
