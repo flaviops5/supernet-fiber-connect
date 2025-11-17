@@ -2,6 +2,11 @@
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 import type { JsonValue } from '../_shared/error-types.ts';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 interface LogEntry {
   id: string;
   level: string;
@@ -102,6 +107,7 @@ Deno.serve(createAuthenticatedHandler('log-alert-handler', async (req, { supabas
           errors.push(`Exceção ao enviar para ${contact.nome}`);
         }
       }
+    }
 
     // Marcar logs como alertados
     if (errorLogs.length > 0) {
