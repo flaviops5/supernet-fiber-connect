@@ -1,4 +1,4 @@
-import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
+import { createAuthenticatedHandler, corsHeaders } from '../_shared/base-handler.ts';
 import { ROUTING_AGENT_CONFIG } from "./config.ts";
 import { CLOE_MARTINS_SYSTEM_PROMPT, ROUTING_AGENT_SYSTEM_PROMPT } from "./prompts.ts";
 import { massOutageContext } from "../_shared/mass-outage-helper.ts";
