@@ -205,12 +205,12 @@ const HeroSection = () => {
                 </button>
 
                 {/* Dots indicator */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                   {slides.map((_, index) => (
                     <button 
                       key={index} 
                       onClick={() => setCurrentSlide(index)} 
-                      className={`h-1.5 rounded-full transition-all ${index === currentSlide ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/75 w-1.5'}`}
+                      className={`h-1 rounded-full transition-all ${index === currentSlide ? 'bg-white w-3' : 'bg-white/50 hover:bg-white/75 w-1'}`}
                       aria-label={`Ir para slide ${index + 1}`}
                     />
                   ))}
