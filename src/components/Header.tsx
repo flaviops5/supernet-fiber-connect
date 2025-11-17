@@ -78,10 +78,10 @@ const Header = () => {
   return (
     <header className="bg-background/95 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <img src="/assets/logo-supernet.png" alt="SUPERNET FIBRA" className="w-10 h-10 object-contain" />
+            <img src="/assets/logo-supernet.png" alt="SUPERNET FIBRA" className="w-12 h-12 object-contain" />
             <span className="font-extrabold text-2xl font-arlon">
               <span style={{color: '#4c63ad'}}>SUPER</span>
               <span style={{color: '#f77527'}}>NET</span>
