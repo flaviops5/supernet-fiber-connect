@@ -219,5 +219,15 @@ Deno.serve(createAuthenticatedHandler('scenario-rollback', async (req, { supabas
       }
     );
   }
-});
+  } catch (e) {
+    console.error("❌ Erro rollback:", e);
+    return new Response(
+      JSON.stringify({ ok: false, error: String(e) }), 
+      { 
+        status: 500, 
+        headers: { corsHeaders, "content-type": "application/json" } 
+      }
+    );
+  }
+}));
 // <<< PR29
