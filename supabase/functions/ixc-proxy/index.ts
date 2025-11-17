@@ -2,8 +2,7 @@
 // IXC PROXY - Ponto único de acesso ao IXC
 // ============================================
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
-import { validateHMACRequest } from "../_shared/hmac.ts";
+import { authenticateRequest } from "../_shared/composite-auth.ts";
 import { safeLog, sanitizeForLog } from "../_shared/log-sanitizer.ts";
 import { createLogger as createUnifiedLogger } from "../_shared/unified-logger.ts";
 import { createLogger } from "../_shared/structured-logger.ts";
@@ -15,55 +14,48 @@ import type { JsonValue } from "../_shared/error-types.ts";
 const cache = new Map<string, { data: JsonValue; timestamp: number }>();
 const CACHE_TTL = 30000; // 30 segundos
 
-// P0 FIX: Convertido para createAuthenticatedHandler
-// IXC Proxy é ponto único de acesso - CRÍTICO proteger
-Deno.serve(createAuthenticatedHandler(
-  'ixc-proxy',
-  async (req, { supabase, user }) => {
-    const timer = createTimer();
-    const traceId = getOrCreateTraceId(req);
-    const logger = createLogger('ixc-proxy', req, { 
-      traceId, 
-      durationTracker: timer 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-key, x-hmac-signature, x-hmac-timestamp',
+};
+
+// v3.1 Hybrid: Composite Auth (CRON > HMAC > service_role > JWT)
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const timer = createTimer();
+  const traceId = getOrCreateTraceId(req);
+  const logger = createLogger('ixc-proxy', req, { 
+    traceId, 
+    durationTracker: timer 
+  });
+
+  try {
+    // 🔐 Autenticação via composite auth
+    const authResult = await authenticateRequest(req, logger);
+    
+    if (!authResult.authenticated) {
+      logger.warn('❌ Authentication failed', { error: authResult.error });
+      return new Response(
+        JSON.stringify({ error: authResult.error || 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    logger.info('✅ Authenticated', { 
+      method: authResult.method,
+      metadata: authResult.metadata 
     });
-    // Ler corpo PRIMEIRO (só pode ser lido uma vez)
+
+    // Ler corpo
     const requestBody = await req.json() as IXCProxyRequest;
     const { method, path, query, body } = requestBody;
-
-    // 🔐 Validar HMAC (se configurado)
-    const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
-    if (HMAC_SECRET) {
-      const hmacSignature = req.headers.get('X-HMAC-Signature');
-      const hmacTimestamp = req.headers.get('X-HMAC-Timestamp');
-      
-      if (!hmacSignature || !hmacTimestamp) {
-        // Fallback: permitir sem HMAC para não bloquear ambiente de teste/UI
-        logger.warn('HMAC headers ausentes - prosseguindo em modo compatibilidade');
-      } else {
-        // Validar timestamp (não mais de 5 minutos)
-        const timestamp = parseInt(hmacTimestamp);
-        const now = Date.now();
-        const FIVE_MINUTES = 5 * 60 * 1000;
-        
-        if (Math.abs(now - timestamp) > FIVE_MINUTES) {
-          logger.error('HMAC validation failed: Timestamp expired');
-          throw new Error('Unauthorized: Timestamp expired');
-        }
-
-        // Validar assinatura
-        const { signPayload } = await import('../_shared/hmac.ts');
-        const expectedSignature = await signPayload(JSON.stringify(requestBody), HMAC_SECRET);
-        
-        if (hmacSignature !== expectedSignature) {
-          logger.error('HMAC validation failed: Invalid signature');
-          throw new Error('Unauthorized: Invalid signature');
-        }
-        
-        logger.info('HMAC validated');
-      }
-    }
- 
     logger.info(`IXC Proxy request: ${method} ${path}`, { query });
+
+    const startTime = Date.now();
 
     // Verificar cache para GET requests
     const cacheKey = `${method}:${path}:${query || ''}`;
@@ -72,13 +64,19 @@ Deno.serve(createAuthenticatedHandler(
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         logger.info('Cache HIT', { cacheKey });
         const duration = Date.now() - startTime;
-        return { 
-          ok: true, 
-          status: 200, 
-          data: cached.data,
-          cached: true,
-          duration_ms: duration
-        };
+        return new Response(
+          JSON.stringify({ 
+            ok: true, 
+            status: 200, 
+            data: cached.data,
+            cached: true,
+            duration_ms: duration
+          }),
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
     }
 
@@ -87,7 +85,7 @@ Deno.serve(createAuthenticatedHandler(
     const IXC_USERNAME = Deno.env.get('IXC_API_USERNAME');
     const IXC_PASSWORD = Deno.env.get('IXC_API_PASSWORD');
 
-    logger.info('IXC Config loaded', { 
+    logger.info('Auth configured', { 
       hasUrl: !!IXC_BASE_URL, 
       hasUser: !!IXC_USERNAME, 
       hasPass: !!IXC_PASSWORD 
@@ -237,9 +235,37 @@ Deno.serve(createAuthenticatedHandler(
       ok,
       status: responseStatus,
       data: ixcData,
-      error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error'))
+      error: ok ? undefined : (ixcData?.message || ixcData?.error || (rawText ? `Non-JSON response from IXC (preview): ${rawText.slice(0, 200)}` : 'IXC error')),
+      duration_ms: duration
     };
 
-    return { ...response, duration_ms: duration, trace_id: traceId };
+    return new Response(
+      JSON.stringify(response),
+      { 
+        status: responseStatus,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    const duration = timer.complete();
+    logger.error('IXC Proxy error', { 
+      error: error instanceof Error ? error.message : String(error),
+      duration_ms: duration
+    });
+
+    const errorResponse: IXCProxyResponse = {
+      ok: false,
+      status: 500,
+      error: error instanceof Error ? error.message : 'Internal server error',
+      duration_ms: duration
+    };
+
+    return new Response(
+      JSON.stringify(errorResponse),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
-));
+});
