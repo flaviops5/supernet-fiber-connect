@@ -138,7 +138,7 @@ export async function callIxcWithRetry(
 
       // Só assinar com HMAC quando NÃO houver Authorization fornecido
       // (Permite autenticação por token interno ou JWT de usuário no proxy)
-      const hasAuthorization = !!finalHeaders['Authorization'];
+      const hasAuthorization = !!(finalHeaders['Authorization'] || finalHeaders['authorization']);
 
       const HMAC_SECRET = Deno.env.get('HMAC_SHARED_SECRET');
       if (HMAC_SECRET && !hasAuthorization) {
