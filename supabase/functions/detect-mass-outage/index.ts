@@ -280,67 +280,8 @@ Deno.serve(async (req) => {
               bairro = cliente.bairro || cliente.endereco_bairro || '';
             }
 
-            // Sem dados de PON disponíveis
+            // Retornar com dados básicos (sem PON disponível)
             return { user, ponPort: '', cto: '', bairro };
-
-            // Processar dados de equipamento (PON/CTO)
-            const equipamentos = Array.isArray(equipData?.data?.registros)
-              ? equipData.data.registros
-              : (equipData?.data?.registros ? Object.values(equipData.data.registros) : []);
-
-            let ponPort = '';
-            let cto = '';
-            
-            for (const equip of equipamentos) {
-              // Validação e sanitização robusta dos campos PON
-              // Usar campos estruturados do IXC (não regex)
-              const rawPonPorta = equip.pon_porta ? String(equip.pon_porta).trim() : '';
-              const rawPonSlot = equip.pon_slot ? String(equip.pon_slot).trim() : '';
-              const rawPonOlt = equip.pon_olt ? String(equip.pon_olt).trim() : '';
-              
-              // Validar formato: apenas alfanuméricos, hífens e underscores
-              const isValidPonComponent = (val: string) => /^[a-zA-Z0-9_-]+$/.test(val);
-              
-              // Construir PON Port com validação
-              if (rawPonPorta && isValidPonComponent(rawPonPorta)) {
-                ponPort = rawPonPorta;
-                
-                if (rawPonSlot && isValidPonComponent(rawPonSlot)) {
-                  ponPort = `${rawPonSlot}/${ponPort}`;
-                }
-                
-                if (rawPonOlt && isValidPonComponent(rawPonOlt)) {
-                  ponPort = `${rawPonOlt}/${ponPort}`;
-                }
-              }
-              
-              // Extrair CTO com validação
-              const rawCto = equip.cto ? String(equip.cto).trim() : '';
-              const rawFibraCto = equip.fibra_cto ? String(equip.fibra_cto).trim() : '';
-              
-              if (rawCto && isValidPonComponent(rawCto)) {
-                cto = rawCto;
-              } else if (rawFibraCto && isValidPonComponent(rawFibraCto)) {
-                cto = rawFibraCto;
-              }
-              
-              // Log de dados inválidos para monitoramento
-              if (equip.pon_porta && !isValidPonComponent(rawPonPorta)) {
-                logger.warn(`PON porta com formato inválido: ${equip.pon_porta}`);
-              }
-              if (equip.cto && !isValidPonComponent(rawCto)) {
-                logger.warn(`CTO com formato inválido: ${equip.cto}`);
-              }
-              
-              if (ponPort) break;
-            }
-
-            return { 
-              user, 
-              ponPort: ponPort || undefined,
-              cto: cto || undefined,
-              bairro: bairro || undefined
-            };
           } catch (error) {
             logger.error(`Erro ao buscar dados do cliente ${clientId}`, { error });
             return { user };
