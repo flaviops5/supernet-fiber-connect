@@ -30,11 +30,10 @@ Deno.serve(async (req) => {
     logger.info('Iniciando detecção de quedas em massa via proxy');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${supabaseUrl}/functions/v1/ixc-proxy`;
 
-    // 🔐 Preparar headers base (HMAC será gerado internamente por callIxcWithRetry)
-    const internalToken = Deno.env.get('IXC_INTERNAL_SYSTEM_TOKEN');
+    // 🔐 Preparar headers base - usar service role key para autenticação
     const baseHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(internalToken ? { Authorization: `Bearer ${internalToken}` } : {})
+      'Authorization': `Bearer ${supabaseKey}`
     };
 
   // Buscar clientes offline do IXC via proxy
