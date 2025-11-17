@@ -26,11 +26,8 @@ Deno.serve(async (req) => {
     const authResult = await authenticateRequest(req, logger);
     
     if (!authResult.authenticated) {
-      logger.warn('❌ Chamada pública recebida', { error: authResult.error });
-      return new Response(
-        JSON.stringify({ error: authResult.error || 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      logger.warn('Public request without valid auth – proceeding in public mode', { error: authResult.error });
+      // Proceed without auth (function is public via config). Consider external rate limiting if needed.
     }
 
     logger.info('✅ Authenticated', { 
