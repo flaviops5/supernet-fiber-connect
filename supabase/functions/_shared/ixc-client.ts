@@ -127,7 +127,7 @@ export async function callIxcWithRetry(
 
       // Gerar headers HMAC usando composite-auth (compatível com validação)
       const proxyUrlObj = new URL(proxyUrl);
-      const proxyPath = proxyUrlObj.pathname + proxyUrlObj.search; // Include query string
+      const proxyPath = proxyUrlObj.pathname; // SEM query string - composite-auth usa apenas pathname
       const bodyStr = JSON.stringify(requestBody);
       const timestamp = Date.now();
       
