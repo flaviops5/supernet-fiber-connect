@@ -89,21 +89,21 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6">
+          <nav className="hidden lg:flex items-center gap-6">
             {/* Plans Dropdown */}
             <div 
-              className="relative" 
+              className="relative flex items-center" 
               onMouseEnter={() => showDropdown('plans')} 
               onMouseLeave={hideDropdown}
             >
-              <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors py-2">
                 <span>Planos</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
               {activeDropdown === 'plans' && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-50"
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-[60]"
                   onMouseEnter={() => showDropdown('plans')}
                   onMouseLeave={hideDropdown}
                 >
@@ -124,18 +124,18 @@ const Header = () => {
 
             {/* Services Dropdown */}
             <div 
-              className="relative" 
+              className="relative flex items-center" 
               onMouseEnter={() => showDropdown('services')} 
               onMouseLeave={hideDropdown}
             >
-              <button className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
+              <button className="flex items-center gap-1 text-foreground hover:text-primary transition-colors py-2">
                 <span>Serviços</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
               {activeDropdown === 'services' && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-50"
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-[60]"
                   onMouseEnter={() => showDropdown('services')}
                   onMouseLeave={hideDropdown}
                 >
@@ -154,13 +154,13 @@ const Header = () => {
               )}
             </div>
 
-            <Link to="/blog#blog" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/blog#blog" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
               Blog
             </Link>
-            <Link to="/contato#contato" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/contato#contato" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
               Contato
             </Link>
-            <Link to="/#sobre" className="text-foreground hover:text-primary transition-colors">
+            <Link to="/#sobre" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
               Sobre
             </Link>
           </nav>
