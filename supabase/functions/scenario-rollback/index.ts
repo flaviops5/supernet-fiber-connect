@@ -1,6 +1,11 @@
 // >>> PR29 – scenario-rollback (dupla confirmação real) v2 – 10/10
 import { createAuthenticatedHandler } from '../_shared/base-handler.ts';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 interface RollbackLogRecord {
   id: string;
   agent: string;
@@ -216,16 +221,6 @@ Deno.serve(createAuthenticatedHandler('scenario-rollback', async (req, { supabas
       { 
         status: 500, 
         headers: { ...corsHeaders, "content-type": "application/json" } 
-      }
-    );
-  }
-  } catch (e) {
-    console.error("❌ Erro rollback:", e);
-    return new Response(
-      JSON.stringify({ ok: false, error: String(e) }), 
-      { 
-        status: 500, 
-        headers: { corsHeaders, "content-type": "application/json" } 
       }
     );
   }
