@@ -191,22 +191,29 @@ const HeroSection = () => {
                 {/* Navigation buttons */}
                 <button 
                   onClick={prevSlide} 
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-lg"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-md hover:shadow-lg"
                   aria-label="Slide anterior"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button 
                   onClick={nextSlide} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] max-w-[40px] min-h-[40px] max-h-[40px] bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-all shadow-md hover:shadow-lg"
                   aria-label="Próximo slide"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
 
                 {/* Dots indicator */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {slides.map((_, index) => <button key={index} onClick={() => setCurrentSlide(index)} className={`w-2 h-2 rounded-full transition-colors ${index === currentSlide ? 'bg-white' : 'bg-white/50'}`} />)}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+                  {slides.map((_, index) => (
+                    <button 
+                      key={index} 
+                      onClick={() => setCurrentSlide(index)} 
+                      className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentSlide ? 'bg-white w-8' : 'bg-white/50 hover:bg-white/75'}`}
+                      aria-label={`Ir para slide ${index + 1}`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>

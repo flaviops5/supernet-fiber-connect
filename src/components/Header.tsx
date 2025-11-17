@@ -89,7 +89,7 @@ const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-6">
             {/* Plans Dropdown */}
             <div 
               className="relative" 
@@ -103,16 +103,16 @@ const Header = () => {
               
               {activeDropdown === 'plans' && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4"
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-50"
                   onMouseEnter={() => showDropdown('plans')}
                   onMouseLeave={hideDropdown}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {plans.map(plan => (
                       <Link 
                         key={plan.name} 
                         to={plan.href} 
-                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
+                        className="block px-3 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
                       >
                         {plan.name}
                       </Link>
@@ -135,16 +135,16 @@ const Header = () => {
               
               {activeDropdown === 'services' && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-4"
+                  className="absolute top-full left-0 mt-2 w-64 bg-card rounded-lg shadow-elegant border border-border p-2 z-50"
                   onMouseEnter={() => showDropdown('services')}
                   onMouseLeave={hideDropdown}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {services.map(service => (
                       <Link 
                         key={service.name} 
                         to={service.href} 
-                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
+                        className="block px-3 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"
                       >
                         {service.name}
                       </Link>
