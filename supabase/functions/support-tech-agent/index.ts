@@ -10,6 +10,12 @@ import { updateFlowState } from "../_shared/flow-state.ts";
 import { getApprovedScenarioReply } from "../_shared/get-approved-variation.ts";
 import { logAudit } from "../_shared/audit-logger.ts";
 import { kpiLog } from "../_shared/kpi.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // >>> PR10A - Geolocalização
 import { ensureGeo, withGeo } from "../_shared/geo.ts";
 // <<< PR10A
@@ -1611,4 +1617,4 @@ Vamos apenas confirmar 1 coisinha rápido aqui…`;
   } catch (error) {
     return handleEdgeFunctionError(error, "support-tech-agent");
   }
-});
+}));
