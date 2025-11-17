@@ -429,7 +429,87 @@ Deno.serve(async (req) => {
       logger.error('Erro ao verificar Dying Gasp', { error });
     }
 
-    // ... keep existing code (PON grouping logic)
+    // 📊 AGRUPAR clientes por PON, CTO e Região
+    const ponGroups = new Map<string, Array<typeof clientsWithPon[0]>>();
+    const ctoGroups = new Map<string, Array<typeof clientsWithPon[0]>>();
+    const regionGroups = new Map<string, Array<typeof clientsWithPon[0]>>();
+
+    for (const client of clientsWithPon) {
+      // Hierarquia: PON > CTO > Região (bairro)
+      if (client.ponPort) {
+        const key = `PON:${client.ponPort}`;
+        if (!ponGroups.has(key)) ponGroups.set(key, []);
+        ponGroups.get(key)!.push(client);
+      } else if (client.cto) {
+        const key = `CTO:${client.cto}`;
+        if (!ctoGroups.has(key)) ctoGroups.set(key, []);
+        ctoGroups.get(key)!.push(client);
+      } else if (client.bairro) {
+        const key = `REGION:${client.bairro}`;
+        if (!regionGroups.has(key)) regionGroups.set(key, []);
+        regionGroups.get(key)!.push(client);
+      }
+    }
+
+    // 🚨 DETECTAR QUEDAS EM MASSA
+    const massOutages: Array<{
+      type: string;
+      identifier: string;
+      offline_count: number;
+      severity: string;
+    }> = [];
+
+    const THRESHOLD_PON = 5;  // 5+ clientes na mesma PON
+    const THRESHOLD_CTO = 3;  // 3+ clientes na mesma CTO
+    const THRESHOLD_REGION = 10; // 10+ clientes na mesma região
+
+    // Verificar quedas por PON
+    for (const [key, clients] of ponGroups) {
+      if (clients.length >= THRESHOLD_PON) {
+        massOutages.push({
+          type: 'PON',
+          identifier: key,
+          offline_count: clients.length,
+          severity: clients.length >= 10 ? 'critical' : 'high'
+        });
+        logger.warn(`Queda em massa detectada: ${key} (${clients.length} clientes)`);
+      }
+    }
+
+    // Verificar quedas por CTO
+    for (const [key, clients] of ctoGroups) {
+      if (clients.length >= THRESHOLD_CTO) {
+        massOutages.push({
+          type: 'CTO',
+          identifier: key,
+          offline_count: clients.length,
+          severity: clients.length >= 5 ? 'high' : 'medium'
+        });
+        logger.warn(`Queda em massa detectada: ${key} (${clients.length} clientes)`);
+      }
+    }
+
+    // Verificar quedas por região
+    for (const [key, clients] of regionGroups) {
+      if (clients.length >= THRESHOLD_REGION) {
+        massOutages.push({
+          type: 'REGION',
+          identifier: key,
+          offline_count: clients.length,
+          severity: clients.length >= 20 ? 'high' : 'medium'
+        });
+        logger.warn(`Queda em massa detectada: ${key} (${clients.length} clientes)`);
+      }
+    }
+
+    // Registrar status no banco de dados
+    if (massOutages.length > 0) {
+      await setMassOutageStatus(supabase, true, {
+        total_outages: massOutages.length,
+        highest_count: Math.max(...massOutages.map(o => o.offline_count)),
+        detected_at: new Date().toISOString()
+      });
+    }
 
     return new Response(
       JSON.stringify({
