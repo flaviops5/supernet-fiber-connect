@@ -17,7 +17,11 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${SUPABASE_URL}/functions/v1/ixc-proxy`;
 
-    // Buscar clientes offline do IXC via proxy
+  // Extrair Authorization header para propagar ao IXC Proxy
+  const authHeader = req.headers.get('authorization');
+  const authHeaders = authHeader ? { 'Authorization': authHeader } : {};
+
+  // Buscar clientes offline do IXC via proxy
     let page = 1;
     const itemsPerPage = 1000;
     const allRadUsers: RadUser[] = [];
@@ -47,7 +51,10 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
             IXC_PROXY_URL,
             'POST',
             '/webservice/v1/radusuarios',
-            bodyRad
+            bodyRad,
+            undefined,
+            {},
+            authHeaders
           );
         });
 
@@ -208,7 +215,10 @@ Deno.serve(createAuthenticatedHandler('detect-mass-outage', async (req, { supaba
                     rp: '1',
                     sortname: 'cliente.id',
                     sortorder: 'desc',
-                  }
+                  },
+                  undefined,
+                  {},
+                  authHeaders
                 )
               );
               // Sem equipamentos disponíveis
