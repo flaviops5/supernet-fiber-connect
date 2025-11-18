@@ -214,7 +214,7 @@ Deno.serve(createAuthenticatedHandler('ixc-integration', async (req, { supabase,
       error: errorMessage,
       details: errorDetails
     }), {
-      status: 200,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
