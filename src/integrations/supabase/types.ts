@@ -3541,6 +3541,30 @@ export type Database = {
         }
         Relationships: []
       }
+      mass_outage_detection_lock: {
+        Row: {
+          expires_at: string
+          id: string
+          locked_at: string
+          locked_by: string
+          metadata: Json | null
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          locked_at?: string
+          locked_by: string
+          metadata?: Json | null
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          locked_at?: string
+          locked_by?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       mass_outage_events: {
         Row: {
           affected_count: number
@@ -5581,6 +5605,10 @@ export type Database = {
       }
     }
     Functions: {
+      acquire_mass_outage_lock: {
+        Args: { p_locked_by: string; p_ttl_seconds?: number }
+        Returns: boolean
+      }
       anonymize_old_conversations: { Args: never; Returns: number }
       audit_security_definer_usage: {
         Args: { function_name: string; parameters?: Json }
@@ -5924,6 +5952,10 @@ export type Database = {
               title: string
             }[]
           }
+      release_mass_outage_lock: {
+        Args: { p_locked_by: string }
+        Returns: boolean
+      }
       validate_calendar_token: {
         Args: { p_token: string }
         Returns: {

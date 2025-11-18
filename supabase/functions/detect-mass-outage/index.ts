@@ -18,14 +18,58 @@ Deno.serve(async (req) => {
   }
 
   const traceId = crypto.randomUUID();
-  const logger = createLogger('detect-mass-outage', req, { traceId });
+  const execId = crypto.randomUUID(); // ID único para esta execução
+  const logger = createLogger('detect-mass-outage', req, { traceId, execId });
+
+  // Criar cliente Supabase ANTES do try para usar no finally
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  let lockAcquired = false;
 
   try {
+    // 🔒 ADQUIRIR LOCK para prevenir execuções simultâneas
+    logger.info('Tentando adquirir lock para detecção');
+    
+    const { data: lockResult, error: lockError } = await supabase
+      .rpc('acquire_mass_outage_lock', {
+        p_locked_by: execId,
+        p_ttl_seconds: 300 // 5 minutos
+      });
 
-    // Criar cliente Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (lockError) {
+      logger.error('Erro ao tentar adquirir lock', { error: lockError });
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Failed to acquire execution lock',
+          reason: 'database_error'
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (!lockResult) {
+      logger.warn('Lock já está sendo usado por outra execução');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Another detection is already running',
+          reason: 'lock_busy'
+        }),
+        { 
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    lockAcquired = true;
+    logger.info('Lock adquirido com sucesso', { execId });
 
     logger.info('Iniciando detecção de quedas em massa via proxy');
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${supabaseUrl}/functions/v1/ixc-proxy`;
@@ -193,7 +237,10 @@ Deno.serve(async (req) => {
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
       logger.info('Processando chunk', { 
+        execId, // Incluir exec_id para rastrear duplicações
         chunk: `${chunkIndex + 1}/${chunks.length}`,
+        chunkIndex: chunkIndex + 1,
+        totalChunks: chunks.length,
         clientsCount: chunk.length 
       });
       
@@ -546,6 +593,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     logger.error('Erro na detecção de quedas em massa', { 
+      execId,
       error: error instanceof Error ? error.message : String(error) 
     });
 
@@ -559,5 +607,23 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
+  } finally {
+    // 🔓 SEMPRE liberar o lock no final
+    if (lockAcquired) {
+      try {
+        const { error: releaseError } = await supabase
+          .rpc('release_mass_outage_lock', {
+            p_locked_by: execId
+          });
+
+        if (releaseError) {
+          logger.error('Erro ao liberar lock', { execId, error: releaseError });
+        } else {
+          logger.info('Lock liberado com sucesso', { execId });
+        }
+      } catch (releaseErr) {
+        logger.error('Exceção ao liberar lock', { execId, error: releaseErr });
+      }
+    }
   }
 });

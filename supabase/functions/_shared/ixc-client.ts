@@ -96,9 +96,34 @@ function recordFailure() {
 }
 
 /**
- * Chamada IXC com retry e circuit breaker
+ * Serializa JSON de forma canônica (chaves ordenadas) para garantir
+ * consistência na geração de assinaturas HMAC
  */
-export async function callIxcWithRetry(
+function canonicalizeJson(obj: unknown): string {
+  if (obj === null || obj === undefined) {
+    return JSON.stringify(obj);
+  }
+  
+  if (typeof obj !== 'object') {
+    return JSON.stringify(obj);
+  }
+  
+  if (Array.isArray(obj)) {
+    return '[' + obj.map(item => canonicalizeJson(item)).join(',') + ']';
+  }
+  
+  // Ordenar chaves alfabeticamente
+  const sortedKeys = Object.keys(obj).sort();
+  const pairs = sortedKeys.map(key => {
+    const value = (obj as Record<string, unknown>)[key];
+    return `"${key}":${canonicalizeJson(value)}`;
+  });
+  
+  return '{' + pairs.join(',') + '}';
+}
+
+/**
+ * Chama o IXC via proxy com retry automático e circuit breaker
   proxyUrl: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
@@ -128,7 +153,9 @@ export async function callIxcWithRetry(
       // Gerar headers HMAC usando composite-auth (compatível com validação)
       const proxyUrlObj = new URL(proxyUrl);
       const proxyPath = proxyUrlObj.pathname + proxyUrlObj.search; // Inclui query string - composite-auth usa pathname+search
-      const bodyStr = JSON.stringify(requestBody);
+      
+      // 🔒 CRÍTICO: Usar serialização canônica para garantir consistência do HMAC
+      const bodyStr = canonicalizeJson(requestBody);
       const timestamp = Date.now();
       
       let finalHeaders: Record<string, string> = {
