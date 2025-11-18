@@ -57,6 +57,9 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
           rp: 1000,
           sortorder: 'asc'
         }
+      },
+      headers: {
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
       }
     });
 
@@ -119,6 +122,9 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
           body: {
             action: 'getCustomer',
             params: { id: clientId }
+          },
+          headers: {
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
           }
         });
 
@@ -261,6 +267,9 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
           body: {
             action: 'getPixQrCode',
             params: { id: String(overdueTitle.id) }
+          },
+          headers: {
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
           }
         });
 
