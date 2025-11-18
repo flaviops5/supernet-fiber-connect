@@ -450,6 +450,78 @@ Deno.serve(async (req) => {
         highest_count: Math.max(...massOutages.map(o => o.offline_count)),
         detected_at: new Date().toISOString()
       });
+
+      // Salvar cada evento detectado na tabela mass_outage_events
+      for (const outage of massOutages) {
+        const eventKey = `${outage.type}:${outage.identifier}`;
+        const affectedLogins: string[] = [];
+        
+        // Coletar logins afetados baseado no tipo
+        if (outage.type === 'PON') {
+          const clients = ponGroups.get(outage.identifier) || [];
+          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+        } else if (outage.type === 'CTO') {
+          const clients = ctoGroups.get(outage.identifier) || [];
+          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+        } else if (outage.type === 'REGION') {
+          const clients = regionGroups.get(outage.identifier) || [];
+          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+        }
+
+        try {
+          // Verificar se já existe um evento ativo para esta chave
+          const { data: existingEvent } = await supabase
+            .from('mass_outage_events')
+            .select('id, status')
+            .eq('event_key', eventKey)
+            .eq('status', 'active')
+            .order('detected_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!existingEvent) {
+            // Inserir novo evento
+            const { error: insertError } = await supabase
+              .from('mass_outage_events')
+              .insert({
+                event_key: eventKey,
+                region_pattern: outage.identifier,
+                affected_count: outage.offline_count,
+                affected_logins: affectedLogins,
+                status: 'active',
+                metadata: {
+                  group_type: outage.type,
+                  severity: outage.severity,
+                  detection_timestamp: new Date().toISOString()
+                }
+              });
+
+            if (insertError) {
+              logger.error(`Erro ao inserir evento ${eventKey}`, { error: insertError });
+            } else {
+              logger.info(`✅ Evento salvo: ${eventKey} (${outage.offline_count} clientes)`);
+            }
+          } else {
+            // Atualizar evento existente
+            const { error: updateError } = await supabase
+              .from('mass_outage_events')
+              .update({
+                affected_count: outage.offline_count,
+                affected_logins: affectedLogins,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingEvent.id);
+
+            if (updateError) {
+              logger.error(`Erro ao atualizar evento ${eventKey}`, { error: updateError });
+            } else {
+              logger.info(`🔄 Evento atualizado: ${eventKey} (${outage.offline_count} clientes)`);
+            }
+          }
+        } catch (error) {
+          logger.error(`Erro ao processar evento ${eventKey}`, { error });
+        }
+      }
     }
 
     return new Response(
