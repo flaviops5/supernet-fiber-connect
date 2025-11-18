@@ -66,12 +66,33 @@ export function MassOutageMonitor() {
   }, [toast]);
 
   const detectOutages = useCallback(async () => {
+    // Evita disparos concorrentes no cliente
+    if (detecting) {
+      toast({
+        title: "Detecção em andamento",
+        description: "Aguarde a conclusão antes de iniciar outra tentativa.",
+      });
+      return;
+    }
+
     setDetecting(true);
     try {
       const { data, error } = await supabase.functions.invoke('detect-mass-outage');
-      
-      if (error) throw error;
-      
+
+      // Trata erro HTTP (ex.: 409 lock_busy) de forma amigável
+      if (error) {
+        const isHttpErr = (error as any)?.name === 'FunctionsHttpError' ||
+          (error as any)?.message?.includes('non-2xx');
+        if (isHttpErr) {
+          toast({
+            title: "Detecção já em execução",
+            description: "Já existe uma detecção em andamento. Tente novamente em até 5 minutos.",
+          });
+          return;
+        }
+        throw error;
+      }
+
       if (data?.success) {
         toast({
           title: "Detecção concluída",
@@ -79,7 +100,10 @@ export function MassOutageMonitor() {
         });
         loadEvents();
       } else {
-        throw new Error(data?.error || 'Erro ao detectar quedas');
+        const friendly = data?.reason === 'lock_busy'
+          ? 'Já existe uma detecção em andamento. Tente novamente em até 5 minutos.'
+          : (data?.error || 'Erro ao detectar quedas');
+        toast({ title: "Aviso", description: friendly });
       }
     } catch (error) {
       const err = parseError(error);
@@ -92,7 +116,7 @@ export function MassOutageMonitor() {
     } finally {
       setDetecting(false);
     }
-  }, [toast, loadEvents]);
+  }, [toast, loadEvents, detecting]);
 
   useEffect(() => {
     loadEvents();
