@@ -20,6 +20,11 @@ import type {
   IXCApiParams
 } from '../_shared/ixc-types.ts';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 function normalizeRegistros(input: unknown): IXCCustomer[] {
   if (!input) return [];
   const arr = Array.isArray(input) ? input : (typeof input === 'object' ? Object.values(input) : []);
