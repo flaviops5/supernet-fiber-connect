@@ -98,10 +98,15 @@ function recordFailure() {
 /**
  * Serializa JSON de forma canônica (chaves ordenadas) para garantir
  * consistência na geração de assinaturas HMAC
+ * Remove chaves com valor undefined para evitar JSON inválido
  */
 function canonicalizeJson(obj: unknown): string {
-  if (obj === null || obj === undefined) {
-    return JSON.stringify(obj);
+  if (obj === null) {
+    return 'null';
+  }
+  
+  if (obj === undefined) {
+    return 'null'; // undefined vira null em JSON
   }
   
   if (typeof obj !== 'object') {
@@ -112,12 +117,17 @@ function canonicalizeJson(obj: unknown): string {
     return '[' + obj.map(item => canonicalizeJson(item)).join(',') + ']';
   }
   
-  // Ordenar chaves alfabeticamente
+  // Ordenar chaves alfabeticamente e REMOVER chaves com undefined
   const sortedKeys = Object.keys(obj).sort();
-  const pairs = sortedKeys.map(key => {
-    const value = (obj as Record<string, unknown>)[key];
-    return `"${key}":${canonicalizeJson(value)}`;
-  });
+  const pairs = sortedKeys
+    .filter(key => {
+      const value = (obj as Record<string, unknown>)[key];
+      return value !== undefined; // Remover undefined
+    })
+    .map(key => {
+      const value = (obj as Record<string, unknown>)[key];
+      return `"${key}":${canonicalizeJson(value)}`;
+    });
   
   return '{' + pairs.join(',') + '}';
 }
