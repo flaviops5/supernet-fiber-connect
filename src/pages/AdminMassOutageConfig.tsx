@@ -43,17 +43,34 @@ export default function AdminMassOutageConfig() {
 
   const executeDetection = async () => {
     try {
+      if (loading) {
+        toast({
+          title: "Detecção em andamento",
+          description: "Aguarde a conclusão antes de iniciar outra tentativa.",
+        });
+        return;
+      }
+
       setLoading(true);
       toast({
         title: "Executando detecção...",
         description: "Verificando grupos de clientes offline. Isso pode demorar alguns minutos.",
       });
 
-      const { data, error } = await supabase.functions.invoke('detect-mass-outage', {
-        body: {}
-      });
+      const { data, error } = await supabase.functions.invoke('detect-mass-outage', { body: {} });
 
-      if (error) throw error;
+      if (error) {
+        const isHttpErr = (error as any)?.name === 'FunctionsHttpError' ||
+          (error as any)?.message?.includes('non-2xx');
+        if (isHttpErr) {
+          toast({
+            title: "Detecção já em execução",
+            description: "Já existe uma detecção em andamento. Tente novamente em até 5 minutos.",
+          });
+          return;
+        }
+        throw error;
+      }
 
       setResult(data as DetectionResult);
       
