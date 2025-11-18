@@ -30,9 +30,11 @@ Deno.serve(createAuthenticatedHandler('check-reboot-candidates', async (req, { s
   // URL do proxy centralizado
   const IXC_PROXY_URL = `${SUPABASE_URL}/functions/v1/ixc-proxy`;
   
-  // Obter Authorization header para repassar ao ixc-proxy
-  const authHeader = req.headers.get('Authorization');
-  const additionalHeaders = authHeader ? { 'Authorization': authHeader } : {};
+  // Usar service_role key para chamadas internas entre edge functions
+  const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const additionalHeaders = SERVICE_ROLE_KEY 
+    ? { 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` } 
+    : {};
 
     // 🔥 OTIMIZAÇÃO: Buscar apenas clientes ONLINE direto na query
     logger.info('Buscando clientes ONLINE via IXC proxy (filtro direto)');
