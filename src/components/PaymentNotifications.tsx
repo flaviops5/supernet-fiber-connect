@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseError } from "@/types/error.types";
 import { sanitizeEmailHTML } from "@/lib/sanitize";
+import { AutoSendOverdueInvoices } from "./AutoSendOverdueInvoices";
 
 interface Notification {
   id: string;
@@ -690,6 +691,9 @@ export const PaymentNotifications = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Envio Automático de Boletos Vencidos */}
+      <AutoSendOverdueInvoices />
 
       {/* Info Card */}
       <Card className="border-blue-200 bg-blue-50">
