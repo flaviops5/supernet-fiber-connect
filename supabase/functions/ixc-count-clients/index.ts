@@ -9,9 +9,11 @@ Deno.serve(createAuthenticatedHandler(
   async (req, { supabase, user }) => {
     const IXC_PROXY_URL = Deno.env.get('IXC_PROXY_URL') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/ixc-proxy`;
     
-    // Obter Authorization header para repassar ao ixc-proxy
-    const authHeader = req.headers.get('Authorization');
-    const additionalHeaders = authHeader ? { 'Authorization': authHeader } : {};
+    // Usar service_role key para chamadas internas entre edge functions
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const additionalHeaders = SERVICE_ROLE_KEY 
+      ? { 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` } 
+      : {};
 
     console.log('🔍 Buscando clientes IXC via proxy com retry/circuit breaker...');
 
