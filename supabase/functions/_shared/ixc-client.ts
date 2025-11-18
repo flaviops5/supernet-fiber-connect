@@ -124,6 +124,8 @@ function canonicalizeJson(obj: unknown): string {
 
 /**
  * Chama o IXC via proxy com retry automático e circuit breaker
+ */
+export async function callIxcWithRetry(
   proxyUrl: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
