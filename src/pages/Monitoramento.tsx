@@ -18,8 +18,8 @@ import { RebootCandidates } from '@/components/monitoring/RebootCandidates';
 import { ClientStats } from '@/components/monitoring/ClientStats';
 import ContextEscapeAnalytics from '@/components/monitoring/ContextEscapeAnalytics';
 import { PerformanceMonitor } from '@/components/monitoring/PerformanceMonitor';
-import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Users, Activity, UserCheck, UserX, Shield, Loader2, ArrowLeft, AlertTriangle, Network, TowerControl, Clock, RefreshCw, Zap, Settings } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { BackButton } from '@/components/BackButton';
 
 export default function Monitoramento() {
@@ -159,6 +159,27 @@ export default function Monitoramento() {
             </TabsList>
 
             <TabsContent value="status" className="space-y-6">
+              {/* Quick Actions */}
+              <Card className="border-blue-500/20 hover:border-blue-500/40 transition-all">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-blue-500" />
+                    Configuração de Quedas em Massa
+                  </CardTitle>
+                  <CardDescription>
+                    Ajuste thresholds de detecção e execute varreduras manuais
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link to="/admin/mass-outage-config">
+                    <Button className="w-full">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Abrir Configurações
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
               {/* Stats Cards */}
               {clientCount && (
             <div className="grid gap-6 md:grid-cols-3">

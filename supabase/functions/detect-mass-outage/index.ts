@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
 
     const THRESHOLD_PON = 5;  // 5+ clientes na mesma PON
     const THRESHOLD_CTO = 3;  // 3+ clientes na mesma CTO
-    const THRESHOLD_REGION = 10; // 10+ clientes na mesma região
+    const THRESHOLD_REGION = 6; // 6+ clientes na mesma região (reduzido de 10)
 
     // Verificar quedas por PON
     for (const [key, clients] of ponGroups) {

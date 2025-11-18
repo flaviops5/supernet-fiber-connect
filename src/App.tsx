@@ -15,6 +15,7 @@ import Atendimento from "./pages/Atendimento";
 import PerfilAgente from "./pages/PerfilAgente";
 import MetricasDepartamentos from "./pages/MetricasDepartamentos";
 import Monitoramento from "./pages/Monitoramento";
+import AdminMassOutageConfig from "./pages/AdminMassOutageConfig";
 import AutoRebootMonitoring from "./pages/AutoRebootMonitoring";
 import AutoRebootDocs from "./pages/AutoRebootDocs";
 import NetworkMaintenance from "./pages/NetworkMaintenance";
@@ -79,6 +80,7 @@ const App = () => {
               } 
             />
             <Route path="/admin/monitoramento" element={<Monitoramento />} />
+            <Route path="/admin/mass-outage-config" element={<AdminMassOutageConfig />} />
             <Route path="/admin/production-readiness" element={<ProductionReadiness />} />
             <Route path="/admin/prompts" element={<AdminPrompts />} />
           <Route path="/admin/ixc-stress-test" element={<AdminIXCStressTest />} />
