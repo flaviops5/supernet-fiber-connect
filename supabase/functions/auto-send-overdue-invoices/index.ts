@@ -50,9 +50,7 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
       body: {
         action: 'getFinancialTitles',
         params: {
-          qtype: 'fn_areceber.data_vencimento',
-          oper: '<',
-          query: todayStr,
+          dueDateBefore: todayStr,
           page: 1,
           rp: 1000,
           sortorder: 'asc'
@@ -266,7 +264,7 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
         const { data: pixData } = await supabase.functions.invoke('ixc-integration', {
           body: {
             action: 'getPixQrCode',
-            params: { id: String(overdueTitle.id) }
+            params: { titleId: String(overdueTitle.id) }
           },
           headers: {
             Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
