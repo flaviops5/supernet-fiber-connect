@@ -27,6 +27,14 @@ export function InstallActions({ card }: InstallActionsProps) {
     setFiles(e.target.files);
   };
 
+  const sanitizeFileName = (fileName: string): string => {
+    return fileName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-zA-Z0-9._-]/g, '_') // Substitui caracteres especiais por underscore
+      .toLowerCase();
+  };
+
   const uploadPhotos = async (): Promise<string[]> => {
     if (!files || files.length === 0) return [];
     
@@ -34,7 +42,8 @@ export function InstallActions({ card }: InstallActionsProps) {
     const uploaded: string[] = [];
     
     for (const f of Array.from(files)) {
-      const path = `cards/${card.id}/${Date.now()}_${f.name}`;
+      const sanitizedName = sanitizeFileName(f.name);
+      const path = `cards/${card.id}/${Date.now()}_${sanitizedName}`;
       const { error } = await supabase.storage
         .from("install_photos")
         .upload(path, f, { upsert: false });
