@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/components/AuthGuard';
 import { MassOutageMonitor } from '@/components/MassOutageMonitor';
 import { MassOutageHistory } from '@/components/MassOutageHistory';
+import { MassOutageConfigSection } from '@/components/MassOutageConfigSection';
 import { PonPortsMonitor } from '@/components/PonPortsMonitor';
 import { RadioMonitor } from '@/components/RadioMonitor';
 import { RebootHistory } from '@/components/monitoring/RebootHistory';
@@ -123,7 +124,7 @@ export default function Monitoramento() {
 
           {/* Tabs */}
           <Tabs defaultValue="status" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="status" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Status
@@ -140,9 +141,9 @@ export default function Monitoramento() {
                 <Shield className="h-4 w-4" />
                 Fuga Contexto
               </TabsTrigger>
-              <TabsTrigger value="outages" className="gap-2">
+              <TabsTrigger value="mass-outage" className="gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Quedas
+                Quedas em Massa
               </TabsTrigger>
               <TabsTrigger value="pon" className="gap-2">
                 <Network className="h-4 w-4" />
@@ -152,33 +153,9 @@ export default function Monitoramento() {
                 <TowerControl className="h-4 w-4" />
                 POP
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-2">
-                <Clock className="h-4 w-4" />
-                Histórico
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="status" className="space-y-6">
-              {/* Quick Actions */}
-              <Card className="border-blue-500/20 hover:border-blue-500/40 transition-all">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-blue-500" />
-                    Configuração de Quedas em Massa
-                  </CardTitle>
-                  <CardDescription>
-                    Ajuste thresholds de detecção e execute varreduras manuais
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Link to="/admin/mass-outage-config">
-                    <Button className="w-full">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Abrir Configurações
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
 
               {/* Stats Cards */}
               {clientCount && (
@@ -282,11 +259,9 @@ export default function Monitoramento() {
               <RadioMonitor />
             </TabsContent>
 
-            <TabsContent value="outages">
+            <TabsContent value="mass-outage" className="space-y-6">
+              <MassOutageConfigSection />
               <MassOutageMonitor />
-            </TabsContent>
-
-            <TabsContent value="history">
               <MassOutageHistory />
             </TabsContent>
           </Tabs>
