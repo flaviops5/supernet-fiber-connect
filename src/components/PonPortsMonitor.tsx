@@ -16,6 +16,7 @@ import { parseError } from '@/types/error.types';
 
 interface PonPort {
   port: string;
+  pop?: string;
   online: number;
   offline: number;
   total: number;
@@ -42,7 +43,15 @@ export function PonPortsMonitor() {
       if (error) throw error;
       
       if (data?.success) {
-        setPorts(data.ports || []);
+        // Adicionar informação de POP baseada no OLT
+        const portsWithPop = (data.ports || []).map((port: PonPort) => {
+          const [olt] = port.port.split('/');
+          return {
+            ...port,
+            pop: olt // O primeiro segmento é geralmente o OLT/POP
+          };
+        });
+        setPorts(portsWithPop);
         toast({
           title: "Status PON atualizado",
           description: `${data.total_ports} portas, ${data.total_onus} ONUs`,
@@ -158,7 +167,14 @@ export function PonPortsMonitor() {
             <Card key={port.port} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-mono">{port.port}</CardTitle>
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-mono">{port.port}</CardTitle>
+                    {port.pop && (
+                      <p className="text-xs text-muted-foreground">
+                        POP: <span className="font-semibold">{port.pop}</span>
+                      </p>
+                    )}
+                  </div>
                   <Badge variant={healthBadge.variant} className={healthBadge.color}>
                     {healthBadge.label}
                   </Badge>
