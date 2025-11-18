@@ -61,7 +61,16 @@ Deno.serve(createAuthenticatedHandler('auto-send-overdue-invoices', async (req, 
     });
 
     if (ixcError) {
-      throw new Error(`Erro ao invocar ixc-integration: ${ixcError.message}`);
+      logger.error('Erro na chamada ixc-integration', { 
+        error: ixcError,
+        response: titlesResp 
+      });
+      throw new Error(`Erro ao invocar ixc-integration: ${ixcError.message || JSON.stringify(ixcError)}`);
+    }
+
+    if (!titlesResp) {
+      logger.error('Resposta vazia do ixc-integration');
+      throw new Error('ixc-integration retornou resposta vazia');
     }
 
     const titles = titlesResp?.data?.registros || titlesResp?.registros || [];
