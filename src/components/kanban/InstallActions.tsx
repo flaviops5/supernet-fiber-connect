@@ -112,34 +112,49 @@ export function InstallActions({ card }: InstallActionsProps) {
       ].filter(Boolean);
 
       const payload = { message: msgLines.join("\n") };
-      console.log('📤 [InstallActions] Chamando edge function installation-notify', payload);
+      console.log('📤 [InstallActions] Payload preparado:', payload);
+      console.log('📤 [InstallActions] Iniciando chamada para installation-notify...');
 
-      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
-        body: payload
-      });
-
-      console.log('📥 [InstallActions] Resposta da edge function:', { notifyResult, notifyError });
-
-      // Verificar resultado do envio
-      if (notifyError) {
-        console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
-        toast({ 
-          title: status === "reagendado" ? "Reagendado" : "Agendado", 
-          description: `Salvo, mas falha ao enviar notificações: ${notifyError.message}`,
-          variant: "destructive"
+      try {
+        const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
+          body: payload
         });
-      } else if (notifyResult?.summary?.failure > 0) {
-        console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
-        toast({ 
-          title: status === "reagendado" ? "Reagendado" : "Agendado", 
-          description: `Salvo. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
-          variant: "destructive"
+
+        console.log('📥 [InstallActions] Resposta recebida:', { 
+          hasData: !!notifyResult, 
+          hasError: !!notifyError,
+          error: notifyError,
+          data: notifyResult 
         });
-      } else {
-        console.log('✅ [InstallActions] Notificações enviadas com sucesso');
+
+        // Verificar resultado do envio
+        if (notifyError) {
+          console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
+          toast({ 
+            title: status === "reagendado" ? "Reagendado" : "Agendado", 
+            description: `Salvo, mas falha ao enviar notificações: ${notifyError.message}`,
+            variant: "destructive"
+          });
+        } else if (notifyResult?.summary?.failure > 0) {
+          console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
+          toast({ 
+            title: status === "reagendado" ? "Reagendado" : "Agendado", 
+            description: `Salvo. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
+            variant: "destructive"
+          });
+        } else {
+          console.log('✅ [InstallActions] Notificações enviadas com sucesso');
+          toast({ 
+            title: status === "reagendado" ? "Reagendado" : "Agendado", 
+            description: "Notificações enviadas." 
+          });
+        }
+      } catch (notifyErr) {
+        console.error('❌ [InstallActions] Exceção ao chamar installation-notify:', notifyErr);
         toast({ 
           title: status === "reagendado" ? "Reagendado" : "Agendado", 
-          description: "Notificações enviadas." 
+          description: `Salvo, mas erro ao enviar notificações: ${notifyErr instanceof Error ? notifyErr.message : 'Erro desconhecido'}`,
+          variant: "destructive"
         });
       }
       
@@ -223,34 +238,49 @@ export function InstallActions({ card }: InstallActionsProps) {
         photos: photoUrls
       };
       
-      console.log('📤 [InstallActions] Chamando edge function installation-notify', payload);
+      console.log('📤 [InstallActions] Payload preparado (com fotos):', payload);
+      console.log('📤 [InstallActions] Iniciando chamada para installation-notify...');
       
-      const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
-        body: payload
-      });
+      try {
+        const { data: notifyResult, error: notifyError } = await supabase.functions.invoke("installation-notify", {
+          body: payload
+        });
 
-      console.log('📥 [InstallActions] Resposta da edge function:', { notifyResult, notifyError });
+        console.log('📥 [InstallActions] Resposta recebida:', { 
+          hasData: !!notifyResult, 
+          hasError: !!notifyError,
+          error: notifyError,
+          data: notifyResult 
+        });
 
-      // Verificar resultado do envio
-      if (notifyError) {
-        console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
+        // Verificar resultado do envio
+        if (notifyError) {
+          console.error('❌ [InstallActions] Erro ao enviar notificações:', notifyError);
+          toast({ 
+            title: "Instalação registrada", 
+            description: `Fotos salvas, mas falha ao enviar notificações: ${notifyError.message}`,
+            variant: "destructive"
+          });
+        } else if (notifyResult?.summary?.failure > 0) {
+          console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
+          toast({ 
+            title: "Instalação registrada", 
+            description: `Fotos salvas. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
+            variant: "destructive"
+          });
+        } else {
+          console.log('✅ [InstallActions] Notificações enviadas com sucesso');
+          toast({ 
+            title: "Instalação finalizada", 
+            description: "Notificações enviadas com fotos." 
+          });
+        }
+      } catch (notifyErr) {
+        console.error('❌ [InstallActions] Exceção ao chamar installation-notify:', notifyErr);
         toast({ 
           title: "Instalação registrada", 
-          description: `Fotos salvas, mas falha ao enviar notificações: ${notifyError.message}`,
+          description: `Fotos salvas, mas erro ao enviar notificações: ${notifyErr instanceof Error ? notifyErr.message : 'Erro desconhecido'}`,
           variant: "destructive"
-        });
-      } else if (notifyResult?.summary?.failure > 0) {
-        console.warn(`⚠️ [InstallActions] Notificações parcialmente enviadas: ${notifyResult.summary.success} sucesso, ${notifyResult.summary.failure} falhas`);
-        toast({ 
-          title: "Instalação registrada", 
-          description: `Fotos salvas. ${notifyResult.summary.success} notificação(ões) enviada(s), ${notifyResult.summary.failure} falha(s).`,
-          variant: "destructive"
-        });
-      } else {
-        console.log('✅ [InstallActions] Notificações enviadas com sucesso');
-        toast({ 
-          title: "Instalação finalizada", 
-          description: "Notificações enviadas com fotos." 
         });
       }
       
