@@ -506,13 +506,13 @@ Deno.serve(async (req) => {
         // Coletar logins afetados baseado no tipo
         if (outage.type === 'PON') {
           const clients = ponGroups.get(outage.identifier) || [];
-          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+          affectedLogins.push(...clients.map(c => c.user.login || c.user.cliente || 'unknown'));
         } else if (outage.type === 'CTO') {
           const clients = ctoGroups.get(outage.identifier) || [];
-          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+          affectedLogins.push(...clients.map(c => c.user.login || c.user.cliente || 'unknown'));
         } else if (outage.type === 'REGION') {
           const clients = regionGroups.get(outage.identifier) || [];
-          affectedLogins.push(...clients.map(c => c.login || c.cliente || 'unknown'));
+          affectedLogins.push(...clients.map(c => c.user.login || c.user.cliente || 'unknown'));
         }
 
         try {
