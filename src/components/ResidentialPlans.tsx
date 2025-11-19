@@ -295,7 +295,7 @@ const detectIconFromText = (text: string): string => {
 
                     {/* CTA Button */}
                     <Button 
-                      className="w-full cta-gradient text-white font-bold py-6 text-lg"
+                      className="w-full cta-gradient text-white font-bold py-2.5 text-sm"
                       onClick={() => handleWhatsApp(plan)}
                     >
                       {plan.cta_text || 'Contratar Agora'}
