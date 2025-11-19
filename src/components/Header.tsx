@@ -154,7 +154,7 @@ const Header = () => {
               )}
             </div>
 
-            <Link to="/blog#blog" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
+            <Link to="/blogue" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
               Blog
             </Link>
             <Link to="/contato#contato" className="flex items-center text-foreground hover:text-primary transition-colors py-2">
@@ -220,7 +220,7 @@ const Header = () => {
                 </div>
               </div>
 
-              <Link to="/blog#blog" className="block text-foreground hover:text-primary transition-colors">
+              <Link to="/blogue" className="block text-foreground hover:text-primary transition-colors">
                 Blog
               </Link>
               <Link to="/contato#contato" className="block text-foreground hover:text-primary transition-colors">
