@@ -9,6 +9,8 @@ import Contact from "./pages/Contact";
 import Telemedicina from "./pages/Telemedicina";
 import Automacao from "./pages/Automacao";
 import Blog from "./pages/Blog";
+import Blogue from "./pages/Blogue";
+import BloguePost from "./pages/BloguePost";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
@@ -129,6 +131,8 @@ const App = () => {
                     <Route path="/automacao-residencial" element={<Automacao />} />
                     <Route path="/autoreboot" element={<Navigate to="/admin/auto-reboot" replace />} />
                     <Route path="/blog" element={<Blog />} />
+                    <Route path="/blogue" element={<Blogue />} />
+                    <Route path="/blogue/:slug" element={<BloguePost />} />
                     <Route path="/contato" element={<Contact />} />
                     <Route path="/fluxo-luan" element={<Navigate to="/fluxo-agente?agent=support-tech-agent" replace />} />
                     <Route path="/go-live" element={<GoLive />} />
