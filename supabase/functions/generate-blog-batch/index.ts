@@ -147,6 +147,82 @@ RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
       throw new Error('Failed to parse AI response as JSON');
     }
 
+    // Generate featured images for each post
+    console.log('Generating featured images for posts', {
+      requestId,
+      postCount: posts.length,
+    });
+
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      console.warn('LOVABLE_API_KEY not configured, skipping image generation');
+    } else {
+      const imagePromises = posts.map(async (post: any, index: number) => {
+        try {
+          const imagePrompt = `Create a professional, modern featured image for a blog post titled "${post.title}"${post.category ? ` in the ${post.category} category` : ''}. 
+    
+Style: Clean, professional, tech-focused, vibrant colors, 16:9 aspect ratio.
+Elements: Abstract tech elements, modern design, suitable for a blog header.
+Quality: High resolution, eye-catching, suitable for web display.
+
+Do NOT include any text, words, or letters in the image.`;
+
+          const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash-image-preview',
+              messages: [
+                {
+                  role: 'user',
+                  content: imagePrompt
+                }
+              ],
+              modalities: ['image', 'text']
+            }),
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+            
+            if (imageUrl) {
+              post.featured_image = imageUrl;
+              console.log('Image generated for post', {
+                requestId,
+                postIndex: index,
+                title: post.title,
+              });
+            } else {
+              console.warn('No image URL in response', {
+                requestId,
+                postIndex: index,
+              });
+            }
+          } else {
+            console.warn('Failed to generate image', {
+              requestId,
+              postIndex: index,
+              status: imageResponse.status,
+            });
+          }
+        } catch (imageError) {
+          console.error('Error generating image for post', {
+            requestId,
+            postIndex: index,
+            error: imageError instanceof Error ? imageError.message : 'Unknown error',
+          });
+          // Continue without image
+        }
+      });
+
+      // Wait for all images to be generated
+      await Promise.all(imagePromises);
+    }
+
     const duration = Date.now() - startTime;
 
     console.log('generate-blog-batch completed', {
