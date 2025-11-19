@@ -295,3 +295,6 @@ verify_jwt = true
 
 [functions.generate-weekly-blog-post]
 verify_jwt = true
+
+[functions.generate-blog-batch]
+verify_jwt = true
