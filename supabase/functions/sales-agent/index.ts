@@ -51,10 +51,7 @@ Deno.serve(createAuthenticatedHandler('sales-agent', async (req, { supabase, use
       });
     }
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    logger.info('sales-agent: request start', { 
+    logger.info('sales-agent: request start', {
       method: req.method, 
       directOrder, 
       path: new URL(req.url).pathname,
