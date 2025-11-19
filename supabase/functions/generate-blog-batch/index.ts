@@ -94,6 +94,8 @@ Um array JSON contendo objetos no formato:
 
 RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
 
+    const maxTokens = quantidade <= 3 ? 4000 : 2500;
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -106,7 +108,7 @@ RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Gere ${quantidade} posts sobre: ${temaGeral}` }
         ],
-        max_tokens: 8000,
+        max_tokens: maxTokens,
         temperature: 0.8,
       }),
     });
