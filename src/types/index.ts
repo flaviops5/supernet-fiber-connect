@@ -17,3 +17,4 @@ export * from './event.types';
 export * from './admin.types';
 export * from './notification.types';
 export * from './kanban.types';
+export * from './blog.types';
