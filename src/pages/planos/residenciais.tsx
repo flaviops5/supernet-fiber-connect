@@ -1,7 +1,5 @@
 import React from "react";
-import { SEO } from "@/components/seo/SEO";
-import { OrganizationSchema } from "@/components/seo/schemas/OrganizationSchema";
-import { ProductSchema } from "@/components/seo/schemas/ProductSchema";
+import { PlanSEOBlock } from "@/components/seo/PlanSEOBlock";
 
 interface ResidentialPlan {
   id: string;
@@ -34,31 +32,7 @@ const RESIDENTIAL_PLANS: ResidentialPlan[] = [
 export default function PlanosResidenciaisPage(): JSX.Element {
   return (
     <>
-      <SEO
-        title="Planos de Internet Residencial em Fibra Óptica"
-        description="Conheça os planos de internet residencial Supernet Fibra com conexão estável, suporte local e alta velocidade para toda a família."
-        canonical="/planos/residenciais"
-        ogImage="/images/og-planos-residenciais.jpg"
-      />
-
-      <OrganizationSchema
-        name="Supernet Fibra"
-        url="https://supernetfibra.com.br"
-        logo="https://supernetfibra.com.br/images/logo.png"
-        sameAs={[
-          "https://www.facebook.com/supernetfibra",
-          "https://www.instagram.com/supernetfibra"
-        ]}
-      />
-
-      {RESIDENTIAL_PLANS.map((plan) => (
-        <ProductSchema
-          key={plan.id}
-          name={plan.name}
-          description={plan.description}
-          price={plan.price}
-        />
-      ))}
+      <PlanSEOBlock planId="residenciais" />
 
       <div className="min-h-screen bg-background">
         <main className="container mx-auto px-4 py-12">
