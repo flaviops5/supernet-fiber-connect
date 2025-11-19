@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -14,6 +15,15 @@ interface BatchConfig {
   temaGeral: string;
   publicoAlvo: string;
   tom: string;
+}
+
+interface SinglePostConfig {
+  tema: string;
+  palavraChavePrincipal: string;
+  publicoAlvo: string;
+  tom: string;
+  tamanho: string;
+  generatedPrompt: string;
 }
 
 interface GeneratedPost {
@@ -35,6 +45,25 @@ export default function BlogBatchPage(): JSX.Element {
     temaGeral: "Internet fibra óptica e telecomunicações",
     publicoAlvo: "Consumidores residenciais e pequenas empresas interessadas em internet de qualidade",
     tom: "profissional"
+  });
+  const [singleConfig, setSingleConfig] = useState<SinglePostConfig>({
+    tema: "",
+    palavraChavePrincipal: "",
+    publicoAlvo: "",
+    tom: "profissional",
+    tamanho: "médio",
+    generatedPrompt: ""
+  });
+  const [singlePost, setSinglePost] = useState<GeneratedPost>({
+    slug: "",
+    title: "",
+    category: "Tecnologia",
+    excerpt: "",
+    content: "",
+    author: "Equipe Supernet Fibra",
+    featured: false,
+    featured_image: "",
+    read_time: 5
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPosts, setGeneratedPosts] = useState<GeneratedPost[]>([]);
@@ -129,6 +158,108 @@ export default function BlogBatchPage(): JSX.Element {
     }
   }
 
+  function buildSinglePrompt(): void {
+    const prompt = `
+Você é o assistente oficial de conteúdo da Supernet Fibra. Gere um post de blog no formato abaixo, otimizando para SEO e AEO.
+
+TEMA: ${singleConfig.tema}
+PALAVRA-CHAVE PRINCIPAL: ${singleConfig.palavraChavePrincipal}
+PÚBLICO ALVO: ${singleConfig.publicoAlvo}
+TOM: ${singleConfig.tom}
+TAMANHO: ${singleConfig.tamanho}
+
+O post deve:
+- Ter título forte
+- Ter introdução curta
+- Ter seções com H2 e H3
+- Incluir perguntas frequentes (FAQ)
+- Incluir resumos curtos "Resumo para IA" em algumas seções
+- Ser factual, direto e útil
+
+Retorne EXCLUSIVAMENTE um JSON no formato:
+
+{
+  "slug": "...",
+  "title": "...",
+  "category": "...",
+  "excerpt": "...",
+  "content": "...",
+  "author": "Equipe Supernet Fibra",
+  "featured": false,
+  "featured_image": "",
+  "read_time": 5
+}
+`.trim();
+
+    setSingleConfig((prev) => ({
+      ...prev,
+      generatedPrompt: prompt
+    }));
+  }
+
+  async function handleSaveSinglePost(): Promise<void> {
+    if (!singlePost.title || !singlePost.slug || !singlePost.content) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha título, slug e conteúdo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('blog_posts')
+        .insert({
+          slug: singlePost.slug,
+          title: singlePost.title,
+          category: singlePost.category,
+          excerpt: singlePost.excerpt,
+          content: singlePost.content,
+          author: singlePost.author,
+          featured: singlePost.featured,
+          featured_image: singlePost.featured_image,
+          published: true,
+          read_time: singlePost.read_time
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Post salvo!",
+        description: "O post foi salvo no banco de dados."
+      });
+
+      // Reset form
+      setSinglePost({
+        slug: "",
+        title: "",
+        category: "Tecnologia",
+        excerpt: "",
+        content: "",
+        author: "Equipe Supernet Fibra",
+        featured: false,
+        featured_image: "",
+        read_time: 5
+      });
+      setSingleConfig({
+        tema: "",
+        palavraChavePrincipal: "",
+        publicoAlvo: "",
+        tom: "profissional",
+        tamanho: "médio",
+        generatedPrompt: ""
+      });
+    } catch (error) {
+      console.error('Error saving post:', error);
+      toast({
+        title: "Erro ao salvar post",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  }
+
   return (
     <>
       <SEO
@@ -139,10 +270,17 @@ export default function BlogBatchPage(): JSX.Element {
         noindex
       />
       <main className="container mx-auto py-8 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Geração em Lote de Posts (IA)</CardTitle>
-          </CardHeader>
+        <Tabs defaultValue="batch" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="batch">Geração em Lote</TabsTrigger>
+            <TabsTrigger value="single">Post Individual</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="batch" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Geração em Lote de Posts (IA)</CardTitle>
+              </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -235,6 +373,178 @@ export default function BlogBatchPage(): JSX.Element {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="single" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Criar Post Individual (IA Assistida)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="single-tema">Tema do post</Label>
+                    <Input
+                      id="single-tema"
+                      placeholder="Ex: Fibra óptica vs internet a cabo"
+                      value={singleConfig.tema}
+                      onChange={(e) => setSingleConfig({ ...singleConfig, tema: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="single-palavra-chave">Palavra-chave principal</Label>
+                    <Input
+                      id="single-palavra-chave"
+                      placeholder="Ex: fibra óptica"
+                      value={singleConfig.palavraChavePrincipal}
+                      onChange={(e) => setSingleConfig({ ...singleConfig, palavraChavePrincipal: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="single-publico">Público alvo</Label>
+                    <Input
+                      id="single-publico"
+                      placeholder="Ex: Empresas, residências, gamers"
+                      value={singleConfig.publicoAlvo}
+                      onChange={(e) => setSingleConfig({ ...singleConfig, publicoAlvo: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="single-tom">Tom</Label>
+                    <Input
+                      id="single-tom"
+                      placeholder="profissional, técnico, leve..."
+                      value={singleConfig.tom}
+                      onChange={(e) => setSingleConfig({ ...singleConfig, tom: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="single-tamanho">Tamanho</Label>
+                    <Input
+                      id="single-tamanho"
+                      placeholder="curto, médio, longo"
+                      value={singleConfig.tamanho}
+                      onChange={(e) => setSingleConfig({ ...singleConfig, tamanho: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <Button type="button" onClick={buildSinglePrompt} className="w-full">
+                  Gerar Prompt para IA
+                </Button>
+
+                {singleConfig.generatedPrompt && (
+                  <div className="space-y-2">
+                    <Label htmlFor="single-prompt">Prompt gerado (copie e use na IA)</Label>
+                    <Textarea
+                      id="single-prompt"
+                      className="h-48 font-mono text-xs"
+                      readOnly
+                      value={singleConfig.generatedPrompt}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Conteúdo do Post</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Cole aqui o JSON retornado pela IA e edite os campos conforme necessário
+                </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="single-title">Título</Label>
+                  <Input
+                    id="single-title"
+                    placeholder="Título do post"
+                    value={singlePost.title}
+                    onChange={(e) => setSinglePost({ ...singlePost, title: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="single-slug">Slug</Label>
+                  <Input
+                    id="single-slug"
+                    placeholder="slug-do-post"
+                    value={singlePost.slug}
+                    onChange={(e) => setSinglePost({ ...singlePost, slug: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="single-category">Categoria</Label>
+                  <Input
+                    id="single-category"
+                    placeholder="Ex: Tecnologia, Internet, Fibra Óptica"
+                    value={singlePost.category}
+                    onChange={(e) => setSinglePost({ ...singlePost, category: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="single-excerpt">Resumo</Label>
+                  <Textarea
+                    id="single-excerpt"
+                    placeholder="Resumo do post"
+                    value={singlePost.excerpt}
+                    onChange={(e) => setSinglePost({ ...singlePost, excerpt: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="single-content">Conteúdo (Markdown)</Label>
+                  <Textarea
+                    id="single-content"
+                    className="h-96 font-mono text-sm"
+                    placeholder="Conteúdo completo em Markdown"
+                    value={singlePost.content}
+                    onChange={(e) => setSinglePost({ ...singlePost, content: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="single-read-time">Tempo de leitura (minutos)</Label>
+                    <Input
+                      id="single-read-time"
+                      type="number"
+                      placeholder="5"
+                      value={singlePost.read_time}
+                      onChange={(e) => setSinglePost({ ...singlePost, read_time: parseInt(e.target.value) || 5 })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="single-featured-image">Imagem destacada (URL)</Label>
+                    <Input
+                      id="single-featured-image"
+                      placeholder="https://exemplo.com/imagem.jpg"
+                      value={singlePost.featured_image}
+                      onChange={(e) => setSinglePost({ ...singlePost, featured_image: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <Button 
+                  type="button" 
+                  onClick={handleSaveSinglePost}
+                  className="w-full"
+                >
+                  Salvar Post
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </>
   );

@@ -44,7 +44,6 @@ import PublicCalendar from "./pages/PublicCalendar";
 import AdminIXCStressTest from "./pages/AdminIXCStressTest";
 import AdminRateLimits from "./pages/AdminRateLimits";
 import AdminWhitelist from "./pages/AdminWhitelist";
-import BlogNew from "./pages/admin/BlogNew";
 import BlogBatch from "./pages/admin/BlogBatch";
 import { AuthGuard } from "./components/AuthGuard";
 import Header from "./components/Header";
@@ -72,8 +71,7 @@ const App = () => {
             <Route path="/admin/agentes" element={<AdminAgents />} />
             <Route path="/admin/atlas-insights" element={<AtlasInsights />} />
             <Route path="/admin/auto-reboot" element={<AutoRebootMonitoring />} />
-            <Route path="/admin/blog/batch" element={<BlogBatch />} />
-            <Route path="/admin/blog/new" element={<BlogNew />} />
+            <Route path="/admin/blog" element={<BlogBatch />} />
             <Route path="/admin/documentacao" element={<AdminDocumentacao />} />
             <Route path="/admin/escalonamento" element={<AdminEscalation />} />
             <Route path="/admin/fluxo-agentes" element={<AdminFluxoAgentes />} />
