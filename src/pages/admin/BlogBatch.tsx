@@ -43,7 +43,7 @@ interface GeneratedPost {
 export default function BlogBatchPage(): JSX.Element {
   const { toast } = useToast();
   const [config, setConfig] = useState<BatchConfig>({
-    quantidade: 5,
+    quantidade: 3,
     temaGeral: "Internet fibra óptica e telecomunicações",
     publicoAlvo: "Consumidores residenciais e pequenas empresas interessadas em internet de qualidade",
     tom: "profissional",
