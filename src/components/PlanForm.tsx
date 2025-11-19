@@ -15,10 +15,11 @@ import { z } from "zod";
 
 interface IXCPlan {
   id: string;
-  descricao: string;
-  valor: string;
-  download: string;
-  upload: string;
+  name: string;
+  download?: string;
+  upload?: string;
+  price?: number;
+  type?: string;
 }
 
 const iconMap = {
@@ -117,14 +118,14 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
   const loadIxcPlans = async () => {
     setLoadingIxcPlans(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ixc-list-contracts', {
-        body: { page: 1, rp: 100 }
-      });
+      const { data, error } = await supabase.functions.invoke('ixc-list-plans');
 
       if (error) throw error;
 
-      if (data?.contracts) {
-        setIxcPlans(data.contracts);
+      if (data?.success && data?.plans) {
+        setIxcPlans(data.plans);
+      } else {
+        throw new Error(data?.error || 'Erro ao carregar planos do IXC');
       }
     } catch (error) {
       console.error('Erro ao carregar planos IXC:', error);
@@ -141,10 +142,10 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
       setFormData({
         ...formData,
         ixc_plan_id: ixcPlanId,
-        name: selectedPlan.descricao,
-        speed: `${selectedPlan.download} Mega`,
-        price: parseFloat(selectedPlan.valor) || 0,
-        originalPrice: parseFloat(selectedPlan.valor) * 1.2 || 0,
+        name: selectedPlan.name,
+        speed: selectedPlan.download || '',
+        price: selectedPlan.price || 0,
+        originalPrice: (selectedPlan.price || 0) * 1.2,
       });
       toast.success('Plano IXC vinculado! Agora personalize as características visuais.');
     }
@@ -357,7 +358,7 @@ export const PlanForm = ({ isOpen, onClose, plan, onSave }: PlanFormProps) => {
                     <SelectContent>
                       {ixcPlans.map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
-                          {plan.descricao} - {plan.download}MB - R$ {plan.valor}
+                          {plan.name} {plan.download ? `- ${plan.download}` : ''} {plan.price ? `- R$ ${plan.price.toFixed(2)}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
