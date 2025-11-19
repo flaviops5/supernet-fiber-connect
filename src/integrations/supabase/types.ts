@@ -4425,6 +4425,7 @@ export type Database = {
           job_title: string | null
           name: string
           phone: string | null
+          tenant_id: string | null
           updated_at: string
           user_id: string
           work_hours_end: string | null
@@ -4439,6 +4440,7 @@ export type Database = {
           job_title?: string | null
           name: string
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           user_id: string
           work_hours_end?: string | null
@@ -4453,12 +4455,21 @@ export type Database = {
           job_title?: string | null
           name?: string
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           user_id?: string
           work_hours_end?: string | null
           work_hours_start?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projection_settings: {
         Row: {
@@ -5151,6 +5162,77 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_users_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string | null
+          domain: string | null
+          feature_flags: Json | null
+          id: string
+          ixc_token: string | null
+          ixc_url: string | null
+          name: string
+          settings: Json | null
+          slug: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain?: string | null
+          feature_flags?: Json | null
+          id?: string
+          ixc_token?: string | null
+          ixc_url?: string | null
+          name: string
+          settings?: Json | null
+          slug?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string | null
+          feature_flags?: Json | null
+          id?: string
+          ixc_token?: string | null
+          ixc_url?: string | null
+          name?: string
+          settings?: Json | null
+          slug?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       training_dataset: {
         Row: {
           actual_output: string | null
@@ -5313,18 +5395,21 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -5729,8 +5814,16 @@ export type Database = {
             }
             Returns: string
           }
+      create_tenant_and_profile: {
+        Args: { p_tenant_name: string }
+        Returns: string
+      }
       disable_maintenance_cron: { Args: never; Returns: undefined }
       enable_maintenance_cron: { Args: never; Returns: undefined }
+      ensure_tenant_for_current_user: {
+        Args: { p_tenant_name?: string }
+        Returns: string
+      }
       generate_contract_number: { Args: never; Returns: string }
       get_available_agents_for_department: {
         Args: {
@@ -5855,6 +5948,10 @@ export type Database = {
         }[]
       }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      has_role_in_tenant: {
+        Args: { _role: string; _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_board_member:
         | { Args: { _board_id: string; _user_id: string }; Returns: boolean }
         | { Args: { p_board_id: string }; Returns: boolean }
