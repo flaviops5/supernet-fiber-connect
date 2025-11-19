@@ -1,32 +1,10 @@
 import React from "react";
-import { SEO } from "@/components/seo/SEO";
-import { OrganizationSchema } from "@/components/seo/schemas/OrganizationSchema";
-import { ServiceSchema } from "@/components/seo/schemas/ServiceSchema";
+import { ServiceSEOBlock } from "@/components/seo/ServiceSEOBlock";
 
 export default function TelemedicinaPage(): JSX.Element {
   return (
     <>
-      <SEO
-        title="Telemedicina – Atendimento Médico Digital Supernet"
-        description="Tenha acesso à telemedicina Supernet: atendimento médico digital 24h, consultas rápidas e suporte imediato para você e sua família."
-        canonical="/servicos/telemedicina"
-        ogImage="/images/og-telemedicina.jpg"
-      />
-
-      <OrganizationSchema
-        name="Supernet Fibra"
-        url="https://supernetfibra.com.br"
-        logo="https://supernetfibra.com.br/images/logo.png"
-        sameAs={[
-          "https://www.facebook.com/supernetfibra",
-          "https://www.instagram.com/supernetfibra"
-        ]}
-      />
-
-      <ServiceSchema
-        name="Telemedicina Supernet"
-        description="Atendimento médico digital 24h para você e sua família com profissionais certificados."
-      />
+      <ServiceSEOBlock serviceId="telemedicina" />
 
       <div className="min-h-screen bg-background">
         <main className="container mx-auto px-4 py-12">
