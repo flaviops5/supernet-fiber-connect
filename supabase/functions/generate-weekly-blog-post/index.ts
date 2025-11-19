@@ -53,7 +53,7 @@ serve(async (req) => {
     const testPost = {
       slug: `post-automatico-${Date.now()}`,
       title: "Post Gerado Automaticamente (Teste)",
-      description: "Este é um post gerado automaticamente para teste da função.",
+      category: "Tecnologia",
       excerpt: "Post de teste criado pela Edge Function generate-weekly-blog-post.",
       content: `# Post Gerado Automaticamente
 
@@ -73,7 +73,10 @@ Testar a integração entre a Edge Function e a tabela blog_posts.
 
 Este post será substituído por conteúdo gerado via IA em breve.`,
       author: "Automação Supernet",
-      date_published: new Date().toISOString(),
+      featured: false,
+      featured_image: "",
+      published: true,
+      read_time: 3,
     };
 
     console.log('Inserting test post', {

@@ -20,21 +20,6 @@ export interface BlogPostRow {
   updated_at: string;
 }
 
-// Tipo proposto para nova estrutura (a ser migrado)
-export interface BlogPostRowNew {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  date_published: string;
-  created_at: string;
-  updated_at: string;
-  metadata: Record<string, unknown>;
-}
-
 export interface BlogPostDraft {
   tema: string;
   palavraChavePrincipal: string;
