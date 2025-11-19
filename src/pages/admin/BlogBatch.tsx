@@ -369,20 +369,27 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
               />
             </div>
 
-            <Button 
-              onClick={handleGenerate} 
-              disabled={isGenerating}
-              className="w-full"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Gerando posts...
-                </>
-              ) : (
-                `Gerar ${config.quantidade} Posts com IA`
+            <div className="space-y-2">
+              <Button 
+                onClick={handleGenerate} 
+                disabled={isGenerating}
+                className="w-full"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gerando posts e imagens...
+                  </>
+                ) : (
+                  `Gerar ${config.quantidade} Posts com IA + Imagens`
+                )}
+              </Button>
+              {isGenerating && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Isso pode levar alguns minutos. Gerando textos e imagens...
+                </p>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -392,14 +399,31 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
               <CardTitle>Posts Gerados ({generatedPosts.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
                 {generatedPosts.map((post, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-2">
-                    <h3 className="font-semibold">{post.title}</h3>
-                    <p className="text-sm text-muted-foreground">{post.slug}</p>
-                    <p className="text-sm">{post.excerpt}</p>
-                    <div className="text-xs text-muted-foreground">
-                      Categoria: {post.category} • {post.read_time} min de leitura
+                  <div key={index} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex gap-4">
+                      {post.featured_image && (
+                        <div className="flex-shrink-0 w-32 h-20 bg-muted rounded-md overflow-hidden">
+                          <img
+                            src={post.featured_image}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-2">
+                        <h3 className="font-semibold">{post.title}</h3>
+                        <p className="text-sm text-muted-foreground">{post.slug}</p>
+                        <p className="text-sm">{post.excerpt}</p>
+                        <div className="text-xs text-muted-foreground">
+                          Categoria: {post.category} • {post.read_time} min de leitura
+                          {post.featured_image && " • Com imagem ✓"}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
