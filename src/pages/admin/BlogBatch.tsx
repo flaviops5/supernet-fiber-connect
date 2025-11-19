@@ -66,6 +66,7 @@ export default function BlogBatchPage(): JSX.Element {
     read_time: 5
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedPosts, setGeneratedPosts] = useState<GeneratedPost[]>([]);
 
   async function handleGenerate(): Promise<void> {
@@ -257,6 +258,47 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
+    }
+  }
+
+  async function handleGenerateFeaturedImage(): Promise<void> {
+    if (!singlePost.title) {
+      toast({
+        title: "Título necessário",
+        description: "Digite um título para gerar a imagem",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingImage(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-featured-image', {
+        body: {
+          title: singlePost.title,
+          category: singlePost.category
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.imageUrl) {
+        setSinglePost({ ...singlePost, featured_image: data.imageUrl });
+        toast({
+          title: "Imagem gerada!",
+          description: "A imagem foi gerada com sucesso."
+        });
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "Erro ao gerar imagem",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingImage(false);
     }
   }
 
@@ -524,15 +566,46 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="single-featured-image">Imagem destacada (URL)</Label>
-                    <Input
-                      id="single-featured-image"
-                      placeholder="https://exemplo.com/imagem.jpg"
-                      value={singlePost.featured_image}
-                      onChange={(e) => setSinglePost({ ...singlePost, featured_image: e.target.value })}
-                    />
+                    <Label htmlFor="single-featured-image">Imagem destacada</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="single-featured-image"
+                        placeholder="URL ou base64"
+                        value={singlePost.featured_image}
+                        onChange={(e) => setSinglePost({ ...singlePost, featured_image: e.target.value })}
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleGenerateFeaturedImage}
+                        disabled={isGeneratingImage || !singlePost.title}
+                        variant="outline"
+                      >
+                        {isGeneratingImage ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Gerar IA"
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
+
+                {singlePost.featured_image && (
+                  <div className="space-y-2">
+                    <Label>Preview da Imagem</Label>
+                    <div className="border rounded-lg p-4 bg-muted">
+                      <img
+                        src={singlePost.featured_image}
+                        alt="Featured preview"
+                        className="max-w-full h-auto rounded-md"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerHTML = '<p class="text-sm text-muted-foreground">Erro ao carregar imagem</p>';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <Button 
                   type="button" 
