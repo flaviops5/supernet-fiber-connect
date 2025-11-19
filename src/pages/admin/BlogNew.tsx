@@ -11,9 +11,12 @@ interface DraftState extends BlogPostDraft {
   generatedPrompt: string;
   title: string;
   slug: string;
-  description: string;
+  category: string;
   excerpt: string;
   content: string;
+  featured: boolean;
+  featured_image: string;
+  read_time: number;
 }
 
 export default function NewBlogPostPage(): JSX.Element {
@@ -26,9 +29,12 @@ export default function NewBlogPostPage(): JSX.Element {
     generatedPrompt: "",
     title: "",
     slug: "",
-    description: "",
+    category: "Tecnologia",
     excerpt: "",
-    content: ""
+    content: "",
+    featured: false,
+    featured_image: "",
+    read_time: 5
   });
 
   function buildPrompt(): void {
@@ -54,11 +60,13 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
 {
   "slug": "...",
   "title": "...",
-  "description": "...",
+  "category": "...",
   "excerpt": "...",
   "content": "...",
   "author": "Equipe Supernet Fibra",
-  "datePublished": "YYYY-MM-DDTHH:MM:SS.sssZ"
+  "featured": false,
+  "featured_image": "",
+  "read_time": 5
 }
 `.trim();
 
@@ -189,13 +197,36 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição (SEO)</Label>
-              <Textarea
-                id="description"
-                placeholder="Descrição para SEO"
-                value={state.description}
-                onChange={(e) => setState({ ...state, description: e.target.value })}
+              <Label htmlFor="category">Categoria</Label>
+              <Input
+                id="category"
+                placeholder="Ex: Tecnologia, Internet, Fibra Óptica"
+                value={state.category}
+                onChange={(e) => setState({ ...state, category: e.target.value })}
               />
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="read_time">Tempo de leitura (minutos)</Label>
+                <Input
+                  id="read_time"
+                  type="number"
+                  placeholder="5"
+                  value={state.read_time}
+                  onChange={(e) => setState({ ...state, read_time: parseInt(e.target.value) || 5 })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="featured_image">Imagem destacada (URL)</Label>
+                <Input
+                  id="featured_image"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  value={state.featured_image}
+                  onChange={(e) => setState({ ...state, featured_image: e.target.value })}
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
