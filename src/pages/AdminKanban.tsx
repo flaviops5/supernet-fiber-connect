@@ -8,15 +8,26 @@ const AdminKanban = () => {
 
   useEffect(() => {
     const loadDefaultBoard = async () => {
-      // Priorizar último board usado, se existir
-      const saved = localStorage.getItem('lastKanbanBoardId');
-      if (saved) {
-        setSelectedBoardId(saved);
-        return;
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Verificar se o board salvo ainda existe
+      const saved = localStorage.getItem('lastKanbanBoardId');
+      if (saved) {
+        const { data: existingBoard } = await supabase
+          .from('kanban_boards' as any)
+          .select('id')
+          .eq('id', saved)
+          .maybeSingle();
+
+        if (existingBoard) {
+          setSelectedBoardId(saved);
+          return;
+        } else {
+          // Board não existe mais, limpar localStorage
+          localStorage.removeItem('lastKanbanBoardId');
+        }
+      }
 
       // Buscar boards criados pelo usuário
       const { data: created } = await supabase
