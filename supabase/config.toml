@@ -298,6 +298,7 @@ verify_jwt = true
 
 [functions.generate-blog-batch]
 verify_jwt = true
+import_map = false
 
 [functions.generate-featured-image]
 verify_jwt = true
