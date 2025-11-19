@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ interface BatchConfig {
   temaGeral: string;
   publicoAlvo: string;
   tom: string;
+  gerarImagens: boolean;
 }
 
 interface SinglePostConfig {
@@ -44,7 +46,8 @@ export default function BlogBatchPage(): JSX.Element {
     quantidade: 5,
     temaGeral: "Internet fibra óptica e telecomunicações",
     publicoAlvo: "Consumidores residenciais e pequenas empresas interessadas em internet de qualidade",
-    tom: "profissional"
+    tom: "profissional",
+    gerarImagens: true
   });
   const [singleConfig, setSingleConfig] = useState<SinglePostConfig>({
     tema: "",
@@ -92,7 +95,8 @@ export default function BlogBatchPage(): JSX.Element {
           quantidade: config.quantidade,
           temaGeral: config.temaGeral,
           publicoAlvo: config.publicoAlvo,
-          tom: config.tom
+          tom: config.tom,
+          gerarImagens: config.gerarImagens
         }
       });
 
@@ -383,6 +387,20 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
               />
             </div>
 
+            <div className="flex items-center justify-between space-x-2 rounded-lg border border-border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="gerar-imagens">Gerar imagens com IA</Label>
+                <p className="text-sm text-muted-foreground">
+                  Desabilite para gerar apenas texto (mais rápido)
+                </p>
+              </div>
+              <Switch
+                id="gerar-imagens"
+                checked={config.gerarImagens}
+                onCheckedChange={(checked) => setConfig({ ...config, gerarImagens: checked })}
+              />
+            </div>
+
             <div className="space-y-2">
               <Button 
                 onClick={handleGenerate} 
@@ -392,15 +410,17 @@ Retorne EXCLUSIVAMENTE um JSON no formato:
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Gerando posts e imagens...
+                    {config.gerarImagens ? 'Gerando posts e imagens...' : 'Gerando posts...'}
                   </>
                 ) : (
-                  `Gerar ${config.quantidade} Posts com IA + Imagens`
+                  `Gerar ${config.quantidade} Posts com IA${config.gerarImagens ? ' + Imagens' : ''}`
                 )}
               </Button>
               {isGenerating && (
                 <p className="text-xs text-center text-muted-foreground">
-                  Isso pode levar alguns minutos. Gerando textos e imagens...
+                  {config.gerarImagens 
+                    ? 'Isso pode levar alguns minutos. Gerando textos e imagens...'
+                    : 'Gerando posts de blog...'}
                 </p>
               )}
             </div>

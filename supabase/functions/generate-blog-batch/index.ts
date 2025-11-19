@@ -11,6 +11,7 @@ interface RequestBody {
   temaGeral: string;
   publicoAlvo: string;
   tom: string;
+  gerarImagens?: boolean;
 }
 
 serve(async (req) => {
@@ -27,7 +28,7 @@ serve(async (req) => {
   });
 
   try {
-    const { quantidade, temaGeral, publicoAlvo, tom }: RequestBody = await req.json();
+    const { quantidade, temaGeral, publicoAlvo, tom, gerarImagens = true }: RequestBody = await req.json();
 
     // Validate input
     if (!temaGeral || !publicoAlvo) {
@@ -153,17 +154,18 @@ RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
     }
 
     // Generate featured images for each post (limit to avoid timeouts)
-    const maxImagesInParallel = Math.min(posts.length, 3);
-    console.log('Generating featured images for posts', {
-      requestId,
-      postCount: posts.length,
-      parallelLimit: maxImagesInParallel,
-    });
+    if (gerarImagens) {
+      const maxImagesInParallel = Math.min(posts.length, 3);
+      console.log('Generating featured images for posts', {
+        requestId,
+        postCount: posts.length,
+        parallelLimit: maxImagesInParallel,
+      });
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      console.warn('LOVABLE_API_KEY not configured, skipping image generation');
-    } else {
+      const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+      if (!lovableApiKey) {
+        console.warn('LOVABLE_API_KEY not configured, skipping image generation');
+      } else {
       // Process images in batches to avoid timeout
       for (let i = 0; i < posts.length; i += maxImagesInParallel) {
         const batch = posts.slice(i, i + maxImagesInParallel);
@@ -244,6 +246,8 @@ Do NOT include any text, words, or letters in the image.`;
           totalPosts: posts.length,
         });
       }
+    } else {
+      console.log('Image generation disabled by user', { requestId });
     }
 
     const duration = Date.now() - startTime;
