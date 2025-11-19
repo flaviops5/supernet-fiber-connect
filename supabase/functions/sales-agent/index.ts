@@ -452,7 +452,7 @@ CONTEXTO DO USUÁRIO: ${userContext ? JSON.stringify(userContext) : 'Novo client
 
 WhatsApp para contato: ${settings?.company_whatsapp || '(11) 99999-9999'}`;
 
-    logger.debug('Chamando Lovable AI', { correlationId });
+    logger.info('Chamando Lovable AI', { correlationId });
     
     const aiResponse = await callLovableAI({
       messages: [
