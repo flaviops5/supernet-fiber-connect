@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText, DollarSign, Link2, Plus } from "lucide-react";
+import { Loader2, FileText, DollarSign, Link2, Plus, Eye, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { parseError } from "@/types/error.types";
+import { Switch } from "@/components/ui/switch";
 
 interface IXCPlan {
   id: string;
@@ -23,6 +24,7 @@ interface LocalPlan {
   speed: string;
   price: number;
   ixc_plan_id?: string;
+  active: boolean;
 }
 
 export const IXCPlanSelector = () => {
@@ -69,7 +71,7 @@ export const IXCPlanSelector = () => {
     try {
       const { data, error } = await supabase
         .from('plans')
-        .select('id, name, speed, price, ixc_plan_id')
+        .select('id, name, speed, price, ixc_plan_id, active')
         .order('display_order');
 
       if (error) throw error;
@@ -169,6 +171,34 @@ export const IXCPlanSelector = () => {
       console.error('Error creating plan:', err);
       toast({
         title: "Erro ao criar plano",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const togglePlanVisibility = async (planId: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('plans')
+        .update({ active: !currentActive })
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      toast({
+        title: currentActive ? "Plano ocultado da home" : "Plano exibido na home",
+        description: currentActive 
+          ? "O plano não aparecerá mais na página inicial." 
+          : "O plano agora aparece na página inicial.",
+      });
+
+      loadLocalPlans();
+    } catch (error) {
+      const err = parseError(error);
+      console.error('Error toggling plan visibility:', err);
+      toast({
+        title: "Erro ao alterar visibilidade",
         description: err.message,
         variant: "destructive",
       });
@@ -283,9 +313,18 @@ export const IXCPlanSelector = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Planos Locais Vinculados</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Planos Locais - Configurar Exibição na Home
+          </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="space-y-2 mb-4 p-3 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground">
+              Use o interruptor para controlar quais planos aparecem na página inicial (/).
+              Planos ativos são visíveis para os visitantes do site.
+            </p>
+          </div>
           {localPlans.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Nenhum plano local encontrado. Crie planos na seção "Planos" primeiro.
@@ -295,27 +334,46 @@ export const IXCPlanSelector = () => {
               {localPlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">{plan.name}</span>
+                      {plan.active ? (
+                        <Badge variant="default" className="gap-1 text-xs">
+                          <Eye className="h-3 w-3" />
+                          Visível na home
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1 text-xs">
+                          <EyeOff className="h-3 w-3" />
+                          Oculto
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <DollarSign className="w-3 h-3" />
                       <span>{plan.speed} - R$ {plan.price.toFixed(2)}</span>
                     </div>
-                  </div>
-                  <div>
-                    {plan.ixc_plan_id ? (
-                      <Badge variant="default" className="flex items-center gap-1">
-                        <Link2 className="w-3 h-3" />
-                        IXC: {getLinkedIXCPlanName(plan.ixc_plan_id) || plan.ixc_plan_id}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">Não vinculado</Badge>
+                    {plan.ixc_plan_id && (
+                      <div className="mt-2">
+                        <Badge variant="outline" className="flex items-center gap-1 text-xs w-fit">
+                          <Link2 className="w-3 h-3" />
+                          IXC: {getLinkedIXCPlanName(plan.ixc_plan_id) || plan.ixc_plan_id}
+                        </Badge>
+                      </div>
                     )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {plan.active ? "Ativo" : "Inativo"}
+                      </span>
+                      <Switch
+                        checked={plan.active}
+                        onCheckedChange={() => togglePlanVisibility(plan.id, plan.active)}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
