@@ -82,6 +82,10 @@ export default function BlogBatchPage(): JSX.Element {
     setIsGenerating(true);
     setGeneratedPosts([]);
 
+    // Create abort controller with 3-minute timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 180000);
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-blog-batch', {
         body: {
@@ -92,20 +96,30 @@ export default function BlogBatchPage(): JSX.Element {
         }
       });
 
+      clearTimeout(timeoutId);
+
       if (error) throw error;
 
       if (data?.posts) {
         setGeneratedPosts(data.posts);
         toast({
           title: "Posts gerados!",
-          description: `${data.posts.length} posts foram gerados com sucesso.`
+          description: `${data.posts.length} posts foram gerados com sucesso${data.posts.filter((p: any) => p.featured_image).length > 0 ? ` (${data.posts.filter((p: any) => p.featured_image).length} com imagens)` : ''}.`
         });
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Error generating batch:', error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message.includes('fetch') || error.message.includes('network')
+          ? "Timeout: A geração está demorando muito. Tente com menos posts ou aguarde alguns minutos."
+          : error.message
+        : "Erro desconhecido";
+      
       toast({
         title: "Erro ao gerar posts",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

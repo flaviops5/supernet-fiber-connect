@@ -105,14 +105,19 @@ RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Gere ${quantidade} posts sobre: ${temaGeral}` }
         ],
-        max_tokens: 4000,
+        max_tokens: 8000,
         temperature: 0.8,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', {
+        requestId,
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
       throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
     }
 
@@ -147,19 +152,25 @@ RESPONDA APENAS COM O JSON ARRAY. NÃO adicione explicações antes ou depois.`;
       throw new Error('Failed to parse AI response as JSON');
     }
 
-    // Generate featured images for each post
+    // Generate featured images for each post (limit to avoid timeouts)
+    const maxImagesInParallel = Math.min(posts.length, 3);
     console.log('Generating featured images for posts', {
       requestId,
       postCount: posts.length,
+      parallelLimit: maxImagesInParallel,
     });
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
       console.warn('LOVABLE_API_KEY not configured, skipping image generation');
     } else {
-      const imagePromises = posts.map(async (post: any, index: number) => {
-        try {
-          const imagePrompt = `Create a professional, modern featured image for a blog post titled "${post.title}"${post.category ? ` in the ${post.category} category` : ''}. 
+      // Process images in batches to avoid timeout
+      for (let i = 0; i < posts.length; i += maxImagesInParallel) {
+        const batch = posts.slice(i, i + maxImagesInParallel);
+        const batchPromises = batch.map(async (post: any, batchIndex: number) => {
+          const index = i + batchIndex;
+          try {
+            const imagePrompt = `Create a professional, modern featured image for a blog post titled "${post.title}"${post.category ? ` in the ${post.category} category` : ''}. 
     
 Style: Clean, professional, tech-focused, vibrant colors, 16:9 aspect ratio.
 Elements: Abstract tech elements, modern design, suitable for a blog header.
@@ -167,60 +178,72 @@ Quality: High resolution, eye-catching, suitable for web display.
 
 Do NOT include any text, words, or letters in the image.`;
 
-          const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash-image-preview',
-              messages: [
-                {
-                  role: 'user',
-                  content: imagePrompt
-                }
-              ],
-              modalities: ['image', 'text']
-            }),
-          });
+            const imageResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${lovableApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'google/gemini-2.5-flash-image-preview',
+                messages: [
+                  {
+                    role: 'user',
+                    content: imagePrompt
+                  }
+                ],
+                modalities: ['image', 'text']
+              }),
+            });
 
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json();
-            const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-            
-            if (imageUrl) {
-              post.featured_image = imageUrl;
-              console.log('Image generated for post', {
-                requestId,
-                postIndex: index,
-                title: post.title,
-              });
+            if (imageResponse.ok) {
+              const imageData = await imageResponse.json();
+              const imageUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+              
+              if (imageUrl) {
+                post.featured_image = imageUrl;
+                console.log('Image generated for post', {
+                  requestId,
+                  postIndex: index,
+                  title: post.title,
+                });
+              } else {
+                console.warn('No image URL in response', {
+                  requestId,
+                  postIndex: index,
+                });
+              }
             } else {
-              console.warn('No image URL in response', {
+              const errorText = await imageResponse.text();
+              console.warn('Failed to generate image', {
                 requestId,
                 postIndex: index,
+                status: imageResponse.status,
+                error: errorText,
               });
             }
-          } else {
-            console.warn('Failed to generate image', {
+          } catch (imageError) {
+            console.error('Error generating image for post', {
               requestId,
               postIndex: index,
-              status: imageResponse.status,
+              error: imageError instanceof Error ? imageError.message : 'Unknown error',
+              stack: imageError instanceof Error ? imageError.stack : undefined,
             });
+            // Continue without image
           }
-        } catch (imageError) {
-          console.error('Error generating image for post', {
-            requestId,
-            postIndex: index,
-            error: imageError instanceof Error ? imageError.message : 'Unknown error',
-          });
-          // Continue without image
-        }
-      });
+        });
 
-      // Wait for all images to be generated
-      await Promise.all(imagePromises);
+        // Wait for this batch to complete before starting next batch
+        await Promise.all(batchPromises);
+        
+        console.log('Image batch completed', {
+          requestId,
+          batchStart: i,
+          batchSize: batch.length,
+          totalProcessed: Math.min(i + maxImagesInParallel, posts.length),
+          totalPosts: posts.length,
+        });
+      }
     }
 
     const duration = Date.now() - startTime;
