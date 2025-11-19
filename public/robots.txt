@@ -1,14 +1,50 @@
-User-agent: Googlebot
+# =============================
+# Supernet Fiber - Robots.txt
+# Compatível com Google, SGE, Meta, Perplexity e ChatGPT Browsing
+# =============================
+
+User-agent: *
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /auth/
+Disallow: /internal/
 Allow: /
 
+Sitemap: https://supernetfibra.com.br/sitemap.xml
+
+# Google SGE (AI Overviews)
+User-agent: Google-Extended
+Allow: /
+
+# ChatGPT Crawling
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ChatGPT-User-Agent
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+
+# Bing (Copilot)
 User-agent: Bingbot
 Allow: /
 
-User-agent: Twitterbot
+# Meta AI (Facebook / Instagram / WhatsApp)
+User-agent: FacebookBot
+Allow: /
+User-agent: WhatsApp
+Allow: /
+User-agent: Instagram
 Allow: /
 
-User-agent: facebookexternalhit
+# Semrush / Ahrefs (SEO Tools)
+User-agent: SemrushBot
+Allow: /
+User-agent: AhrefsBot
 Allow: /
 
-User-agent: *
-Allow: /
+# =============================
+# Fim do arquivo robots.txt
+# =============================
