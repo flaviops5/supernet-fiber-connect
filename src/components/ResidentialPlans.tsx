@@ -310,14 +310,14 @@ const detectIconFromText = (text: string): string => {
         </div>
 
         {/* Dots Indicators */}
-        <div className="flex justify-center space-x-2 mt-8">
+        <div className="flex justify-center space-x-1.5 mt-6">
           {Array.from({ length: count }, (_, index) => (
             <button
               key={index}
-              className={`w-1 h-1 rounded-full transition-all duration-300 ${
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
                 index + 1 === current
-                  ? 'bg-primary scale-110'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  ? 'bg-primary'
+                  : 'bg-muted-foreground/20 hover:bg-muted-foreground/40'
               }`}
               onClick={() => api?.scrollTo(index)}
               aria-label={`Ir para o plano ${index + 1}`}
