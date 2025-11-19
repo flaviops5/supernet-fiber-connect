@@ -292,3 +292,6 @@ verify_jwt = true
 
 [functions.webhook-alerts]
 verify_jwt = true
+
+[functions.generate-weekly-blog-post]
+verify_jwt = true
