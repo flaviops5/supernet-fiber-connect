@@ -103,6 +103,13 @@ Deno.serve(createAuthenticatedHandler(
       totalPages = Math.ceil(total / rp);
       
       console.log(`📊 Total reportado pelo IXC: ${total}, Páginas calculadas: ${totalPages}`);
+      console.log(`📄 Planos retornados nesta página: ${pageRegistros.length}`);
+      
+      // Se a página retornou planos, mas o total é menor que esperado, continue buscando
+      if (pageRegistros.length === rp) {
+        console.log(`⚠️ Página cheia (${rp} itens), pode haver mais páginas...`);
+        totalPages = Math.max(totalPages, currentPage + 1); // Garantir que busque próxima página
+      }
 
       currentPage++;
     } while (currentPage <= totalPages);
