@@ -27,25 +27,45 @@ export const IXCPlanSelector = () => {
   const loadIXCPlans = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ixc-list-plans');
+      console.log('🔄 Iniciando carregamento de planos do IXC...');
+      
+      const { data, error } = await supabase.functions.invoke('ixc-list-plans', {
+        body: {}
+      });
 
-      if (error) throw error;
+      console.log('📦 Resposta do IXC:', { data, error });
 
-      if (data.success && data.plans) {
+      if (error) {
+        console.error('❌ Erro na invocação:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('❌ Erro retornado pela função:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.success && data?.plans) {
+        console.log(`✅ ${data.plans.length} planos carregados com sucesso`);
         setIxcPlans(data.plans);
         toast({
           title: "Planos IXC carregados",
           description: `${data.plans.length} planos encontrados no IXC.`,
         });
       } else {
-        throw new Error(data.error || 'Erro ao carregar planos do IXC');
+        console.warn('⚠️ Resposta inesperada:', data);
+        throw new Error('Resposta inválida do servidor');
       }
     } catch (error) {
       const err = parseError(error);
-      console.error('Error loading IXC plans:', err);
+      console.error('💥 Erro ao carregar planos do IXC:', {
+        message: err.message,
+        details: err.details,
+        originalError: error
+      });
       toast({
         title: "Erro ao carregar planos do IXC",
-        description: err.message,
+        description: err.message || 'Erro desconhecido ao carregar planos',
         variant: "destructive",
       });
     } finally {
@@ -65,27 +85,45 @@ export const IXCPlanSelector = () => {
 
     setSyncing(true);
     try {
+      console.log('🔄 Iniciando sincronização de planos:', selectedPlanIds);
+      
       const { data, error } = await supabase.functions.invoke('ixc-sync-plans', {
         body: { planIds: selectedPlanIds }
       });
 
-      if (error) throw error;
+      console.log('📦 Resposta da sincronização:', { data, error });
 
-      if (data.success) {
+      if (error) {
+        console.error('❌ Erro na invocação da sincronização:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('❌ Erro retornado pela função de sincronização:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.success) {
+        console.log(`✅ ${data.synced} plano(s) sincronizado(s)`);
         toast({
           title: "Planos sincronizados com sucesso",
           description: `${data.synced} plano(s) sincronizado(s). ${data.errors > 0 ? `${data.errors} erro(s).` : ''}`,
         });
         setSelectedPlanIds([]);
       } else {
-        throw new Error(data.error || 'Erro ao sincronizar planos');
+        console.warn('⚠️ Resposta inesperada da sincronização:', data);
+        throw new Error('Resposta inválida do servidor');
       }
     } catch (error) {
       const err = parseError(error);
-      console.error('Error syncing plans:', err);
+      console.error('💥 Erro ao sincronizar planos:', {
+        message: err.message,
+        details: err.details,
+        originalError: error
+      });
       toast({
         title: "Erro ao sincronizar planos",
-        description: err.message,
+        description: err.message || 'Erro desconhecido ao sincronizar planos',
         variant: "destructive",
       });
     } finally {

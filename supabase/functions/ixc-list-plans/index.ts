@@ -123,13 +123,15 @@ Deno.serve(createAuthenticatedHandler(
 
     // Formatar planos para resposta
     const formattedPlans = allPlans.map((plan) => ({
-      id: plan.id,
+      id: String(plan.id || ''),
       name: plan.grupo || plan.nome || `Plano ${plan.id}`,
       download: plan.download || '0',
       upload: plan.upload || '0',
       price: Number(plan.valor_produto || plan.valor || 0),
       type: plan.tipo || 'I',
     }));
+
+    console.log(`📤 Retornando ${formattedPlans.length} planos formatados`);
 
     return {
       success: true,
