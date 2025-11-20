@@ -56,6 +56,8 @@ Deno.serve(createAuthenticatedHandler(
         sortorder: 'asc',
       });
 
+      console.log(`🔍 Buscando página ${currentPage} do IXC...`);
+
       const response = await fetch(`${baseUrl}/radgrupos`, {
         method: 'POST',
         headers: {
@@ -87,19 +89,37 @@ Deno.serve(createAuthenticatedHandler(
         : (data?.registros ? Object.values(data.registros) : []);
 
       if (pageRegistros.length > 0) {
+        // Log dos nomes dos planos na página atual para debug
+        const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
+        console.log(`📋 Planos na página ${currentPage}:`, planNames.slice(0, 10).join(', ') + (planNames.length > 10 ? '...' : ''));
+        
         allPlans = allPlans.concat(pageRegistros);
-        console.log(`📄 Página ${currentPage}: ${pageRegistros.length} planos (Total: ${allPlans.length})`);
+        console.log(`📄 Página ${currentPage}: ${pageRegistros.length} planos (Total acumulado: ${allPlans.length})`);
       }
 
       // Calcular total de páginas
       const total = Number(data?.total || 0);
       const rp = 100;
       totalPages = Math.ceil(total / rp);
+      
+      console.log(`📊 Total reportado pelo IXC: ${total}, Páginas calculadas: ${totalPages}`);
 
       currentPage++;
     } while (currentPage <= totalPages);
 
     console.log(`✅ Total de ${allPlans.length} planos encontrados`);
+    
+    // Log dos planos com "MASTER" no nome
+    const masterPlans = allPlans.filter(p => 
+      (p.grupo?.toUpperCase().includes('MASTER') || p.nome?.toUpperCase().includes('MASTER'))
+    );
+    if (masterPlans.length > 0) {
+      console.log(`🎯 Planos MASTER encontrados: ${masterPlans.length}`, 
+        masterPlans.map(p => ({ id: p.id, name: p.grupo || p.nome }))
+      );
+    } else {
+      console.log(`⚠️ Nenhum plano com "MASTER" no nome foi encontrado`);
+    }
 
     // Formatar planos para resposta
     const formattedPlans = allPlans.map((plan) => ({
