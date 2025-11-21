@@ -45,7 +45,7 @@ Deno.serve(createAuthenticatedHandler(
     }
 
     // FUNÇÃO AUXILIAR: Buscar planos de um endpoint específico com paginação
-    async function fetchPlansFromEndpoint(endpoint: string, endpointName: string): Promise<IXCPlanResponse[]> {
+    async function fetchPlansFromEndpoint(endpoint: string, endpointName: string): Promise<(IXCPlanResponse & { __source: string })[]> {
       console.log(`\n🔍 ========== BUSCANDO DE ${endpointName.toUpperCase()} ==========`);
       
       let allPlansFromEndpoint: IXCPlanResponse[] = [];
@@ -113,7 +113,9 @@ Deno.serve(createAuthenticatedHandler(
           const planNames = pageRegistros.map(p => p.grupo || p.nome || p.descricao).filter(Boolean);
           console.log(`📋 Amostra (${endpointName}, pág ${currentPage}):`, planNames.slice(0, 3).join(', '));
           
-          allPlansFromEndpoint = allPlansFromEndpoint.concat(pageRegistros);
+          // Adicionar source ao plano
+          const plansWithSource = pageRegistros.map(p => ({ ...p, __source: endpoint }));
+          allPlansFromEndpoint = allPlansFromEndpoint.concat(plansWithSource);
           console.log(`✅ Total acumulado de ${endpointName}: ${allPlansFromEndpoint.length}\n`);
         }
 
@@ -133,13 +135,16 @@ Deno.serve(createAuthenticatedHandler(
       fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
     ]);
 
-    // Combinar todos os planos e remover duplicatas por ID
-    const allPlansMap = new Map<string, IXCPlanResponse>();
+    // Combinar todos os planos usando chave composta (endpoint:id) para evitar colisões
+    const allPlansMap = new Map<string, IXCPlanResponse & { __source: string }>();
     
     [...radgruposPlans, ...produtoPlans, ...ossPlanoPlans].forEach(plan => {
-      const id = String(plan.id || '');
-      if (id && !allPlansMap.has(id)) {
-        allPlansMap.set(id, plan);
+      const endpoint = plan.__source;
+      const planId = String(plan.id || '');
+      const uniqueId = `${endpoint}:${planId}`;
+      
+      if (planId && !allPlansMap.has(uniqueId)) {
+        allPlansMap.set(uniqueId, plan);
       }
     });
 
@@ -176,15 +181,23 @@ Deno.serve(createAuthenticatedHandler(
       console.log(`\n⚠️ Nenhum plano com "MASTER" no nome foi encontrado`);
     }
 
-    // Formatar planos para resposta
-    const formattedPlans = allPlans.map((plan) => ({
-      id: String(plan.id || ''),
-      name: plan.grupo || plan.nome || plan.descricao || `Plano ${plan.id}`,
-      download: plan.download || '0',
-      upload: plan.upload || '0',
-      price: Number(plan.valor_produto || plan.valor || 0),
-      type: plan.tipo || 'I',
-    }));
+    // Formatar planos para resposta com ID composto (endpoint:id)
+    const formattedPlans = allPlans.map((plan) => {
+      const endpoint = plan.__source;
+      const planId = String(plan.id || '');
+      const uniqueId = `${endpoint}:${planId}`;
+      
+      return {
+        id: uniqueId,
+        originalId: planId,
+        source: endpoint,
+        name: plan.grupo || plan.nome || plan.descricao || `Plano ${planId}`,
+        download: plan.download || '0',
+        upload: plan.upload || '0',
+        price: Number(plan.valor_produto || plan.valor || 0),
+        type: plan.tipo || 'I',
+      };
+    });
 
     console.log(`\n📤 Retornando ${formattedPlans.length} planos formatados\n`);
 
