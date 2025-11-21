@@ -55,10 +55,20 @@ Deno.serve(createAuthenticatedHandler(
       const maxPages = 20;
 
       while (hasMorePages && currentPage <= maxPages) {
+        const sortname = endpoint === 'radgrupos'
+          ? 'radgrupos.grupo'
+          : endpoint === 'produto'
+          ? 'produto.descricao'
+          : endpoint === 'su_oss_plano'
+          ? 'su_oss_plano.nome'
+          : endpoint === 'vd_contratos'
+          ? 'vd_contratos.nome'
+          : `${endpoint}.id`;
+
         const body = new URLSearchParams({
           page: String(currentPage),
           rp: '100',
-          sortname: endpoint === 'radgrupos' ? 'radgrupos.grupo' : (endpoint === 'produto' ? 'produto.descricao' : 'su_oss_plano.nome'),
+          sortname,
           sortorder: 'asc',
         });
 
@@ -129,10 +139,11 @@ Deno.serve(createAuthenticatedHandler(
     // Buscar TODOS os planos de MÚLTIPLOS endpoints
     console.log('🚀 Iniciando busca em múltiplos endpoints do IXC...');
     
-    const [radgruposPlans, produtoPlans, ossPlanoPlans] = await Promise.all([
+    const [radgruposPlans, produtoPlans, ossPlanoPlans, vdContratosPlans] = await Promise.all([
       fetchPlansFromEndpoint('radgrupos', 'radgrupos'),
       fetchPlansFromEndpoint('produto', 'produto'),
       fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
+      fetchPlansFromEndpoint('vd_contratos', 'vd_contratos'),
     ]);
 
     // Combinar todos os planos usando chave composta (endpoint:id) para evitar colisões
@@ -154,7 +165,8 @@ Deno.serve(createAuthenticatedHandler(
     console.log(`   - radgrupos: ${radgruposPlans.length} registros`);
     console.log(`   - produto: ${produtoPlans.length} registros`);
     console.log(`   - su_oss_plano: ${ossPlanoPlans.length} registros`);
-    console.log(`   - TOTAL (sem duplicatas): ${allPlans.length} planos`);
+    console.log(`   - vd_contratos (somente teste): ${vdContratosPlans.length} registros`);
+    console.log(`   - TOTAL (sem duplicatas, apenas 3 endpoints originais): ${allPlans.length} planos`);
     console.log('========================================\n');
     
     // Log dos 10 primeiros planos para análise
@@ -218,6 +230,7 @@ Deno.serve(createAuthenticatedHandler(
         radgruposCount: radgruposPlans.length,
         produtoCount: produtoPlans.length,
         ossPlanoCount: ossPlanoPlans.length,
+        vdContratosCount: vdContratosPlans.length,
         uniqueTotal: allPlans.length,
         sampleIds: formattedPlans.slice(0, 10).map((p) => p.id),
         masterPlans: masterPlans.slice(0, 10).map((p) => ({
