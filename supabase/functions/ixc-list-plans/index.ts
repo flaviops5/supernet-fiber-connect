@@ -65,10 +65,14 @@ Deno.serve(createAuthenticatedHandler(
           ? 'vd_contratos.nome'
           : `${endpoint}.id`;
 
+        // Seguir a documentação oficial do IXC
         const body = new URLSearchParams({
+          qtype: `${endpoint}.id`,
+          query: '0',
+          oper: '>',
           page: String(currentPage),
           rp: '100',
-          sortname,
+          sortname: `${endpoint}.id`,
           sortorder: 'asc',
         });
 
