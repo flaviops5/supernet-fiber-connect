@@ -17,12 +17,22 @@ interface IXCPlan {
   type?: string;
 }
 
+interface IXCDebugInfo {
+  radgruposCount: number;
+  produtoCount: number;
+  ossPlanoCount: number;
+  uniqueTotal: number;
+  sampleIds: string[];
+  masterPlans: Array<{ id: string; name: string }>;
+}
+
 export const IXCPlanSelector = () => {
   const [ixcPlans, setIxcPlans] = useState<IXCPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
+  const [debugInfo, setDebugInfo] = useState<IXCDebugInfo | null>(null);
   const { toast } = useToast();
 
   const loadIXCPlans = async () => {
@@ -35,6 +45,17 @@ export const IXCPlanSelector = () => {
       });
 
       console.log('📦 Resposta do IXC:', { data, error });
+      console.log('🧪 IXC debug (JSON completo):', JSON.stringify(data, null, 2));
+      console.log('🧪 IXC debug (campo debug isolado):', data?.debug);
+      
+      if (data?.debug) {
+        console.log('📊 Contadores por endpoint:');
+        console.log(`   - radgrupos: ${data.debug.radgruposCount}`);
+        console.log(`   - produto: ${data.debug.produtoCount}`);
+        console.log(`   - su_oss_plano: ${data.debug.ossPlanoCount}`);
+        console.log(`   - Total único: ${data.debug.uniqueTotal}`);
+        console.log(`   - Planos MASTER: ${data.debug.masterPlans?.length || 0}`);
+      }
 
       if (error) {
         console.error('❌ Erro na invocação:', error);
@@ -49,6 +70,7 @@ export const IXCPlanSelector = () => {
       if (data?.success && data?.plans) {
         console.log(`✅ ${data.plans.length} planos carregados com sucesso`);
         setIxcPlans(data.plans);
+        setDebugInfo(data.debug || null);
         toast({
           title: "Planos IXC carregados",
           description: `${data.plans.length} planos encontrados no IXC.`,
@@ -263,6 +285,64 @@ export const IXCPlanSelector = () => {
             </Button>
           )}
         </div>
+
+        {debugInfo && (
+          <Card className="bg-muted/50 border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-mono flex items-center gap-2">
+                🧪 Debug Info - Endpoints IXC
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">radgrupos</p>
+                  <p className="text-lg font-semibold text-primary">{debugInfo.radgruposCount}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">produto</p>
+                  <p className="text-lg font-semibold text-primary">{debugInfo.produtoCount}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">su_oss_plano</p>
+                  <p className="text-lg font-semibold text-primary">{debugInfo.ossPlanoCount}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total Único</p>
+                  <p className="text-lg font-semibold text-accent">{debugInfo.uniqueTotal}</p>
+                </div>
+              </div>
+
+              {debugInfo.masterPlans && debugInfo.masterPlans.length > 0 && (
+                <div className="space-y-2 mt-4 pt-3 border-t border-border">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    🎯 Planos MASTER encontrados ({debugInfo.masterPlans.length}):
+                  </p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {debugInfo.masterPlans.map((plan, idx) => (
+                      <div key={idx} className="text-xs font-mono bg-background/50 p-2 rounded border border-border">
+                        <span className="text-muted-foreground">[{plan.id}]</span> {plan.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <details className="mt-3 pt-3 border-t border-border">
+                <summary className="text-xs font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+                  📋 Sample IDs (primeiros 10)
+                </summary>
+                <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                  {debugInfo.sampleIds.map((id, idx) => (
+                    <div key={idx} className="text-xs font-mono bg-background/50 p-1.5 rounded border border-border">
+                      {id}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </CardContent>
+          </Card>
+        )}
 
         {ixcPlans.length > 0 && (
           <div className="space-y-4">
