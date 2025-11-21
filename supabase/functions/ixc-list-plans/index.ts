@@ -136,37 +136,25 @@ Deno.serve(createAuthenticatedHandler(
       return allPlansFromEndpoint;
     }
 
-    // Buscar TODOS os planos de MÚLTIPLOS endpoints
-    console.log('🚀 Iniciando busca em múltiplos endpoints do IXC...');
+    // Buscar planos de TODOS os endpoints (vd_contratos como principal, outros para debug)
+    console.log('🚀 Iniciando busca - vd_contratos como fonte PRINCIPAL...');
     
-    const [radgruposPlans, produtoPlans, ossPlanoPlans, vdContratosPlans] = await Promise.all([
+    const [vdContratosPlans, radgruposPlans, produtoPlans, ossPlanoPlans] = await Promise.all([
+      fetchPlansFromEndpoint('vd_contratos', 'vd_contratos'),
       fetchPlansFromEndpoint('radgrupos', 'radgrupos'),
       fetchPlansFromEndpoint('produto', 'produto'),
       fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
-      fetchPlansFromEndpoint('vd_contratos', 'vd_contratos'),
     ]);
 
-    // Combinar todos os planos usando chave composta (endpoint:id) para evitar colisões
-    const allPlansMap = new Map<string, IXCPlanResponse & { __source: string }>();
-    
-    [...radgruposPlans, ...produtoPlans, ...ossPlanoPlans].forEach(plan => {
-      const endpoint = plan.__source;
-      const planId = String(plan.id || '');
-      const uniqueId = `${endpoint}:${planId}`;
-      
-      if (planId && !allPlansMap.has(uniqueId)) {
-        allPlansMap.set(uniqueId, plan);
-      }
-    });
-
-    const allPlans = Array.from(allPlansMap.values());
+    // Usar APENAS vd_contratos como fonte de planos
+    const allPlans = vdContratosPlans;
     
     console.log('\n📊 ========== RESUMO DA BUSCA ==========');
-    console.log(`   - radgrupos: ${radgruposPlans.length} registros`);
-    console.log(`   - produto: ${produtoPlans.length} registros`);
-    console.log(`   - su_oss_plano: ${ossPlanoPlans.length} registros`);
-    console.log(`   - vd_contratos (somente teste): ${vdContratosPlans.length} registros`);
-    console.log(`   - TOTAL (sem duplicatas, apenas 3 endpoints originais): ${allPlans.length} planos`);
+    console.log(`   ✅ vd_contratos (PRINCIPAL): ${vdContratosPlans.length} registros`);
+    console.log(`   📊 radgrupos (debug): ${radgruposPlans.length} registros`);
+    console.log(`   📊 produto (debug): ${produtoPlans.length} registros`);
+    console.log(`   📊 su_oss_plano (debug): ${ossPlanoPlans.length} registros`);
+    console.log(`   🎯 TOTAL RETORNADO: ${allPlans.length} planos de vd_contratos`);
     console.log('========================================\n');
     
     // Log dos 10 primeiros planos para análise
@@ -227,10 +215,11 @@ Deno.serve(createAuthenticatedHandler(
       total: formattedPlans.length,
       plans: formattedPlans,
       debug: {
+        source: 'vd_contratos (principal)',
+        vdContratosCount: vdContratosPlans.length,
         radgruposCount: radgruposPlans.length,
         produtoCount: produtoPlans.length,
         ossPlanoCount: ossPlanoPlans.length,
-        vdContratosCount: vdContratosPlans.length,
         uniqueTotal: allPlans.length,
         sampleIds: formattedPlans.slice(0, 10).map((p) => p.id),
         masterPlans: masterPlans.slice(0, 10).map((p) => ({

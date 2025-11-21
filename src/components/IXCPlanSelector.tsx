@@ -18,10 +18,11 @@ interface IXCPlan {
 }
 
 interface IXCDebugInfo {
+  source?: string;
+  vdContratosCount: number;
   radgruposCount: number;
   produtoCount: number;
   ossPlanoCount: number;
-  vdContratosCount?: number;
   uniqueTotal: number;
   sampleIds: string[];
   masterPlans: Array<{ id: string; name: string }>;
@@ -52,11 +53,12 @@ export const IXCPlanSelector = () => {
       
       if (data?.debug) {
         console.log('📊 Contadores por endpoint:');
-        console.log(`   - radgrupos: ${data.debug.radgruposCount}`);
-        console.log(`   - produto: ${data.debug.produtoCount}`);
-        console.log(`   - su_oss_plano: ${data.debug.ossPlanoCount}`);
-        console.log(`   - vd_contratos (teste): ${data.debug.vdContratosCount ?? 0}`);
-        console.log(`   - Total único (3 endpoints originais): ${data.debug.uniqueTotal}`);
+        console.log(`   ✅ FONTE PRINCIPAL: ${data.debug.source || 'vd_contratos'}`);
+        console.log(`   - vd_contratos (PRINCIPAL): ${data.debug.vdContratosCount}`);
+        console.log(`   - radgrupos (debug): ${data.debug.radgruposCount}`);
+        console.log(`   - produto (debug): ${data.debug.produtoCount}`);
+        console.log(`   - su_oss_plano (debug): ${data.debug.ossPlanoCount}`);
+        console.log(`   - Total retornado: ${data.debug.uniqueTotal}`);
         console.log(`   - Planos MASTER: ${data.debug.masterPlans?.length || 0}`);
       }
 
@@ -295,24 +297,29 @@ export const IXCPlanSelector = () => {
               <CardTitle className="text-sm font-mono flex items-center gap-2">
                 🧪 Debug Info - Endpoints IXC
               </CardTitle>
+              {debugInfo.source && (
+                <CardDescription className="text-xs mt-1">
+                  Fonte principal: <span className="font-semibold text-primary">{debugInfo.source}</span>
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1 border-2 border-primary/30 rounded-lg p-2 bg-primary/5">
+                  <p className="text-xs text-muted-foreground">vd_contratos ⭐</p>
+                  <p className="text-lg font-semibold text-primary">{debugInfo.vdContratosCount}</p>
+                </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">radgrupos</p>
-                  <p className="text-lg font-semibold text-primary">{debugInfo.radgruposCount}</p>
+                  <p className="text-lg font-semibold text-muted-foreground">{debugInfo.radgruposCount}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">produto</p>
-                  <p className="text-lg font-semibold text-primary">{debugInfo.produtoCount}</p>
+                  <p className="text-lg font-semibold text-muted-foreground">{debugInfo.produtoCount}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">su_oss_plano</p>
-                  <p className="text-lg font-semibold text-primary">{debugInfo.ossPlanoCount}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Total Único</p>
-                  <p className="text-lg font-semibold text-accent">{debugInfo.uniqueTotal}</p>
+                  <p className="text-lg font-semibold text-muted-foreground">{debugInfo.ossPlanoCount}</p>
                 </div>
               </div>
 
