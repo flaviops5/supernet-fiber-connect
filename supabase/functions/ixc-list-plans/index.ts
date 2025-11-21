@@ -65,14 +65,10 @@ Deno.serve(createAuthenticatedHandler(
           ? 'vd_contratos.nome'
           : `${endpoint}.id`;
 
-        // Seguir a documentação oficial do IXC
         const body = new URLSearchParams({
-          qtype: `${endpoint}.id`,
-          query: '0',
-          oper: '>',
           page: String(currentPage),
           rp: '100',
-          sortname: `${endpoint}.id`,
+          sortname,
           sortorder: 'asc',
         });
 
@@ -140,11 +136,95 @@ Deno.serve(createAuthenticatedHandler(
       return allPlansFromEndpoint;
     }
 
+    // FUNÇÃO ESPECÍFICA: Buscar planos do endpoint vd_contratos com a mesma lógica do teste
+    async function fetchVdContratosPlans(): Promise<(IXCPlanResponse & { __source: string })[]> {
+      console.log('\n🧪 Buscando planos em vd_contratos (fonte principal)...');
+
+      let allPlans: (IXCPlanResponse & { __source: string })[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const maxPages = 20;
+      const pageSize = 100;
+
+      while (hasMorePages && currentPage <= maxPages) {
+        const body = new URLSearchParams({
+          page: String(currentPage),
+          rp: String(pageSize),
+          sortname: 'vd_contratos.nome',
+          sortorder: 'asc',
+        });
+
+        console.log(`\n📄 ========== PÁGINA ${currentPage} (vd_contratos) ==========`);
+
+        const response = await fetch(`${baseUrl}/vd_contratos`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'ixcsoft': 'listar',
+          },
+          body,
+        });
+
+        const text = await response.text();
+        let data: IXCApiResponse;
+
+        try {
+          data = JSON.parse(text) as IXCApiResponse;
+        } catch {
+          console.error('❌ Resposta não-JSON de vd_contratos:', text.slice(0, 300));
+          break;
+        }
+
+        if (!response.ok) {
+          console.error(`❌ vd_contratos HTTP ${response.status}:`, text.slice(0, 300));
+          break;
+        }
+
+        const pageRegistrosRaw = Array.isArray(data?.registros)
+          ? data.registros
+          : (data?.registros ? Object.values(data.registros) : []);
+
+        const pageRegistros = pageRegistrosRaw.map((p) => ({ ...p, __source: 'vd_contratos' }));
+        const total = Number(data?.total || 0);
+
+        console.log(`📊 RESULTADO DA PÁGINA ${currentPage} (vd_contratos):`);
+        console.log(`   - Registros nesta página: ${pageRegistros.length}`);
+        console.log(`   - Total reportado pela API: ${total}`);
+        console.log(`   - Total acumulado: ${allPlans.length + pageRegistros.length}`);
+
+        if (pageRegistros.length === 0) {
+          console.log(`✋ Página ${currentPage} vazia - Parando busca em vd_contratos`);
+          hasMorePages = false;
+          break;
+        }
+
+        if (pageRegistros.length > 0) {
+          console.log(`\n📋 Amostra dos primeiros 3 planos desta página (vd_contratos):`);
+          pageRegistros.slice(0, 3).forEach((plan, idx) => {
+            console.log(`   ${idx + 1}. [ID: ${plan.id}] ${plan.nome || plan.grupo || plan.descricao || 'Sem nome'}`);
+          });
+        }
+
+        allPlans = allPlans.concat(pageRegistros as (IXCPlanResponse & { __source: string })[]);
+
+        if (pageRegistros.length < pageSize) {
+          console.log(`\n✅ Última página detectada em vd_contratos (retornou ${pageRegistros.length} < ${pageSize})`);
+          hasMorePages = false;
+        }
+
+        currentPage++;
+      }
+
+      console.log(`\n✅ Total de ${allPlans.length} registros encontrados em vd_contratos`);
+      return allPlans;
+    }
+
     // Buscar planos de TODOS os endpoints (vd_contratos como principal, outros para debug)
     console.log('🚀 Iniciando busca - vd_contratos como fonte PRINCIPAL...');
     
     const [vdContratosPlans, radgruposPlans, produtoPlans, ossPlanoPlans] = await Promise.all([
-      fetchPlansFromEndpoint('vd_contratos', 'vd_contratos'),
+      fetchVdContratosPlans(),
       fetchPlansFromEndpoint('radgrupos', 'radgrupos'),
       fetchPlansFromEndpoint('produto', 'produto'),
       fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
