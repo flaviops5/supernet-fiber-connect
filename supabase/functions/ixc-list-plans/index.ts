@@ -48,7 +48,7 @@ Deno.serve(createAuthenticatedHandler(
     async function fetchPlansFromEndpoint(endpoint: string, endpointName: string): Promise<(IXCPlanResponse & { __source: string })[]> {
       console.log(`\n🔍 ========== BUSCANDO DE ${endpointName.toUpperCase()} ==========`);
       
-      let allPlansFromEndpoint: IXCPlanResponse[] = [];
+      let allPlansFromEndpoint: (IXCPlanResponse & { __source: string })[] = [];
       let currentPage = 1;
       let hasMorePages = true;
       const minPages = 5;
