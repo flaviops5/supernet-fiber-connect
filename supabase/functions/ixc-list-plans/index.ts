@@ -214,6 +214,15 @@ Deno.serve(createAuthenticatedHandler(
       success: true,
       total: formattedPlans.length,
       plans: formattedPlans,
+      debug: {
+        radgruposCount: radgruposPlans.length,
+        produtoCount: produtoPlans.length,
+        ossPlanoCount: ossPlanoPlans.length,
+        uniqueTotal: allPlans.length,
+        sampleIds: formattedPlans.slice(0, 10).map((p) => p.id),
+        masterPlans: masterPlans.slice(0, 10).map((p) => ({
+          id: `${p.__source}:${p.id}`,
+          name: p.grupo || p.nome || p.descricao || `Plano ${p.id}`,
+        })),
+      },
     };
-  }
-));
