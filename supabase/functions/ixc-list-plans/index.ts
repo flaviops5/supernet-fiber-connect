@@ -182,6 +182,7 @@ Deno.serve(createAuthenticatedHandler(
     }
 
     // Formatar planos para resposta com ID composto (endpoint:id)
+    console.log('\n🔧 FORMATANDO PLANOS COM ID COMPOSTO...');
     const formattedPlans = allPlans.map((plan) => {
       const endpoint = plan.__source;
       const planId = String(plan.id || '');
@@ -198,6 +199,14 @@ Deno.serve(createAuthenticatedHandler(
         type: plan.tipo || 'I',
       };
     });
+    
+    // Log de verificação dos IDs
+    if (formattedPlans.length > 0) {
+      console.log('✅ Primeiros 3 IDs compostos gerados:');
+      formattedPlans.slice(0, 3).forEach(p => {
+        console.log(`   - ${p.id} (source: ${p.source}, originalId: ${p.originalId})`);
+      });
+    }
 
     console.log(`\n📤 Retornando ${formattedPlans.length} planos formatados\n`);
 
