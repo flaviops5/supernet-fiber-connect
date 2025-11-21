@@ -122,6 +122,15 @@ Deno.serve(createAuthenticatedHandler(
 
     console.log(`✅ Total de ${allPlans.length} planos encontrados`);
     
+    // Log dos 10 primeiros planos para análise
+    if (allPlans.length > 0) {
+      console.log('📋 === 10 PRIMEIROS PLANOS ===');
+      allPlans.slice(0, 10).forEach((plan, index) => {
+        console.log(`${index + 1}. [ID: ${plan.id}] ${plan.grupo || plan.nome || 'Sem nome'}`);
+      });
+      console.log('================================');
+    }
+    
     // Log dos planos com "MASTER" no nome
     const masterPlans = allPlans.filter(p => 
       (p.grupo?.toUpperCase().includes('MASTER') || p.nome?.toUpperCase().includes('MASTER'))
