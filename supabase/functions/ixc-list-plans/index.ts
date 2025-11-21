@@ -59,6 +59,12 @@ Deno.serve(createAuthenticatedHandler(
       });
 
       console.log(`🔍 Buscando página ${currentPage} do IXC...`);
+      console.log(`📊 Parâmetros da busca:`, {
+        page: currentPage,
+        rp: 100,
+        sortname: 'radgrupos.grupo',
+        sortorder: 'asc'
+      });
 
       const response = await fetch(`${baseUrl}/radgrupos`, {
         method: 'POST',
