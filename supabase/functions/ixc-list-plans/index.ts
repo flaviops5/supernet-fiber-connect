@@ -44,10 +44,11 @@ Deno.serve(createAuthenticatedHandler(
     }
 
     // Buscar TODOS os planos do IXC com paginação
-    // ESTRATÉGIA: Buscar páginas até encontrar uma vazia (ignorar "total" reportado pelo IXC)
+    // ESTRATÉGIA: Buscar no MÍNIMO 5 páginas, depois continuar até encontrar página vazia
     let allPlans: IXCPlanResponse[] = [];
     let currentPage = 1;
     let hasMorePages = true;
+    const minPages = 5; // Garantir busca mínima de 5 páginas
     const maxPages = 20; // Segurança: limitar a 20 páginas (2000 planos)
 
     while (hasMorePages && currentPage <= maxPages) {
@@ -103,23 +104,27 @@ Deno.serve(createAuthenticatedHandler(
       console.log(`   - Total reportado pelo IXC: ${total}`);
       console.log(`   - Total acumulado até agora: ${allPlans.length + pageRegistros.length}`);
 
-      // Se não há planos nesta página, paramos
+      // Se não há planos nesta página
       if (pageRegistros.length === 0) {
-        console.log(`\n✋ PÁGINA ${currentPage} VAZIA - Parando a busca`);
-        console.log(`   Possíveis razões:`);
-        console.log(`   1. Todos os planos já foram retornados`);
-        console.log(`   2. A API do IXC retornou erro silencioso`);
-        console.log(`   3. Problema de autenticação/permissão`);
-        hasMorePages = false;
-        break;
+        // Só para se já buscou o mínimo de páginas
+        if (currentPage > minPages) {
+          console.log(`\n✋ PÁGINA ${currentPage} VAZIA - Parando a busca (já buscou ${currentPage - 1} páginas)`);
+          hasMorePages = false;
+          break;
+        } else {
+          console.log(`\n⚠️ PÁGINA ${currentPage} VAZIA - Mas continuando até página ${minPages} (mínimo garantido)`);
+          // Continua buscando até atingir o mínimo
+        }
       }
 
       // Log dos nomes dos planos na página atual para debug
-      const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
-      console.log(`📋 Amostra de planos (página ${currentPage}):`, planNames.slice(0, 3).join(', '));
-      
-      allPlans = allPlans.concat(pageRegistros);
-      console.log(`✅ Total acumulado: ${allPlans.length} planos\n`);
+      if (pageRegistros.length > 0) {
+        const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
+        console.log(`📋 Amostra de planos (página ${currentPage}):`, planNames.slice(0, 3).join(', '));
+        
+        allPlans = allPlans.concat(pageRegistros);
+        console.log(`✅ Total acumulado: ${allPlans.length} planos\n`);
+      }
 
       currentPage++;
     }
