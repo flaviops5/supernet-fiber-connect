@@ -35,6 +35,7 @@ Deno.serve(createAuthenticatedHandler(
       valor_produto?: string | number;
       valor?: string | number;
       tipo?: string;
+      descricao?: string;
     }
 
     interface IXCApiResponse {
@@ -43,130 +44,149 @@ Deno.serve(createAuthenticatedHandler(
       message?: string;
     }
 
-    // Buscar TODOS os planos do IXC com paginação
-    // ESTRATÉGIA: Buscar no MÍNIMO 5 páginas, depois continuar até encontrar página vazia
-    let allPlans: IXCPlanResponse[] = [];
-    let currentPage = 1;
-    let hasMorePages = true;
-    const minPages = 5; // Garantir busca mínima de 5 páginas
-    const maxPages = 20; // Segurança: limitar a 20 páginas (2000 planos)
-
-    while (hasMorePages && currentPage <= maxPages) {
-      const body = new URLSearchParams({
-        page: String(currentPage),
-        rp: '100',
-        sortname: 'radgrupos.grupo',
-        sortorder: 'asc',
-      });
-
-      console.log(`\n🔍 ========== BUSCANDO PÁGINA ${currentPage} ==========`);
-      console.log(`📊 Parâmetros:`, {
-        page: currentPage,
-        rp: 100,
-        sortname: 'radgrupos.grupo',
-        sortorder: 'asc',
-        url: `${baseUrl}/radgrupos`
-      });
-
-      const response = await fetch(`${baseUrl}/radgrupos`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'ixcsoft': 'listar',
-        },
-        body,
-      });
-
-      const text = await response.text();
-      let data: IXCApiResponse;
+    // FUNÇÃO AUXILIAR: Buscar planos de um endpoint específico com paginação
+    async function fetchPlansFromEndpoint(endpoint: string, endpointName: string): Promise<IXCPlanResponse[]> {
+      console.log(`\n🔍 ========== BUSCANDO DE ${endpointName.toUpperCase()} ==========`);
       
-      try {
-        data = JSON.parse(text) as IXCApiResponse;
-      } catch {
-        console.error('❌ Resposta não-JSON do IXC:', text.slice(0, 200));
-        throw new Error('Resposta inválida do IXC');
-      }
+      let allPlansFromEndpoint: IXCPlanResponse[] = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const minPages = 5;
+      const maxPages = 20;
 
-      if (!response.ok) {
-        console.error(`❌ IXC HTTP ${response.status}:`, text.slice(0, 200));
-        throw new Error(data?.message || `HTTP ${response.status}`);
-      }
+      while (hasMorePages && currentPage <= maxPages) {
+        const body = new URLSearchParams({
+          page: String(currentPage),
+          rp: '100',
+          sortname: endpoint === 'radgrupos' ? 'radgrupos.grupo' : (endpoint === 'produto' ? 'produto.descricao' : 'su_oss_plano.nome'),
+          sortorder: 'asc',
+        });
 
-      // Extrair registros da página atual
-      const pageRegistros = Array.isArray(data?.registros)
-        ? data.registros
-        : (data?.registros ? Object.values(data.registros) : []);
+        console.log(`\n🔍 ========== BUSCANDO PÁGINA ${currentPage} de ${endpointName} ==========`);
 
-      const total = Number(data?.total || 0);
-      console.log(`📊 RESULTADO DA PÁGINA ${currentPage}:`);
-      console.log(`   - Planos nesta página: ${pageRegistros.length}`);
-      console.log(`   - Total reportado pelo IXC: ${total}`);
-      console.log(`   - Total acumulado até agora: ${allPlans.length + pageRegistros.length}`);
+        const response = await fetch(`${baseUrl}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'ixcsoft': 'listar',
+          },
+          body,
+        });
 
-      // Se não há planos nesta página
-      if (pageRegistros.length === 0) {
-        // Só para se já buscou o mínimo de páginas
-        if (currentPage > minPages) {
-          console.log(`\n✋ PÁGINA ${currentPage} VAZIA - Parando a busca (já buscou ${currentPage - 1} páginas)`);
-          hasMorePages = false;
-          break;
-        } else {
-          console.log(`\n⚠️ PÁGINA ${currentPage} VAZIA - Mas continuando até página ${minPages} (mínimo garantido)`);
-          // Continua buscando até atingir o mínimo
-        }
-      }
-
-      // Log dos nomes dos planos na página atual para debug
-      if (pageRegistros.length > 0) {
-        const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
-        console.log(`📋 Amostra de planos (página ${currentPage}):`, planNames.slice(0, 3).join(', '));
+        const text = await response.text();
+        let data: IXCApiResponse;
         
-        allPlans = allPlans.concat(pageRegistros);
-        console.log(`✅ Total acumulado: ${allPlans.length} planos\n`);
+        try {
+          data = JSON.parse(text) as IXCApiResponse;
+        } catch {
+          console.error(`❌ Resposta não-JSON de ${endpointName}:`, text.slice(0, 200));
+          break;
+        }
+
+        if (!response.ok) {
+          console.error(`❌ ${endpointName} HTTP ${response.status}:`, text.slice(0, 200));
+          break;
+        }
+
+        const pageRegistros = Array.isArray(data?.registros)
+          ? data.registros
+          : (data?.registros ? Object.values(data.registros) : []);
+
+        const total = Number(data?.total || 0);
+        console.log(`📊 RESULTADO DA PÁGINA ${currentPage} (${endpointName}):`);
+        console.log(`   - Registros nesta página: ${pageRegistros.length}`);
+        console.log(`   - Total reportado: ${total}`);
+        console.log(`   - Total acumulado: ${allPlansFromEndpoint.length + pageRegistros.length}`);
+
+        if (pageRegistros.length === 0) {
+          if (currentPage > minPages) {
+            console.log(`✋ Página ${currentPage} vazia em ${endpointName} - Parando`);
+            hasMorePages = false;
+            break;
+          } else {
+            console.log(`⚠️ Página ${currentPage} vazia mas continuando até página ${minPages}`);
+          }
+        }
+
+        if (pageRegistros.length > 0) {
+          const planNames = pageRegistros.map(p => p.grupo || p.nome || p.descricao).filter(Boolean);
+          console.log(`📋 Amostra (${endpointName}, pág ${currentPage}):`, planNames.slice(0, 3).join(', '));
+          
+          allPlansFromEndpoint = allPlansFromEndpoint.concat(pageRegistros);
+          console.log(`✅ Total acumulado de ${endpointName}: ${allPlansFromEndpoint.length}\n`);
+        }
+
+        currentPage++;
       }
 
-      currentPage++;
+      console.log(`✅ Total de ${allPlansFromEndpoint.length} registros encontrados em ${endpointName}\n`);
+      return allPlansFromEndpoint;
     }
 
-    if (currentPage > maxPages) {
-      console.log(`⚠️ Limite de ${maxPages} páginas atingido - pode haver mais planos`);
-    }
+    // Buscar TODOS os planos de MÚLTIPLOS endpoints
+    console.log('🚀 Iniciando busca em múltiplos endpoints do IXC...');
+    
+    const [radgruposPlans, produtoPlans, ossPlanoPlans] = await Promise.all([
+      fetchPlansFromEndpoint('radgrupos', 'radgrupos'),
+      fetchPlansFromEndpoint('produto', 'produto'),
+      fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
+    ]);
 
-    console.log(`✅ Total de ${allPlans.length} planos encontrados`);
+    // Combinar todos os planos e remover duplicatas por ID
+    const allPlansMap = new Map<string, IXCPlanResponse>();
+    
+    [...radgruposPlans, ...produtoPlans, ...ossPlanoPlans].forEach(plan => {
+      const id = String(plan.id || '');
+      if (id && !allPlansMap.has(id)) {
+        allPlansMap.set(id, plan);
+      }
+    });
+
+    const allPlans = Array.from(allPlansMap.values());
+    
+    console.log('\n📊 ========== RESUMO DA BUSCA ==========');
+    console.log(`   - radgrupos: ${radgruposPlans.length} registros`);
+    console.log(`   - produto: ${produtoPlans.length} registros`);
+    console.log(`   - su_oss_plano: ${ossPlanoPlans.length} registros`);
+    console.log(`   - TOTAL (sem duplicatas): ${allPlans.length} planos`);
+    console.log('========================================\n');
     
     // Log dos 10 primeiros planos para análise
     if (allPlans.length > 0) {
-      console.log('📋 === 10 PRIMEIROS PLANOS ===');
+      console.log('📋 === 10 PRIMEIROS PLANOS (DE TODOS OS ENDPOINTS) ===');
       allPlans.slice(0, 10).forEach((plan, index) => {
-        console.log(`${index + 1}. [ID: ${plan.id}] ${plan.grupo || plan.nome || 'Sem nome'}`);
+        console.log(`${index + 1}. [ID: ${plan.id}] ${plan.grupo || plan.nome || plan.descricao || 'Sem nome'}`);
       });
       console.log('================================');
     }
     
     // Log dos planos com "MASTER" no nome
     const masterPlans = allPlans.filter(p => 
-      (p.grupo?.toUpperCase().includes('MASTER') || p.nome?.toUpperCase().includes('MASTER'))
+      (p.grupo?.toUpperCase().includes('MASTER') || 
+       p.nome?.toUpperCase().includes('MASTER') ||
+       p.descricao?.toUpperCase().includes('MASTER'))
     );
     if (masterPlans.length > 0) {
-      console.log(`🎯 Planos MASTER encontrados: ${masterPlans.length}`, 
-        masterPlans.map(p => ({ id: p.id, name: p.grupo || p.nome }))
-      );
+      console.log(`\n🎯 PLANOS MASTER ENCONTRADOS: ${masterPlans.length}`);
+      masterPlans.forEach(p => {
+        console.log(`   - [ID: ${p.id}] ${p.grupo || p.nome || p.descricao}`);
+      });
     } else {
-      console.log(`⚠️ Nenhum plano com "MASTER" no nome foi encontrado`);
+      console.log(`\n⚠️ Nenhum plano com "MASTER" no nome foi encontrado`);
     }
 
     // Formatar planos para resposta
     const formattedPlans = allPlans.map((plan) => ({
       id: String(plan.id || ''),
-      name: plan.grupo || plan.nome || `Plano ${plan.id}`,
+      name: plan.grupo || plan.nome || plan.descricao || `Plano ${plan.id}`,
       download: plan.download || '0',
       upload: plan.upload || '0',
       price: Number(plan.valor_produto || plan.valor || 0),
       type: plan.tipo || 'I',
     }));
 
-    console.log(`📤 Retornando ${formattedPlans.length} planos formatados`);
+    console.log(`\n📤 Retornando ${formattedPlans.length} planos formatados\n`);
 
     return {
       success: true,
