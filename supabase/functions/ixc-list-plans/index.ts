@@ -44,11 +44,13 @@ Deno.serve(createAuthenticatedHandler(
     }
 
     // Buscar TODOS os planos do IXC com paginação
+    // ESTRATÉGIA: Buscar páginas até encontrar uma vazia (ignorar "total" reportado pelo IXC)
     let allPlans: IXCPlanResponse[] = [];
     let currentPage = 1;
-    let totalPages = 1;
+    let hasMorePages = true;
+    const maxPages = 20; // Segurança: limitar a 20 páginas (2000 planos)
 
-    do {
+    while (hasMorePages && currentPage <= maxPages) {
       const body = new URLSearchParams({
         page: String(currentPage),
         rp: '100',
@@ -88,31 +90,29 @@ Deno.serve(createAuthenticatedHandler(
         ? data.registros
         : (data?.registros ? Object.values(data.registros) : []);
 
-      if (pageRegistros.length > 0) {
-        // Log dos nomes dos planos na página atual para debug
-        const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
-        console.log(`📋 Planos na página ${currentPage}:`, planNames.slice(0, 10).join(', ') + (planNames.length > 10 ? '...' : ''));
-        
-        allPlans = allPlans.concat(pageRegistros);
-        console.log(`📄 Página ${currentPage}: ${pageRegistros.length} planos (Total acumulado: ${allPlans.length})`);
+      const total = Number(data?.total || 0);
+      console.log(`📊 Página ${currentPage}: ${pageRegistros.length} planos retornados (Total reportado pelo IXC: ${total})`);
+
+      // Se não há planos nesta página, paramos
+      if (pageRegistros.length === 0) {
+        console.log(`✋ Página ${currentPage} vazia - parando a busca`);
+        hasMorePages = false;
+        break;
       }
 
-      // Calcular total de páginas
-      const total = Number(data?.total || 0);
-      const rp = 100;
-      totalPages = Math.ceil(total / rp);
+      // Log dos nomes dos planos na página atual para debug
+      const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
+      console.log(`📋 Planos na página ${currentPage}:`, planNames.slice(0, 5).join(', ') + (planNames.length > 5 ? ` ... (${planNames.length} total)` : ''));
       
-      console.log(`📊 Total reportado pelo IXC: ${total}, Páginas calculadas: ${totalPages}`);
-      console.log(`📄 Planos retornados nesta página: ${pageRegistros.length}`);
-      
-      // Se a página retornou planos, mas o total é menor que esperado, continue buscando
-      if (pageRegistros.length === rp) {
-        console.log(`⚠️ Página cheia (${rp} itens), pode haver mais páginas...`);
-        totalPages = Math.max(totalPages, currentPage + 1); // Garantir que busque próxima página
-      }
+      allPlans = allPlans.concat(pageRegistros);
+      console.log(`✅ Total acumulado: ${allPlans.length} planos`);
 
       currentPage++;
-    } while (currentPage <= totalPages);
+    }
+
+    if (currentPage > maxPages) {
+      console.log(`⚠️ Limite de ${maxPages} páginas atingido - pode haver mais planos`);
+    }
 
     console.log(`✅ Total de ${allPlans.length} planos encontrados`);
     
