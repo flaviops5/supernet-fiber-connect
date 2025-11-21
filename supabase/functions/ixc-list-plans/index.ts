@@ -226,3 +226,5 @@ Deno.serve(createAuthenticatedHandler(
         })),
       },
     };
+  }
+));
