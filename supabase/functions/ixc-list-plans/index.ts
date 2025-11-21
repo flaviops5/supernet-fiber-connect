@@ -58,12 +58,13 @@ Deno.serve(createAuthenticatedHandler(
         sortorder: 'asc',
       });
 
-      console.log(`🔍 Buscando página ${currentPage} do IXC...`);
-      console.log(`📊 Parâmetros da busca:`, {
+      console.log(`\n🔍 ========== BUSCANDO PÁGINA ${currentPage} ==========`);
+      console.log(`📊 Parâmetros:`, {
         page: currentPage,
         rp: 100,
         sortname: 'radgrupos.grupo',
-        sortorder: 'asc'
+        sortorder: 'asc',
+        url: `${baseUrl}/radgrupos`
       });
 
       const response = await fetch(`${baseUrl}/radgrupos`, {
@@ -97,21 +98,28 @@ Deno.serve(createAuthenticatedHandler(
         : (data?.registros ? Object.values(data.registros) : []);
 
       const total = Number(data?.total || 0);
-      console.log(`📊 Página ${currentPage}: ${pageRegistros.length} planos retornados (Total reportado pelo IXC: ${total})`);
+      console.log(`📊 RESULTADO DA PÁGINA ${currentPage}:`);
+      console.log(`   - Planos nesta página: ${pageRegistros.length}`);
+      console.log(`   - Total reportado pelo IXC: ${total}`);
+      console.log(`   - Total acumulado até agora: ${allPlans.length + pageRegistros.length}`);
 
       // Se não há planos nesta página, paramos
       if (pageRegistros.length === 0) {
-        console.log(`✋ Página ${currentPage} vazia - parando a busca`);
+        console.log(`\n✋ PÁGINA ${currentPage} VAZIA - Parando a busca`);
+        console.log(`   Possíveis razões:`);
+        console.log(`   1. Todos os planos já foram retornados`);
+        console.log(`   2. A API do IXC retornou erro silencioso`);
+        console.log(`   3. Problema de autenticação/permissão`);
         hasMorePages = false;
         break;
       }
 
       // Log dos nomes dos planos na página atual para debug
       const planNames = pageRegistros.map(p => p.grupo || p.nome).filter(Boolean);
-      console.log(`📋 Planos na página ${currentPage}:`, planNames.slice(0, 5).join(', ') + (planNames.length > 5 ? ` ... (${planNames.length} total)` : ''));
+      console.log(`📋 Amostra de planos (página ${currentPage}):`, planNames.slice(0, 3).join(', '));
       
       allPlans = allPlans.concat(pageRegistros);
-      console.log(`✅ Total acumulado: ${allPlans.length} planos`);
+      console.log(`✅ Total acumulado: ${allPlans.length} planos\n`);
 
       currentPage++;
     }
