@@ -151,38 +151,37 @@ export const IXCPlanSelector = () => {
   const testEndpoints = async () => {
     setTesting(true);
     try {
-      console.log('🧪 Testando endpoints do IXC...');
+      console.log('🧪 Descobrindo endpoints do IXC...');
       
-      const { data, error } = await supabase.functions.invoke('ixc-test-endpoints', {
+      const { data, error } = await supabase.functions.invoke('ixc-discover-gpon-endpoints', {
         body: {}
       });
 
-      console.log('📊 Resultado do teste:', { data, error });
+      console.log('📊 Resultado da descoberta:', { data, error });
 
       if (error) {
-        console.error('❌ Erro ao testar endpoints:', error);
+        console.error('❌ Erro ao descobrir endpoints:', error);
         throw error;
-      }
-
-      if (data?.error) {
-        console.error('❌ Erro retornado pela função:', data.error);
-        throw new Error(data.error);
       }
 
       if (data?.success) {
         const summary = data.summary;
-        const results = data.results;
+        const functional = data.functionalEndpoints;
         
-        console.log('✅ Teste concluído:', summary);
+        console.log('✅ Descoberta concluída:', summary);
         
-        // Mostrar detalhes dos resultados no toast
-        const details = results
-          .map((r: any) => `${r.endpoint}: ${r.total_records} registros`)
+        // Focar nos endpoints de planos
+        const planEndpoints = functional.filter((e: any) => 
+          ['radgrupos', 'produto', 'su_oss_plano'].includes(e.endpoint)
+        );
+        
+        const planDetails = planEndpoints
+          .map((e: any) => `${e.endpoint}: ${e.recordCount} registros`)
           .join('\n');
         
         toast({
           title: "Diagnóstico de endpoints concluído",
-          description: `${summary.total_records_found} registros totais encontrados em ${summary.successful_endpoints}/${summary.total_endpoints_tested} endpoints.\n\n${details}`,
+          description: `${summary.functional} endpoints funcionais encontrados.\n\nEndpoints de planos:\n${planDetails || 'Nenhum endpoint de planos encontrado'}`,
         });
       } else {
         console.warn('⚠️ Resposta inesperada:', data);
@@ -190,14 +189,14 @@ export const IXCPlanSelector = () => {
       }
     } catch (error) {
       const err = parseError(error);
-      console.error('💥 Erro ao testar endpoints:', {
+      console.error('💥 Erro ao descobrir endpoints:', {
         message: err.message,
         details: err.details,
         originalError: error
       });
       toast({
-        title: "Erro ao testar endpoints",
-        description: err.message || 'Erro desconhecido ao testar endpoints do IXC',
+        title: "Erro ao descobrir endpoints",
+        description: err.message || 'Erro desconhecido ao descobrir endpoints do IXC',
         variant: "destructive",
       });
     } finally {

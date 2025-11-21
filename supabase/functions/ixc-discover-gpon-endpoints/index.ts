@@ -19,8 +19,13 @@ Deno.serve(createAuthenticatedHandler(
 
     console.log('🔍 Iniciando descoberta de endpoints GPON...');
 
-    // Lista de endpoints potenciais relacionados a GPON
+    // Lista de endpoints potenciais relacionados a GPON e Planos
     const potentialEndpoints = [
+      // Planos e Produtos
+      'radgrupos',
+      'produto',
+      'su_oss_plano',
+      
       // Equipamentos
       // 'cliente_equipamento', // Removido: endpoint não existe no IXC
       'equipamento_fibra',
