@@ -31,6 +31,7 @@ export const IXCPlanSelector = () => {
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingVd, setTestingVd] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [debugInfo, setDebugInfo] = useState<IXCDebugInfo | null>(null);
   const { toast } = useToast();
@@ -170,6 +171,53 @@ export const IXCPlanSelector = () => {
     }
   };
 
+  const testVdContratos = async () => {
+    setTestingVd(true);
+    try {
+      console.log('\n🧪 ========== TESTANDO ENDPOINT VD_CONTRATOS ==========');
+      
+      const { data, error } = await supabase.functions.invoke('ixc-test-vd-contratos', {
+        body: {}
+      });
+
+      console.log('📦 Resposta completa de vd_contratos:', JSON.stringify(data, null, 2));
+      console.log('📊 Total de planos:', data?.total);
+      console.log('🧪 Debug info:', JSON.stringify(data?.debug, null, 2));
+
+      if (error) {
+        console.error('❌ Erro na invocação:', error);
+        throw error;
+      }
+
+      if (data?.success) {
+        const totalPlans = data.total || 0;
+        const masterCount = data.debug?.masterPlansCount || 0;
+        
+        toast({
+          title: "✅ Teste de vd_contratos concluído",
+          description: `Total: ${totalPlans} planos encontrados. ${masterCount} planos MASTER. Verifique o console para detalhes completos.`,
+        });
+      } else {
+        console.warn('⚠️ Resposta inesperada:', data);
+        throw new Error(data?.error || 'Resposta inválida do servidor');
+      }
+    } catch (error) {
+      const err = parseError(error);
+      console.error('💥 Erro ao testar vd_contratos:', {
+        message: err.message,
+        details: err.details,
+        originalError: error
+      });
+      toast({
+        title: "Erro ao testar vd_contratos",
+        description: err.message || 'Erro desconhecido ao testar endpoint',
+        variant: "destructive",
+      });
+    } finally {
+      setTestingVd(false);
+    }
+  };
+
   const testEndpoints = async () => {
     setTesting(true);
     try {
@@ -238,8 +286,8 @@ export const IXCPlanSelector = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex gap-2">
-          <Button onClick={loadIXCPlans} disabled={loading || testing} variant="outline" className="flex-1">
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={loadIXCPlans} disabled={loading || testing || testingVd} variant="outline" className="flex-1">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -252,7 +300,19 @@ export const IXCPlanSelector = () => {
               </>
             )}
           </Button>
-          <Button onClick={testEndpoints} disabled={testing || loading} variant="secondary">
+          <Button onClick={testVdContratos} disabled={testingVd || loading || testing} variant="secondary">
+            {testingVd ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                🧪 vd_contratos
+              </>
+            )}
+          </Button>
+          <Button onClick={testEndpoints} disabled={testing || loading || testingVd} variant="secondary">
             {testing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -261,7 +321,7 @@ export const IXCPlanSelector = () => {
             ) : (
               <>
                 <FlaskConical className="w-4 h-4 mr-2" />
-                Testar Endpoints
+                Outros Endpoints
               </>
             )}
           </Button>
