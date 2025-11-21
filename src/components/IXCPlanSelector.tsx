@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, FlaskConical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { parseError } from "@/types/error.types";
@@ -21,6 +21,7 @@ export const IXCPlanSelector = () => {
   const [ixcPlans, setIxcPlans] = useState<IXCPlan[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const { toast } = useToast();
 
@@ -147,6 +148,63 @@ export const IXCPlanSelector = () => {
     }
   };
 
+  const testEndpoints = async () => {
+    setTesting(true);
+    try {
+      console.log('🧪 Testando endpoints do IXC...');
+      
+      const { data, error } = await supabase.functions.invoke('ixc-test-endpoints', {
+        body: {}
+      });
+
+      console.log('📊 Resultado do teste:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro ao testar endpoints:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('❌ Erro retornado pela função:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (data?.success) {
+        const summary = data.summary;
+        const results = data.results;
+        
+        console.log('✅ Teste concluído:', summary);
+        
+        // Mostrar detalhes dos resultados no toast
+        const details = results
+          .map((r: any) => `${r.endpoint}: ${r.total_records} registros`)
+          .join('\n');
+        
+        toast({
+          title: "Diagnóstico de endpoints concluído",
+          description: `${summary.total_records_found} registros totais encontrados em ${summary.successful_endpoints}/${summary.total_endpoints_tested} endpoints.\n\n${details}`,
+        });
+      } else {
+        console.warn('⚠️ Resposta inesperada:', data);
+        throw new Error('Resposta inválida do servidor');
+      }
+    } catch (error) {
+      const err = parseError(error);
+      console.error('💥 Erro ao testar endpoints:', {
+        message: err.message,
+        details: err.details,
+        originalError: error
+      });
+      toast({
+        title: "Erro ao testar endpoints",
+        description: err.message || 'Erro desconhecido ao testar endpoints do IXC',
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -160,7 +218,7 @@ export const IXCPlanSelector = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex gap-2">
-          <Button onClick={loadIXCPlans} disabled={loading} variant="outline" className="flex-1">
+          <Button onClick={loadIXCPlans} disabled={loading || testing} variant="outline" className="flex-1">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -170,6 +228,19 @@ export const IXCPlanSelector = () => {
               <>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Buscar Planos do IXC
+              </>
+            )}
+          </Button>
+          <Button onClick={testEndpoints} disabled={testing || loading} variant="secondary">
+            {testing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                <FlaskConical className="w-4 h-4 mr-2" />
+                Testar Endpoints
               </>
             )}
           </Button>
