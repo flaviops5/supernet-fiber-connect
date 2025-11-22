@@ -248,6 +248,7 @@ Do NOT include any text, words, or letters in the image.`;
           totalPosts: posts.length,
         });
       }
+      }
     } else {
       console.log('Image generation disabled by user', { requestId });
     }
