@@ -79,10 +79,10 @@ Deno.serve(createAuthenticatedHandler(
       return data;
     };
 
-    console.log('Fetching plans from IXC vd_contratos...');
+    console.log('Fetching speed plans from IXC radgrupos...');
 
-    // Use vd_contratos (Planos de contratos)
-    const endpoint = 'vd_contratos';
+    // Use radgrupos (Planos de velocidades)
+    const endpoint = 'radgrupos';
     let found: Array<{
       id: string | number;
       name: string;
@@ -95,12 +95,12 @@ Deno.serve(createAuthenticatedHandler(
     const form: Record<string, string> = {
       page: String(page),
       rp: String(rp),
-      sortname: 'vd_contratos.nome',
+      sortname: 'radgrupos.grupo',
       sortorder: 'asc',
     };
     
     if (search) {
-      form.qtype = 'vd_contratos.nome';
+      form.qtype = 'radgrupos.grupo';
       form.oper = 'L';
       form.query = search;
     }
@@ -108,14 +108,9 @@ Deno.serve(createAuthenticatedHandler(
     const result = await postIXC(endpoint, form);
     lastTotal = result?.total ?? 0;
 
-    // Normalizar registros (pode ser array ou objeto)
-    const registros = Array.isArray(result?.registros)
-      ? result.registros
-      : (result?.registros ? Object.values(result.registros) : []);
-
-    if (registros.length > 0) {
-      found = registros.map((r) => ({
-        id: r.id || '',
+    if (result?.registros && Array.isArray(result.registros)) {
+      found = result.registros.map((r) => ({
+        id: r.id_grupo || r.id,
         name: r.grupo || r.velocidade || '',
         download: r.download || '',
         upload: r.upload || '',

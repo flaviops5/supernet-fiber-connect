@@ -61,23 +61,14 @@ export const IXCContractsList = () => {
       if (error) throw error;
 
       if (data.success) {
-        // A API retorna 'plans' mas vamos tratar como contracts
-        const contracts = data.plans || [];
-        setContracts(contracts.map((plan: any) => ({
-          id: plan.id,
-          descricao: plan.name,
-          valor: String(plan.value || '0'),
-          download: plan.download,
-          upload: plan.upload,
-          tipo: plan.tipo,
-        })));
-        setTotal(data.pagination?.total || contracts.length);
-        setPage(data.pagination?.page || nextPage);
-        setTotalPages(data.pagination?.totalPages || Math.max(1, Math.ceil((data.pagination?.total || contracts.length) / rp)));
+        setContracts(data.contracts);
+        setTotal(data.total);
+        setPage(data.page || nextPage);
+        setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || 0) / rp)));
 
         await loadLocalPlans();
 
-        if ((data.pagination?.total || 0) === 0) {
+        if ((data.total || 0) === 0) {
           toast({
             title: "Nenhum plano encontrado",
             description: "A API do IXC não retornou planos disponíveis.",
@@ -86,7 +77,7 @@ export const IXCContractsList = () => {
         } else {
           toast({
             title: "Planos carregados",
-            description: `${data.pagination?.total || 0} planos disponíveis encontrados.`,
+            description: `${data.total} planos disponíveis encontrados.`,
           });
         }
       } else {
