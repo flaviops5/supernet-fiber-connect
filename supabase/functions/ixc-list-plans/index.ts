@@ -230,15 +230,37 @@ Deno.serve(createAuthenticatedHandler(
       fetchPlansFromEndpoint('su_oss_plano', 'su_oss_plano'),
     ]);
 
-    // Usar APENAS vd_contratos como fonte de planos
-    const allPlans = vdContratosPlans;
+    // Agregar TODOS os endpoints e remover duplicatas por ID
+    console.log('\n🔄 Agregando planos de todos os endpoints...');
+    
+    const allPlansRaw = [
+      ...vdContratosPlans,
+      ...radgruposPlans,
+      ...produtoPlans,
+      ...ossPlanoPlans,
+    ];
+    
+    console.log(`\n📊 Planos antes da deduplicação: ${allPlansRaw.length}`);
+    
+    // Deduplica por ID (prioriza vd_contratos)
+    const plansMap = new Map<string, IXCPlanResponse & { __source: string }>();
+    
+    allPlansRaw.forEach(plan => {
+      const id = String(plan.id || '');
+      if (id && !plansMap.has(id)) {
+        plansMap.set(id, plan);
+      }
+    });
+    
+    const allPlans = Array.from(plansMap.values());
     
     console.log('\n📊 ========== RESUMO DA BUSCA ==========');
-    console.log(`   ✅ vd_contratos (PRINCIPAL): ${vdContratosPlans.length} registros`);
-    console.log(`   📊 radgrupos (debug): ${radgruposPlans.length} registros`);
-    console.log(`   📊 produto (debug): ${produtoPlans.length} registros`);
-    console.log(`   📊 su_oss_plano (debug): ${ossPlanoPlans.length} registros`);
-    console.log(`   🎯 TOTAL RETORNADO: ${allPlans.length} planos de vd_contratos`);
+    console.log(`   ✅ vd_contratos: ${vdContratosPlans.length} registros`);
+    console.log(`   ✅ radgrupos: ${radgruposPlans.length} registros`);
+    console.log(`   ✅ produto: ${produtoPlans.length} registros`);
+    console.log(`   ✅ su_oss_plano: ${ossPlanoPlans.length} registros`);
+    console.log(`   📦 Total bruto: ${allPlansRaw.length} registros`);
+    console.log(`   🎯 TOTAL ÚNICO: ${allPlans.length} planos (após deduplicação)`);
     console.log('========================================\n');
     
     // Log dos 10 primeiros planos para análise
