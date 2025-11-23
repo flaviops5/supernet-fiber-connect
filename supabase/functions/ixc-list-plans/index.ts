@@ -150,8 +150,11 @@ Deno.serve(createAuthenticatedHandler(
         const body = new URLSearchParams({
           page: String(currentPage),
           rp: String(pageSize),
-          sortname: 'vd_contratos.nome',
+          sortname: 'vd_contratos.id',
           sortorder: 'asc',
+          qtype: 'vd_contratos.id',
+          query: '0',
+          oper: '>',
         });
 
         console.log(`\n📄 ========== PÁGINA ${currentPage} (vd_contratos) ==========`);
