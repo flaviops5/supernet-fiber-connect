@@ -80,16 +80,22 @@ export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGenerat
 
   const approveMutation = useMutation({
     mutationFn: async ({ conversationId, conversation }: { conversationId: string; conversation: GeneratedConversation }) => {
+      // TODO: Criar tabela 'agent_flow_scenario_approvals' no banco antes de habilitar
+      toast({
+        title: 'Funcionalidade desabilitada',
+        description: 'Tabela de aprovações não configurada',
+        variant: 'destructive'
+      });
+      throw new Error('Table not configured');
+      /*
       if (!subjectKey) {
         throw new Error('Subject não definido. Selecione um assunto antes de aprovar.');
       }
-
       const { data: { user } } = await supabase.auth.getUser();
-      
       const { error } = await supabase
         .from('agent_flow_scenario_approvals')
         .insert([{
-          agent_type: agentType as Database['public']['Enums']['agent_type'],
+          agent_type: agentType,
           subject_key: subjectKey,
           scenario_key: conversationId,
           variation_path: conversation.scenario_description,
@@ -97,8 +103,8 @@ export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGenerat
           notes: `Score: ${conversation.quality_score}/100. ${conversation.suggestions.join('; ')}`,
           approved_by: user?.id || null
         }]);
-
       if (error) throw error;
+      */
       return conversationId;
     },
     onSuccess: (conversationId) => {
