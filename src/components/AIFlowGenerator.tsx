@@ -30,7 +30,7 @@ interface AIFlowGeneratorProps {
   subjectKey?: string;
 }
 
-export default function AIFlowGenerator({ agentType, subjectKey }: AIFlowGeneratorProps) {
+export function AIFlowGenerator({ agentType, subjectKey }: AIFlowGeneratorProps) {
   const { toast } = useToast();
   const [theme, setTheme] = useState('');
   const [conversations, setConversations] = useState<GeneratedConversation[]>([]);
