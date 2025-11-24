@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail } from 'lucide-react';
 
-export function EmailTemplateManagement() {
+export const EmailTemplateManagement = () => {
   return (
     <Card>
       <CardHeader>
@@ -20,4 +20,4 @@ export function EmailTemplateManagement() {
       </CardContent>
     </Card>
   );
-}
+};
