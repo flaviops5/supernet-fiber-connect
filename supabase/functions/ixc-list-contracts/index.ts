@@ -118,17 +118,14 @@ Deno.serve(createAuthenticatedHandler(
       }));
     }
 
-    console.log(`Found ${found.length} plans (total: ${lastTotal})`);
+    console.log(`Found ${found.length} contracts (total: ${lastTotal})`);
 
     return {
       success: true,
-      plans: found,
-      pagination: {
-        page,
-        perPage: rp,
-        total: lastTotal,
-        totalPages: Math.ceil(lastTotal / rp)
-      }
+      contracts: found,
+      total: lastTotal,
+      page,
+      totalPages: Math.ceil(lastTotal / rp),
     };
   }
 ));

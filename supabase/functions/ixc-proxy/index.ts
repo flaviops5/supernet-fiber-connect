@@ -132,6 +132,26 @@ Deno.serve(async (req) => {
       ixcHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
     }
 
+    // ====== VALIDATOR BLOCK (Temporary Debug) ======
+    try {
+      const parsedUrl = new URL(url);
+      const pathUsed = parsedUrl.pathname + parsedUrl.search;
+
+      logger.info("🔍 VALIDATOR: IXC Request Diagnostics", {
+        method,
+        endpoint: pathUsed,
+        hasIxcsoftHeader: ixcHeaders['ixcsoft'] || '(missing)',
+        authHeader: ixcHeaders['Authorization'] ? 'present' : '(missing)',
+        contentType: ixcHeaders['Content-Type'] || '(missing)',
+        bodyPreview: body ? JSON.stringify(body).slice(0, 200) : '(no body)',
+        timestamp: new Date().toISOString(),
+        deploymentSignature: 'DEPLOY_CHECK_v1',
+      });
+    } catch (e) {
+      logger.error('Validator exception', { error: e instanceof Error ? e.message : String(e) });
+    }
+    // ====== END VALIDATOR BLOCK ======
+
     // Preparar corpo adequadamente
     let outgoingBody: BodyInit | undefined = undefined;
     if (body) {
