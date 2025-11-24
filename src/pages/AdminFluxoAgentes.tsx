@@ -15,10 +15,10 @@ import { ArrowLeft } from 'lucide-react';
 import { AuthGuard } from '@/components/AuthGuard';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import GuidedFlowSimulator from '@/components/GuidedFlowSimulator';
-import FlowSubjectManager from '@/components/FlowSubjectManager';
-import AIFlowGenerator from '@/components/AIFlowGenerator';
-import StepConfigDialog from '@/components/StepConfigDialog';
+import { GuidedFlowSimulator } from '@/components/GuidedFlowSimulator';
+import { FlowSubjectManager } from '@/components/FlowSubjectManager';
+import { AIFlowGenerator } from '@/components/AIFlowGenerator';
+import { StepConfigDialog } from '@/components/StepConfigDialog';
 
 import type { Database } from '@/integrations/supabase/types';
 
