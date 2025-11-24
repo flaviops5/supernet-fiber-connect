@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          cta_text: string | null
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          image_url: string | null
+          ixc_plan_id: string | null
+          name: string
+          original_price: number | null
+          popular: boolean | null
+          price: number
+          speed: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          cta_text?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          ixc_plan_id?: string | null
+          name: string
+          original_price?: number | null
+          popular?: boolean | null
+          price: number
+          speed?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          cta_text?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          ixc_plan_id?: string | null
+          name?: string
+          original_price?: number | null
+          popular?: boolean | null
+          price?: number
+          speed?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
