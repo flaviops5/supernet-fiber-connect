@@ -255,7 +255,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ixc-list-plans]
-verify_jwt = true
+verify_jwt = false
 
 [functions.ixc-test-vd-contratos]
 verify_jwt = true
