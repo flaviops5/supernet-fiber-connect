@@ -61,6 +61,8 @@ export function AgentManagement() {
   const [editingConfig, setEditingConfig] = useState<AgentConfig | null>(null);
 
   const loadAgentConfigs = useCallback(async () => {
+    // TODO: Criar tabela 'agent_configurations' no banco antes de habilitar
+    /*
     const { data, error } = await supabase
       .from('agent_configurations')
       .select('*')
@@ -74,11 +76,14 @@ export function AgentManagement() {
       });
       return;
     }
-
     setConfigs(data || []);
+    */
+    setConfigs([]);
   }, [toast]);
 
   const loadAgentStats = useCallback(async () => {
+    // TODO: Criar tabela 'conversations' no banco antes de habilitar
+    /*
     const { data, error } = await supabase
       .from('conversations')
       .select('department, status, created_at');
@@ -114,6 +119,8 @@ export function AgentManagement() {
     });
 
     setStats(statsByDept);
+    */
+    setStats({});
   }, []);
 
   useEffect(() => {

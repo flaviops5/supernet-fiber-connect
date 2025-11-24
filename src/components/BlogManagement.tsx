@@ -66,6 +66,8 @@ export default function BlogManagement() {
 
   const fetchPosts = async () => {
     try {
+      // TODO: Criar tabela 'blog_posts' no banco antes de habilitar
+      /*
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
@@ -73,6 +75,8 @@ export default function BlogManagement() {
 
       if (error) throw error;
       setPosts(data || []);
+      */
+      setPosts([]);
     } catch (error) {
       logger.error('Error fetching posts', error);
       toast({
@@ -87,6 +91,8 @@ export default function BlogManagement() {
 
   const fetchCategories = async () => {
     try {
+      // TODO: Criar tabela 'blog_categories' no banco antes de habilitar
+      /*
       const { data, error } = await supabase
         .from('blog_categories')
         .select('*')
@@ -94,6 +100,8 @@ export default function BlogManagement() {
 
       if (error) throw error;
       setCategories(data || []);
+      */
+      setCategories([]);
     } catch (error) {
       logger.error('Error fetching categories', error);
     }
@@ -177,6 +185,14 @@ export default function BlogManagement() {
     }
 
     try {
+      // TODO: Criar tabela 'blog_posts' no banco antes de habilitar
+      toast({
+        title: 'Funcionalidade desabilitada',
+        description: 'Tabela de blog não configurada',
+        variant: 'destructive',
+      });
+      return;
+      /*
       const slug = formData.slug || generateSlug(formData.title);
       
       if (isEditing) {
@@ -229,6 +245,7 @@ export default function BlogManagement() {
       resetForm();
       fetchPosts();
       setIsDialogOpen(false);
+      */
     } catch (error) {
       console.error('Error saving post:', error);
       toast({
@@ -261,6 +278,14 @@ export default function BlogManagement() {
     if (!confirm('Tem certeza que deseja excluir este post?')) return;
 
     try {
+      // TODO: Criar tabela 'blog_posts' no banco antes de habilitar
+      toast({
+        title: 'Funcionalidade desabilitada',
+        description: 'Tabela de blog não configurada',
+        variant: 'destructive',
+      });
+      return;
+      /*
       const { error } = await supabase
         .from('blog_posts')
         .delete()
@@ -273,6 +298,7 @@ export default function BlogManagement() {
         description: 'Post excluído com sucesso!',
       });
       fetchPosts();
+      */
     } catch (error) {
       console.error('Error deleting post:', error);
       toast({
