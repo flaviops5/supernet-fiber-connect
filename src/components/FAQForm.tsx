@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { HelpCircle } from 'lucide-react';
 
-const FAQForm = () => {
+export const FAQForm = () => {
   return (
     <Card>
       <CardContent className="text-center py-8">
@@ -13,5 +13,3 @@ const FAQForm = () => {
     </Card>
   );
 };
-
-export default FAQForm;

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GitBranch } from 'lucide-react';
 
-const FlowSubjectManager = () => {
+export const FlowSubjectManager = () => {
   return (
     <Card>
       <CardHeader>
@@ -19,5 +19,3 @@ const FlowSubjectManager = () => {
     </Card>
   );
 };
-
-export default FlowSubjectManager;

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flag } from 'lucide-react';
 
-export function FeatureFlagControl() {
+export const FeatureFlagControl = () => {
   return (
     <Card>
       <CardHeader>
@@ -18,4 +18,4 @@ export function FeatureFlagControl() {
       </CardContent>
     </Card>
   );
-}
+};
