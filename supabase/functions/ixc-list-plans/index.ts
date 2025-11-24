@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lista planos de velocidade do IXC (radgrupos) em formato compatível com o frontend
+// Lista planos de velocidade do IXC de múltiplos endpoints
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,98 +44,115 @@ Deno.serve(async (req) => {
     const baseUrl = `https://${cleanBaseUrl}/webservice/v1`;
 
     const MAX_PER_PAGE = 100;
-    const MAX_PAGES = 50; // trava de segurança para evitar loop infinito
+    const MAX_PAGES = 50;
 
-    const fetchPage = async (page: number) => {
-      const form = new URLSearchParams({
-        page: String(page),
-        rp: String(MAX_PER_PAGE),
-        sortname: "radgrupos.grupo",
-        sortorder: "asc",
-      });
+    // Função genérica para buscar de qualquer endpoint
+    const fetchFromEndpoint = async (endpoint: string, sortField: string) => {
+      const allRegistros: any[] = [];
+      let currentPage = 1;
 
-      if (search) {
-        form.set("qtype", "radgrupos.grupo");
-        form.set("oper", "L");
-        form.set("query", search);
+      console.log(`[${endpoint}] Iniciando busca...`);
+
+      while (currentPage <= MAX_PAGES) {
+        const form = new URLSearchParams({
+          page: String(currentPage),
+          rp: String(MAX_PER_PAGE),
+          sortname: sortField,
+          sortorder: "asc",
+        });
+
+        if (search) {
+          form.set("qtype", sortField);
+          form.set("oper", "L");
+          form.set("query", search);
+        }
+
+        try {
+          const res = await fetch(`${baseUrl}/${endpoint}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${auth}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+              ixcsoft: "listar",
+            },
+            body: form,
+          });
+
+          const text = await res.text();
+          let data: any;
+          
+          try {
+            data = JSON.parse(text);
+          } catch {
+            console.error(`[${endpoint}] Resposta não-JSON:`, text.substring(0, 200));
+            break; // Endpoint não disponível, pula para o próximo
+          }
+
+          if (!res.ok) {
+            console.error(`[${endpoint}] HTTP ${res.status}`);
+            break;
+          }
+
+          const rawRegistros = Array.isArray(data?.registros)
+            ? data.registros
+            : data?.registros
+            ? Object.values(data.registros)
+            : [];
+
+          if (!rawRegistros.length) {
+            console.log(`[${endpoint}] Página ${currentPage} vazia`);
+            break;
+          }
+
+          allRegistros.push(...rawRegistros);
+          console.log(`[${endpoint}] Página ${currentPage}: +${rawRegistros.length}`);
+
+          const totalFromEndpoint = Number(data?.total || 0);
+          if (totalFromEndpoint > 0 && allRegistros.length >= totalFromEndpoint) {
+            break;
+          }
+
+          currentPage++;
+        } catch (error) {
+          console.error(`[${endpoint}] Erro na página ${currentPage}:`, error);
+          break;
+        }
       }
 
-      const res = await fetch(`${baseUrl}/radgrupos`, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-          ixcsoft: "listar",
-        },
-        body: form,
-      });
-
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("[ixc-list-plans] Resposta não-JSON do IXC:", text);
-        throw new Error("Invalid JSON response from IXC");
-      }
-
-      if (!res.ok) {
-        console.error(
-          `[ixc-list-plans] IXC HTTP ${res.status}:`,
-          text,
-        );
-        throw new Error(data?.message || `HTTP ${res.status}`);
-      }
-
-      const rawRegistros = Array.isArray(data?.registros)
-        ? data.registros
-        : data?.registros
-        ? Object.values(data.registros)
-        : [];
-
-      return {
-        total: Number(data?.total || 0),
-        registros: rawRegistros as any[],
-      };
+      console.log(`[${endpoint}] Total: ${allRegistros.length}`);
+      return allRegistros;
     };
 
-    console.log("[ixc-list-plans] Iniciando busca de planos no IXC (radgrupos)");
+    console.log("[ixc-list-plans] 🔍 Buscando planos de múltiplos endpoints...");
 
-    const allRegistros: any[] = [];
-    let totalFromIXC = 0;
-    let currentPage = 1;
+    // Buscar de todos os endpoints em paralelo
+    const [radgruposPlans, vdContratosPlans, produtoPlans, ossPlanoPlans] = await Promise.all([
+      fetchFromEndpoint("radgrupos", "radgrupos.grupo"),
+      fetchFromEndpoint("vd_contratos", "vd_contratos.plano"),
+      fetchFromEndpoint("produto", "produto.descricao"),
+      fetchFromEndpoint("su_oss_plano", "su_oss_plano.nome"),
+    ]);
 
-    while (currentPage <= MAX_PAGES) {
-      const { total, registros } = await fetchPage(currentPage);
+    console.log("[ixc-list-plans] 📊 Resultados por endpoint:");
+    console.log(`  - radgrupos: ${radgruposPlans.length}`);
+    console.log(`  - vd_contratos: ${vdContratosPlans.length}`);
+    console.log(`  - produto: ${produtoPlans.length}`);
+    console.log(`  - su_oss_plano: ${ossPlanoPlans.length}`);
 
-      if (currentPage === 1) {
-        totalFromIXC = total;
-        console.log(
-          `[ixc-list-plans] Total reportado pelo IXC: ${totalFromIXC}`,
-        );
+    // Combinar e deduplicar por ID
+    const allPlansMap = new Map<string, any>();
+    
+    [...radgruposPlans, ...vdContratosPlans, ...produtoPlans, ...ossPlanoPlans].forEach((plan: any) => {
+      const id = String(plan.id_grupo ?? plan.id ?? plan.id_plano ?? "");
+      if (id && !allPlansMap.has(id)) {
+        allPlansMap.set(id, plan);
       }
+    });
 
-      if (!registros.length) {
-        console.log(
-          `[ixc-list-plans] Página ${currentPage} veio vazia, encerrando paginação.`,
-        );
-        break;
-      }
+    const allPlans = Array.from(allPlansMap.values());
+    console.log(`[ixc-list-plans] ✅ Total único de planos: ${allPlans.length}`);
 
-      allRegistros.push(...registros);
-      console.log(
-        `[ixc-list-plans] Página ${currentPage}: +${registros.length} (acumulado: ${allRegistros.length})`,
-      );
-
-      // Se já atingimos ou passamos o total reportado, podemos parar
-      if (totalFromIXC > 0 && allRegistros.length >= totalFromIXC) {
-        break;
-      }
-
-      currentPage++;
-    }
-
-    if (!allRegistros.length) {
+    if (!allPlans.length) {
       console.log("[ixc-list-plans] Nenhum plano encontrado no IXC");
       return new Response(
         JSON.stringify({
@@ -148,19 +165,20 @@ Deno.serve(async (req) => {
     }
 
     // Normalizar para o formato esperado pelo frontend
-    const normalizedPlans = allRegistros.map((r: any) => {
-      const id = String(r.id_grupo ?? r.id ?? "");
+    const normalizedPlans = allPlans.map((r: any) => {
+      const id = String(r.id_grupo ?? r.id ?? r.id_plano ?? "");
       const name =
         r.grupo ||
+        r.plano ||
         r.velocidade ||
+        r.nome ||
         (r.descricao as string | undefined) ||
         `Plano ${id}`;
 
-      // Muitos IXC retornam como string em Kbps ou Mbps, aqui só repasso bruto
-      const download = r.download ?? r.down ?? "";// campo pode variar por versão
-      const upload = r.upload ?? r.up ?? "";
+      const download = r.download ?? r.down ?? r.velocidade_down ?? "";
+      const upload = r.upload ?? r.up ?? r.velocidade_up ?? "";
 
-      const rawPrice = r.valor_produto ?? r.valor ?? r.preco ?? null;
+      const rawPrice = r.valor_produto ?? r.valor ?? r.preco ?? r.valor_mensalidade ?? null;
       const priceNumber = rawPrice != null ? Number(rawPrice) : 0;
 
       return {
@@ -172,15 +190,13 @@ Deno.serve(async (req) => {
       };
     });
 
-    console.log(
-      `[ixc-list-plans] Total normalizado: ${normalizedPlans.length} planos.`,
-    );
+    console.log(`[ixc-list-plans] ✅ Total normalizado: ${normalizedPlans.length} planos`);
 
     return new Response(
       JSON.stringify({
         success: true,
         plans: normalizedPlans,
-        total: totalFromIXC || normalizedPlans.length,
+        total: normalizedPlans.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
