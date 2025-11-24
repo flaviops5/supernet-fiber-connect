@@ -203,3 +203,99 @@ Para dúvidas sobre:
 - **SEO técnico**: consulte [seo.md](./seo.md)
 - **API AEO**: consulte [aeo-api.md](./aeo-api.md)
 - **Arquitetura visual**: consulte [seo-architecture.md](./seo-architecture.md)
+
+---
+
+# 📋 Auditorias de Edge Functions IXC
+
+## 📊 Status Geral
+
+| Edge Function | Status | Prioridade | Última Revisão |
+|---------------|--------|------------|----------------|
+| [ixc-list-plans](#audit-ixc-list-plans) | ⚠️ Requer Otimizações | Alta | 2025-11-24 |
+| [ixc-sync-plans](#audit-ixc-sync-plans) | ⚠️ Requer Otimizações | Alta | 2025-11-24 |
+| [ixc-create-contract](#audit-ixc-create-contract) | ⚠️ Requer Refatoração | Média | 2025-11-24 |
+
+**Legenda:**
+- ✅ **Produção Ready** - Pode ir para produção sem alterações
+- ⚠️ **Requer Otimizações** - Funcional mas com problemas de performance/segurança
+- 🔴 **Bloqueante** - Não deve ir para produção
+
+---
+
+## 📁 Auditorias Disponíveis
+
+### <a name="audit-ixc-list-plans"></a>ixc-list-plans
+**Arquivo:** [audit-ixc-list-plans.md](./audit-ixc-list-plans.md)  
+**Propósito:** Lista planos comerciais combinando `vd_planos` + `radgrupos`  
+
+**Principais Issues:**
+- ⚠️ Performance ruim - Busca todos os planos sem cache
+- ⚠️ Sem timeout nas requisições
+- ⚠️ Loop infinito potencial na paginação
+
+**Melhorias Implementadas:**
+- ✅ Cache em memória (TTL: 5 minutos)
+- ✅ Timeout de 30s
+- ✅ Limite de 100 páginas
+- ✅ Filtros por IDs e nome
+
+---
+
+### <a name="audit-ixc-sync-plans"></a>ixc-sync-plans
+**Arquivo:** [audit-ixc-sync-plans.md](./audit-ixc-sync-plans.md)  
+**Propósito:** Sincroniza planos específicos do IXC para tabela local `plans`  
+
+**Principais Issues:**
+- ⚠️ Performance péssima - Busca todos os planos para sincronizar apenas alguns
+- ⚠️ Processamento sequencial (poderia ser paralelo)
+- ⚠️ Sem cache compartilhado
+
+**Melhorias Implementadas:**
+- ✅ Timeout de 45s
+- ✅ Processamento paralelo em lotes de 5
+- ✅ Limite de 100 páginas
+- ✅ Métricas detalhadas
+
+---
+
+### <a name="audit-ixc-create-contract"></a>ixc-create-contract
+**Arquivo:** [audit-ixc-create-contract.md](./audit-ixc-create-contract.md)  
+**Propósito:** Cria novo contrato em `vd_contratos` no IXC  
+
+**Principais Issues:**
+- ⚠️ Tipagem fraca (`as any` demais)
+- ⚠️ Envia campos vazios ao IXC
+- ⚠️ Valores hardcoded sem documentação
+
+**Melhorias Implementadas:**
+- ✅ Type narrowing adequado
+- ✅ Detecção automática tipo_pessoa (F/J)
+- ✅ Remove campos não fornecidos
+- ✅ Timeout de 30s
+
+---
+
+## 🎯 Próximos Passos - Edge Functions
+
+### Curto Prazo (Crítico)
+1. **Aplicar código otimizado** dos três edge functions
+2. **Implementar cache Redis** para ambientes multi-instância
+3. **Adicionar métricas Prometheus** para monitoramento
+
+### Médio Prazo (Importante)
+4. **Background refresh** para cache expirar suavemente
+5. **Retry automático** para erros temporários
+6. **Webhook de conclusão** para operações longas
+
+---
+
+## 📝 Changelog
+
+| Data | Auditorias Adicionadas | Revisor |
+|------|------------------------|---------|
+| 2025-11-24 | ixc-list-plans, ixc-sync-plans, ixc-create-contract | AI Code Auditor |
+
+---
+
+**Última Atualização:** 2025-11-24
