@@ -1,18 +1,33 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { createAuthenticatedHandler } from "../_shared/base-handler.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // Lista planos de velocidade do IXC (radgrupos) em formato compatível com o frontend
-Deno.serve(
-  createAuthenticatedHandler("ixc-list-plans", async (req, { supabase, user }) => {
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
     const ixcUsername = Deno.env.get("IXC_API_USERNAME");
     const ixcPassword = Deno.env.get("IXC_API_PASSWORD");
     const IXC_API_BASE = Deno.env.get("IXC_API_BASE_URL");
 
     if (!ixcUsername || !ixcPassword) {
-      throw new Error("IXC API credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "IXC API credentials not configured" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     if (!IXC_API_BASE) {
-      throw new Error("IXC_API_BASE_URL not configured");
+      return new Response(
+        JSON.stringify({ error: "IXC_API_BASE_URL not configured" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Lê body opcional (pode vir vazio)
@@ -122,11 +137,14 @@ Deno.serve(
 
     if (!allRegistros.length) {
       console.log("[ixc-list-plans] Nenhum plano encontrado no IXC");
-      return {
-        success: true,
-        plans: [],
-        total: 0,
-      };
+      return new Response(
+        JSON.stringify({
+          success: true,
+          plans: [],
+          total: 0,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Normalizar para o formato esperado pelo frontend
@@ -158,10 +176,21 @@ Deno.serve(
       `[ixc-list-plans] Total normalizado: ${normalizedPlans.length} planos.`,
     );
 
-    return {
-      success: true,
-      plans: normalizedPlans,
-      total: totalFromIXC || normalizedPlans.length,
-    };
-  }),
-);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        plans: normalizedPlans,
+        total: totalFromIXC || normalizedPlans.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error("[ixc-list-plans] Erro:", error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
