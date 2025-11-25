@@ -16,6 +16,7 @@ import Apresentacao from "./pages/Apresentacao";
 import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
 import AdminPlans from "./pages/AdminPlans";
+import Admin from "./pages/Admin";
 import CorporateAI from "./components/CorporateAI";
 import AdminIXCStressTest from "./pages/AdminIXCStressTest";
 import Header from "./components/Header";
@@ -23,9 +24,9 @@ import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
-// Admin wrapper component - Simple redirect to home for now
+// Admin wrapper component
 const AdminWrapper = () => {
-  return <Navigate to="/" replace />;
+  return <Admin />;
 };
 
 const App = () => {
