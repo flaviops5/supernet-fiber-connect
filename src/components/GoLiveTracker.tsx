@@ -9,9 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfrastructureValidator } from "./go-live/InfrastructureValidator";
 import { Phase7ProductionReadiness } from "./go-live/Phase7ProductionReadiness";
-import { Phase8DeployCoordinated } from "./go-live/Phase8DeployCoordinated";
 import { Phase9ProgressiveActivation } from "./go-live/Phase9ProgressiveActivation";
-import { Phase10MonitoringRollback } from "./go-live/Phase10MonitoringRollback";
 import { Phase11TypeScriptZeroAny } from "./go-live/Phase11TypeScriptZeroAny";
 
 type TaskStatus = "pending" | "in-progress" | "completed" | "blocked";
