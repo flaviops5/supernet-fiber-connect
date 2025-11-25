@@ -8,30 +8,23 @@ import Index from "./pages/Index";
 import Contact from "./pages/Contact";
 import Telemedicina from "./pages/Telemedicina";
 import Automacao from "./pages/Automacao";
-import Blog from "./pages/Blog";
 import Blogue from "./pages/Blogue";
 import BloguePost from "./pages/BloguePost";
-import Admin from "./pages/Admin";
-import Auth from "./pages/Auth";
 import SystemMetrics from "./pages/SystemMetrics";
 import HPFuncoes from "./pages/HPFuncoes";
 import Apresentacao from "./pages/Apresentacao";
 import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
 import CorporateAI from "./components/CorporateAI";
-import KPISupportDashboard from "./pages/admin/KPISupportDashboard";
-
-import PublicCalendar from "./pages/PublicCalendar";
 import AdminIXCStressTest from "./pages/AdminIXCStressTest";
-import BlogBatch from "./pages/admin/BlogBatch";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
-// Admin wrapper component
+// Admin wrapper component - Simple redirect to home for now
 const AdminWrapper = () => {
-  return <Admin />;
+  return <Navigate to="/" replace />;
 };
 
 const App = () => {
@@ -46,7 +39,6 @@ const App = () => {
           <Routes>
             {/* Admin routes without header/footer - Alphabetically ordered */}
             <Route path="/admin/*" element={<AdminWrapper />} />
-            <Route path="/admin/blog" element={<BlogBatch />} />
             <Route path="/admin/prompts" element={<AdminPrompts />} />
           <Route path="/admin/ixc-stress-test" element={<AdminIXCStressTest />} />
             
@@ -63,9 +55,6 @@ const App = () => {
             {/* Redirects for consolidated documentation */}
             <Route path="/admin/corporate-ai" element={<Navigate to="/admin/ia-corporativa" replace />} />
             
-            {/* Public calendar route (no header/footer) */}
-            <Route path="/instalacoes/:token" element={<PublicCalendar />} />
-            
             {/* Public routes with header/footer - Alphabetically ordered */}
             <Route path="/*" element={
               <div className="min-h-screen flex flex-col">
@@ -74,11 +63,9 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/apresentacao" element={<Apresentacao />} />
-                    <Route path="/auth" element={<Auth />} />
                     <Route path="/automacao" element={<Automacao />} />
                     <Route path="/automacao-residencial" element={<Automacao />} />
                     <Route path="/technical-docs" element={<Navigate to="/" replace />} />
-                    <Route path="/blog" element={<Blog />} />
                     <Route path="/blogue" element={<Blogue />} />
                     <Route path="/blogue/:slug" element={<BloguePost />} />
                     <Route path="/contato" element={<Contact />} />
