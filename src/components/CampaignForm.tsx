@@ -86,24 +86,16 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
     setLoading(true);
 
     try {
-      // TODO: Criar tabelas 'campaigns', 'campaign_content', 'campaign_stats' no banco
-      toast({
-        title: 'Funcionalidade desabilitada',
-        description: 'Tabelas de campanhas não configuradas',
-        variant: 'destructive',
-      });
-      setLoading(false);
-      return;
-      /*
+      // Criar campanha
       const { data: campaign, error: campaignError} = await supabase
         .from('campaigns')
         .insert([{
           name: formData.name,
           description: formData.description,
-          type: formData.type as any,
-          channels: formData.channels as any,
+          type: formData.type as Database['public']['Tables']['campaigns']['Row']['type'],
+          channels: formData.channels as Database['public']['Tables']['campaigns']['Row']['channels'],
           target_filters: formData.targetFilters,
-          status: 'draft' as any,
+          status: 'draft' as Database['public']['Tables']['campaigns']['Row']['status'],
         }])
         .select()
         .single();
@@ -118,7 +110,7 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
           content_text: formData.contentText,
           media_type: formData.mediaType || null,
           media_url: formData.mediaUrl || null,
-          cta_type: formData.ctaType as any,
+          cta_type: formData.ctaType as Database['public']['Tables']['campaign_content']['Row']['cta_type'],
           cta_config: formData.ctaConfig,
         }]);
 
@@ -143,7 +135,6 @@ export function CampaignForm({ onSuccess }: CampaignFormProps) {
       });
 
       onSuccess();
-      */
     } catch (error) {
       logger.error('Erro ao criar campanha', error);
       toast({

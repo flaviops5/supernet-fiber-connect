@@ -1,0 +1,327 @@
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Clock, MessageSquare, AlertCircle, Tag } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import ConversationSearch from './ConversationSearch';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+
+
+interface Conversation {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  channel: string;
+  status: string;
+  department: string;
+  priority: number;
+  created_at: string;
+  last_message_at: string;
+  tags?: string[];
+}
+
+interface Props {
+  selectedConversation: string | null;
+  onSelectConversation: (id: string) => void;
+  agentDepartment: string;
+}
+
+type FilterType = 'waiting' | 'active' | 'my' | 'all';
+
+const channelIcons = {
+  whatsapp: '📱',
+  facebook: '📘',
+  instagram: '📷',
+  chatbot: '🤖',
+  email: '✉️'
+};
+
+const statusLabels = {
+  waiting: 'Aguardando',
+  active: 'Em atendimento',
+  paused: 'Pausado',
+  resolved: 'Resolvido',
+  transferred: 'Transferido'
+};
+
+export default function ConversationQueue({ selectedConversation, onSelectConversation, agentDepartment }: Props) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [filter, setFilter] = useState<FilterType>('waiting');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+  const loadTags = useCallback(async () => {
+    const { data } = await supabase
+      .from('conversations')
+      .select('tags');
+    
+    if (data) {
+      const uniqueTags = new Set<string>();
+      data.forEach(conv => {
+        (conv.tags || []).forEach((tag: string) => uniqueTags.add(tag));
+      });
+      setAllTags(Array.from(uniqueTags).sort());
+    }
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    console.log('🔄 Carregando conversas...', { filter, agentDepartment, searchQuery, selectedTags });
+    let query = supabase
+      .from('conversations')
+      .select('*')
+      .order('priority', { ascending: false })
+      .order('last_message_at', { ascending: false });
+
+    // Filtrar por departamento do agente
+    if (agentDepartment && agentDepartment !== 'todos') {
+      query = query.eq('department', agentDepartment as Database['public']['Enums']['agent_department']);
+    }
+
+    // Filtrar por status
+    if (filter === 'waiting') {
+      query = query.eq('status', 'waiting');
+    } else if (filter === 'active') {
+      query = query.eq('status', 'active');
+    } else if (filter === 'my') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        query = query.eq('assigned_agent_id', user.id);
+      }
+    }
+
+    // Filtrar por busca
+    if (searchQuery) {
+      query = query.or(`customer_name.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%`);
+    }
+
+    // Filtrar por tags
+    if (selectedTags.length > 0) {
+      query = query.contains('tags', selectedTags);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('❌ Erro ao carregar conversas:', error);
+      return;
+    }
+
+    console.log('✅ Conversas carregadas:', data?.length || 0, data?.map(c => ({ 
+      id: c.id.substring(0, 8), 
+      name: c.customer_name, 
+      status: c.status, 
+      last_msg: c.last_message_at 
+    })));
+    setConversations(data || []);
+  }, [agentDepartment, filter, searchQuery, selectedTags]);
+
+  useEffect(() => {
+    loadConversations();
+    loadTags();
+
+    const channel = supabase
+      .channel('conversations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations'
+        },
+        () => {
+          loadConversations();
+          loadTags();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadConversations, loadTags]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const getTimeAgo = (date: string) => {
+    return formatDistanceToNow(new Date(date), {
+      addSuffix: true,
+      locale: ptBR
+    });
+  };
+
+  const getWaitingTimeMinutes = (conv: Conversation) => {
+    const now = new Date();
+    const lastActivity = new Date(conv.last_message_at || conv.created_at);
+    return Math.floor((now.getTime() - lastActivity.getTime()) / 1000 / 60);
+  };
+
+  const getPulseClass = (conv: Conversation) => {
+    // Se a conversa está sendo atendida ou foi transferida para humano
+    if (conv.status === 'active' || conv.status === 'transferred') {
+      return 'pulse-green';
+    }
+    
+    // Se está aguardando, verificar tempo
+    if (conv.status === 'waiting') {
+      const waitingMinutes = getWaitingTimeMinutes(conv);
+      if (waitingMinutes >= 11) {
+        return 'pulse-red';
+      } else if (waitingMinutes >= 10) {
+        return 'pulse-yellow';
+      }
+    }
+    
+    return '';
+  };
+
+
+  return (
+    <Card className="h-full flex flex-col shadow-lg border-2 border-border bg-gradient-to-br from-muted/30 via-background to-background">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-[hsl(var(--orange))]" />
+            Fila de Atendimento
+          </CardTitle>
+          
+          <div className="flex items-center gap-2">
+            <ConversationSearch onSearch={handleSearch} />
+            
+            {allTags.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-8 w-8 relative">
+                    <Tag className="h-4 w-4 text-[hsl(var(--orange))]" />
+                    {selectedTags.length > 0 && (
+                      <Badge 
+                        variant="secondary" 
+                        className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                      >
+                        {selectedTags.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Filtrar por Tags</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {allTags.map(tag => (
+                        <div key={tag} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`tag-${tag}`}
+                            checked={selectedTags.includes(tag)}
+                            onCheckedChange={() => toggleTag(tag)}
+                          />
+                          <label
+                            htmlFor={`tag-${tag}`}
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            {tag}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {selectedTags.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setSelectedTags([])}
+                      >
+                        Limpar Filtros
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
+        <Separator className="mt-3" />
+      </CardHeader>
+
+      <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 mx-4">
+            <TabsTrigger value="waiting" className="text-xs">Aguardando</TabsTrigger>
+            <TabsTrigger value="active" className="text-xs">Ativas</TabsTrigger>
+            <TabsTrigger value="my" className="text-xs">Minhas</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs">Todas</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={filter} className="flex-1 overflow-y-auto px-4 mt-2">
+            <div className="space-y-2">
+              {conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => onSelectConversation(conv.id)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all hover:shadow-md ${
+                    selectedConversation === conv.id
+                      ? 'border-primary bg-primary/5 shadow-sm'
+                      : 'border-border/50 hover:border-primary/50'
+                  } ${getPulseClass(conv)}`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-lg">{channelIcons[conv.channel as keyof typeof channelIcons]}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{conv.customer_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{conv.customer_phone}</p>
+                      </div>
+                    </div>
+                    {conv.priority > 0 && (
+                      <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {statusLabels[conv.status as keyof typeof statusLabels]}
+                      </Badge>
+                      {conv.tags && conv.tags.length > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {conv.tags[0]}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {getTimeAgo(conv.last_message_at || conv.created_at)}
+                    </div>
+                  </div>
+                </button>
+              ))}
+
+              {conversations.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhuma conversa nesta fila</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}

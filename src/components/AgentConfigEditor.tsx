@@ -40,14 +40,6 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // TODO: Criar tabela 'agent_configurations' no banco antes de habilitar
-      toast({
-        title: 'Funcionalidade desabilitada',
-        description: 'Tabela de configurações não existe',
-        variant: 'destructive',
-      });
-      throw new Error('Table not configured');
-      /*
       const { error } = await supabase
         .from('agent_configurations')
         .update({
@@ -61,14 +53,16 @@ const AgentConfigEditor: React.FC<AgentConfigEditorProps> = ({ config, onClose, 
           is_active: formData.is_active,
         })
         .eq('id', config.id);
+
       if (error) throw error;
+
       toast({
         title: 'Configuração salva',
         description: 'As alterações foram salvas com sucesso.',
       });
+      
       onSave();
       onClose();
-      */
     } catch (error) {
       const err = parseError(error);
       logger.error('Error saving config', err);

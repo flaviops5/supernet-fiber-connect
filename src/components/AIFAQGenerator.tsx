@@ -51,19 +51,15 @@ export const AIFAQGenerator = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (faq: GeneratedFAQ) => {
-      // TODO: Criar tabela 'faqs' no banco antes de habilitar
-      toast.error('Funcionalidade desabilitada - tabela FAQs não configurada');
-      throw new Error('Table not configured');
-      /*
       const { error } = await supabase.from('faqs').insert({
         question: faq.question,
         answer: faq.answer,
         icon: faq.suggestedIcon,
-        display_order: 999,
+        display_order: 999, // Último por padrão
         active: true
       });
+
       if (error) throw error;
-      */
     },
     onSuccess: () => {
       toast.success('FAQ salva com sucesso!');

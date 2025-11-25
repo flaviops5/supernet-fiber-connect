@@ -286,8 +286,7 @@ export function AdminSidebar() {
 
   useEffect(() => {
     const loadData = async () => {
-      // TODO: Criar tabelas 'profiles', 'user_roles', 'company_settings' antes de habilitar
-      /*
+      // Load user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
@@ -310,6 +309,7 @@ export function AdminSidebar() {
         }
       }
 
+      // Load company settings
       const { data: settings } = await supabase
         .from('company_settings')
         .select('company_name, logo_url')
@@ -319,9 +319,6 @@ export function AdminSidebar() {
       if (settings) {
         setCompanySettings(settings);
       }
-      */
-      setUserProfile(null);
-      setCompanySettings(null);
     };
 
     loadData();

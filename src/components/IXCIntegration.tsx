@@ -864,13 +864,26 @@ const IXCIntegration = () => {
                     throw new Error(JSON.stringify({ status: resp.status, body: agentResponse }));
                   }
 
-                  // 3. Resultado sem buscar appointment (tabela não existe)
+                  // 3. Buscar o appointment criado
+                  const { data: appointment, error: appointmentError } = await supabase
+                    .from("installation_appointments")
+                    .select("*")
+                    .eq("customer_email", freshTestData.customerEmail)
+                    .order("created_at", { ascending: false })
+                    .limit(1)
+                    .single();
+
                   setTestResults({
                     success: true,
                     planUsed: plans,
-                    appointment: undefined,
-                    ixcClientId: "Não criado (tabela não existe)",
-                    ixcContractId: "Não criado (tabela não existe)",
+                    appointment: appointment ? {
+                      date: appointment.appointment_date,
+                      period: appointment.appointment_period,
+                      customer_email: appointment.customer_email,
+                      ixc_contract_id: appointment.ixc_contract_id || undefined,
+                    } : undefined,
+                    ixcClientId: appointment?.ixc_contract_id ? "Criado" : "Não criado",
+                    ixcContractId: appointment?.ixc_contract_id || "Não criado",
                   });
 
                   toast.success("✅ Teste concluído com sucesso!");
