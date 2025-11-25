@@ -15,6 +15,7 @@ import HPFuncoes from "./pages/HPFuncoes";
 import Apresentacao from "./pages/Apresentacao";
 import NotFound from "./pages/NotFound";
 import AdminPrompts from "./pages/AdminPrompts";
+import AdminPlans from "./pages/AdminPlans";
 import CorporateAI from "./components/CorporateAI";
 import AdminIXCStressTest from "./pages/AdminIXCStressTest";
 import Header from "./components/Header";
@@ -39,6 +40,7 @@ const App = () => {
           <Routes>
             {/* Admin routes without header/footer - Alphabetically ordered */}
             <Route path="/admin/*" element={<AdminWrapper />} />
+            <Route path="/admin/plans" element={<AdminPlans />} />
             <Route path="/admin/prompts" element={<AdminPrompts />} />
           <Route path="/admin/ixc-stress-test" element={<AdminIXCStressTest />} />
             
